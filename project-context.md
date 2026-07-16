@@ -24,19 +24,32 @@ Bewusst NICHT in v1: Antworten-Erkennung/Einsortierung, Reporting.
   angelegten Test-Postfächern.
 
 ## Aktueller Stand
-- Verstehen, Sparring und Design abgeschlossen; Design von Leonard
-  freigegeben (16.07.2026):
-  docs/superpowers/specs/2026-07-16-ai-coldmailing-system-design.md
-- Umsetzungsplan von Leonard freigegeben (16.07.2026), Bau läuft:
-  docs/superpowers/plans/2026-07-16-ai-coldmailing-system.md
+- v1 KOMPLETT GEBAUT und nach main gemergt (16.07.2026): Pipeline-Pakete
+  1–10 plus Härtungs-Pass, 62 automatische Tests, alle grün. Abschluss-
+  Review über den ganzen Bau: bestanden, keine Blocker.
+- Bedienung: `python -m pipeline lauf|freigeben|senden`, Angebots-Analyse
+  über `python -m pipeline.offer <url> <kunde.yaml>`. API-Schlüssel über
+  .env (Vorlage: .env.example).
+- Design: docs/superpowers/specs/2026-07-16-ai-coldmailing-system-design.md
+- Plan (mit allen Nachträgen): docs/superpowers/plans/2026-07-16-ai-coldmailing-system.md
 - Jira-Aufgabe: AP-195 (digitaldiamonds.atlassian.net)
 - Wholix-Analyse (Screenshots + HAR-Mitschnitt app.wholix.ai.har, liegt
   lokal, per .gitignore vom Git ausgeschlossen — enthält Sitzungsdaten):
-  bestätigt Vorab-Generierung, Freigabe-Status pro Mail, eigene
-  Outreach-Domain, 20 Mails/Tag/Postfach, Fenster Mo–Fr 8–19 Berlin.
-  Daraus nachgezogen: Domain-Sperrliste in v1 (Plan Task 5).
-- Für v2 vorgemerkt: Antworten-Behandlung (echte Antworten vs.
-  Abwesenheit/Unzustellbar unterscheiden — Wholix kann das, wir noch nicht).
+  bestätigte den Bauplan; daraus nachgezogen: Domain-Sperrliste,
+  Schutz-Voreinstellungen (20 Mails/Tag, Fenster Mo–Fr 8–19).
+- OFFEN: Task 11 (End-zu-End-Nachweis) — braucht von Leonard: Okay für
+  Test-Domain-Kauf (~10–15 €/Jahr), Test-Postfächer, Apollo-Konto (gratis
+  reicht), Anthropic-API-Schlüssel, Instantly-Zugang (wer hat den
+  API-Schlüssel? enthält der Team-Tarif API v2?) und Okay für den ersten
+  Schreibzugriff aufs Team-Instantly.
+- Am echten Konto zu verifizieren (TODOs im Code markiert): Instantly
+  Zeitzonen-Ersatz Europe/Belgrade, Wochentags-Konvention, daily_limit
+  pro Postfach, Lead-Dedupe bei Wiederholungs-Import; Apollo id-only-Match
+  und Credit-Verhalten von reveal_personal_emails.
+- Für v1.1 vor der ersten ECHTEN Kampagne (nicht vor Task 11): Prüf-KI
+  soll auch Follow-ups bewerten; Freigabe-Vorschau zeigt alle Texte oder
+  verweist ausdrücklich auf personalisierung.json. Für v2: Antworten-
+  Behandlung (echte Antworten vs. Abwesenheit/Unzustellbar).
 
 ## Entscheidungen
 - v1-Umfang: Leads + Personalisierung + Versand/Follow-ups (siehe oben).

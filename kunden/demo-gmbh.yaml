@@ -1,0 +1,11 @@
+name: Demo GmbH
+zielgruppe:
+  titel: [CEO, "Head of Sales"]
+  region: [Germany]
+  firmengroesse: ["11-50"]
+angebot: KI-Automatisierung fuer Vertriebsprozesse
+tonalitaet: ruhig, erklaerend, keine Superlative
+absender: Leonard von Digital Diamonds
+follow_up_tage: [3, 7]
+test_empfaenger:
+  - test1@example.com

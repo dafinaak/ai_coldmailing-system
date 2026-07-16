@@ -15,7 +15,7 @@
 - Niemals echte Empfänger: Versand ausschließlich an Adressen aus der Test-Empfänger-Liste der Kunden-Konfiguration. In v1 gibt es keinen Code-Pfad, der andere Empfänger aktiviert.
 - Kein Instantly-Schreibzugriff ohne Freigabe-Datei im Laufordner (Task 8), und vor dem allerersten Schreibzugriff aufs geteilte Team-Konto kurz Bescheid geben.
 - API-Schlüssel nur in `.env` (steht in `.gitignore`), nie im Code, nie committen.
-- Sprache im Code: englische Bezeichner, deutsche Doku/Prompts.
+- Sprache im Code: englische Bezeichner für Technik-Allgemeines; deutsche Fachbegriffe der Domäne (Kunde, Sperrliste, Testnamen, CLI-Befehle wie `lauf`/`freigeben`/`senden`) sind ausdrücklich gewollt. Doku und Prompts auf Deutsch.
 - Jeder Task endet mit grünem `pytest` und einem Commit.
 - KI-Modell kommt aus der Umgebungsvariable `KI_MODELL` (Standard `claude-sonnet-5`) — nie fest verdrahten.
 - Apollo- und Instantly-Payloads werden im jeweiligen Task zuerst gegen die Live-Doku verifiziert (docs.apollo.io, developer.instantly.ai) — die Codeblöcke hier sind der Ausgangspunkt, die Doku ist die Wahrheit.
@@ -33,7 +33,8 @@
 ### Task 1: Projektgerüst
 
 **Files:**
-- Create: `pipeline/__init__.py`, `tests/test_scaffold.py`, `requirements.txt`, `.gitignore`, `.env.example`
+- Create: `pipeline/__init__.py`, `tests/__init__.py` (leer — macht `tests` importierbar, spätere Tasks importieren Test-Helfer quer), `tests/test_scaffold.py`, `requirements.txt`, `.env.example`
+- Modify: `.gitignore` (existiert bereits mit `*.har`-Eintrag — die Einträge `.env`, `__pycache__/`, `.venv/`, `laeufe/` sind dort schon vorhanden; prüfen, nicht doppeln)
 
 **Interfaces:**
 - Produces: importierbares Paket `pipeline`, lauffähiges `pytest`.
@@ -311,6 +312,8 @@ git commit -m "feat: Laufordner mit Wiederaufnahme"
 - Consumes: `Lead` aus Task 2.
 - Produces: `ApolloSource(api_key, session=None)` mit `search(zielgruppe: dict, limit: int) -> list[Lead]`. Wiederholt bei HTTP 429/5xx bis zu 3-mal mit wachsender Wartezeit. Leads ohne E-Mail werden übersprungen.
 
+**Nachtrag (Erkenntnis aus der Live-Doku, 16.07.2026):** Die People-Search-Antwort von Apollo enthält keine E-Mail-Adressen (und der Suchpfad heißt `mixed_people/api_search`). `search()` reichert die Treffer deshalb in einem zweiten Schritt über den Enrichment-Endpoint (`POST /api/v1/people/bulk_match`, bis zu 10 Personen je Aufruf, verbraucht die eingeplanten Export-Credits) an und mappt erst danach auf `Lead`. Personen, für die auch das Enrichment keine E-Mail liefert, werden wie gehabt übersprungen und im Bericht gezählt.
+
 - [ ] **Step 1: Live-Doku prüfen**
 
 Die aktuelle Endpoint-Beschreibung von https://docs.apollo.io (People-Search) laden und Feldnamen im folgenden Code daran anpassen (Endpoint, Header `X-Api-Key`, Antwortstruktur `people[]`). Abweichungen im Commit-Text nennen.
@@ -419,7 +422,7 @@ git commit -m "feat: Apollo-Quelle mit Wiederholungslogik"
 
 **Interfaces:**
 - Consumes: `list[Lead]`, Kundenordner `laeufe/<kunde-slug>/` mit früheren Läufen (deren `leads.json`), `kunde.sperrliste`.
-- Produces: `dedupe(leads, kunde_laeufe_dir, sperrliste=()) -> tuple[list[Lead], list[dict]]` — Prüf-Reihenfolge: (1) Domain auf Sperrliste (E-Mail-Domain und Webseiten-Domain, Wildcard `*.beispiel.de` erlaubt — Vorbild: die Wholix-Sperrliste des Teams mit eigener Agentur, Partnern, `*.bund.de`), (2) Duplikate innerhalb der Liste (per E-Mail), (3) gegen alle `leads.json` früherer Läufe. Zweiter Rückgabewert: verworfene als `{"email": ..., "grund": ...}` für den Bericht. Hier sitzt auch der markierte Erweiterungspunkt für externe Verifizierung (Kommentar im Code genügt, kein Bau in v1).
+- Produces: `dedupe(leads, kunde_laeufe_dir, sperrliste=(), aktueller_lauf=None) -> tuple[list[Lead], list[dict]]` — `aktueller_lauf` ist der Laufordner des laufenden Laufs und wird beim Blick in frühere Läufe ausgenommen (Korrektur 16.07.2026: ohne diese Ausnahme las die Prüfung die soeben gespeicherte eigene leads.json als "früheren Lauf" und verwarf jeden Lead als Dublette — gefunden im Task-10-Review, behoben samt End-zu-End-Test). Prüf-Reihenfolge: (1) Domain auf Sperrliste (E-Mail-Domain und Webseiten-Domain, Wildcard `*.beispiel.de` erlaubt — Vorbild: die Wholix-Sperrliste des Teams mit eigener Agentur, Partnern, `*.bund.de`), (2) Duplikate innerhalb der Liste (per E-Mail), (3) gegen alle `leads.json` früherer Läufe. Zweiter Rückgabewert: verworfene als `{"email": ..., "grund": ...}` für den Bericht. Hier sitzt auch der markierte Erweiterungspunkt für externe Verifizierung (Kommentar im Code genügt, kein Bau in v1).
 
 - [ ] **Step 1: Fehlschlagenden Test schreiben**
 
@@ -1128,7 +1131,8 @@ def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None):
              for d in store.load_step("leads")]
 
     if not store.step_done("dedupe"):
-        behalten, verworfen = dedupe_leads(leads, store.run_dir.parent, kunde.sperrliste)
+        behalten, verworfen = dedupe_leads(leads, store.run_dir.parent, kunde.sperrliste,
+                                           aktueller_lauf=store.run_dir)
         store.save_step("dedupe", {"behalten": [l.__dict__ for l in behalten],
                                    "verworfen": verworfen})
     stand = store.load_step("dedupe")
@@ -1219,7 +1223,7 @@ Kein Code — das ist der Beweis aus dem Design. **Vorab-Okay von Leonard nötig
 
 - [ ] **Step 1: Test-Empfänger anlegen** — je ein Gmail-, ein Outlook- und ein Eigene-Domain-Postfach; Adressen in `kunden/demo-gmbh.yaml` unter `test_empfaenger` eintragen.
 - [ ] **Step 2: Versand-Seite einrichten** — Test-Domain kaufen, in Instantly ein Test-Postfach dieser Domain verbinden, Warmup einschalten (Anwärmzeit einplanen; Details laut Instantly-Doku).
-- [ ] **Step 3: Lauf fahren** — `python -m pipeline lauf kunden/demo-gmbh.yaml --limit 5`; da die Demo-Zielgruppe echte Apollo-Treffer liefert, die Test-Lead-Liste danach im Laufordner von Hand auf die Test-Empfänger umbiegen (dokumentierter v1-Kniff: `leads.json` editieren, `--fortsetzen` nutzen) — so wird mit echten Apollo-Daten personalisiert, aber nur an Test-Postfächer gesendet.
+- [ ] **Step 3: Lauf fahren** — `python -m pipeline lauf kunden/demo-gmbh.yaml --limit 5`; da die Demo-Zielgruppe echte Apollo-Treffer liefert, die Test-Lead-Liste danach im Laufordner von Hand auf die Test-Empfänger umbiegen: `leads.json` editieren, dann `python -m pipeline lauf kunden/demo-gmbh.yaml --fortsetzen <laufordner> --neu-ab dedupe` — das verwirft die alten Ergebnisse ab der Dubletten-Prüfung und personalisiert neu auf Basis der editierten Liste (Korrektur 16.07.2026 aus dem Abschluss-Review: das frühere Verfahren ohne `--neu-ab` lief ins Leere, weil fertige Schritte übersprungen werden). So wird mit echten Apollo-Daten personalisiert, aber nur an Test-Postfächer gesendet.
 - [ ] **Step 4: Vorschau prüfen und freigeben** — Leonard liest `freigabe-vorschau.md`, dann `freigeben`, dann `senden`, dann Kampagne in Instantly von Hand aktivieren.
 - [ ] **Step 5: Beweis sammeln** — Screenshots: Mail im Posteingang (nicht Spam) aller drei Test-Postfächer, Follow-up nach dem konfigurierten Abstand, `bericht.md` deckt sich mit der Realität. Ergebnis in `project-context.md` festhalten, Jira AP-195 auf erledigt setzen.
 

@@ -14,7 +14,10 @@ def draft_offer(website_text: str, ki) -> dict:
         webseiten_text=website_text or "(leer)")
     roh = ki.frage(SYSTEM, prompt)
     treffer = re.search(r"\{.*\}", roh, re.DOTALL)
-    daten = json.loads(treffer.group(0)) if treffer else {}
+    try:
+        daten = json.loads(treffer.group(0)) if treffer else {}
+    except ValueError:
+        daten = {}
     if any(not daten.get(k) for k in FELDER):
         raise ValueError("KI-Entwurf unvollstaendig")
     return {k: daten[k] for k in FELDER}

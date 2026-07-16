@@ -1,4 +1,4 @@
-import json, yaml
+import json, yaml, pytest
 from pipeline.offer import draft_offer, uebernehmen
 from tests.test_personalize import FakeKI
 
@@ -12,3 +12,8 @@ def test_uebernehmen_fuellt_nur_leere_felder(tmp_path):
     uebernehmen(p, {"angebot": "Neu", "tonalitaet": "Anders"})
     daten = yaml.safe_load(p.read_text(encoding="utf-8"))
     assert daten["angebot"] == "Neu" and daten["tonalitaet"] == "bestehend"
+
+def test_kaputtes_json_wirft_valueerror():
+    ki = FakeKI('{"angebot": kaputt}')
+    with pytest.raises(ValueError, match="unvollstaendig"):
+        draft_offer("Text", ki)

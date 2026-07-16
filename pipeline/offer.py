@@ -32,6 +32,9 @@ def uebernehmen(kunde_pfad, entwurf: dict):
                     encoding="utf-8")
 
 def main():
+    if len(sys.argv) < 3:
+        print("Aufruf: python -m pipeline.offer <url> <kunde.yaml>")
+        sys.exit(1)
     url, kunde_pfad = sys.argv[1], sys.argv[2]
     entwurf = draft_offer(fetch_text(url), KI())
     uebernehmen(kunde_pfad, entwurf)

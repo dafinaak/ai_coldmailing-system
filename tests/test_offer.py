@@ -1,5 +1,5 @@
-import json, yaml, pytest
-from pipeline.offer import draft_offer, uebernehmen
+import json, sys, yaml, pytest
+from pipeline.offer import draft_offer, uebernehmen, main
 from tests.test_personalize import FakeKI
 
 def test_entwurf_liefert_beide_felder():
@@ -17,3 +17,11 @@ def test_kaputtes_json_wirft_valueerror():
     ki = FakeKI('{"angebot": kaputt}')
     with pytest.raises(ValueError, match="unvollstaendig"):
         draft_offer("Text", ki)
+
+def test_main_ohne_genug_argumente_bricht_kontrolliert_ab(monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", ["offer.py"])
+    with pytest.raises(SystemExit) as fehler:
+        main()
+    assert fehler.value.code == 1
+    ausgabe = capsys.readouterr().out
+    assert "Aufruf: python -m pipeline.offer <url> <kunde.yaml>" in ausgabe

@@ -16,6 +16,8 @@ class RunStore:
 
     @classmethod
     def resume(cls, run_dir) -> "RunStore":
+        if not Path(run_dir).is_dir():
+            raise ValueError(f"Laufordner existiert nicht: {run_dir}")
         return cls(None, None, _existing=run_dir)
 
     def _pfad(self, name: str) -> Path:

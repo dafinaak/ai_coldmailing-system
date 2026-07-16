@@ -16,7 +16,31 @@ from pipeline.models import Lead
 
 LAEUFE = Path("laeufe")
 
+def lade_dotenv(pfad: Path = Path(".env")):
+    """Liest eine .env-Datei mit einfachen KEY=VALUE-Zeilen ein (keine
+    zusaetzliche Abhaengigkeit noetig). Leerzeilen und #-Kommentare werden
+    ignoriert. Bereits gesetzte Umgebungsvariablen werden NICHT ueberschrieben
+    - eine echte Shell-Variable geht immer vor dem .env-Wert."""
+    pfad = Path(pfad)
+    if not pfad.exists():
+        return
+    for zeile in pfad.read_text(encoding="utf-8").splitlines():
+        zeile = zeile.strip()
+        if not zeile or zeile.startswith("#") or "=" not in zeile:
+            continue
+        schluessel, _, wert = zeile.partition("=")
+        schluessel, wert = schluessel.strip(), wert.strip()
+        if schluessel and schluessel not in os.environ:
+            os.environ[schluessel] = wert
+
+def _brauche_env(name: str):
+    if not os.environ.get(name):
+        sys.exit(f"Fehlende Umgebungsvariable: {name}. "
+                 f"Bitte in .env eintragen (siehe .env.example).")
+
 def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None):
+    _brauche_env("APOLLO_API_KEY")
+    _brauche_env("ANTHROPIC_API_KEY")
     kunde = load_kunde(kunde_pfad)
     store = RunStore.resume(fortsetzen) if fortsetzen else RunStore(LAEUFE, kunde.name)
     store.save_step("kunde_pfad", {"pfad": str(kunde_pfad)})
@@ -70,6 +94,7 @@ def freigeben(laufordner: str):
     print("Freigegeben. Senden mit: python -m pipeline senden", laufordner)
 
 def senden(laufordner: str):
+    _brauche_env("INSTANTLY_API_KEY")
     store = RunStore.resume(laufordner)
     if not is_approved(store):
         sys.exit("Keine Freigabe fuer diesen Lauf (FREIGABE.txt fehlt).")
@@ -85,6 +110,7 @@ def senden(laufordner: str):
     print(f"Kampagne {campaign_id} pausiert angelegt - Aktivierung von Hand in Instantly.")
 
 def main():
+    lade_dotenv()
     parser = argparse.ArgumentParser(prog="pipeline")
     sub = parser.add_subparsers(dest="befehl", required=True)
     p_lauf = sub.add_parser("lauf")

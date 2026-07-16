@@ -1,4 +1,4 @@
-import json
+import json, os
 from datetime import datetime, timedelta
 import pytest
 import pipeline.__main__ as cli
@@ -7,7 +7,8 @@ from pipeline.__main__ import senden
 from pipeline.models import Lead
 from pipeline.run_store import RunStore
 
-def test_senden_verweigert_ohne_freigabe(tmp_path):
+def test_senden_verweigert_ohne_freigabe(tmp_path, monkeypatch):
+    monkeypatch.setenv("INSTANTLY_API_KEY", "test-key")
     store = RunStore(tmp_path, "Demo")
     store.save_step("pruefung_ok", [])
     with pytest.raises(SystemExit, match="Freigabe"):
@@ -15,6 +16,7 @@ def test_senden_verweigert_ohne_freigabe(tmp_path):
 
 def test_senden_verweigert_fremde_empfaenger(tmp_path, monkeypatch):
     # Aufbau: freigegebener Lauf, aber ein Empfaenger fehlt in test_empfaenger
+    monkeypatch.setenv("INSTANTLY_API_KEY", "test-key")
     from pipeline.approval import approve
     store = RunStore(tmp_path, "Demo")
     store.save_step("kunde_pfad", {"pfad": "kunden/demo-gmbh.yaml"})
@@ -22,6 +24,37 @@ def test_senden_verweigert_fremde_empfaenger(tmp_path, monkeypatch):
                                      "mail_1": "M", "follow_up_1": "F", "follow_up_2": "F"}])
     approve(store)
     with pytest.raises(SystemExit, match="Test-Empfaenger"):
+        senden(store.run_dir)
+
+def test_laedt_dotenv_ohne_vorhandene_variablen_zu_ueberschreiben(tmp_path, monkeypatch):
+    monkeypatch.delenv("MEINE_TEST_VAR", raising=False)
+    monkeypatch.setenv("SCHON_GESETZT", "alt")
+    env_datei = tmp_path / ".env"
+    env_datei.write_text(
+        "# Kommentar\n\nMEINE_TEST_VAR=neu\nSCHON_GESETZT=ueberschrieben\n", encoding="utf-8")
+    cli.lade_dotenv(env_datei)
+    assert os.environ["MEINE_TEST_VAR"] == "neu"
+    assert os.environ["SCHON_GESETZT"] == "alt"
+
+def test_lade_dotenv_ohne_datei_tut_nichts(tmp_path):
+    cli.lade_dotenv(tmp_path / "gibts-nicht.env")  # darf nicht werfen
+
+def test_lauf_bricht_ohne_apollo_key_ab(monkeypatch):
+    monkeypatch.delenv("APOLLO_API_KEY", raising=False)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
+    with pytest.raises(SystemExit, match="APOLLO_API_KEY"):
+        cli.lauf("kunden/demo-gmbh.yaml", 10, None)
+
+def test_lauf_bricht_ohne_anthropic_key_ab(monkeypatch):
+    monkeypatch.setenv("APOLLO_API_KEY", "x")
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    with pytest.raises(SystemExit, match="ANTHROPIC_API_KEY"):
+        cli.lauf("kunden/demo-gmbh.yaml", 10, None)
+
+def test_senden_bricht_ohne_instantly_key_ab(tmp_path, monkeypatch):
+    monkeypatch.delenv("INSTANTLY_API_KEY", raising=False)
+    store = RunStore(tmp_path, "Demo")
+    with pytest.raises(SystemExit, match="INSTANTLY_API_KEY"):
         senden(store.run_dir)
 
 class _FakeApolloSource:
@@ -67,6 +100,7 @@ def test_lauf_personalisiert_end_zu_ende_und_dedupe_greift_erst_im_naechsten_lau
     monkeypatch.setattr(cli, "LAEUFE", tmp_path)
     monkeypatch.setattr(run_store_modul, "datetime", _FakeDatetime)
     monkeypatch.setenv("APOLLO_API_KEY", "test-key")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
 
     cli.lauf("kunden/demo-gmbh.yaml", 10, None)
 

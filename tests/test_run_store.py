@@ -1,4 +1,10 @@
+import pytest
 from pipeline.run_store import RunStore
+
+def test_resume_wirft_fehler_wenn_ordner_fehlt(tmp_path):
+    fehlend = tmp_path / "gibts-nicht"
+    with pytest.raises(ValueError, match="existiert nicht"):
+        RunStore.resume(fehlend)
 
 def test_speichert_und_laedt_schritt(tmp_path):
     store = RunStore(tmp_path, "Demo GmbH")

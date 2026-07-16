@@ -96,9 +96,12 @@ class InstantlySender:
                 f"Instantly antwortet mit {antwort.status_code} auf {url}: {ausschnitt}")
         return antwort
 
-    def create_campaign(self, kunde, texte_pro_lead) -> str:
-        if not texte_pro_lead:
-            raise ValueError("Keine freigegebenen Texte - keine Kampagne.")
+    def create_campaign(self, kunde) -> str:
+        """Legt nur die (pausierte) Kampagne an - ohne Leads. Getrennt von
+        import_leads(), damit "senden" nach einem Fehler beim Lead-Import
+        nicht versehentlich eine zweite Kampagne anlegt: der Laufordner
+        merkt sich die campaign_id nach diesem Schritt und ein
+        Wiederanlauf ruft nur noch import_leads() erneut auf."""
         tage = kunde.follow_up_tage
         sequenz_schritte = [
             {"type": "email", "delay": 0,
@@ -128,10 +131,17 @@ class InstantlySender:
             "daily_limit": 20,
         }
         antwort = self._post(f"{BASIS}/campaigns", kampagne)
-        campaign_id = antwort.json()["id"]
+        return antwort.json()["id"]
+
+    def import_leads(self, campaign_id: str, texte_pro_lead):
+        """Importiert die Leads in eine bereits angelegte Kampagne. Eigener
+        Guard hier (zusaetzlich zum Guard in "senden"), damit ein direkter
+        Aufruf dieser Methode nie versehentlich einen leeren Import an
+        Instantly schickt."""
+        if not texte_pro_lead:
+            raise ValueError("Keine freigegebenen Texte - kein Lead-Import.")
         leads = [{"email": t["email"],
                   "custom_variables": {k: t[k] for k in
                                        ("betreff", "mail_1", "follow_up_1", "follow_up_2")}}
                  for t in texte_pro_lead]
         self._post(f"{BASIS}/leads/add", {"campaign_id": campaign_id, "leads": leads})
-        return campaign_id

@@ -6,6 +6,19 @@ import pipeline.run_store as run_store_modul
 from pipeline.__main__ import senden
 from pipeline.models import Lead
 from pipeline.run_store import RunStore
+from pipeline.senders.instantly import InstantlySender
+from pipeline.approval import approve
+from tests.test_apollo import FakeSession, FakeResponse
+
+_PRUEFUNG_OK = [{"email": "test1@example.com", "betreff": "B", "mail_1": "M",
+                "follow_up_1": "F1", "follow_up_2": "F2"}]
+
+def _freigegebener_lauf(tmp_path):
+    store = RunStore(tmp_path, "Demo")
+    store.save_step("kunde_pfad", {"pfad": "kunden/demo-gmbh.yaml"})
+    store.save_step("pruefung_ok", _PRUEFUNG_OK)
+    approve(store)
+    return store
 
 def test_senden_verweigert_ohne_freigabe(tmp_path, monkeypatch):
     monkeypatch.setenv("INSTANTLY_API_KEY", "test-key")
@@ -56,6 +69,44 @@ def test_senden_bricht_ohne_instantly_key_ab(tmp_path, monkeypatch):
     store = RunStore(tmp_path, "Demo")
     with pytest.raises(SystemExit, match="INSTANTLY_API_KEY"):
         senden(store.run_dir)
+
+def test_senden_verweigert_erneuten_versand_nach_erfolgreichem_lauf(tmp_path, monkeypatch):
+    monkeypatch.setenv("INSTANTLY_API_KEY", "test-key")
+    store = _freigegebener_lauf(tmp_path)
+    store.save_step("versand_komplett", {"campaign_id": "camp-9"})
+    with pytest.raises(SystemExit, match="camp-9"):
+        senden(store.run_dir)
+
+def test_senden_wiederholt_nach_fehlgeschlagenem_lead_import_ohne_neue_kampagne(
+        tmp_path, monkeypatch):
+    monkeypatch.setenv("INSTANTLY_API_KEY", "test-key")
+    store = _freigegebener_lauf(tmp_path)
+
+    # Erster Versuch: Kampagne wird angelegt, aber der Lead-Import scheitert
+    # (z.B. voruebergehender Instantly-Fehler).
+    fehlgeschlagene_session = FakeSession([
+        FakeResponse(200, {"id": "camp-1"}),
+        FakeResponse(500, {}, text="Server-Fehler"),
+    ])
+    monkeypatch.setattr(
+        cli, "InstantlySender",
+        lambda api_key: InstantlySender(api_key, session=fehlgeschlagene_session))
+    with pytest.raises(RuntimeError):
+        cli.senden(store.run_dir)
+    versand = store.load_step("versand")
+    assert versand["campaign_id"] == "camp-1"
+    assert not store.step_done("versand_komplett")
+
+    # Zweiter Versuch: dieselbe campaign_id wird wiederverwendet - kein
+    # zweiter Kampagnen-Anlage-Aufruf, nur der Lead-Import laeuft erneut.
+    erfolgreiche_session = FakeSession([FakeResponse(200, {})])
+    monkeypatch.setattr(
+        cli, "InstantlySender",
+        lambda api_key: InstantlySender(api_key, session=erfolgreiche_session))
+    cli.senden(store.run_dir)
+    assert len(erfolgreiche_session.aufrufe) == 1  # nur Lead-Import, keine neue Kampagne
+    versand_komplett = store.load_step("versand_komplett")
+    assert versand_komplett["campaign_id"] == "camp-1"
 
 class _FakeApolloSource:
     """Ersetzt ApolloSource: liefert 2 feste Leads statt echter API-Aufrufe."""

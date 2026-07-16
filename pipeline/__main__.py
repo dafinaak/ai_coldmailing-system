@@ -98,15 +98,31 @@ def senden(laufordner: str):
     store = RunStore.resume(laufordner)
     if not is_approved(store):
         sys.exit("Keine Freigabe fuer diesen Lauf (FREIGABE.txt fehlt).")
+    if store.step_done("versand_komplett"):
+        campaign_id = store.load_step("versand_komplett")["campaign_id"]
+        sys.exit(f"Kampagne bereits angelegt: {campaign_id}")
     kunde = load_kunde(store.load_step("kunde_pfad")["pfad"])
     texte = store.load_step("pruefung_ok")
     erlaubt = {e.strip().lower() for e in kunde.test_empfaenger}
     fremde = [t["email"] for t in texte if t["email"] not in erlaubt]
     if fremde:
         sys.exit(f"Abbruch: Empfaenger nicht in Test-Empfaenger-Liste: {fremde}")
+    if not texte:
+        sys.exit("Abbruch: keine freigegebenen Texte zum Versenden.")
+
     sender = InstantlySender(os.environ["INSTANTLY_API_KEY"])
-    campaign_id = sender.create_campaign(kunde, texte)
-    store.save_step("versand", {"campaign_id": campaign_id})
+    if store.step_done("versand"):
+        # Kampagne wurde in einem frueheren, abgebrochenen Lauf schon
+        # angelegt (z.B. weil der Lead-Import scheiterte) - dieselbe
+        # campaign_id wiederverwenden statt eine zweite Kampagne anzulegen.
+        campaign_id = store.load_step("versand")["campaign_id"]
+        print(f"Kampagne {campaign_id} bereits angelegt - importiere Leads erneut.")
+    else:
+        campaign_id = sender.create_campaign(kunde)
+        store.save_step("versand", {"campaign_id": campaign_id})
+
+    sender.import_leads(campaign_id, texte)
+    store.save_step("versand_komplett", {"campaign_id": campaign_id})
     print(f"Kampagne {campaign_id} pausiert angelegt - Aktivierung von Hand in Instantly.")
 
 def main():

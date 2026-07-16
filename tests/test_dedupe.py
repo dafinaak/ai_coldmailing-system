@@ -40,3 +40,15 @@ def test_sperrliste_greift_auch_ohne_schema(tmp_path):
     behalten, verworfen = dedupe([lead], tmp_path, sperrliste=["*.bund.de"])
     assert behalten == []
     assert verworfen[0]["grund"] == "Domain auf Sperrliste"
+
+def test_eigener_lauf_zaehlt_nicht_als_frueherer_lauf(tmp_path):
+    # Regression: CLI speichert leads.json im aktuellen Laufordner, BEVOR
+    # dedupe laeuft. Ohne Ausnahme fuer den eigenen Lauf wuerde dedupe jeden
+    # Lead als "bereits in frueherem Lauf angeschrieben" verwerfen.
+    aktueller_lauf = tmp_path / "20260101-000000"
+    aktueller_lauf.mkdir()
+    (aktueller_lauf / "leads.json").write_text(
+        json.dumps([{"email": "a@x.de"}]), encoding="utf-8")
+    behalten, verworfen = dedupe([_lead("a@x.de")], tmp_path, aktueller_lauf=aktueller_lauf)
+    assert [l.email for l in behalten] == ["a@x.de"]
+    assert verworfen == []

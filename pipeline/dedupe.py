@@ -6,9 +6,11 @@ from urllib.parse import urlparse
 # E-Mail-Verifizierung (z.B. MillionVerifier) haengen. v1 nutzt die
 # eingebaute Pruefung von Instantly beim Import.
 
-def _bekannte_emails(kunde_laeufe_dir) -> set:
+def _bekannte_emails(kunde_laeufe_dir, ausser=None) -> set:
     bekannte = set()
     for datei in Path(kunde_laeufe_dir).glob("*/leads.json"):
+        if ausser is not None and datei.parent == Path(ausser):
+            continue  # eigener, gerade laufender Lauf zaehlt nicht als "frueher"
         for eintrag in json.loads(datei.read_text(encoding="utf-8")):
             bekannte.add(eintrag["email"].strip().lower())
     return bekannte
@@ -30,8 +32,8 @@ def _gesperrt(lead, sperrliste) -> bool:
                 return True
     return False
 
-def dedupe(leads, kunde_laeufe_dir, sperrliste=()):
-    bekannte = _bekannte_emails(kunde_laeufe_dir)
+def dedupe(leads, kunde_laeufe_dir, sperrliste=(), aktueller_lauf=None):
+    bekannte = _bekannte_emails(kunde_laeufe_dir, ausser=aktueller_lauf)
     gesehen, behalten, verworfen = set(), [], []
     for lead in leads:
         if _gesperrt(lead, sperrliste):

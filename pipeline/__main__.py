@@ -24,14 +24,15 @@ def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None):
 
     if not store.step_done("leads"):
         quelle = ApolloSource(os.environ["APOLLO_API_KEY"])
-        leads = quelle.search(kunde.zielgruppe, limit)
-        store.save_step("leads", [l.__dict__ for l in leads])
+        store.save_step("leads",
+                        [l.__dict__ for l in quelle.search(kunde.zielgruppe, limit)])
     leads = [Lead(**{k: d[k] for k in ("first_name", "last_name", "email",
                                         "company", "title", "website", "source")})
              for d in store.load_step("leads")]
 
     if not store.step_done("dedupe"):
-        behalten, verworfen = dedupe_leads(leads, store.run_dir.parent, kunde.sperrliste)
+        behalten, verworfen = dedupe_leads(leads, store.run_dir.parent, kunde.sperrliste,
+                                           aktueller_lauf=store.run_dir)
         store.save_step("dedupe", {"behalten": [l.__dict__ for l in behalten],
                                    "verworfen": verworfen})
     stand = store.load_step("dedupe")

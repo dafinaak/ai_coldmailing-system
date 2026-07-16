@@ -33,7 +33,8 @@
 ### Task 1: Projektgerüst
 
 **Files:**
-- Create: `pipeline/__init__.py`, `tests/test_scaffold.py`, `requirements.txt`, `.gitignore`, `.env.example`
+- Create: `pipeline/__init__.py`, `tests/__init__.py` (leer — macht `tests` importierbar, spätere Tasks importieren Test-Helfer quer), `tests/test_scaffold.py`, `requirements.txt`, `.env.example`
+- Modify: `.gitignore` (existiert bereits mit `*.har`-Eintrag — die Einträge `.env`, `__pycache__/`, `.venv/`, `laeufe/` sind dort schon vorhanden; prüfen, nicht doppeln)
 
 **Interfaces:**
 - Produces: importierbares Paket `pipeline`, lauffähiges `pytest`.

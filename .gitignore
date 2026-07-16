@@ -1,0 +1,8 @@
+# Mitschnitte/Rohdaten mit Zugangsdaten und echten Personendaten - nie committen
+*.har
+
+# Ab Bau-Phase (siehe Plan Task 1)
+.env
+__pycache__/
+.venv/
+laeufe/

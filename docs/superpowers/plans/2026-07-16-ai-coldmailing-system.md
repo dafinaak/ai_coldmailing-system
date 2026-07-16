@@ -15,7 +15,7 @@
 - Niemals echte Empfänger: Versand ausschließlich an Adressen aus der Test-Empfänger-Liste der Kunden-Konfiguration. In v1 gibt es keinen Code-Pfad, der andere Empfänger aktiviert.
 - Kein Instantly-Schreibzugriff ohne Freigabe-Datei im Laufordner (Task 8), und vor dem allerersten Schreibzugriff aufs geteilte Team-Konto kurz Bescheid geben.
 - API-Schlüssel nur in `.env` (steht in `.gitignore`), nie im Code, nie committen.
-- Sprache im Code: englische Bezeichner, deutsche Doku/Prompts.
+- Sprache im Code: englische Bezeichner für Technik-Allgemeines; deutsche Fachbegriffe der Domäne (Kunde, Sperrliste, Testnamen, CLI-Befehle wie `lauf`/`freigeben`/`senden`) sind ausdrücklich gewollt. Doku und Prompts auf Deutsch.
 - Jeder Task endet mit grünem `pytest` und einem Commit.
 - KI-Modell kommt aus der Umgebungsvariable `KI_MODELL` (Standard `claude-sonnet-5`) — nie fest verdrahten.
 - Apollo- und Instantly-Payloads werden im jeweiligen Task zuerst gegen die Live-Doku verifiziert (docs.apollo.io, developer.instantly.ai) — die Codeblöcke hier sind der Ausgangspunkt, die Doku ist die Wahrheit.
@@ -311,6 +311,8 @@ git commit -m "feat: Laufordner mit Wiederaufnahme"
 **Interfaces:**
 - Consumes: `Lead` aus Task 2.
 - Produces: `ApolloSource(api_key, session=None)` mit `search(zielgruppe: dict, limit: int) -> list[Lead]`. Wiederholt bei HTTP 429/5xx bis zu 3-mal mit wachsender Wartezeit. Leads ohne E-Mail werden übersprungen.
+
+**Nachtrag (Erkenntnis aus der Live-Doku, 16.07.2026):** Die People-Search-Antwort von Apollo enthält keine E-Mail-Adressen (und der Suchpfad heißt `mixed_people/api_search`). `search()` reichert die Treffer deshalb in einem zweiten Schritt über den Enrichment-Endpoint (`POST /api/v1/people/bulk_match`, bis zu 10 Personen je Aufruf, verbraucht die eingeplanten Export-Credits) an und mappt erst danach auf `Lead`. Personen, für die auch das Enrichment keine E-Mail liefert, werden wie gehabt übersprungen und im Bericht gezählt.
 
 - [ ] **Step 1: Live-Doku prüfen**
 

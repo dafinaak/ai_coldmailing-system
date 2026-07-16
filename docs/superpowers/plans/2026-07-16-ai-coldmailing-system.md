@@ -641,6 +641,108 @@ git commit -m "feat: Webseiten-Text, KI-Anbindung und Personalisierung"
 
 ---
 
+### Task 6b: Angebots-Analyse der eigenen Webseite
+
+Hintergrund (interne Notiz 16.07.2026): Das System soll neben der Lead-Webseite auch "das eigene Angebot" analysieren. Dieser Baustein liest die Webseite des Auftraggebers und füllt die Felder `angebot` und `tonalitaet` der Kunden-Konfiguration als Entwurf vor — aber nur, wenn sie leer sind; Handgeschriebenes wird nie überschrieben.
+
+**Files:**
+- Create: `pipeline/offer.py`, `prompts/angebot.md`, `tests/test_offer.py`
+
+**Interfaces:**
+- Consumes: `fetch_text` und `KI` aus Task 6.
+- Produces: `draft_offer(website_text: str, ki) -> dict` (Schlüssel `angebot`, `tonalitaet`; wirft `ValueError` bei unvollständiger KI-Antwort); `uebernehmen(kunde_pfad, entwurf)` (füllt nur leere Felder der YAML). Eigener Runner: `python -m pipeline.offer <url> <kunde.yaml>` — unabhängig vom Haupt-CLI aus Task 10.
+
+- [ ] **Step 1: Fehlschlagende Tests schreiben**
+
+`tests/test_offer.py`:
+```python
+import json, yaml
+from pipeline.offer import draft_offer, uebernehmen
+from tests.test_personalize import FakeKI
+
+def test_entwurf_liefert_beide_felder():
+    ki = FakeKI(json.dumps({"angebot": "A", "tonalitaet": "T"}))
+    assert draft_offer("Wir bauen KI-Automationen.", ki) == {"angebot": "A", "tonalitaet": "T"}
+
+def test_uebernehmen_fuellt_nur_leere_felder(tmp_path):
+    p = tmp_path / "k.yaml"
+    p.write_text("name: X\nangebot:\ntonalitaet: bestehend\n", encoding="utf-8")
+    uebernehmen(p, {"angebot": "Neu", "tonalitaet": "Anders"})
+    daten = yaml.safe_load(p.read_text(encoding="utf-8"))
+    assert daten["angebot"] == "Neu" and daten["tonalitaet"] == "bestehend"
+```
+
+- [ ] **Step 2: Fehlschlag sehen** — Run: `.venv/bin/python -m pytest tests/test_offer.py -v` — Expected: FAIL
+
+- [ ] **Step 3: Implementieren**
+
+`prompts/angebot.md`:
+```markdown
+Hier ist der Text einer Firmen-Webseite:
+---
+{webseiten_text}
+---
+Leite daraus ab:
+1. angebot: 2–4 Sätze — was bietet diese Firma wem an, mit welchem
+   Nutzen? Nüchtern, konkret, keine Werbesprache. Erfinde nichts.
+2. tonalitaet: 3–6 Stichworte, wie diese Firma klingen sollte.
+Antworte NUR mit JSON: {{"angebot": ..., "tonalitaet": ...}}
+```
+
+`pipeline/offer.py`:
+```python
+import json, re, sys
+from pathlib import Path
+import yaml
+from pipeline.website import fetch_text
+from pipeline.ki import KI
+
+PROMPT_DATEI = Path(__file__).parent.parent / "prompts" / "angebot.md"
+SYSTEM = ("Du analysierst Firmen-Webseiten und formulierst "
+          "Angebots-Beschreibungen. Antworte nur mit JSON.")
+FELDER = ["angebot", "tonalitaet"]
+
+def draft_offer(website_text: str, ki) -> dict:
+    prompt = PROMPT_DATEI.read_text(encoding="utf-8").format(
+        webseiten_text=website_text or "(leer)")
+    roh = ki.frage(SYSTEM, prompt)
+    treffer = re.search(r"\{.*\}", roh, re.DOTALL)
+    daten = json.loads(treffer.group(0)) if treffer else {}
+    if any(not daten.get(k) for k in FELDER):
+        raise ValueError("KI-Entwurf unvollstaendig")
+    return {k: daten[k] for k in FELDER}
+
+def uebernehmen(kunde_pfad, entwurf: dict):
+    pfad = Path(kunde_pfad)
+    daten = yaml.safe_load(pfad.read_text(encoding="utf-8")) or {}
+    for feld in FELDER:
+        if not daten.get(feld):
+            daten[feld] = entwurf[feld]
+    pfad.write_text(yaml.safe_dump(daten, allow_unicode=True, sort_keys=False),
+                    encoding="utf-8")
+
+def main():
+    url, kunde_pfad = sys.argv[1], sys.argv[2]
+    entwurf = draft_offer(fetch_text(url), KI())
+    uebernehmen(kunde_pfad, entwurf)
+    print("Entwurf eingetragen (nur leere Felder):",
+          json.dumps(entwurf, ensure_ascii=False, indent=2))
+
+if __name__ == "__main__":
+    main()
+```
+
+- [ ] **Step 4: Tests bestehen sehen** — Run: `.venv/bin/python -m pytest -v` — Expected: alle PASS
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add pipeline/offer.py prompts/angebot.md tests/test_offer.py
+git commit -m "feat: Angebots-Analyse der eigenen Webseite als Konfig-Entwurf"
+```
+
+---
+
 ### Task 7: Qualitätsprüfung mit Nacharbeit-Liste
 
 **Files:**
@@ -1090,6 +1192,6 @@ Kein Code — das ist der Beweis aus dem Design. **Vorab-Okay von Leonard nötig
 
 ## Selbst-Review (nach dem Schreiben geprüft)
 
-- Spec-Abdeckung: Lead-Quelle (T4), Mehrquellen-Format (T2/T4-Schnittstelle), Dedupe+Verifizierungs-Erweiterungspunkt (T5), Personalisierung+Prompts (T6), Prüfung+Nacharbeit (T7), Freigabe (T8), Versand+Follow-ups (T9), Bericht+Wiederaufnahme (T3/T10), Testnachweis (T11). Keine Lücke gefunden.
+- Spec-Abdeckung: Lead-Quelle (T4), Mehrquellen-Format (T2/T4-Schnittstelle), Dedupe+Verifizierungs-Erweiterungspunkt (T5), Personalisierung+Prompts (T6), Angebots-Analyse der eigenen Webseite (T6b, aus interner Notiz nachgezogen), Prüfung+Nacharbeit (T7), Freigabe (T8), Versand+Follow-ups (T9), Bericht+Wiederaufnahme (T3/T10), Testnachweis (T11). Keine Lücke gefunden.
 - Typ-Konsistenz: `RunStore`-Methoden, `Lead`-Felder und Textpaket-Schlüssel (`betreff, mail_1, follow_up_1, follow_up_2`) sind in T3–T10 einheitlich benannt.
 - Bekannte bewusste Abkürzung: Der Test-Lauf biegt die Lead-Liste von Hand auf Test-Empfänger um (T11 Step 3) — akzeptiert für v1, die harte Sperre in `senden` schützt unabhängig davon.

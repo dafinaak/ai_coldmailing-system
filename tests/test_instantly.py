@@ -1,3 +1,4 @@
+import pytest
 from pipeline.senders.instantly import InstantlySender
 from tests.test_apollo import FakeSession, FakeResponse
 from tests.test_personalize import KUNDE
@@ -33,3 +34,19 @@ def test_weigert_sich_ohne_texte():
         assert False, "haette ValueError werfen muessen"
     except ValueError:
         pass
+
+def test_kampagnen_fehler_stoppt_den_lauf_laut():
+    session = FakeSession([FakeResponse(500, {})])
+    sender = InstantlySender("key", session=session)
+    with pytest.raises(RuntimeError, match="500"):
+        sender.create_campaign(KUNDE, TEXTE)
+    # Kein zweiter Aufruf (Lead-Import) nach einem fehlgeschlagenen
+    # Kampagnen-Anlegen.
+    assert len(session.aufrufe) == 1
+
+def test_lead_import_fehler_stoppt_den_lauf_laut():
+    session = FakeSession([FakeResponse(200, {"id": "camp-1"}),
+                           FakeResponse(422, {})])
+    sender = InstantlySender("key", session=session)
+    with pytest.raises(RuntimeError, match="422"):
+        sender.create_campaign(KUNDE, TEXTE)

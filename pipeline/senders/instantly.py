@@ -84,6 +84,17 @@ class InstantlySender:
         self.headers = {"Authorization": f"Bearer {api_key}",
                         "Content-Type": "application/json"}
 
+    def _post(self, url, payload):
+        """Postet und scheitert laut statt leise (wie apollo.py, aber ohne
+        Wiederholung: ein fehlgeschlagenes Kampagnen-Setup soll den Lauf
+        sofort stoppen statt mit unvollstaendigen Daten weiterzumachen -
+        der Mensch behebt die Ursache und startet "senden" danach neu)."""
+        antwort = self.session.post(url, headers=self.headers, json=payload, timeout=60)
+        if antwort.status_code >= 400:
+            raise RuntimeError(
+                f"Instantly antwortet mit {antwort.status_code} auf {url}")
+        return antwort
+
     def create_campaign(self, kunde, texte_pro_lead) -> str:
         if not texte_pro_lead:
             raise ValueError("Keine freigegebenen Texte - keine Kampagne.")
@@ -115,13 +126,11 @@ class InstantlySender:
             # zu Kampagnen- vs. Postfach-Ebene).
             "daily_limit": 20,
         }
-        antwort = self.session.post(f"{BASIS}/campaigns", headers=self.headers,
-                                    timeout=30, json=kampagne)
+        antwort = self._post(f"{BASIS}/campaigns", kampagne)
         campaign_id = antwort.json()["id"]
         leads = [{"email": t["email"],
                   "custom_variables": {k: t[k] for k in
                                        ("betreff", "mail_1", "follow_up_1", "follow_up_2")}}
                  for t in texte_pro_lead]
-        self.session.post(f"{BASIS}/leads/add", headers=self.headers, timeout=60,
-                          json={"campaign_id": campaign_id, "leads": leads})
+        self._post(f"{BASIS}/leads/add", {"campaign_id": campaign_id, "leads": leads})
         return campaign_id

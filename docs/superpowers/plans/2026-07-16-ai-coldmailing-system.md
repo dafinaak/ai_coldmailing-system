@@ -173,7 +173,7 @@ class Lead:
 
 `pipeline/config.py`:
 ```python
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import yaml
 
 PFLICHTFELDER = ["name", "zielgruppe", "angebot", "tonalitaet",
@@ -188,6 +188,7 @@ class Kunde:
     absender: str
     follow_up_tage: list
     test_empfaenger: list
+    sperrliste: list = field(default_factory=list)  # Domains, nie anschreiben
 
 def load_kunde(path) -> Kunde:
     with open(path, encoding="utf-8") as f:
@@ -195,7 +196,16 @@ def load_kunde(path) -> Kunde:
     fehlend = [k for k in PFLICHTFELDER if k not in daten]
     if fehlend:
         raise ValueError(f"Pflichtfelder fehlen in {path}: {', '.join(fehlend)}")
-    return Kunde(**{k: daten[k] for k in PFLICHTFELDER})
+    return Kunde(**{k: daten[k] for k in PFLICHTFELDER},
+                 sperrliste=daten.get("sperrliste") or [])
+```
+
+Zusätzlicher Test in `tests/test_config.py` (Sperrliste ist optional):
+```python
+def test_sperrliste_ist_optional(tmp_path):
+    p = tmp_path / "kunde.yaml"
+    p.write_text(GUELTIG, encoding="utf-8")
+    assert load_kunde(p).sperrliste == []
 ```
 
 `kunden/demo-gmbh.yaml`: exakt der Inhalt der Konstante `GUELTIG` aus dem Test (ohne die umschließenden Anführungszeichen).
@@ -402,14 +412,14 @@ git commit -m "feat: Apollo-Quelle mit Wiederholungslogik"
 
 ---
 
-### Task 5: Dubletten aussortieren
+### Task 5: Dubletten aussortieren und Sperrliste
 
 **Files:**
 - Create: `pipeline/dedupe.py`, `tests/test_dedupe.py`
 
 **Interfaces:**
-- Consumes: `list[Lead]`, Kundenordner `laeufe/<kunde-slug>/` mit früheren Läufen (deren `leads.json`).
-- Produces: `dedupe(leads, kunde_laeufe_dir) -> tuple[list[Lead], list[dict]]` — erst Duplikate innerhalb der Liste (per E-Mail), dann gegen alle `leads.json` früherer Läufe. Zweiter Rückgabewert: verworfene als `{"email": ..., "grund": ...}` für den Bericht. Hier sitzt auch der markierte Erweiterungspunkt für externe Verifizierung (Kommentar im Code genügt, kein Bau in v1).
+- Consumes: `list[Lead]`, Kundenordner `laeufe/<kunde-slug>/` mit früheren Läufen (deren `leads.json`), `kunde.sperrliste`.
+- Produces: `dedupe(leads, kunde_laeufe_dir, sperrliste=()) -> tuple[list[Lead], list[dict]]` — Prüf-Reihenfolge: (1) Domain auf Sperrliste (E-Mail-Domain und Webseiten-Domain, Wildcard `*.beispiel.de` erlaubt — Vorbild: die Wholix-Sperrliste des Teams mit eigener Agentur, Partnern, `*.bund.de`), (2) Duplikate innerhalb der Liste (per E-Mail), (3) gegen alle `leads.json` früherer Läufe. Zweiter Rückgabewert: verworfene als `{"email": ..., "grund": ...}` für den Bericht. Hier sitzt auch der markierte Erweiterungspunkt für externe Verifizierung (Kommentar im Code genügt, kein Bau in v1).
 
 - [ ] **Step 1: Fehlschlagenden Test schreiben**
 
@@ -435,6 +445,14 @@ def test_entfernt_bekannte_aus_frueheren_laeufen(tmp_path):
     behalten, verworfen = dedupe([_lead("a@x.de"), _lead("neu@x.de")], tmp_path)
     assert [l.email for l in behalten] == ["neu@x.de"]
     assert verworfen[0]["grund"] == "bereits in frueherem Lauf angeschrieben"
+
+def test_sperrliste_blockt_domains_auch_mit_wildcard(tmp_path):
+    leads = [_lead("chef@digitaldiamonds.agency"), _lead("amt@stadt.bund.de"),
+             _lead("ok@neu.de")]
+    behalten, verworfen = dedupe(leads, tmp_path,
+                                 sperrliste=["digitaldiamonds.agency", "*.bund.de"])
+    assert [l.email for l in behalten] == ["ok@neu.de"]
+    assert all(v["grund"] == "Domain auf Sperrliste" for v in verworfen)
 ```
 
 - [ ] **Step 2: Fehlschlag sehen** — Run: `.venv/bin/python -m pytest tests/test_dedupe.py -v` — Expected: FAIL
@@ -445,6 +463,7 @@ def test_entfernt_bekannte_aus_frueheren_laeufen(tmp_path):
 ```python
 import json
 from pathlib import Path
+from urllib.parse import urlparse
 
 # Erweiterungspunkt: Hier koennte nach dem Dedupe eine externe
 # E-Mail-Verifizierung (z.B. MillionVerifier) haengen. v1 nutzt die
@@ -457,11 +476,27 @@ def _bekannte_emails(kunde_laeufe_dir) -> set:
             bekannte.add(eintrag["email"].strip().lower())
     return bekannte
 
-def dedupe(leads, kunde_laeufe_dir):
+def _gesperrt(lead, sperrliste) -> bool:
+    domains = {lead.email.split("@", 1)[-1]}
+    if lead.website:
+        netloc = urlparse(lead.website).netloc.lower()
+        domains.add(netloc[4:] if netloc.startswith("www.") else netloc)
+    for muster in sperrliste:
+        muster = muster.strip().lower()
+        for domain in domains:
+            if muster.startswith("*.") and domain.endswith(muster[1:]):
+                return True
+            if domain == muster:
+                return True
+    return False
+
+def dedupe(leads, kunde_laeufe_dir, sperrliste=()):
     bekannte = _bekannte_emails(kunde_laeufe_dir)
     gesehen, behalten, verworfen = set(), [], []
     for lead in leads:
-        if lead.email in gesehen:
+        if _gesperrt(lead, sperrliste):
+            verworfen.append({"email": lead.email, "grund": "Domain auf Sperrliste"})
+        elif lead.email in gesehen:
             verworfen.append({"email": lead.email, "grund": "doppelt in dieser Liste"})
         elif lead.email in bekannte:
             verworfen.append({"email": lead.email,
@@ -908,7 +943,7 @@ git commit -m "feat: Freigabe-Schritt mit Vorschau"
 
 **Interfaces:**
 - Consumes: `Kunde`, Textpakete `{email, betreff, mail_1, follow_up_1, follow_up_2}`.
-- Produces: `InstantlySender(api_key, session=None)` mit `create_campaign(kunde, texte_pro_lead) -> str` (Kampagnen-ID). Die Kampagne wird **pausiert** angelegt und NIE per Code aktiviert — aktiviert wird von Hand in der Instantly-Oberfläche. Personalisierte Texte laufen als Custom-Variablen pro Lead (`betreff`, `mail_1`, …), die Sequenz-Vorlagen referenzieren sie mit `{{mail_1}}` usw.; Follow-up-Abstände kommen aus `kunde.follow_up_tage`.
+- Produces: `InstantlySender(api_key, session=None)` mit `create_campaign(kunde, texte_pro_lead) -> str` (Kampagnen-ID). Die Kampagne wird **pausiert** angelegt und NIE per Code aktiviert — aktiviert wird von Hand in der Instantly-Oberfläche. Personalisierte Texte laufen als Custom-Variablen pro Lead (`betreff`, `mail_1`, …), die Sequenz-Vorlagen referenzieren sie mit `{{mail_1}}` usw.; Follow-up-Abstände kommen aus `kunde.follow_up_tage`. Schutz-Voreinstellungen wie bei Wholix beobachtet: **max. 20 Mails/Tag pro Postfach, Versandfenster Mo–Fr 08–19 Uhr Europe/Berlin** — exakte Feldnamen dafür laut Live-Doku (Step 0) ergänzen.
 
 - [ ] **Step 0: Vorprüfungen (blockierend)**
 
@@ -1093,7 +1128,7 @@ def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None):
              for d in store.load_step("leads")]
 
     if not store.step_done("dedupe"):
-        behalten, verworfen = dedupe_leads(leads, store.run_dir.parent)
+        behalten, verworfen = dedupe_leads(leads, store.run_dir.parent, kunde.sperrliste)
         store.save_step("dedupe", {"behalten": [l.__dict__ for l in behalten],
                                    "verworfen": verworfen})
     stand = store.load_step("dedupe")
@@ -1192,6 +1227,6 @@ Kein Code — das ist der Beweis aus dem Design. **Vorab-Okay von Leonard nötig
 
 ## Selbst-Review (nach dem Schreiben geprüft)
 
-- Spec-Abdeckung: Lead-Quelle (T4), Mehrquellen-Format (T2/T4-Schnittstelle), Dedupe+Verifizierungs-Erweiterungspunkt (T5), Personalisierung+Prompts (T6), Angebots-Analyse der eigenen Webseite (T6b, aus interner Notiz nachgezogen), Prüfung+Nacharbeit (T7), Freigabe (T8), Versand+Follow-ups (T9), Bericht+Wiederaufnahme (T3/T10), Testnachweis (T11). Keine Lücke gefunden.
+- Spec-Abdeckung: Lead-Quelle (T4), Mehrquellen-Format (T2/T4-Schnittstelle), Dedupe+Sperrliste+Verifizierungs-Erweiterungspunkt (T5, Sperrliste aus Wholix-Analyse nachgezogen), Personalisierung+Prompts (T6), Angebots-Analyse der eigenen Webseite (T6b, aus interner Notiz nachgezogen), Prüfung+Nacharbeit (T7), Freigabe (T8), Versand+Follow-ups mit Schutz-Voreinstellungen (T9), Bericht+Wiederaufnahme (T3/T10), Testnachweis (T11). Keine Lücke gefunden.
 - Typ-Konsistenz: `RunStore`-Methoden, `Lead`-Felder und Textpaket-Schlüssel (`betreff, mail_1, follow_up_1, follow_up_2`) sind in T3–T10 einheitlich benannt.
 - Bekannte bewusste Abkürzung: Der Test-Lauf biegt die Lead-Liste von Hand auf Test-Empfänger um (T11 Step 3) — akzeptiert für v1, die harte Sperre in `senden` schützt unabhängig davon.

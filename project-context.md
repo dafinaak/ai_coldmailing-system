@@ -27,10 +27,16 @@ Bewusst NICHT in v1: Antworten-Erkennung/Einsortierung, Reporting.
 - Verstehen, Sparring und Design abgeschlossen; Design von Leonard
   freigegeben (16.07.2026):
   docs/superpowers/specs/2026-07-16-ai-coldmailing-system-design.md
-- Werkzeug-Entscheidungen getroffen (siehe unten), Umsetzungsplan
-  geschrieben: docs/superpowers/plans/2026-07-16-ai-coldmailing-system.md
+- Umsetzungsplan von Leonard freigegeben (16.07.2026), Bau läuft:
+  docs/superpowers/plans/2026-07-16-ai-coldmailing-system.md
 - Jira-Aufgabe: AP-195 (digitaldiamonds.atlassian.net)
-- Freigabe des Umsetzungsplans durch Leonard steht aus.
+- Wholix-Analyse (Screenshots + HAR-Mitschnitt app.wholix.ai.har, liegt
+  lokal, per .gitignore vom Git ausgeschlossen — enthält Sitzungsdaten):
+  bestätigt Vorab-Generierung, Freigabe-Status pro Mail, eigene
+  Outreach-Domain, 20 Mails/Tag/Postfach, Fenster Mo–Fr 8–19 Berlin.
+  Daraus nachgezogen: Domain-Sperrliste in v1 (Plan Task 5).
+- Für v2 vorgemerkt: Antworten-Behandlung (echte Antworten vs.
+  Abwesenheit/Unzustellbar unterscheiden — Wholix kann das, wir noch nicht).
 
 ## Entscheidungen
 - v1-Umfang: Leads + Personalisierung + Versand/Follow-ups (siehe oben).

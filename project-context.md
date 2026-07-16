@@ -2,8 +2,10 @@
 
 ## Worum es geht
 Ein wiederverwendbares KI-Coldmailing-System als eigenes Angebot/Produkt —
-einsetzbar bei mehreren Kunden (Vorbild in der Positionierung: wholix.ai).
-Gebaut wird es hier, betrieben später pro Kunde.
+einsetzbar bei mehreren Kunden. Hintergrund laut interner Notiz (16.07.2026):
+Das Team bezieht diese Leistung derzeit von Wholix (wholix.ai) und will sie
+intern selbst abbilden. Der erste echte "Kunde" im System ist also das
+eigene Unternehmen; danach wird es Kunden angeboten.
 
 Umfang der ersten Version (v1):
 - Leads finden (Firmen + Ansprechpartner beschaffen)

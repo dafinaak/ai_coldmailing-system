@@ -22,20 +22,30 @@ Bewusst NICHT in v1: Antworten-Erkennung/Einsortierung, Reporting.
   angelegten Test-Postfächern.
 
 ## Aktueller Stand
-- Verstehen-Phase abgeschlossen (16.07.2026).
-- Sparring abgeschlossen: Weg 1 "Baukasten" gewählt (16.07.2026).
-- Design im Gespräch freigegeben und dokumentiert:
+- Verstehen, Sparring und Design abgeschlossen; Design von Leonard
+  freigegeben (16.07.2026):
   docs/superpowers/specs/2026-07-16-ai-coldmailing-system-design.md
+- Werkzeug-Entscheidungen getroffen (siehe unten), Umsetzungsplan
+  geschrieben: docs/superpowers/plans/2026-07-16-ai-coldmailing-system.md
 - Jira-Aufgabe: AP-195 (digitaldiamonds.atlassian.net)
-- Schriftliches Review des Design-Dokuments durch Leonard steht aus.
+- Freigabe des Umsetzungsplans durch Leonard steht aus.
 
 ## Entscheidungen
 - v1-Umfang: Leads + Personalisierung + Versand/Follow-ups (siehe oben).
 - Erfolgskriterium: technischer End-zu-End-Durchlauf.
-- Lösungsweg: Baukasten — fertiges Versand-Tool (Instantly/Smartlead) für
-  Zustellbarkeit + eigene KI-Schicht für Recherche und Personalisierung.
+- Lösungsweg: Baukasten — fertiges Versand-Tool für Zustellbarkeit +
+  eigene KI-Schicht für Recherche und Personalisierung.
   Alternativen (Ein-Tool-Weg, alles selbst bauen) bewusst verworfen:
   zu wenig Differenzierung bzw. zu langsam/riskant für v1.
+- Versand-Tool: Instantly — das Team bezahlt es bereits und nutzt es
+  (Vorgabe vom Chef, 16.07.2026). Offen: hat der Team-Tarif API-v2-Zugang?
+- Lead-Quelle v1: nur Apollo; Architektur bleibt mehrquellenfähig.
+- E-Mail-Verifizierung: eingebaute Prüfung von Instantly (Leonard hat die
+  Detail-Entscheidung delegiert); externer Dienst nur bei Bedarf später.
+- Verbindung der Bausteine: kleines Python-Skript statt Activepieces-Flows
+  (viel Logik, wartbarer als Skript; Activepieces ggf. später für Trigger).
+- KI-Modell: bleibt Einstellung (Standard claude-sonnet-5), Vergleichstest
+  in der Bau-Phase.
 
 ## Nächste Schritte
 - Lösungsweg wählen (Sparring).

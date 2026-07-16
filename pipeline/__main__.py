@@ -2,6 +2,7 @@ import argparse, os, sys
 from collections import Counter
 from pathlib import Path
 from pipeline.config import load_kunde
+from pipeline.env import lade_dotenv, brauche_env as _brauche_env
 from pipeline.run_store import RunStore
 from pipeline.sources.apollo import ApolloSource
 from pipeline.dedupe import dedupe as dedupe_leads
@@ -16,28 +17,6 @@ from pipeline.models import Lead
 
 LAEUFE = Path("laeufe")
 
-def lade_dotenv(pfad: Path = Path(".env")):
-    """Liest eine .env-Datei mit einfachen KEY=VALUE-Zeilen ein (keine
-    zusaetzliche Abhaengigkeit noetig). Leerzeilen und #-Kommentare werden
-    ignoriert. Bereits gesetzte Umgebungsvariablen werden NICHT ueberschrieben
-    - eine echte Shell-Variable geht immer vor dem .env-Wert."""
-    pfad = Path(pfad)
-    if not pfad.exists():
-        return
-    for zeile in pfad.read_text(encoding="utf-8").splitlines():
-        zeile = zeile.strip()
-        if not zeile or zeile.startswith("#") or "=" not in zeile:
-            continue
-        schluessel, _, wert = zeile.partition("=")
-        schluessel, wert = schluessel.strip(), wert.strip()
-        if schluessel and schluessel not in os.environ:
-            os.environ[schluessel] = wert
-
-def _brauche_env(name: str):
-    if not os.environ.get(name):
-        sys.exit(f"Fehlende Umgebungsvariable: {name}. "
-                 f"Bitte in .env eintragen (siehe .env.example).")
-
 NEU_AB_REIHENFOLGE = ["leads", "dedupe", "personalisierung", "pruefung_ok"]
 
 def _setze_schritte_zurueck(store, ab_schritt: str):
@@ -45,10 +24,19 @@ def _setze_schritte_zurueck(store, ab_schritt: str):
     Schritten (Reihenfolge: leads -> dedupe -> personalisierung ->
     pruefung_ok), damit 'lauf --fortsetzen ... --neu-ab ...' diese Schritte
     beim naechsten Durchlauf neu berechnet statt den alten Stand
-    wiederzuverwenden."""
+    wiederzuverwenden. Eine bestehende Freigabe (FREIGABE.txt) wird dabei
+    IMMER mitgeloescht: sie bezieht sich auf die alten Texte, und ein
+    "senden" nach --neu-ab darf niemals unter einer Freigabe fuer laengst
+    ueberholte Inhalte laufen. Der Lauf muss danach erneut geprueft und
+    freigegeben werden."""
     start = NEU_AB_REIHENFOLGE.index(ab_schritt)
     for schritt in NEU_AB_REIHENFOLGE[start:]:
         store.delete_step(schritt)
+    freigabe_pfad = store.run_dir / "FREIGABE.txt"
+    if freigabe_pfad.exists():
+        freigabe_pfad.unlink()
+        print("Alte Freigabe verworfen (FREIGABE.txt geloescht) - dieser Lauf "
+             "muss nach --neu-ab erneut geprueft und freigegeben werden.")
 
 def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None = None):
     _brauche_env("APOLLO_API_KEY")
@@ -66,6 +54,11 @@ def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None
         store.save_step("leads", {"leads": [l.__dict__ for l in gefunden],
                                   "ohne_email": quelle.uebersprungen_ohne_email})
     stand_leads = store.load_step("leads")
+    if isinstance(stand_leads, list):
+        # Alte Laufordner (vor der "ohne_email"-Zaehlung) speicherten
+        # leads.json als reine Liste statt {"leads": [...], "ohne_email": n}.
+        # --fortsetzen auf so einem Ordner soll trotzdem funktionieren.
+        stand_leads = {"leads": stand_leads, "ohne_email": 0}
     leads = [Lead(**{k: d[k] for k in ("first_name", "last_name", "email",
                                         "company", "title", "website", "source")})
              for d in stand_leads["leads"]]
@@ -132,6 +125,9 @@ def senden(laufordner: str):
         # Kampagne wurde in einem frueheren, abgebrochenen Lauf schon
         # angelegt (z.B. weil der Lead-Import scheiterte) - dieselbe
         # campaign_id wiederverwenden statt eine zweite Kampagne anzulegen.
+        # TODO(verifizieren am echten Konto): dedupliziert /leads/add pro
+        # Kampagne per E-Mail? Sonst koennen Wiederholungs-Importe nach
+        # Teilfehler Leads doppeln.
         campaign_id = store.load_step("versand")["campaign_id"]
         print(f"Kampagne {campaign_id} bereits angelegt - importiere Leads erneut.")
     else:

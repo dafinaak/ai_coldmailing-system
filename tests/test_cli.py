@@ -49,6 +49,21 @@ def test_laedt_dotenv_ohne_vorhandene_variablen_zu_ueberschreiben(tmp_path, monk
     assert os.environ["MEINE_TEST_VAR"] == "neu"
     assert os.environ["SCHON_GESETZT"] == "alt"
 
+def test_lade_dotenv_entfernt_umschliessende_anfuehrungszeichen(monkeypatch, tmp_path):
+    monkeypatch.delenv("MIT_DOPPELTEN_QUOTES", raising=False)
+    monkeypatch.delenv("MIT_EINFACHEN_QUOTES", raising=False)
+    monkeypatch.delenv("OHNE_QUOTES", raising=False)
+    env_datei = tmp_path / ".env"
+    env_datei.write_text(
+        'MIT_DOPPELTEN_QUOTES="hallo welt"\n'
+        "MIT_EINFACHEN_QUOTES='hallo welt'\n"
+        "OHNE_QUOTES=hallo\n",
+        encoding="utf-8")
+    cli.lade_dotenv(env_datei)
+    assert os.environ["MIT_DOPPELTEN_QUOTES"] == "hallo welt"
+    assert os.environ["MIT_EINFACHEN_QUOTES"] == "hallo welt"
+    assert os.environ["OHNE_QUOTES"] == "hallo"
+
 def test_lade_dotenv_ohne_datei_tut_nichts(tmp_path):
     cli.lade_dotenv(tmp_path / "gibts-nicht.env")  # darf nicht werfen
 
@@ -207,5 +222,48 @@ def test_neu_ab_dedupe_verwendet_von_hand_bearbeitete_leads(tmp_path, monkeypatc
         (lauf_dir / "personalisierung.json").read_text(encoding="utf-8"))
     emails = {eintrag["email"] for eintrag in personalisierung["fertig"]}
     assert "neu-bearbeitet@firma.de" in emails
-    # Die urspruengliche leads.json blieb unangetastet (neu_ab="dedupe").
-    assert leads_daten["leads"][0]["email"] == "neu-bearbeitet@firma.de"
+    # leads.json auf der Platte enthaelt tatsaechlich noch die Handbearbeitung
+    # (neu_ab="dedupe" loescht leads.json nicht) - von der Platte neu lesen,
+    # nicht das In-Memory-dict von oben pruefen.
+    leads_nach_lauf = json.loads(leads_pfad.read_text(encoding="utf-8"))
+    assert leads_nach_lauf["leads"][0]["email"] == "neu-bearbeitet@firma.de"
+
+def test_neu_ab_widerruft_alte_freigabe(tmp_path, monkeypatch):
+    # Sicherheitsluecke aus dem Review: lauf -> freigeben -> lauf
+    # --fortsetzen --neu-ab personalisierung -> senden wuerde sonst neu
+    # generierte Texte unter der alten Freigabe verschicken.
+    from pipeline.approval import is_approved
+    monkeypatch.setattr(cli, "ApolloSource", _FakeApolloSource)
+    monkeypatch.setattr(cli, "KI", _FakeKI)
+    monkeypatch.setattr(cli, "LAEUFE", tmp_path)
+    monkeypatch.setattr(run_store_modul, "datetime", _FakeDatetime)
+    monkeypatch.setenv("APOLLO_API_KEY", "test-key")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+
+    cli.lauf("kunden/demo-gmbh.yaml", 10, None)
+    lauf_dir = sorted((tmp_path / "demo-gmbh").glob("*"))[0]
+    store = RunStore.resume(lauf_dir)
+    approve(store)
+    assert is_approved(store)
+
+    cli.lauf("kunden/demo-gmbh.yaml", 10, str(lauf_dir), neu_ab="personalisierung")
+
+    assert is_approved(store) is False
+
+def test_lauf_fortsetzen_akzeptiert_altes_leads_listenformat(tmp_path, monkeypatch):
+    # Vor der "ohne_email"-Zaehlung war leads.json eine reine Liste statt
+    # {"leads": [...], "ohne_email": n}. --fortsetzen auf so einem alten
+    # Laufordner darf nicht mit TypeError scheitern.
+    monkeypatch.setattr(cli, "KI", _FakeKI)
+    monkeypatch.setenv("APOLLO_API_KEY", "test-key")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    store = RunStore(tmp_path, "Demo")
+    store.save_step("kunde_pfad", {"pfad": "kunden/demo-gmbh.yaml"})
+    store.save_step("leads", [
+        {"first_name": "Anna", "last_name": "Muster", "email": "anna@firma.de",
+         "company": "Firma GmbH", "title": "CEO", "website": "", "source": "apollo"}])
+
+    cli.lauf("kunden/demo-gmbh.yaml", 10, str(store.run_dir))
+
+    personalisierung = store.load_step("personalisierung")
+    assert len(personalisierung["fertig"]) == 1

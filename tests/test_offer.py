@@ -25,3 +25,10 @@ def test_main_ohne_genug_argumente_bricht_kontrolliert_ab(monkeypatch, capsys):
     assert fehler.value.code == 1
     ausgabe = capsys.readouterr().out
     assert "Aufruf: python -m pipeline.offer <url> <kunde.yaml>" in ausgabe
+
+def test_main_bricht_ohne_anthropic_key_ab(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)  # keine .env-Datei im Testverzeichnis
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setattr(sys, "argv", ["offer.py", "http://example.com", "kunde.yaml"])
+    with pytest.raises(SystemExit, match="ANTHROPIC_API_KEY"):
+        main()

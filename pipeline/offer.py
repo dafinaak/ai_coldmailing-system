@@ -1,6 +1,7 @@
 import json, re, sys
 from pathlib import Path
 import yaml
+from pipeline.env import lade_dotenv, brauche_env
 from pipeline.website import fetch_text
 from pipeline.ki import KI
 
@@ -32,9 +33,11 @@ def uebernehmen(kunde_pfad, entwurf: dict):
                     encoding="utf-8")
 
 def main():
+    lade_dotenv()
     if len(sys.argv) < 3:
         print("Aufruf: python -m pipeline.offer <url> <kunde.yaml>")
         sys.exit(1)
+    brauche_env("ANTHROPIC_API_KEY")
     url, kunde_pfad = sys.argv[1], sys.argv[2]
     entwurf = draft_offer(fetch_text(url), KI())
     uebernehmen(kunde_pfad, entwurf)

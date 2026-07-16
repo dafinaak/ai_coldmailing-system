@@ -12,7 +12,10 @@ def personalize(lead, kunde, ki, webseiten_text: str) -> dict:
         titel=lead.title, firma=lead.company, webseiten_text=webseiten_text or "(leer)")
     roh = ki.frage(SYSTEM, prompt)
     treffer = re.search(r"\{.*\}", roh, re.DOTALL)
-    daten = json.loads(treffer.group(0)) if treffer else {}
+    try:
+        daten = json.loads(treffer.group(0)) if treffer else {}
+    except ValueError:
+        daten = {}
     if any(not daten.get(k) for k in PFLICHT):
         raise ValueError(f"KI-Antwort unvollstaendig fuer {lead.email}")
     return {k: daten[k] for k in PFLICHT}

@@ -26,3 +26,15 @@ def test_unvollstaendige_antwort_wirft_fehler():
     ki = FakeKI(json.dumps({"betreff": "B"}))
     with pytest.raises(ValueError):
         personalize(LEAD, KUNDE, ki, webseiten_text="")
+
+def test_kaputtes_json_wirft_valueerror():
+    ki = FakeKI('{"betreff": kaputt}')
+    with pytest.raises(ValueError, match="unvollstaendig"):
+        personalize(LEAD, KUNDE, ki, webseiten_text="")
+
+def test_prosa_um_json_herum_wird_toleriert():
+    import json as j
+    antwort = "Gern! " + j.dumps({"betreff": "B", "mail_1": "M",
+                                  "follow_up_1": "F1", "follow_up_2": "F2"}) + " Viel Erfolg!"
+    texte = personalize(LEAD, KUNDE, FakeKI(antwort), webseiten_text="")
+    assert texte["betreff"] == "B"

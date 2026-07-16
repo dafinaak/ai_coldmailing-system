@@ -422,7 +422,7 @@ git commit -m "feat: Apollo-Quelle mit Wiederholungslogik"
 
 **Interfaces:**
 - Consumes: `list[Lead]`, Kundenordner `laeufe/<kunde-slug>/` mit früheren Läufen (deren `leads.json`), `kunde.sperrliste`.
-- Produces: `dedupe(leads, kunde_laeufe_dir, sperrliste=()) -> tuple[list[Lead], list[dict]]` — Prüf-Reihenfolge: (1) Domain auf Sperrliste (E-Mail-Domain und Webseiten-Domain, Wildcard `*.beispiel.de` erlaubt — Vorbild: die Wholix-Sperrliste des Teams mit eigener Agentur, Partnern, `*.bund.de`), (2) Duplikate innerhalb der Liste (per E-Mail), (3) gegen alle `leads.json` früherer Läufe. Zweiter Rückgabewert: verworfene als `{"email": ..., "grund": ...}` für den Bericht. Hier sitzt auch der markierte Erweiterungspunkt für externe Verifizierung (Kommentar im Code genügt, kein Bau in v1).
+- Produces: `dedupe(leads, kunde_laeufe_dir, sperrliste=(), aktueller_lauf=None) -> tuple[list[Lead], list[dict]]` — `aktueller_lauf` ist der Laufordner des laufenden Laufs und wird beim Blick in frühere Läufe ausgenommen (Korrektur 16.07.2026: ohne diese Ausnahme las die Prüfung die soeben gespeicherte eigene leads.json als "früheren Lauf" und verwarf jeden Lead als Dublette — gefunden im Task-10-Review, behoben samt End-zu-End-Test). Prüf-Reihenfolge: (1) Domain auf Sperrliste (E-Mail-Domain und Webseiten-Domain, Wildcard `*.beispiel.de` erlaubt — Vorbild: die Wholix-Sperrliste des Teams mit eigener Agentur, Partnern, `*.bund.de`), (2) Duplikate innerhalb der Liste (per E-Mail), (3) gegen alle `leads.json` früherer Läufe. Zweiter Rückgabewert: verworfene als `{"email": ..., "grund": ...}` für den Bericht. Hier sitzt auch der markierte Erweiterungspunkt für externe Verifizierung (Kommentar im Code genügt, kein Bau in v1).
 
 - [ ] **Step 1: Fehlschlagenden Test schreiben**
 
@@ -1131,7 +1131,8 @@ def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None):
              for d in store.load_step("leads")]
 
     if not store.step_done("dedupe"):
-        behalten, verworfen = dedupe_leads(leads, store.run_dir.parent, kunde.sperrliste)
+        behalten, verworfen = dedupe_leads(leads, store.run_dir.parent, kunde.sperrliste,
+                                           aktueller_lauf=store.run_dir)
         store.save_step("dedupe", {"behalten": [l.__dict__ for l in behalten],
                                    "verworfen": verworfen})
     stand = store.load_step("dedupe")

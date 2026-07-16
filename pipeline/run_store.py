@@ -32,3 +32,8 @@ class RunStore:
 
     def load_step(self, name: str):
         return json.loads(self._pfad(name).read_text(encoding="utf-8"))
+
+    def delete_step(self, name: str):
+        pfad = self._pfad(name)
+        if pfad.exists():
+            pfad.unlink()

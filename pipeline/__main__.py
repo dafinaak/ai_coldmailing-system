@@ -38,21 +38,37 @@ def _brauche_env(name: str):
         sys.exit(f"Fehlende Umgebungsvariable: {name}. "
                  f"Bitte in .env eintragen (siehe .env.example).")
 
-def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None):
+NEU_AB_REIHENFOLGE = ["leads", "dedupe", "personalisierung", "pruefung_ok"]
+
+def _setze_schritte_zurueck(store, ab_schritt: str):
+    """Loescht den JSON-Stand von ab_schritt und allen nachgelagerten
+    Schritten (Reihenfolge: leads -> dedupe -> personalisierung ->
+    pruefung_ok), damit 'lauf --fortsetzen ... --neu-ab ...' diese Schritte
+    beim naechsten Durchlauf neu berechnet statt den alten Stand
+    wiederzuverwenden."""
+    start = NEU_AB_REIHENFOLGE.index(ab_schritt)
+    for schritt in NEU_AB_REIHENFOLGE[start:]:
+        store.delete_step(schritt)
+
+def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None = None):
     _brauche_env("APOLLO_API_KEY")
     _brauche_env("ANTHROPIC_API_KEY")
     kunde = load_kunde(kunde_pfad)
     store = RunStore.resume(fortsetzen) if fortsetzen else RunStore(LAEUFE, kunde.name)
+    if neu_ab:
+        _setze_schritte_zurueck(store, neu_ab)
     store.save_step("kunde_pfad", {"pfad": str(kunde_pfad)})
     print(f"Laufordner: {store.run_dir}")
 
     if not store.step_done("leads"):
         quelle = ApolloSource(os.environ["APOLLO_API_KEY"])
-        store.save_step("leads",
-                        [l.__dict__ for l in quelle.search(kunde.zielgruppe, limit)])
+        gefunden = quelle.search(kunde.zielgruppe, limit)
+        store.save_step("leads", {"leads": [l.__dict__ for l in gefunden],
+                                  "ohne_email": quelle.uebersprungen_ohne_email})
+    stand_leads = store.load_step("leads")
     leads = [Lead(**{k: d[k] for k in ("first_name", "last_name", "email",
                                         "company", "title", "website", "source")})
-             for d in store.load_step("leads")]
+             for d in stand_leads["leads"]]
 
     if not store.step_done("dedupe"):
         behalten, verworfen = dedupe_leads(leads, store.run_dir.parent, kunde.sperrliste,
@@ -85,7 +101,8 @@ def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None):
     write_report(store, {"gefunden": len(leads), "verworfen": len(stand["verworfen"]),
                          "personalisiert": len(ergebnis["fertig"]),
                          "nacharbeit": len(ergebnis["nacharbeit"]),
-                         "gruende_verworfen": gruende})
+                         "gruende_verworfen": gruende,
+                         "ohne_email": stand_leads["ohne_email"]})
     print(f"Vorschau: {store.run_dir / 'freigabe-vorschau.md'}")
     print("Naechster Schritt: pruefen, dann 'python -m pipeline freigeben <laufordner>'")
 
@@ -133,12 +150,16 @@ def main():
     p_lauf.add_argument("kunde")
     p_lauf.add_argument("--limit", type=int, default=10)
     p_lauf.add_argument("--fortsetzen", default=None)
+    p_lauf.add_argument("--neu-ab", dest="neu_ab", default=None,
+                        choices=["leads", "dedupe", "personalisierung"],
+                        help="Nur zusammen mit --fortsetzen: verwirft diesen Schritt und "
+                             "alle nachgelagerten, damit sie neu berechnet werden.")
     for name in ("freigeben", "senden"):
         p = sub.add_parser(name)
         p.add_argument("laufordner")
     args = parser.parse_args()
     if args.befehl == "lauf":
-        lauf(args.kunde, args.limit, args.fortsetzen)
+        lauf(args.kunde, args.limit, args.fortsetzen, args.neu_ab)
     elif args.befehl == "freigeben":
         freigeben(args.laufordner)
     else:

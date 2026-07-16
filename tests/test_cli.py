@@ -111,7 +111,7 @@ def test_senden_wiederholt_nach_fehlgeschlagenem_lead_import_ohne_neue_kampagne(
 class _FakeApolloSource:
     """Ersetzt ApolloSource: liefert 2 feste Leads statt echter API-Aufrufe."""
     def __init__(self, api_key):
-        pass
+        self.uebersprungen_ohne_email = 0
     def search(self, zielgruppe, limit):
         return [
             Lead(first_name="Anna", last_name="Muster", email="anna@firma.de",
@@ -164,6 +164,10 @@ def test_lauf_personalisiert_end_zu_ende_und_dedupe_greift_erst_im_naechsten_lau
     erster_dedupe = json.loads((erster_lauf / "dedupe.json").read_text(encoding="utf-8"))
     assert erster_dedupe["verworfen"] == []
     assert (erster_lauf / "freigabe-vorschau.md").exists()
+    erste_leads = json.loads((erster_lauf / "leads.json").read_text(encoding="utf-8"))
+    assert len(erste_leads["leads"]) == 2 and erste_leads["ohne_email"] == 0
+    bericht = (erster_lauf / "bericht.md").read_text(encoding="utf-8")
+    assert "Ohne E-Mail uebersprungen: 0" in bericht
 
     # Zweiter, frischer Lauf: jetzt muessen beide Leads aus dem ersten Lauf
     # als "bereits in frueherem Lauf angeschrieben" verworfen werden - das
@@ -176,3 +180,32 @@ def test_lauf_personalisiert_end_zu_ende_und_dedupe_greift_erst_im_naechsten_lau
     assert len(zweiter_dedupe["verworfen"]) == 2
     assert all(v["grund"] == "bereits in frueherem Lauf angeschrieben"
                for v in zweiter_dedupe["verworfen"])
+
+def test_neu_ab_dedupe_verwendet_von_hand_bearbeitete_leads(tmp_path, monkeypatch):
+    # Task 11: --fortsetzen zusammen mit --neu-ab soll den angegebenen
+    # Schritt und alle nachgelagerten neu berechnen, damit eine
+    # Handbearbeitung von leads.json auch tatsaechlich wirkt.
+    monkeypatch.setattr(cli, "ApolloSource", _FakeApolloSource)
+    monkeypatch.setattr(cli, "KI", _FakeKI)
+    monkeypatch.setattr(cli, "LAEUFE", tmp_path)
+    monkeypatch.setattr(run_store_modul, "datetime", _FakeDatetime)
+    monkeypatch.setenv("APOLLO_API_KEY", "test-key")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+
+    cli.lauf("kunden/demo-gmbh.yaml", 10, None)
+    lauf_dir = sorted((tmp_path / "demo-gmbh").glob("*"))[0]
+
+    # Leads von Hand bearbeiten: eine E-Mail-Adresse austauschen.
+    leads_pfad = lauf_dir / "leads.json"
+    leads_daten = json.loads(leads_pfad.read_text(encoding="utf-8"))
+    leads_daten["leads"][0]["email"] = "neu-bearbeitet@firma.de"
+    leads_pfad.write_text(json.dumps(leads_daten), encoding="utf-8")
+
+    cli.lauf("kunden/demo-gmbh.yaml", 10, str(lauf_dir), neu_ab="dedupe")
+
+    personalisierung = json.loads(
+        (lauf_dir / "personalisierung.json").read_text(encoding="utf-8"))
+    emails = {eintrag["email"] for eintrag in personalisierung["fertig"]}
+    assert "neu-bearbeitet@firma.de" in emails
+    # Die urspruengliche leads.json blieb unangetastet (neu_ab="dedupe").
+    assert leads_daten["leads"][0]["email"] == "neu-bearbeitet@firma.de"

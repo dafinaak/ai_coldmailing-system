@@ -61,6 +61,17 @@ def test_kein_retry_bei_401():
         ApolloSource("key", session=session, wartezeit=0).search({}, limit=10)
     assert len(session.aufrufe) == 1  # kein zweiter Versuch bei einem 4xx-Fehler
 
+def test_zaehlt_uebersprungene_leads_ohne_email():
+    session = FakeSession([
+        FakeResponse(200, {"people": [treffer("p1"), treffer("p2")]}),
+        # p1 findet eine E-Mail, p2 bleibt ohne Treffer in bulk_match.
+        FakeResponse(200, {"matches": [match("p1")]}),
+    ])
+    quelle = ApolloSource("key", session=session)
+    leads = quelle.search({}, limit=10)
+    assert len(leads) == 1
+    assert quelle.uebersprungen_ohne_email == 1
+
 def test_reichert_treffer_in_batches_von_10_an():
     treffer_liste = [treffer(f"p{i}") for i in range(12)]
     session = FakeSession([

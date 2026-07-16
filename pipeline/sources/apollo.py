@@ -49,8 +49,10 @@ class ApolloSource:
         self.api_key = api_key
         self.session = session or requests.Session()
         self.wartezeit = wartezeit
+        self.uebersprungen_ohne_email = 0
 
     def search(self, zielgruppe: dict, limit: int):
+        self.uebersprungen_ohne_email = 0
         body = {
             "person_titles": zielgruppe.get("titel", []),
             "person_locations": zielgruppe.get("region", []),
@@ -66,6 +68,7 @@ class ApolloSource:
             # Erst nach der Anreicherung über bulk_match kann eine E-Mail
             # vorhanden sein (die Such-Antwort selbst liefert nie eine).
             if not p.get("email"):
+                self.uebersprungen_ohne_email += 1
                 continue
             org = p.get("organization") or {}
             leads.append(Lead(

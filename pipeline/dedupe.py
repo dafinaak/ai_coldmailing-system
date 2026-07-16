@@ -11,7 +11,12 @@ def _bekannte_emails(kunde_laeufe_dir, ausser=None) -> set:
     for datei in Path(kunde_laeufe_dir).glob("*/leads.json"):
         if ausser is not None and datei.parent == Path(ausser):
             continue  # eigener, gerade laufender Lauf zaehlt nicht als "frueher"
-        for eintrag in json.loads(datei.read_text(encoding="utf-8")):
+        daten = json.loads(datei.read_text(encoding="utf-8"))
+        # leads.json ist seit der "ohne_email"-Zaehlung ein Objekt
+        # {"leads": [...], "ohne_email": n}; alte Laeufe koennen noch die
+        # frühere, reine Listenform auf der Platte haben - beides lesen.
+        eintraege = daten["leads"] if isinstance(daten, dict) else daten
+        for eintrag in eintraege:
             bekannte.add(eintrag["email"].strip().lower())
     return bekannte
 

@@ -24,7 +24,10 @@ Bewusst NICHT in v1: Antworten-Erkennung/Einsortierung, Reporting.
 ## Aktueller Stand
 - Verstehen-Phase abgeschlossen (16.07.2026).
 - Sparring abgeschlossen: Weg 1 "Baukasten" gewählt (16.07.2026).
-- Design-Phase läuft.
+- Design im Gespräch freigegeben und dokumentiert:
+  docs/superpowers/specs/2026-07-16-ai-coldmailing-system-design.md
+- Jira-Aufgabe: AP-195 (digitaldiamonds.atlassian.net)
+- Schriftliches Review des Design-Dokuments durch Leonard steht aus.
 
 ## Entscheidungen
 - v1-Umfang: Leads + Personalisierung + Versand/Follow-ups (siehe oben).

@@ -22,6 +22,23 @@ from pipeline.models import Lead
 # wird. Antwort-Hülle bestätigt: {"matches": [...], "status": ..., ...},
 # jedes Match-Objekt kann "email" sowie ein volles "organization"-Objekt
 # (u. a. "website_url") enthalten.
+#
+# TODO(verifizieren am echten Konto):
+# (a) Die Zuordnung in _anreichern() matcht Suchtreffer und bulk_match-
+#     Ergebnisse ausschliesslich ueber die Apollo-"id". Laut Doku ist das
+#     der vorgesehene Weg, aber ungetestet ist, ob bulk_match bei manchen
+#     Personen (z.B. geloeschte/zusammengefuehrte Datensaetze) die id
+#     stillschweigend nicht zurueckliefert - dann wuerde dieser Treffer
+#     unangereichert durchgereicht und mangels E-Mail spaeter uebersprungen
+#     (stiller Unter-Match statt Fehler). Am echten Konto pruefen, ob das
+#     vorkommt und ob ein Fallback (z.B. ueber first_name/last_name/
+#     organization) noetig ist.
+# (b) "reveal_personal_emails=true" kann laut Doku Credits verbrauchen -
+#     wie viele pro aufgeloester Person und ob das auch bei einem "kein
+#     Treffer/keine E-Mail vorhanden"-Ergebnis abgerechnet wird, ist am
+#     echten Konto noch nicht verifiziert. Vor produktivem Einsatz mit
+#     echtem Kontingent gegenpruefen, damit ein Lauf nicht ungeplant
+#     Credits verbraucht.
 BASE_URL = "https://api.apollo.io/api/v1"
 SUCH_URL = f"{BASE_URL}/mixed_people/api_search"
 ANREICHERUNGS_URL = f"{BASE_URL}/people/bulk_match?reveal_personal_emails=true"
@@ -84,11 +101,22 @@ class ApolloSource:
         return angereichert
 
     def _post_mit_wiederholung(self, url, body):
+        """Wiederholt nur bei 429 (Rate-Limit) und 5xx (voruebergehende
+        Server-Fehler) - beides Faelle, bei denen ein zweiter Versuch
+        sinnvoll sein kann. Andere 4xx-Fehler (z.B. 401 falscher Api-Key,
+        422 kaputte Anfrage) sind dauerhaft und werden sofort ohne
+        Wiederholung als RuntimeError gemeldet. Nach dem letzten
+        fehlgeschlagenen Versuch wird nicht mehr gewartet."""
+        letzte_antwort = None
         for versuch in range(3):
             antwort = self.session.post(
                 url, json=body, timeout=30,
                 headers={"X-Api-Key": self.api_key, "Content-Type": "application/json"})
             if antwort.status_code < 400:
                 return antwort
-            time.sleep(self.wartezeit * (versuch + 1))
-        raise RuntimeError(f"Apollo antwortet dauerhaft mit {antwort.status_code}")
+            if antwort.status_code != 429 and antwort.status_code < 500:
+                raise RuntimeError(f"Apollo antwortet mit {antwort.status_code} auf {url}")
+            letzte_antwort = antwort
+            if versuch < 2:
+                time.sleep(self.wartezeit * (versuch + 1))
+        raise RuntimeError(f"Apollo antwortet dauerhaft mit {letzte_antwort.status_code}")

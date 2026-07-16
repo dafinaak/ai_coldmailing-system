@@ -50,3 +50,10 @@ def test_lead_import_fehler_stoppt_den_lauf_laut():
     sender = InstantlySender("key", session=session)
     with pytest.raises(RuntimeError, match="422"):
         sender.create_campaign(KUNDE, TEXTE)
+
+def test_fehlermeldung_enthaelt_ausschnitt_der_antwort():
+    session = FakeSession([FakeResponse(
+        500, {}, text="Interner Fehler: Datenbank nicht erreichbar")])
+    sender = InstantlySender("key", session=session)
+    with pytest.raises(RuntimeError, match="Datenbank nicht erreichbar"):
+        sender.create_campaign(KUNDE, TEXTE)

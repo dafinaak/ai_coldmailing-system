@@ -91,8 +91,9 @@ class InstantlySender:
         der Mensch behebt die Ursache und startet "senden" danach neu)."""
         antwort = self.session.post(url, headers=self.headers, json=payload, timeout=60)
         if antwort.status_code >= 400:
+            ausschnitt = (getattr(antwort, "text", "") or "")[:200]
             raise RuntimeError(
-                f"Instantly antwortet mit {antwort.status_code} auf {url}")
+                f"Instantly antwortet mit {antwort.status_code} auf {url}: {ausschnitt}")
         return antwort
 
     def create_campaign(self, kunde, texte_pro_lead) -> str:

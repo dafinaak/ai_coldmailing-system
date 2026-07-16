@@ -1,8 +1,9 @@
+import pytest
 from pipeline.sources.apollo import ApolloSource
 
 class FakeResponse:
-    def __init__(self, status_code, payload):
-        self.status_code, self._payload = status_code, payload
+    def __init__(self, status_code, payload, text=""):
+        self.status_code, self._payload, self.text = status_code, payload, text
     def json(self):
         return self._payload
 
@@ -53,6 +54,12 @@ def test_ueberspringt_leads_ohne_email():
         FakeResponse(200, {"matches": [{"id": "p1", "first_name": "Anna"}]}),
     ])
     assert ApolloSource("key", session=session).search({}, limit=10) == []
+
+def test_kein_retry_bei_401():
+    session = FakeSession([FakeResponse(401, {"error": "unauthorized"})])
+    with pytest.raises(RuntimeError):
+        ApolloSource("key", session=session, wartezeit=0).search({}, limit=10)
+    assert len(session.aufrufe) == 1  # kein zweiter Versuch bei einem 4xx-Fehler
 
 def test_reichert_treffer_in_batches_von_10_an():
     treffer_liste = [treffer(f"p{i}") for i in range(12)]

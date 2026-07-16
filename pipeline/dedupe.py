@@ -17,6 +17,9 @@ def _gesperrt(lead, sperrliste) -> bool:
     domains = {lead.email.split("@", 1)[-1]}
     if lead.website:
         netloc = urlparse(lead.website).netloc.lower()
+        # Fallback for schemeless URLs: use text before first "/"
+        if not netloc:
+            netloc = lead.website.split("/")[0].lower()
         domains.add(netloc[4:] if netloc.startswith("www.") else netloc)
     for muster in sperrliste:
         muster = muster.strip().lower()

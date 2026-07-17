@@ -45,10 +45,27 @@ Bewusst NICHT in v1: Antworten-Erkennung/Einsortierung, Reporting.
   angelegt (A-Record auf 178.104.175.42). Für den Endnachweis vermutlich
   nicht nötig (vorhandene warme Postfächer nutzbar; neues Postfach müsste
   erst wochenlang anwärmen) — Entscheidung Leonards steht aus.
-- OFFEN: Task 11 (End-zu-End-Nachweis) — noch nötig: Leonards Wahl des
-  Absender-Postfachs (vorhandenes warmes vs. neues auf Subdomain),
-  Test-Empfänger-Adressen (Gmail/Outlook), Okay für den einen
-  Schreibzugriff (eine pausierte "[TEST] Demo GmbH"-Kampagne).
+- Task 11 GESTARTET und fast durch (17.07.2026): Echter Lauf gefahren
+  (3 Apollo-Leads mit E-Mail, 2 ohne — im Bericht gezählt), Empfänger auf
+  Leonards 3 Test-Adressen umgebogen (--neu-ab dedupe), alle 3 Texte
+  personalisiert und von Leonard freigegeben. Pausierte Kampagne
+  "[TEST] Demo GmbH" (ID 580bdbf7-fe41-43d4-b07d-8460997925f8) im
+  Team-Instantly angelegt und rein lesend verifiziert: Status Entwurf,
+  daily_limit 20, Fenster Mo–Fr 8–19 (Wochentags-Konvention und
+  Zeitzonen-Ersatz Europe/Belgrade am echten Konto BESTÄTIGT),
+  3 Leads mit personalisierten Variablen.
+- Unterwegs gefunden und behoben: KI-Token-Budget 1500 war zu knapp
+  (Denk-Tokens schnitten Antworten ab) -> 4000; senden-Tests von der
+  Demo-Kundendatei entkoppelt. 69 Tests grün.
+- LETZTER OFFENER SCHRITT: Leonard aktiviert die Kampagne in der
+  Instantly-Oberfläche (warmes Postfach zuweisen), dann Beweise sammeln:
+  Posteingang-Screenshots aller 3 Test-Postfächer (nicht Spam!),
+  Follow-up 1 nach 1 Tag, Follow-up 2 nach 2 Tagen, Abgleich mit
+  bericht.md. Danach: Jira AP-195 auf erledigt.
+- Für v1.1 zusätzlich vorgemerkt: Nachnamen-Schreibweise darf die KI
+  nicht "korrigieren" (Fall "Boedoecs" statt "Bodocs" im Testlauf);
+  kunde_name vs. Absender-Firma sauber trennen (Demo GmbH/Digital
+  Diamonds gemischt in Mail 1).
 - Apollo-API-Schlüssel liegt vor (16.07.2026), gespeichert in .env
   (gitignored — Schlüssel stehen nie im Repo oder in Notizen).
 - Text-KI läuft über OpenRouter: Schlüssel in .env, LÄUFT ca. 23.07.2026 AB

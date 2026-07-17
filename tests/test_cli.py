@@ -13,9 +13,26 @@ from tests.test_apollo import FakeSession, FakeResponse
 _PRUEFUNG_OK = [{"email": "test1@example.com", "betreff": "B", "mail_1": "M",
                 "follow_up_1": "F1", "follow_up_2": "F2"}]
 
+_TEST_KUNDE_YAML = """
+name: Test GmbH
+zielgruppe:
+  titel: [CEO]
+angebot: Testangebot
+tonalitaet: ruhig
+absender: Tester
+follow_up_tage: [1, 2]
+test_empfaenger:
+  - test1@example.com
+"""
+
 def _freigegebener_lauf(tmp_path):
+    # Eigene Kunden-Datei statt kunden/demo-gmbh.yaml: die echte Demo-Datei
+    # aendert sich im Betrieb (echte Test-Empfaenger) und darf Tests nicht
+    # kippen.
+    kunde_datei = tmp_path / "test-kunde.yaml"
+    kunde_datei.write_text(_TEST_KUNDE_YAML, encoding="utf-8")
     store = RunStore(tmp_path, "Demo")
-    store.save_step("kunde_pfad", {"pfad": "kunden/demo-gmbh.yaml"})
+    store.save_step("kunde_pfad", {"pfad": str(kunde_datei)})
     store.save_step("pruefung_ok", _PRUEFUNG_OK)
     approve(store)
     return store

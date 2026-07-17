@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block titel %}Poleposition{% endblock %} · Poleposition</title>
+<link rel="stylesheet" href="{{ url_for('static', path='stil.css') }}">
+</head>
+<body>
+<div class="rahmen">
+  <aside class="seitenleiste">
+    <div class="marke">
+      <div class="marke-zeile">
+        <span class="marke-symbol" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </span>
+        <span class="marke-name">Poleposition</span>
+      </div>
+      <div class="marke-untertitel">KI-KALTAKQUISE</div>
+    </div>
+    <nav class="nav">
+      {% for eintrag in nav %}
+      <a href="{{ eintrag.url }}" class="nav-eintrag{% if eintrag.aktiv %} nav-eintrag--aktiv{% endif %}">
+        <span>{{ eintrag.label }}</span>
+        {% if eintrag.badge %}<span class="nav-badge">{{ eintrag.badge }}</span>{% endif %}
+      </a>
+      {% endfor %}
+    </nav>
+    <div class="nutzer-fuss">
+      <div>
+        <div class="nutzer-name">{{ nutzer }}</div>
+        <div class="nutzer-status">Angemeldet</div>
+      </div>
+      <form method="post" action="/logout" class="abmelden-form">
+        <button type="submit" class="abmelden-knopf">Abmelden</button>
+      </form>
+    </div>
+  </aside>
+  <main class="inhalt">
+    {% block inhalt %}{% endblock %}
+  </main>
+</div>
+</body>
+</html>

@@ -2,3 +2,16 @@ requests>=2.31
 pyyaml>=6.0
 anthropic>=0.40
 pytest>=8.0
+
+# Web-Interface (Team-Bedienung im Browser, siehe web/)
+fastapi>=0.115
+uvicorn>=0.30
+jinja2>=3.1
+itsdangerous>=2.2
+passlib[bcrypt]>=1.7
+# bcrypt fest gepinnt: passlib 1.7.4 (letzte Version, unmaintained seit 2020)
+# bricht mit bcrypt>=4.1 (entferntes __about__-Attribut fuehrt zu
+# "password cannot be longer than 72 bytes" beim allerersten Hash-Aufruf).
+bcrypt==4.0.1
+python-multipart>=0.0.9  # noetig, damit FastAPI Form(...)-Logins lesen kann
+httpx>=0.27  # nur fuer Tests (TestClient/AsyncClient), kein Produktionscode

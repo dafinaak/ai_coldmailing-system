@@ -1,0 +1,215 @@
+/* Basis-Stile fuers Team-Interface (Poleposition), abgeleitet aus der
+   eingefrorenen Design-Vorlage docs/design/Poleposition-v4.dc.html.
+   Bewusst ohne Hotlink zu Google Fonts (siehe Task-Vorgabe) - Instrument
+   Sans und IBM Plex Mono sind hier nur Wunsch-Schriften mit System-Fallback,
+   sie werden nicht selbst ausgeliefert. */
+
+:root {
+  --farbe-hintergrund: #F6F5F0;
+  --farbe-text: #1C1B15;
+  --farbe-akzent: #C43D21;
+  --farbe-seitenleiste: #EFEDE5;
+  --farbe-rand: #E2DFD4;
+  --farbe-gedaempft: #6E6A5C;
+  --farbe-nav-inaktiv: #4A473D;
+  --farbe-weiss: #FFFFFF;
+  --farbe-fehler-hintergrund: #F9E9E4;
+  --farbe-fehler-rand: #B03320;
+  --farbe-fehler-text: #7A2416;
+
+  --schrift-sans: 'Instrument Sans', -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --schrift-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo,
+    Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text);
+  font-family: var(--schrift-sans);
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+
+a {
+  color: var(--farbe-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+a:hover { color: var(--farbe-akzent); }
+
+input, textarea, select, button { font-family: inherit; }
+
+h1 { margin: 0; font-size: 24px; }
+
+/* Layout: Seitenleiste + Inhalt --------------------------------------- */
+
+.rahmen {
+  display: flex;
+  min-height: 100vh;
+  background: var(--farbe-hintergrund);
+}
+
+.seitenleiste {
+  width: 224px;
+  flex-shrink: 0;
+  background: var(--farbe-seitenleiste);
+  border-right: 1px solid var(--farbe-rand);
+  display: flex;
+  flex-direction: column;
+}
+
+.marke { padding: 18px 18px 14px; border-bottom: 1px solid var(--farbe-rand); }
+
+.marke-zeile { display: flex; align-items: center; gap: 9px; }
+
+.marke-symbol {
+  display: grid;
+  grid-template-columns: 7px 7px;
+  grid-template-rows: 7px 7px;
+  width: 14px;
+  height: 14px;
+}
+.marke-symbol span:nth-child(1) { background: var(--farbe-text); }
+.marke-symbol span:nth-child(2) { background: var(--farbe-akzent); }
+.marke-symbol span:nth-child(3) { background: var(--farbe-akzent); }
+.marke-symbol span:nth-child(4) { background: var(--farbe-text); }
+
+.marke-name { font-weight: 700; font-size: 15px; }
+
+.marke-untertitel {
+  font-family: var(--schrift-mono);
+  font-size: 10px;
+  color: var(--farbe-gedaempft);
+  letter-spacing: 0.12em;
+  margin-top: 4px;
+}
+
+.nav {
+  padding: 12px 10px;
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-eintrag {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 11px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13.5px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--farbe-nav-inaktiv);
+  text-decoration: none;
+}
+.nav-eintrag:hover { background: var(--farbe-weiss); color: var(--farbe-text); }
+.nav-eintrag--aktiv {
+  background: var(--farbe-weiss);
+  border-color: var(--farbe-rand);
+  color: var(--farbe-text);
+}
+
+.nav-badge {
+  font-family: var(--schrift-mono);
+  font-size: 11px;
+  background: #ECEAE1;
+  color: var(--farbe-text);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
+.nutzer-fuss {
+  padding: 14px 18px;
+  border-top: 1px solid var(--farbe-rand);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nutzer-name { font-size: 12.5px; font-weight: 600; }
+.nutzer-status { font-size: 11.5px; color: var(--farbe-gedaempft); }
+
+.abmelden-form { margin: 0; }
+.abmelden-knopf {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  color: var(--farbe-gedaempft);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.abmelden-knopf:hover { color: var(--farbe-akzent); }
+
+.inhalt { flex: 1; overflow-y: auto; }
+
+.seite { padding: 30px 40px 60px; max-width: 1000px; }
+.platzhalter-text { color: var(--farbe-gedaempft); margin-top: 8px; font-size: 13.5px; }
+
+/* Login-Seite ----------------------------------------------------------- */
+
+.login-hintergrund {
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text);
+  font-family: var(--schrift-sans);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-box {
+  width: 320px;
+  background: var(--farbe-weiss);
+  border: 1px solid var(--farbe-rand);
+  border-radius: 12px;
+  padding: 28px 26px;
+}
+
+.login-box h1 { margin: 14px 0 16px; font-size: 20px; }
+
+.login-fehler {
+  background: var(--farbe-fehler-hintergrund);
+  border: 1.5px solid var(--farbe-fehler-rand);
+  color: var(--farbe-fehler-text);
+  border-radius: 9px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin: 0 0 16px;
+}
+
+.login-form { display: flex; flex-direction: column; gap: 6px; }
+.login-form label { font-size: 12.5px; font-weight: 600; margin-top: 8px; }
+.login-form input {
+  padding: 10px 12px;
+  border: 1px solid var(--farbe-rand);
+  border-radius: 8px;
+  font-size: 13.5px;
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text);
+}
+.login-form input:focus { outline: 2px solid var(--farbe-akzent); outline-offset: 1px; }
+
+.login-form button {
+  margin-top: 16px;
+  background: var(--farbe-text);
+  color: var(--farbe-hintergrund);
+  border: none;
+  border-radius: 9px;
+  padding: 11px 20px;
+  font-weight: 700;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.login-form button:hover { background: #33312A; }

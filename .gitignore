@@ -7,3 +7,7 @@ __pycache__/
 .venv/
 laeufe/
 .superpowers/
+
+# Team-Interface: echte Nutzerliste mit Passwort-Hashes, nie committen
+# (users.yaml.example bleibt im Repo als Vorlage)
+users.yaml

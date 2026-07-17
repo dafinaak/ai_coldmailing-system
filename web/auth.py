@@ -44,11 +44,32 @@ def hole_secret() -> str:
 def lade_nutzer(daten_dir: Path) -> list[dict]:
     """Liest users.yaml aus dem Datenverzeichnis: eine Liste aus
     {name, passwort_hash}. Fehlt die Datei, gibt es (noch) keine Nutzer -
-    dann kann sich niemand anmelden, aber die App startet trotzdem."""
+    dann kann sich niemand anmelden, aber die App startet trotzdem. Ist die
+    Datei da, aber falsch aufgebaut (keine Liste, oder Eintraege ohne Name/
+    Hash), bricht das mit einer klaren deutschen Meldung ab statt spaeter
+    mit einem kryptischen AttributeError mitten im Login abzustuerzen."""
     pfad = Path(daten_dir) / "users.yaml"
     if not pfad.exists():
         return []
-    return yaml.safe_load(pfad.read_text(encoding="utf-8")) or []
+    inhalt = yaml.safe_load(pfad.read_text(encoding="utf-8")) or []
+    if not isinstance(inhalt, list):
+        raise RuntimeError(
+            f"users.yaml in {pfad} ist falsch aufgebaut: erwartet wird eine "
+            f"Liste von Eintraegen wie in users.yaml.example, gefunden wurde "
+            f"stattdessen: {type(inhalt).__name__}."
+        )
+    for i, eintrag in enumerate(inhalt):
+        if (
+            not isinstance(eintrag, dict)
+            or not eintrag.get("name")
+            or not eintrag.get("passwort_hash")
+        ):
+            raise RuntimeError(
+                f"users.yaml in {pfad} ist falsch aufgebaut: Eintrag Nr. {i + 1} "
+                f"braucht beide Felder 'name' und 'passwort_hash' (siehe "
+                f"users.yaml.example), gefunden: {eintrag!r}."
+            )
+    return inhalt
 
 
 def pruefe_passwort(nutzer: list[dict], name: str, passwort: str) -> bool:
@@ -73,6 +94,16 @@ def aktueller_nutzer(request: Request) -> str | None:
         return None
 
 
+def _cookie_secure_default() -> bool:
+    """WEB_COOKIE_SECURE steuert das Secure-Attribut des Session-Cookies.
+    Default AN (jeder Wert ausser 0/false/nein/leer zaehlt als an) - in
+    Produktion laeuft die App hinter HTTPS, ohne Secure koennte der Cookie
+    ueber eine unverschluesselte Verbindung mitgelesen werden. Nur lokale
+    Entwicklung/Tests ohne HTTPS setzen die Variable explizit auf 0."""
+    wert = os.environ.get("WEB_COOKIE_SECURE", "1").strip().lower()
+    return wert not in ("0", "false", "nein", "")
+
+
 def setze_session_cookie(response, request: Request, name: str) -> None:
     """Schreibt den signierten Session-Cookie nach erfolgreichem Login."""
     serializer: URLSafeTimedSerializer = request.app.state.serializer
@@ -82,6 +113,7 @@ def setze_session_cookie(response, request: Request, name: str) -> None:
         max_age=COOKIE_MAX_AGE,
         httponly=True,
         samesite="lax",
+        secure=_cookie_secure_default(),
     )
 
 

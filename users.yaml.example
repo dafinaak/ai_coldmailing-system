@@ -8,6 +8,11 @@
 #
 # Das Beispiel unten passt zum Passwort "bitte-aendern" - nur zum
 # Ausprobieren, fuer den echten Betrieb einen eigenen Hash erzeugen.
+#
+# Umgebungsvariable WEB_COOKIE_SECURE (in .env, nicht in dieser Datei):
+# steuert, ob der Session-Cookie das Secure-Attribut traegt. Default AN -
+# Produktion laeuft ueber HTTPS, das gehoert dahin. Nur fuer lokale
+# Entwicklung ohne HTTPS auf 0 setzen: WEB_COOKIE_SECURE=0
 
 - name: Lena Hartmann
   passwort_hash: "$2b$12$SblVe6p9Dw9UInzK1w1oHu8TsRYd9QfFx89eIEsuufXFdDB4vIFsC"

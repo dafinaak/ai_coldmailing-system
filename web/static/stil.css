@@ -177,7 +177,8 @@ h1 { margin: 0; font-size: 24px; }
   padding: 28px 26px;
 }
 
-.login-box h1 { margin: 14px 0 16px; font-size: 20px; }
+.login-box h1 { margin: 14px 0 4px; font-size: 20px; }
+.login-hinweis { margin: 0 0 16px; font-size: 13px; color: var(--farbe-gedaempft); }
 
 .login-fehler {
   background: var(--farbe-fehler-hintergrund);

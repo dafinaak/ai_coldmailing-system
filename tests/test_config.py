@@ -34,6 +34,16 @@ def test_sperrliste_ist_optional(tmp_path):
     p.write_text(GUELTIG, encoding="utf-8")
     assert load_kunde(p).sperrliste == []
 
+def test_webseite_ist_optional_und_leer_per_default(tmp_path):
+    p = tmp_path / "kunde.yaml"
+    p.write_text(GUELTIG, encoding="utf-8")
+    assert load_kunde(p).webseite == ""
+
+def test_webseite_wird_geladen_wenn_vorhanden(tmp_path):
+    p = tmp_path / "kunde.yaml"
+    p.write_text(GUELTIG + "\nwebseite: https://digitaldiamonds.de\n", encoding="utf-8")
+    assert load_kunde(p).webseite == "https://digitaldiamonds.de"
+
 def test_demo_gmbh_laedt_weiterhin():
     assert load_kunde("kunden/demo-gmbh.yaml").name == "Demo GmbH"
 

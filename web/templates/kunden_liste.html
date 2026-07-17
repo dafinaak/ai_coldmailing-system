@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+{% block titel %}Kunden{% endblock %}
+{% block inhalt %}
+<div class="seite">
+  <div class="kunden-kopf">
+    <h1>Kunden</h1>
+    <a href="/kunden/neu" class="knopf-sekundaer">Kunde anlegen</a>
+  </div>
+  <p class="seiten-hilfstext">Hier pflegst du die Angaben zu jedem Kunden: Zielgruppe, Angebot, gesperrte Domains, Test-Adressen. Anschreiben erstellen lässt du unter Kampagnen.</p>
+
+  <div class="kunden-liste">
+    {% for kunde in kunden %}
+    <div class="kunden-karte">
+      <div class="kunden-name">{{ kunde.name }}</div>
+      <div class="kunden-info">{{ kunde.ziel_text }}<br>Absender: {{ kunde.absender }} · Gesperrte Domains: {{ kunde.sperr_text }}</div>
+      <a href="/kunden/{{ kunde.dateiname }}/bearbeiten" class="knopf-sekundaer">Bearbeiten</a>
+    </div>
+    {% else %}
+    <p class="kunden-leer">Noch keine Kunden angelegt.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

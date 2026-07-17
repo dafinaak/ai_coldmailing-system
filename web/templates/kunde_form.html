@@ -1,0 +1,103 @@
+{% extends "layout.html" %}
+{% block titel %}{{ "Kunde bearbeiten" if modus == "bearbeiten" else "Kunde anlegen" }}{% endblock %}
+{% block inhalt %}
+{% set speichern_url = "/kunden/" ~ dateiname ~ "/bearbeiten" if modus == "bearbeiten" else "/kunden/neu" %}
+{% set ableiten_url = "/kunden/" ~ dateiname ~ "/ableiten" if modus == "bearbeiten" else "/kunden/neu/ableiten" %}
+<div class="seite">
+  <a href="/kunden" class="formular-zurueck">‹ Zurück ohne zu speichern</a>
+  <h1>{{ "Kunde bearbeiten" if modus == "bearbeiten" else "Kunde anlegen" }}</h1>
+  <p class="seiten-hilfstext">Diese Angaben steuern, wen das System anschreibt und wie die Texte klingen.</p>
+
+  {% if fehler %}
+  <div class="formular-fehler">{{ fehler }}</div>
+  {% endif %}
+
+  <form method="post" action="{{ speichern_url }}" class="formular-karte">
+    <div class="formular-grid">
+      <label class="formular-feld">
+        <div class="formular-label">Name des Kunden</div>
+        <div class="formular-hilfstext">So heißt der Kunde überall in diesem Werkzeug.</div>
+        <input type="text" name="name" value="{{ werte.name }}" placeholder="z. B. Digital Diamonds" class="formular-eingabe">
+      </label>
+      <label class="formular-feld">
+        <div class="formular-label">Webseite der Firma</div>
+        <div class="formular-hilfstext">Von hier kann das System das Angebot ableiten.</div>
+        <input type="text" name="webseite" value="{{ werte.webseite }}" placeholder="z. B. www.digitaldiamonds.de" class="formular-eingabe">
+      </label>
+      <label class="formular-feld">
+        <div class="formular-label">Zielgruppe: Jobtitel</div>
+        <div class="formular-hilfstext">Wen soll das System suchen? Beispiel: Geschäftsführer · Deutschland · 11–50 Mitarbeiter.</div>
+        <input type="text" name="zielgruppe_titel" value="{{ werte.zielgruppe_titel }}" placeholder="z. B. Geschäftsführer, Inhaber" class="formular-eingabe">
+      </label>
+      <div class="formular-teilgrid">
+        <label class="formular-feld">
+          <div class="formular-label">Region</div>
+          <input type="text" name="zielgruppe_region" value="{{ werte.zielgruppe_region }}" placeholder="z. B. DACH" class="formular-eingabe">
+        </label>
+        <label class="formular-feld">
+          <div class="formular-label">Firmengröße</div>
+          <input type="text" name="zielgruppe_firmengroesse" value="{{ werte.zielgruppe_firmengroesse }}" placeholder="z. B. 10–250" class="formular-eingabe">
+        </label>
+      </div>
+    </div>
+
+    <div class="angebot-kasten">
+      <div class="angebot-kasten-kopf">
+        <div class="formular-label">Angebot &amp; Tonalität</div>
+        <button type="submit" formaction="{{ ableiten_url }}" class="knopf-sekundaer knopf-klein">Angebot automatisch von der Firmen-Webseite ableiten</button>
+      </div>
+      {% if vorschlag_hinweis %}
+      <div class="vorschlag-hinweis">{{ vorschlag_hinweis }}</div>
+      {% endif %}
+      <label class="formular-feld formular-feld--mitabstand">
+        <div class="formular-label-zeile">
+          <div class="formular-label">Angebot</div>
+          {% if angebot_ist_vorschlag %}<span class="vorschlag-badge">VORSCHLAG VON DER WEBSEITE</span>{% endif %}
+        </div>
+        <div class="formular-hilfstext">Was bietet der Kunde an? In zwei, drei Sätzen — die KI nutzt das für jede Mail.</div>
+        <textarea name="angebot" rows="4" placeholder="In eigenen Worten: Was bietet der Kunde an, für wen, mit welchem Nutzen?" class="formular-textarea">{{ werte.angebot }}</textarea>
+      </label>
+      <label class="formular-feld formular-feld--mitabstand">
+        <div class="formular-label-zeile">
+          <div class="formular-label">Tonalität</div>
+          {% if tonalitaet_ist_vorschlag %}<span class="vorschlag-badge">VORSCHLAG VON DER WEBSEITE</span>{% endif %}
+        </div>
+        <div class="formular-hilfstext">Wie sollen die Mails klingen? Beispiel: ruhig, erklärend, keine Superlative.</div>
+        <input type="text" name="tonalitaet" value="{{ werte.tonalitaet }}" placeholder="z. B. Direkt, auf Augenhöhe, ohne Marketing-Floskeln" class="formular-eingabe">
+      </label>
+    </div>
+
+    <div class="formular-grid formular-grid--unten">
+      <label class="formular-feld">
+        <div class="formular-label">Absendername</div>
+        <div class="formular-hilfstext">Dieser Name steht unter jeder Mail.</div>
+        <input type="text" name="absender" value="{{ werte.absender }}" placeholder="Wer unterschreibt die Mails?" class="formular-eingabe">
+      </label>
+      <div class="formular-teilgrid">
+        <label class="formular-feld">
+          <div class="formular-label">Nachfass 1 (Tage)</div>
+          <input type="number" name="follow_up_tag_1" value="{{ werte.follow_up_tag_1 }}" placeholder="z. B. 3" class="formular-eingabe">
+        </label>
+        <label class="formular-feld">
+          <div class="formular-label">Nachfass 2 (Tage)</div>
+          <input type="number" name="follow_up_tag_2" value="{{ werte.follow_up_tag_2 }}" placeholder="z. B. 7" class="formular-eingabe">
+        </label>
+      </div>
+      <label class="formular-feld">
+        <div class="formular-label">Gesperrte Domains (nur dieser Kunde)</div>
+        <div class="formular-hilfstext">An Firmen mit diesen Internet-Adressen wird nie geschrieben — z. B. eure eigene Firma oder Kunden. Die globale Liste gilt zusätzlich.</div>
+        <textarea name="sperrliste" rows="3" placeholder="eine Adresse pro Zeile" class="formular-textarea">{{ werte.sperrliste }}</textarea>
+      </label>
+      <label class="formular-feld">
+        <div class="formular-label">Test-Adressen</div>
+        <div class="formular-hilfstext">Solange der Test-Modus an ist, gehen Mails nur an diese Adressen — an niemanden sonst.</div>
+        <textarea name="test_empfaenger" rows="3" placeholder="eine Adresse pro Zeile" class="formular-textarea">{{ werte.test_empfaenger }}</textarea>
+      </label>
+    </div>
+
+    <div class="formular-fuss">
+      <button type="submit" class="knopf-primaer">Speichern</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

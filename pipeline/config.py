@@ -15,6 +15,7 @@ class Kunde:
     follow_up_tage: list
     test_empfaenger: list
     sperrliste: list = field(default_factory=list)  # Domains, nie anschreiben
+    webseite: str = ""  # Firmen-Webseite, Basis fuer die Angebots-Ableitung im Web-Interface
 
 def load_kunde(path) -> Kunde:
     with open(path, encoding="utf-8") as f:
@@ -51,7 +52,8 @@ def load_kunde(path) -> Kunde:
                 f"gefunden: {daten['sperrliste']!r}")
 
     return Kunde(**{k: daten[k] for k in PFLICHTFELDER},
-                 sperrliste=daten.get("sperrliste") or [])
+                 sperrliste=daten.get("sperrliste") or [],
+                 webseite=daten.get("webseite") or "")
 
 def lade_globale_sperrliste(daten_dir) -> list:
     """Liest sperrliste-global.yaml aus daten_dir: eine einfache Liste aus

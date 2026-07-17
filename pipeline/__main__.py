@@ -1,7 +1,7 @@
 import argparse, os, sys
 from collections import Counter
 from pathlib import Path
-from pipeline.config import load_kunde
+from pipeline.config import load_kunde, lade_globale_sperrliste
 from pipeline.env import lade_dotenv, brauche_env as _brauche_env, brauche_env_eines_von as _brauche_env_eines_von
 from pipeline.run_store import RunStore
 from pipeline.sources.apollo import ApolloSource
@@ -64,7 +64,14 @@ def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None
              for d in stand_leads["leads"]]
 
     if not store.step_done("dedupe"):
-        behalten, verworfen = dedupe_leads(leads, store.run_dir.parent, kunde.sperrliste,
+        # Globale Sperrliste (gilt fuer alle Kunden) + die eigene Liste des
+        # Kunden zusammen anwenden (Vereinigung, Reihenfolge egal). Der
+        # daten_dir fuer die globale Liste ist hier bewusst der aktuelle
+        # Arbeitsordner (Projekt-Wurzel, wo kunden/ und laeufe/ liegen) -
+        # wie der Rest der CLI schon cwd-relativ arbeitet (siehe LAEUFE oben).
+        globale_sperrliste = lade_globale_sperrliste(Path("."))
+        sperrliste = list(set(kunde.sperrliste) | set(globale_sperrliste))
+        behalten, verworfen = dedupe_leads(leads, store.run_dir.parent, sperrliste,
                                            aktueller_lauf=store.run_dir)
         store.save_step("dedupe", {"behalten": [l.__dict__ for l in behalten],
                                    "verworfen": verworfen})

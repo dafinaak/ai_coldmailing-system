@@ -13,22 +13,17 @@ from fastapi.templating import Jinja2Templates
 from itsdangerous import URLSafeTimedSerializer
 
 from . import auth
+from .nav import NAV_BEREICHE, nav_kontext
+from .routen import sperrliste as sperrliste_routen
 
 BASIS = Path(__file__).resolve().parent
 
-# Die sieben Bereiche der Seitenleiste, in dieser verbindlichen Reihenfolge
-# (siehe docs/text-leitfaden-interface.md). Jeder Bereich hat schon eine
-# Route - solange das zugehoerige Paket noch nicht gebaut ist, zeigt sie
-# nur eine Platzhalterseite, damit die Navigation nie ins Leere (404) laeuft.
-NAV_BEREICHE = [
-    ("dashboard", "/", "Dashboard"),
-    ("kampagnen", "/kampagnen", "Kampagnen"),
-    ("pruefen", "/pruefen", "Prüfen & Freigeben"),
-    ("kontakte", "/kontakte", "Kontakte"),
-    ("postfach", "/postfach", "Postfach"),
-    ("domains", "/domains", "Gesperrte Domains"),
-    ("kunden", "/kunden", "Kunden"),
-]
+# NAV_BEREICHE (siehe web/nav.py) listet alle sieben Bereiche - solange das
+# zugehoerige Paket zu einem Bereich noch nicht gebaut ist, zeigt er nur
+# eine Platzhalterseite, damit die Navigation nie ins Leere (404) laeuft.
+# Bereiche mit eigenem Routen-Modul werden unten aus dieser Liste
+# ausgenommen, sobald ihre echte Route registriert ist.
+BEREICHE_MIT_EIGENER_ROUTE = {"domains"}
 
 
 def create_app(daten_dir: Path) -> FastAPI:
@@ -46,11 +41,7 @@ def create_app(daten_dir: Path) -> FastAPI:
 
     app.add_middleware(auth.AnmeldePflicht)
 
-    def nav_kontext(request: Request) -> list[dict]:
-        return [
-            {"url": url, "label": label, "aktiv": request.url.path == url, "badge": None}
-            for _, url, label in NAV_BEREICHE
-        ]
+    app.include_router(sperrliste_routen.router)
 
     @app.get("/health")
     async def health():
@@ -98,7 +89,9 @@ def create_app(daten_dir: Path) -> FastAPI:
 
         return route
 
-    for _, url, label in NAV_BEREICHE:
+    for key, url, label in NAV_BEREICHE:
+        if key in BEREICHE_MIT_EIGENER_ROUTE:
+            continue
         app.add_api_route(url, mache_platzhalter_route(label), methods=["GET"])
 
     return app

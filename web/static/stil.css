@@ -155,7 +155,98 @@ h1 { margin: 0; font-size: 24px; }
 .inhalt { flex: 1; overflow-y: auto; }
 
 .seite { padding: 30px 40px 60px; max-width: 1000px; }
+.seite--schmal { max-width: 760px; }
 .platzhalter-text { color: var(--farbe-gedaempft); margin-top: 8px; font-size: 13.5px; }
+.seiten-hilfstext { color: var(--farbe-gedaempft); margin: 4px 0 18px; font-size: 13.5px; }
+
+/* Gesperrte Domains ------------------------------------------------------ */
+
+.karte {
+  background: var(--farbe-weiss);
+  border: 1px solid var(--farbe-rand);
+  border-radius: 14px;
+  padding: 24px 28px;
+}
+
+.chip-liste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--schrift-mono);
+  font-size: 13px;
+  background: #ECEAE1;
+  border-radius: 999px;
+  padding: 6px 8px 6px 13px;
+}
+
+.chip-leer { color: var(--farbe-gedaempft); font-size: 13.5px; }
+
+.chip-entfernen-form { margin: 0; }
+.chip-entfernen-knopf {
+  background: none;
+  border: none;
+  padding: 0 4px;
+  color: var(--farbe-gedaempft);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  line-height: 1;
+}
+.chip-entfernen-knopf:hover { color: var(--farbe-fehler-rand); }
+
+.chip-hinzufuegen-form {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+}
+
+.chip-eingabe {
+  flex: 1;
+  border: 1px solid var(--farbe-rand);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13.5px;
+  background: var(--farbe-hintergrund);
+  color: var(--farbe-text);
+}
+.chip-eingabe:focus { outline: 2px solid var(--farbe-akzent); outline-offset: 1px; }
+
+.chip-hinzufuegen-knopf {
+  border: 1px solid var(--farbe-rand);
+  background: var(--farbe-weiss);
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-weight: 600;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.chip-hinzufuegen-knopf:hover { border-color: var(--farbe-gedaempft); }
+
+.hinweis-kasten {
+  border: 1px dashed var(--farbe-rand);
+  border-radius: 12px;
+  padding: 14px 20px;
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--farbe-gedaempft);
+}
+
+.formular-fehler {
+  background: var(--farbe-fehler-hintergrund);
+  border: 1.5px solid var(--farbe-fehler-rand);
+  color: var(--farbe-fehler-text);
+  border-radius: 9px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin: 0 0 16px;
+}
 
 /* Login-Seite ----------------------------------------------------------- */
 

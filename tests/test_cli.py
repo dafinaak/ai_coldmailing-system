@@ -1,6 +1,8 @@
 import json, os
 from datetime import datetime, timedelta
+from pathlib import Path
 import pytest
+import yaml
 import pipeline.__main__ as cli
 import pipeline.run_store as run_store_modul
 from pipeline.__main__ import senden
@@ -212,6 +214,37 @@ def test_lauf_personalisiert_end_zu_ende_und_dedupe_greift_erst_im_naechsten_lau
     assert len(zweiter_dedupe["verworfen"]) == 2
     assert all(v["grund"] == "bereits in frueherem Lauf angeschrieben"
                for v in zweiter_dedupe["verworfen"])
+
+def test_lauf_globale_sperrliste_blockt_lead_auch_ohne_eigene_kunden_sperrliste(
+        tmp_path, monkeypatch):
+    # Task 2: die globale Sperrliste (sperrliste-global.yaml im
+    # Projekt-Wurzelordner) muss in 'lauf' greifen, auch wenn der Kunde
+    # selbst gar keine eigene sperrliste hat (_TEST_KUNDE_YAML hat keine).
+    monkeypatch.setattr(cli, "ApolloSource", _FakeApolloSource)
+    monkeypatch.setattr(cli, "KI", _FakeKI)
+    monkeypatch.setattr(run_store_modul, "datetime", _FakeDatetime)
+    monkeypatch.setenv("APOLLO_API_KEY", "test-key")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+
+    kunde_datei = tmp_path / "test-kunde.yaml"
+    kunde_datei.write_text(_TEST_KUNDE_YAML, encoding="utf-8")
+    (tmp_path / "sperrliste-global.yaml").write_text(
+        yaml.safe_dump(["firma.de"]), encoding="utf-8")
+
+    # cwd fuer die Dauer des Tests auf tmp_path, damit sowohl die
+    # kunden-relative Datei als auch lade_globale_sperrliste(Path(".")) im
+    # praeparierten Verzeichnis landen statt im echten Projekt-Wurzelordner.
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(cli, "LAEUFE", Path("laeufe"))
+
+    cli.lauf(str(kunde_datei.name), 10, None)
+
+    laeufe = sorted((tmp_path / "laeufe" / "test-gmbh").glob("*"))
+    assert len(laeufe) == 1
+    dedupe_stand = json.loads((laeufe[0] / "dedupe.json").read_text(encoding="utf-8"))
+    assert dedupe_stand["behalten"] == []
+    assert len(dedupe_stand["verworfen"]) == 2
+    assert all(v["grund"] == "Domain auf Sperrliste" for v in dedupe_stand["verworfen"])
 
 def test_neu_ab_dedupe_verwendet_von_hand_bearbeitete_leads(tmp_path, monkeypatch):
     # Task 11: --fortsetzen zusammen mit --neu-ab soll den angegebenen

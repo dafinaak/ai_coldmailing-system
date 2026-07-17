@@ -200,6 +200,46 @@ def test_bearbeiten_speichert_aenderungen_unter_gleichem_dateinamen(
     assert kunde.angebot == "Neues Angebot nach Bearbeitung"
 
 
+def test_bearbeiten_behaelt_fremde_yaml_felder_die_das_formular_nicht_kennt(
+    angemeldeter_client, daten_dir
+):
+    (daten_dir / "kunden").mkdir()
+    _kunde_datei(daten_dir, "demo-gmbh").write_text(
+        yaml.safe_dump({
+            "name": "Demo GmbH",
+            "zielgruppe": {"titel": ["CEO"], "region": ["Germany"], "firmengroesse": ["11-50"]},
+            "angebot": "Altes Angebot",
+            "tonalitaet": "ruhig",
+            "absender": "Leonard",
+            "follow_up_tage": [3, 7],
+            "test_empfaenger": ["test@example.com"],
+            "notizen_intern": "Nur fuers Team - nicht im Formular abgebildet",
+        }, allow_unicode=True),
+        encoding="utf-8",
+    )
+    daten = dict(GUELTIGE_FORMULARDATEN)
+    daten["name"] = "Demo GmbH"
+    antwort = angemeldeter_client.post(
+        "/kunden/demo-gmbh/bearbeiten", data=daten, follow_redirects=False
+    )
+    assert antwort.status_code == 303
+
+    pfad = _kunde_datei(daten_dir, "demo-gmbh")
+    gespeichert = yaml.safe_load(pfad.read_text(encoding="utf-8"))
+    assert gespeichert["notizen_intern"] == "Nur fuers Team - nicht im Formular abgebildet"
+    assert gespeichert["angebot"] == GUELTIGE_FORMULARDATEN["angebot"]
+
+
+def test_pflichtfeld_fehler_zeigt_keinen_temp_pfad(angemeldeter_client, daten_dir):
+    daten = dict(GUELTIGE_FORMULARDATEN)
+    daten["angebot"] = ""
+    antwort = angemeldeter_client.post("/kunden/neu", data=daten)
+    assert antwort.status_code == 400
+    assert "angebot" in antwort.text
+    assert ".tmp" not in antwort.text
+    assert str(daten_dir) not in antwort.text
+
+
 # Angebot ableiten -----------------------------------------------------------
 
 def test_ableiten_fuellt_nur_leere_felder_und_zeigt_badge(
@@ -269,5 +309,27 @@ def test_ableiten_bei_ki_fehler_zeigt_dreiteiligen_deutschen_fehler(
     assert "hat gerade nicht geklappt" in antwort.text  # Was ist passiert
     assert "nichts gespeichert oder verändert" in antwort.text  # Beruhigung
     assert "noch einmal versuchen" in antwort.text  # Was du tun kannst
+    assert "Neue Firma GmbH" in antwort.text  # Eingaben bleiben erhalten
+    assert "VORSCHLAG VON DER WEBSEITE" not in antwort.text
+
+
+def test_ableiten_ohne_webseite_bricht_ab_ohne_ki_aufruf(angemeldeter_client, app):
+    class KIDieNichtGerufenWerdenDarf:
+        def frage(self, system, prompt):
+            raise AssertionError("KI haette bei fehlender Webseite nicht aufgerufen werden duerfen")
+
+    app.state.ki = KIDieNichtGerufenWerdenDarf()
+
+    daten = dict(GUELTIGE_FORMULARDATEN)
+    daten["webseite"] = "   "
+    daten["angebot"] = ""
+    daten["tonalitaet"] = ""
+    antwort = angemeldeter_client.post("/kunden/neu/ableiten", data=daten)
+
+    assert antwort.status_code == 200
+    assert (
+        "Trag zuerst die Webseite der Firma ein — daraus wird das Angebot abgeleitet."
+        in antwort.text
+    )
     assert "Neue Firma GmbH" in antwort.text  # Eingaben bleiben erhalten
     assert "VORSCHLAG VON DER WEBSEITE" not in antwort.text

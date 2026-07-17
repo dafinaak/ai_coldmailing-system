@@ -44,6 +44,10 @@ LEERE_WERTE = {feld: "" for feld in FORMULAR_FELDER}
 
 VORSCHLAG_HINWEIS = "Vorschlag von der Webseite übernommen — nur leere Felder wurden ausgefüllt."
 
+WEBSEITE_FEHLT_FEHLER = (
+    "Trag zuerst die Webseite der Firma ein — daraus wird das Angebot abgeleitet."
+)
+
 ABLEITEN_FEHLER = (
     "Der Vorschlag von der Webseite hat gerade nicht geklappt. Es ist nichts "
     "gespeichert oder verändert worden — deine bisherigen Eingaben stehen unten "
@@ -58,6 +62,18 @@ def _kunden_dir(daten_dir) -> Path:
     ordner = Path(daten_dir) / KUNDEN_ORDNER
     ordner.mkdir(parents=True, exist_ok=True)
     return ordner
+
+
+def _bestehende_daten(kunden_dir: Path, dateiname: str) -> dict:
+    """Liest die aktuell gespeicherte YAML eines Kunden roh ein (ohne
+    load_kunde-Validierung). Wird beim Bearbeiten als Grundlage genommen,
+    damit Felder, die das Formular nicht kennt (z.B. spaeter von Hand
+    ergaenzte Notizen), beim Speichern nicht verloren gehen."""
+    pfad = kunden_dir / f"{dateiname}.yaml"
+    if not pfad.exists():
+        return {}
+    inhalt = yaml.safe_load(pfad.read_text(encoding="utf-8")) or {}
+    return inhalt if isinstance(inhalt, dict) else {}
 
 
 def _zielgruppe_text(zielgruppe: dict) -> str:
@@ -197,10 +213,20 @@ def _validieren_und_speichern(kunden_dir: Path, dateiname: str, daten: dict) -> 
         tmp_pfad = Path(tmp.name)
     try:
         load_kunde(tmp_pfad)
-    except ValueError:
+    except ValueError as fehler:
         tmp_pfad.unlink(missing_ok=True)
-        raise
+        raise ValueError(_ohne_dateipfad(fehler, tmp_pfad)) from None
     tmp_pfad.replace(kunden_dir / f"{dateiname}.yaml")
+
+
+def _ohne_dateipfad(fehler: ValueError, pfad: Path) -> str:
+    """load_kunde-Fehlertexte nennen den Pfad der geprueften Datei (z.B.
+    'Pflichtfelder fehlen in /tmp/.../xy.yaml.tmp: angebot') - fuer die
+    interne temporaere Datei beim Speichern ist das kein Detail, das der
+    Nutzerin etwas sagt, und verraet nebenbei Server-Pfade. Die pipeline-
+    Meldungen selbst bleiben unveraendert; hier wird nur fuer die Anzeige
+    der Pfad-Teil herausgeschnitten."""
+    return str(fehler).replace(f" in {pfad}", "").strip()
 
 
 def _hole_ki(request: Request):
@@ -237,6 +263,14 @@ def _formular_antwort(
 
 
 async def _ableiten_antwort(request: Request, *, modus: str, dateiname: str | None, werte: dict):
+    if not werte["webseite"].strip():
+        # Ohne Webseite gibt es nichts zu lesen - erst gar nicht bei der KI
+        # nachfragen (unnoetiger Aufruf, unnoetige Wartezeit).
+        return _formular_antwort(
+            request, modus=modus, dateiname=dateiname, werte=werte,
+            fehler=WEBSEITE_FEHLT_FEHLER,
+        )
+
     angebot_leer = not werte["angebot"].strip()
     tonalitaet_leer = not werte["tonalitaet"].strip()
 
@@ -350,8 +384,11 @@ async def kunde_bearbeiten_speichern(
         follow_up_tag_1=follow_up_tag_1, follow_up_tag_2=follow_up_tag_2,
         test_empfaenger=test_empfaenger, sperrliste=sperrliste,
     )
-    daten = _daten_fuer_load_kunde(werte)
     kunden_dir = _kunden_dir(request.app.state.daten_dir)
+    # Formular-Werte OBEN AUF die bestehende YAML legen, nicht ersetzen -
+    # Felder, die das Formular nicht abbildet (z.B. von Hand ergaenzte
+    # interne Notizen), bleiben so erhalten statt beim Speichern zu verschwinden.
+    daten = {**_bestehende_daten(kunden_dir, dateiname), **_daten_fuer_load_kunde(werte)}
     try:
         _validieren_und_speichern(kunden_dir, dateiname, daten)
     except ValueError as fehler:

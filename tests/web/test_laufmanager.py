@@ -67,6 +67,7 @@ def _fabriziere_laufordner(daten_dir: Path, *, slug: str = "test-gmbh",
                             ts: str = "20260101-000000", pid=None,
                             leads=None, dedupe=None, personalisierung=None,
                             pruefung_ok=None, freigabe=False, versand_komplett=None,
+                            abgelehnt=None,
                             log: str | None = None, meta: dict | None = None) -> Path:
     lauf_dir = daten_dir / "laeufe" / slug / ts
     lauf_dir.mkdir(parents=True)
@@ -84,6 +85,8 @@ def _fabriziere_laufordner(daten_dir: Path, *, slug: str = "test-gmbh",
         (lauf_dir / "FREIGABE.txt").write_text("Freigegeben am 2026-07-17\n", encoding="utf-8")
     if versand_komplett is not None:
         (lauf_dir / "versand_komplett.json").write_text(json.dumps(versand_komplett), encoding="utf-8")
+    if abgelehnt is not None:
+        (lauf_dir / "abgelehnt.json").write_text(json.dumps(abgelehnt), encoding="utf-8")
     if log is not None:
         (lauf_dir / "lauf.log").write_text(log, encoding="utf-8")
     if meta is not None:
@@ -343,6 +346,32 @@ def test_status_uebergeben(tmp_path, monkeypatch):
         versand_komplett={"campaign_id": "camp-1"})
     monkeypatch.setattr(laufmanager, "_pid_lebt", lambda pid: False)
     assert Laufmanager(tmp_path).status(lauf_dir)["zustand"] == "uebergeben"
+
+
+def test_status_abgelehnt(tmp_path, monkeypatch):
+    # Carry-Forward aus Task-4-Review (Task 5): abgelehnt.json (geschrieben
+    # von web/routen/freigabe.py beim Ablehnen) muss den Zustand "abgelehnt"
+    # ergeben, sonst zeigt ein abgelehnter Lauf fuer immer "wartet auf
+    # Freigabe" in Kampagnen-/Pruefen-Uebersichten.
+    lauf_dir = _fabriziere_laufordner(
+        tmp_path, pid=123, pruefung_ok=[{"email": "a@b.de"}],
+        abgelehnt={"von": "Lena Hartmann", "am": "17.07.2026, 16:00",
+                   "begruendung": "Ton passt nicht"})
+    monkeypatch.setattr(laufmanager, "_pid_lebt", lambda pid: False)
+    assert Laufmanager(tmp_path).status(lauf_dir)["zustand"] == "abgelehnt"
+
+
+def test_status_abgelehnt_hat_vorrang_vor_wartet_auf_freigabe(tmp_path, monkeypatch):
+    # Ohne abgelehnt.json waere derselbe Laufordner "wartet_auf_freigabe"
+    # (pruefung_ok da, keine Freigabe/kein Versand) - abgelehnt.json muss
+    # das ueberschreiben, sonst taucht der Lauf weiter in der Warteliste auf.
+    lauf_dir = _fabriziere_laufordner(
+        tmp_path, pid=123, pruefung_ok=[{"email": "a@b.de"}],
+        abgelehnt={"von": "Lena", "am": "17.07.2026", "begruendung": "x"})
+    monkeypatch.setattr(laufmanager, "_pid_lebt", lambda pid: False)
+    stand = Laufmanager(tmp_path).status(lauf_dir)
+    assert stand["zustand"] != "wartet_auf_freigabe"
+    assert stand["zustand"] == "abgelehnt"
 
 
 def test_status_liest_zahlen_aus_step_dateien(tmp_path, monkeypatch):

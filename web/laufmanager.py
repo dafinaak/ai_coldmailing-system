@@ -343,9 +343,16 @@ class Laufmanager:
         pruefung_ok = (lauf_dir / "pruefung_ok.json").exists()
         freigegeben = (lauf_dir / "FREIGABE.txt").exists()
         versand_komplett = (lauf_dir / "versand_komplett.json").exists()
+        # Carry-Forward aus Task-4-Review (Task 5, web/routen/freigabe.py
+        # schreibt abgelehnt.json beim Ablehnen): MUSS vor pruefung_ok
+        # geprueft werden, sonst zeigt ein abgelehnter Lauf fuer immer
+        # "wartet_auf_freigabe" statt zu verschwinden.
+        abgelehnt = (lauf_dir / "abgelehnt.json").exists()
 
         if laeuft:
             zustand = "laeuft"
+        elif abgelehnt:
+            zustand = "abgelehnt"
         elif versand_komplett:
             zustand = "uebergeben"
         elif freigegeben:
@@ -382,7 +389,7 @@ class Laufmanager:
         # schritt==5 den Maximalwert erreicht hat, aber "nr < schritt" fuer
         # nr=5 nie wahr wird). schritt_fertig ist die fuer die Anzeige
         # gedachte Zahl "so viele Haken".
-        if zustand in ("wartet_auf_freigabe", "freigegeben", "uebergeben"):
+        if zustand in ("wartet_auf_freigabe", "freigegeben", "uebergeben", "abgelehnt"):
             schritt_fertig = 5
         else:
             schritt_fertig = schritt - 1

@@ -300,6 +300,48 @@ def test_neu_ab_widerruft_alte_freigabe(tmp_path, monkeypatch):
 
     assert is_approved(store) is False
 
+class _FakeKIEinerLehntAb:
+    """Wie _FakeKI, aber der Qualitaets-Pruefer lehnt genau den Lead mit dem
+    Titel 'CTO' ab (der Pruefer-Prompt enthaelt den Titel, siehe
+    pipeline.quality._regeln/check) - so entsteht garantiert ein
+    Nacharbeit-Eintrag mit vorher erfolgreich erzeugtem Text, um zu pruefen,
+    dass Task 5 diesen Text mit in nacharbeit ablegt (fuer die aufklappbare
+    Anzeige 'Von der Pruefung aussortiert' im Web-Interface)."""
+    def frage(self, system, prompt):
+        if "JSON" in system:
+            return json.dumps({"betreff": "Kurze Anfrage",
+                                "mail_1": " ".join(["Wort"] * 50),
+                                "follow_up_1": "F1", "follow_up_2": "F2"})
+        if "CTO" in prompt:
+            return "NEIN, Ton passt nicht zur Zielgruppe"
+        return "JA"
+
+def test_lauf_speichert_abgelehnten_text_in_nacharbeit(tmp_path, monkeypatch):
+    # Task 5 (Team-Interface, Pruefen & Freigeben): die aufklappbare Ansicht
+    # der aussortierten Texte braucht neben dem Grund auch den Text selbst,
+    # wenn einer erzeugt wurde (hier: personalize() gelingt, nur check()
+    # lehnt ab). nacharbeit-Eintraege muessen deshalb betreff/mail_1/
+    # follow_up_1/follow_up_2 zusaetzlich zu email+grund tragen.
+    monkeypatch.setattr(cli, "ApolloSource", _FakeApolloSource)
+    monkeypatch.setattr(cli, "KI", _FakeKIEinerLehntAb)
+    monkeypatch.setattr(cli, "LAEUFE", tmp_path)
+    monkeypatch.setattr(run_store_modul, "datetime", _FakeDatetime)
+    monkeypatch.setenv("APOLLO_API_KEY", "test-key")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+
+    cli.lauf("kunden/demo-gmbh.yaml", 10, None)
+
+    lauf_dir = sorted((tmp_path / "demo-gmbh").glob("*"))[0]
+    personalisierung = json.loads(
+        (lauf_dir / "personalisierung.json").read_text(encoding="utf-8"))
+    assert len(personalisierung["nacharbeit"]) == 1
+    eintrag = personalisierung["nacharbeit"][0]
+    assert eintrag["email"] == "bob@firma.de"
+    assert "Ton passt nicht" in eintrag["grund"]
+    assert eintrag["betreff"] == "Kurze Anfrage"
+    assert eintrag["mail_1"].startswith("Wort")
+    assert eintrag["follow_up_1"] == "F1" and eintrag["follow_up_2"] == "F2"
+
 def test_lauf_fortsetzen_akzeptiert_altes_leads_listenformat(tmp_path, monkeypatch):
     # Vor der "ohne_email"-Zaehlung war leads.json eine reine Liste statt
     # {"leads": [...], "ohne_email": n}. --fortsetzen auf so einem alten

@@ -90,7 +90,12 @@ def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None
             if ok:
                 fertig.append({"email": lead.email, **texte})
             else:
-                nacharbeit.append({"email": lead.email, "grund": grund})
+                # texte ist {} wenn personalize() selbst schon scheiterte
+                # (kein Text erzeugt), sonst der volle Text, den nur check()
+                # abgelehnt hat. Wird mitgespeichert, damit die "Von der
+                # Pruefung aussortiert"-Ansicht im Web-Interface (Task 5) den
+                # abgelehnten Text aufklappbar zeigen kann statt nur den Grund.
+                nacharbeit.append({"email": lead.email, "grund": grund, **texte})
         store.save_step("personalisierung", {"fertig": fertig, "nacharbeit": nacharbeit})
     ergebnis = store.load_step("personalisierung")
     store.save_step("pruefung_ok", ergebnis["fertig"])
@@ -110,24 +115,45 @@ def freigeben(laufordner: str):
     approve(RunStore.resume(laufordner))
     print("Freigegeben. Senden mit: python -m pipeline senden", laufordner)
 
-def senden(laufordner: str):
-    _brauche_env("INSTANTLY_API_KEY")
-    store = RunStore.resume(laufordner)
+class SendenFehler(Exception):
+    """Fasst die Abbruchgruende von '_versand_ausfuehren' als Exception statt
+    sys.exit zusammen, damit dieselbe Kernlogik von zwei Aufrufern genutzt
+    werden kann: der CLI (senden(), macht sys.exit(str(fehler)) daraus) und
+    der Web-Route web/routen/freigabe.py (Task 5, macht daraus eine deutsche
+    Fehlermeldung auf der Seite). Der Test-Empfaenger-Gate darf dadurch an
+    genau einer Stelle stehen, nie dupliziert werden."""
+
+
+def _versand_ausfuehren(store, sender, kunde=None) -> str:
+    """Kernlogik von 'senden': Freigabe-/Empfaenger-Gate pruefen, Kampagne
+    anlegen (oder eine schon angelegte wiederverwenden) und Leads
+    importieren. `sender` ist ein InstantlySender (oder ein Fake mit
+    derselben Schnittstelle in Tests/Web) - so bleibt diese Funktion
+    unabhaengig davon, WO der API-Key herkommt.
+
+    `kunde` ist optional: Standard None laedt ihn selbst ueber den in
+    kunde_pfad.json gespeicherten Pfad, der relativ zum Arbeitsverzeichnis
+    ist (funktioniert fuer die CLI, die immer mit cwd=daten_dir laeuft, s.
+    web/laufmanager.py). Der Web-Aufrufer (web/routen/freigabe.py) laeuft
+    dagegen IM SELBEN Prozess wie der Webserver, dessen cwd nicht daten_dir
+    ist - er laedt den Kunden deshalb selbst (relativ zu daten_dir aufgeloest)
+    und uebergibt ihn hier direkt, statt den Pfad blind nochmal relativ zum
+    falschen Arbeitsverzeichnis zu lesen."""
     if not is_approved(store):
-        sys.exit("Keine Freigabe fuer diesen Lauf (FREIGABE.txt fehlt).")
+        raise SendenFehler("Keine Freigabe fuer diesen Lauf (FREIGABE.txt fehlt).")
     if store.step_done("versand_komplett"):
         campaign_id = store.load_step("versand_komplett")["campaign_id"]
-        sys.exit(f"Kampagne bereits angelegt: {campaign_id}")
-    kunde = load_kunde(store.load_step("kunde_pfad")["pfad"])
+        raise SendenFehler(f"Kampagne bereits angelegt: {campaign_id}")
+    if kunde is None:
+        kunde = load_kunde(store.load_step("kunde_pfad")["pfad"])
     texte = store.load_step("pruefung_ok")
     erlaubt = {e.strip().lower() for e in kunde.test_empfaenger}
     fremde = [t["email"] for t in texte if t["email"] not in erlaubt]
     if fremde:
-        sys.exit(f"Abbruch: Empfaenger nicht in Test-Empfaenger-Liste: {fremde}")
+        raise SendenFehler(f"Abbruch: Empfaenger nicht in Test-Empfaenger-Liste: {fremde}")
     if not texte:
-        sys.exit("Abbruch: keine freigegebenen Texte zum Versenden.")
+        raise SendenFehler("Abbruch: keine freigegebenen Texte zum Versenden.")
 
-    sender = InstantlySender(os.environ["INSTANTLY_API_KEY"])
     if store.step_done("versand"):
         # Kampagne wurde in einem frueheren, abgebrochenen Lauf schon
         # angelegt (z.B. weil der Lead-Import scheiterte) - dieselbe
@@ -136,13 +162,23 @@ def senden(laufordner: str):
         # Kampagne per E-Mail? Sonst koennen Wiederholungs-Importe nach
         # Teilfehler Leads doppeln.
         campaign_id = store.load_step("versand")["campaign_id"]
-        print(f"Kampagne {campaign_id} bereits angelegt - importiere Leads erneut.")
     else:
         campaign_id = sender.create_campaign(kunde)
         store.save_step("versand", {"campaign_id": campaign_id})
 
     sender.import_leads(campaign_id, texte)
     store.save_step("versand_komplett", {"campaign_id": campaign_id})
+    return campaign_id
+
+
+def senden(laufordner: str):
+    _brauche_env("INSTANTLY_API_KEY")
+    store = RunStore.resume(laufordner)
+    sender = InstantlySender(os.environ["INSTANTLY_API_KEY"])
+    try:
+        campaign_id = _versand_ausfuehren(store, sender)
+    except SendenFehler as fehler:
+        sys.exit(str(fehler))
     print(f"Kampagne {campaign_id} pausiert angelegt - Aktivierung von Hand in Instantly.")
 
 def main():

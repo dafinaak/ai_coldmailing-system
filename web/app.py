@@ -15,6 +15,7 @@ from itsdangerous import URLSafeTimedSerializer
 from . import auth
 from .nav import NAV_BEREICHE, nav_kontext
 from .routen import auftraege as auftraege_routen
+from .routen import freigabe as freigabe_routen
 from .routen import kunden as kunden_routen
 from .routen import sperrliste as sperrliste_routen
 
@@ -25,7 +26,7 @@ BASIS = Path(__file__).resolve().parent
 # eine Platzhalterseite, damit die Navigation nie ins Leere (404) laeuft.
 # Bereiche mit eigenem Routen-Modul werden unten aus dieser Liste
 # ausgenommen, sobald ihre echte Route registriert ist.
-BEREICHE_MIT_EIGENER_ROUTE = {"domains", "kunden"}
+BEREICHE_MIT_EIGENER_ROUTE = {"domains", "kunden", "pruefen"}
 
 
 def create_app(daten_dir: Path) -> FastAPI:
@@ -46,6 +47,7 @@ def create_app(daten_dir: Path) -> FastAPI:
     app.include_router(sperrliste_routen.router)
     app.include_router(kunden_routen.router)
     app.include_router(auftraege_routen.router)
+    app.include_router(freigabe_routen.router)
 
     @app.get("/health")
     async def health():

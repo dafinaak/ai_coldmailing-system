@@ -37,11 +37,18 @@ Bewusst NICHT in v1: Antworten-Erkennung/Einsortierung, Reporting.
   lokal, per .gitignore vom Git ausgeschlossen — enthält Sitzungsdaten):
   bestätigte den Bauplan; daraus nachgezogen: Domain-Sperrliste,
   Schutz-Voreinstellungen (20 Mails/Tag, Fenster Mo–Fr 8–19).
-- OFFEN: Task 11 (End-zu-End-Nachweis) — braucht von Leonard: Okay für
-  Test-Domain-Kauf (~10–15 €/Jahr), Test-Postfächer,
-  Anthropic-API-Schlüssel, Instantly-Zugang (wer hat den
-  API-Schlüssel? enthält der Team-Tarif API v2?) und Okay für den ersten
-  Schreibzugriff aufs Team-Instantly.
+- Instantly-API-Schlüssel liegt vor (17.07.2026, in .env) und ist
+  VERIFIZIERT: API v2 antwortet (rein lesende Prüfung) — der Team-Tarif
+  enthält die API, größtes Restrisiko damit ausgeräumt. Im Team-Konto:
+  10 verbundene Postfächer auf 10 Outreach-Domains, 8 mit aktivem Warmup.
+- Subdomain mailingsystem.polepositionautomation.de wurde von Leonard
+  angelegt (A-Record auf 178.104.175.42). Für den Endnachweis vermutlich
+  nicht nötig (vorhandene warme Postfächer nutzbar; neues Postfach müsste
+  erst wochenlang anwärmen) — Entscheidung Leonards steht aus.
+- OFFEN: Task 11 (End-zu-End-Nachweis) — noch nötig: Leonards Wahl des
+  Absender-Postfachs (vorhandenes warmes vs. neues auf Subdomain),
+  Test-Empfänger-Adressen (Gmail/Outlook), Okay für den einen
+  Schreibzugriff (eine pausierte "[TEST] Demo GmbH"-Kampagne).
 - Apollo-API-Schlüssel liegt vor (16.07.2026), gespeichert in .env
   (gitignored — Schlüssel stehen nie im Repo oder in Notizen).
 - Text-KI läuft über OpenRouter: Schlüssel in .env, LÄUFT ca. 23.07.2026 AB

@@ -3,9 +3,15 @@ zielgruppe:
   titel: [CEO, "Head of Sales"]
   region: [Germany]
   firmengroesse: ["11-50"]
-angebot: KI-Automatisierung fuer Vertriebsprozesse
-tonalitaet: ruhig, erklaerend, keine Superlative
+angebot: >-
+  KI-Automatisierung fuer Vertriebsprozesse: Wir analysieren, wo im
+  Vertrieb Zeit verloren geht, und bauen Automationen, die Routinearbeit
+  uebernehmen - von der Lead-Recherche bis zum Nachfassen.
+tonalitaet: ruhig, erklaerend, keine Superlative, keine Ausrufezeichen
 absender: Leonard von Digital Diamonds
-follow_up_tage: [3, 7]
+# Fuer den Endnachweis verkuerzt (statt 3/7), damit der Beweis schnell steht:
+follow_up_tage: [1, 2]
 test_empfaenger:
-  - test1@example.com
+  - leonardluzhnica7@gmail.com
+  - l.luzhnica@digitaldiamonds.agency
+  - l.luzhnica@polepositionautomations.de

@@ -21,7 +21,7 @@ def test_openrouter_baut_richtiges_payload_und_liefert_antwort(monkeypatch):
     assert len(session.aufrufe) == 1
     payload = session.aufrufe[0]
     assert payload["model"] == "anthropic/claude-sonnet-5"
-    assert payload["max_tokens"] == 1500
+    assert payload["max_tokens"] == 4000
     assert payload["messages"] == [
         {"role": "system", "content": "Du bist hilfreich."},
         {"role": "user", "content": "Sag hallo."},

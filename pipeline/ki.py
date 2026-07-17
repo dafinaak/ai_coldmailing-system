@@ -51,9 +51,12 @@ class KI:
 
     def frage(self, system: str, prompt: str) -> str:
         if self.anbieter == "openrouter":
+            # 4000 statt 1500: bei Modellen mit eingebautem "Nachdenken"
+            # zaehlt das interne Denken mit ins Budget - 1500 fuehrte zu
+            # mitten im Satz abgeschnittenen Antworten (Fund 17.07.2026).
             payload = {
                 "model": self.model,
-                "max_tokens": 1500,
+                "max_tokens": 4000,
                 "messages": [
                     {"role": "system", "content": system},
                     {"role": "user", "content": prompt},
@@ -68,6 +71,6 @@ class KI:
             return antwort.json()["choices"][0]["message"]["content"]
 
         antwort = self.client.messages.create(
-            model=self.model, max_tokens=1500, system=system,
+            model=self.model, max_tokens=4000, system=system,
             messages=[{"role": "user", "content": prompt}])
         return antwort.content[0].text

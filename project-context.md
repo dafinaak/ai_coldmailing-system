@@ -63,8 +63,14 @@ Bewusst NICHT in v1: Antworten-Erkennung/Einsortierung, Reporting.
     an digitaldiamonds 09:09 UTC; Follow-ups 09:00/09:18 UTC.
   - ZUSTELLUNG BESTÄTIGT durch Leonard: Gmail und digitaldiamonds
     (Microsoft) beide im POSTEINGANG, nicht im Spam.
-  - IONOS-Adresse: noch in der Versand-Warteschlange (kein Fehler,
-    kein Bounce) — Überwachung läuft.
+  - IONOS: erste Adresse war ein Tippfehler (Domain existierte nicht —
+    niemand hat etwas erhalten; Empfänger in der Kampagne ausgetauscht,
+    Konfiguration korrigiert). Korrigierte Adresse
+    l.luzhnica@polepositionsolutions.de: ZUGESTELLT IM POSTEINGANG
+    (bestätigt von Leonard, 17.07.2026).
+  - ERGEBNIS: v1-Erfolgskriterium erfüllt — kompletter Durchlauf von
+    Zielgruppe bis Posteingang bei allen drei Anbietern (Gmail,
+    Microsoft, IONOS), keine Mail im Spam. Jira AP-195 abgeschlossen.
   - ECHTER FUND durch den Test: Instantly zählt Schritt-Wartezeiten
     NACH dem Schritt, nicht davor -> Follow-ups gingen nach Minuten
     statt Tagen raus (nur an Leonards eigene Adressen, kein Schaden).

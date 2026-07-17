@@ -76,6 +76,20 @@ import requests
 #   # TODO(verifizieren am echten Konto): klären, ob der Team-Tarif
 #   # Lead-Verifizierung enthält, bevor "verify_leads_on_import": true
 #   # irgendwo gesetzt wird.
+#
+# VERIFIZIERT AM LIVE-KONTO (2026-07-17, Kampagne
+# 580bdbf7-fe41-43d4-b07d-8460997925f8): "delay" auf einem Sequenz-Schritt
+# ist NICHT die Wartezeit VOR diesem Schritt, sondern die Wartezeit NACH
+# diesem Schritt, bevor der NÄCHSTE Schritt verschickt wird ("the delay
+# configured under Step 1 determines when Step 2 is sent" - Instantly
+# Help Center, "Time to Wait Between Steps",
+# https://help.instantly.ai/en/articles/7916860-time-to-wait-between-steps).
+# Live-Befund bestätigt das: mit der alten Zuordnung (Schritt 0 delay=0,
+# Schritt 1 delay=follow_up_tage[0]) kam Follow-up 1 neun Minuten nach
+# Mail 1 statt nach follow_up_tage[0] Tagen - weil delay=0 auf Schritt 0
+# stand, nicht auf Schritt 1. Die Zuordnung unten ist entsprechend um
+# einen Schritt verschoben: Schritt 0 trägt den Delay bis Follow-up 1,
+# Schritt 1 trägt den Delay bis Follow-up 2 (als Differenz, siehe unten).
 BASIS = "https://api.instantly.ai/api/v2"
 
 class InstantlySender:
@@ -102,13 +116,24 @@ class InstantlySender:
         nicht versehentlich eine zweite Kampagne anlegt: der Laufordner
         merkt sich die campaign_id nach diesem Schritt und ein
         Wiederanlauf ruft nur noch import_leads() erneut auf."""
-        tage = kunde.follow_up_tage
+        # follow_up_tage=[a, b] bedeutet "Follow-up 1 an Tag a, Follow-up 2 an
+        # Tag b" (Gesamtabstand ab Mail 1). Instantly zaehlt "delay" aber ab
+        # dem Schritt, auf dem er steht, bis zum naechsten Schritt (siehe
+        # Kommentar oben, live verifiziert) - deshalb steht der Delay bis
+        # Follow-up 1 auf Schritt 0 (a Tage) und der Delay bis Follow-up 2
+        # auf Schritt 1 (b - a Tage, der Rest-Abstand). Schritt 2 hat keinen
+        # Nachfolger, sein delay ist folgenlos -> 0.
+        a, b = kunde.follow_up_tage[0], kunde.follow_up_tage[1]
+        if b <= a:
+            raise ValueError(
+                f"follow_up_tage muss aufsteigend sein (Tag a < Tag b), "
+                f"gefunden: [{a}, {b}]. Bitte kunde.yaml korrigieren.")
         sequenz_schritte = [
-            {"type": "email", "delay": 0,
+            {"type": "email", "delay": a,
              "variants": [{"subject": "{{betreff}}", "body": "{{mail_1}}"}]},
-            {"type": "email", "delay": tage[0],
+            {"type": "email", "delay": b - a,
              "variants": [{"subject": "", "body": "{{follow_up_1}}"}]},
-            {"type": "email", "delay": tage[1],
+            {"type": "email", "delay": 0,
              "variants": [{"subject": "", "body": "{{follow_up_2}}"}]},
         ]
         kampagne = {

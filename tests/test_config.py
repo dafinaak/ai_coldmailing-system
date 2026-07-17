@@ -50,6 +50,20 @@ def test_follow_up_tage_muss_zahlen_enthalten(tmp_path):
     with pytest.raises(ValueError, match="follow_up_tage"):
         load_kunde(p)
 
+def test_follow_up_tage_muss_aufsteigend_sein(tmp_path):
+    p = tmp_path / "kunde.yaml"
+    p.write_text(GUELTIG.replace("follow_up_tage: [3, 7]", "follow_up_tage: [7, 3]"),
+                encoding="utf-8")
+    with pytest.raises(ValueError, match="follow_up_tage"):
+        load_kunde(p)
+
+def test_follow_up_tage_darf_nicht_gleich_sein(tmp_path):
+    p = tmp_path / "kunde.yaml"
+    p.write_text(GUELTIG.replace("follow_up_tage: [3, 7]", "follow_up_tage: [3, 3]"),
+                encoding="utf-8")
+    with pytest.raises(ValueError, match="follow_up_tage"):
+        load_kunde(p)
+
 def test_test_empfaenger_darf_nicht_leer_sein(tmp_path):
     p = tmp_path / "kunde.yaml"
     p.write_text(GUELTIG.replace("test_empfaenger:\n  - test1@example.com",

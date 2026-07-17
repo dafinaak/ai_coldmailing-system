@@ -24,9 +24,24 @@ def test_legt_pausierte_kampagne_an_und_importiert_leads():
     assert schedule["timing"] == {"from": "08:00", "to": "19:00"}
     assert schedule["days"] == {"0": False, "1": True, "2": True, "3": True,
                                  "4": True, "5": True, "6": False}
+    # Instantly zaehlt "delay" ab dem Schritt, auf dem er steht, bis zum
+    # naechsten Schritt (live verifiziert am 2026-07-17, siehe instantly.py) -
+    # bei KUNDE.follow_up_tage=[3, 7] muss Follow-up 1 also 3 Tage nach Mail 1
+    # kommen (delay auf Schritt 0) und Follow-up 2 4 weitere Tage danach
+    # (delay auf Schritt 1 = 7 - 3), macht in Summe Tag 7 wie in der Config.
+    schritte = kampagne["sequences"][0]["steps"]
+    assert [s["delay"] for s in schritte] == [3, 4, 0]
     assert leads["leads"][0]["email"] == "t@example.com"
     assert leads["leads"][0]["custom_variables"]["mail_1"] == "M"
     assert leads["campaign_id"] == "camp-1"
+
+def test_verweigert_nicht_aufsteigende_follow_up_tage():
+    from dataclasses import replace
+    kunde = replace(KUNDE, follow_up_tage=[7, 3])
+    sender = InstantlySender("key", session=FakeSession([]))
+    with pytest.raises(ValueError, match="follow_up_tage"):
+        sender.create_campaign(kunde)
+    assert sender.session.aufrufe == []
 
 def test_weigert_sich_ohne_texte():
     sender = InstantlySender("key", session=FakeSession([]))

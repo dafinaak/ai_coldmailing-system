@@ -44,6 +44,15 @@ Bewusst NICHT in v1: Antworten-Erkennung/Einsortierung, Reporting.
   Schreibzugriff aufs Team-Instantly.
 - Apollo-API-Schlüssel liegt vor (16.07.2026), gespeichert in .env
   (gitignored — Schlüssel stehen nie im Repo oder in Notizen).
+- Text-KI läuft über OpenRouter: Schlüssel in .env, LÄUFT ca. 23.07.2026 AB
+  (Endnachweis vorher fahren oder neuen Schlüssel holen). KI-Baustein hat
+  jetzt eine Anbieter-Weiche (OpenRouter vor Anthropic), per Echt-Aufruf
+  bewiesen (Modell anthropic/claude-sonnet-5 antwortet). 69 Tests grün.
+- Versand-Domain für den Test: Subdomain der eigenen Firmen-Domain
+  (Leonard kann DNS-Einträge anlegen; welche Domain und welcher
+  DNS-/Mail-Anbieter, ist noch offen). Für echte Kampagnen später:
+  separate Domain kaufen (so macht es auch Wholix), damit der Ruf der
+  Hauptdomain geschützt bleibt.
 - Am echten Konto zu verifizieren (TODOs im Code markiert): Instantly
   Zeitzonen-Ersatz Europe/Belgrade, Wochentags-Konvention, daily_limit
   pro Postfach, Lead-Dedupe bei Wiederholungs-Import; Apollo id-only-Match

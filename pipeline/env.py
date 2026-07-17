@@ -29,3 +29,13 @@ def brauche_env(name: str):
     if not os.environ.get(name):
         sys.exit(f"Fehlende Umgebungsvariable: {name}. "
                  f"Bitte in .env eintragen (siehe .env.example).")
+
+def brauche_env_eines_von(*namen: str):
+    """Wie brauche_env, aber fuer Faelle mit mehreren gueltigen Alternativen
+    (z.B. der KI-Baustein braucht ANTHROPIC_API_KEY ODER OPENROUTER_API_KEY -
+    beide erfuellen denselben Zweck). Bricht nur ab, wenn KEINE der
+    genannten Variablen gesetzt ist; die Fehlermeldung nennt alle Namen,
+    damit klar ist, welche Alternativen es gibt."""
+    if not any(os.environ.get(n) for n in namen):
+        sys.exit(f"Fehlende Umgebungsvariable: eine von {', '.join(namen)}. "
+                 f"Bitte in .env eintragen (siehe .env.example).")

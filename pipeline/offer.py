@@ -1,7 +1,7 @@
 import json, re, sys
 from pathlib import Path
 import yaml
-from pipeline.env import lade_dotenv, brauche_env
+from pipeline.env import lade_dotenv, brauche_env_eines_von
 from pipeline.website import fetch_text
 from pipeline.ki import KI
 
@@ -37,7 +37,7 @@ def main():
     if len(sys.argv) < 3:
         print("Aufruf: python -m pipeline.offer <url> <kunde.yaml>")
         sys.exit(1)
-    brauche_env("ANTHROPIC_API_KEY")
+    brauche_env_eines_von("ANTHROPIC_API_KEY", "OPENROUTER_API_KEY")
     url, kunde_pfad = sys.argv[1], sys.argv[2]
     entwurf = draft_offer(fetch_text(url), KI())
     uebernehmen(kunde_pfad, entwurf)

@@ -2,7 +2,7 @@ import argparse, os, sys
 from collections import Counter
 from pathlib import Path
 from pipeline.config import load_kunde
-from pipeline.env import lade_dotenv, brauche_env as _brauche_env
+from pipeline.env import lade_dotenv, brauche_env as _brauche_env, brauche_env_eines_von as _brauche_env_eines_von
 from pipeline.run_store import RunStore
 from pipeline.sources.apollo import ApolloSource
 from pipeline.dedupe import dedupe as dedupe_leads
@@ -40,7 +40,7 @@ def _setze_schritte_zurueck(store, ab_schritt: str):
 
 def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None = None):
     _brauche_env("APOLLO_API_KEY")
-    _brauche_env("ANTHROPIC_API_KEY")
+    _brauche_env_eines_von("ANTHROPIC_API_KEY", "OPENROUTER_API_KEY")
     kunde = load_kunde(kunde_pfad)
     store = RunStore.resume(fortsetzen) if fortsetzen else RunStore(LAEUFE, kunde.name)
     if neu_ab:

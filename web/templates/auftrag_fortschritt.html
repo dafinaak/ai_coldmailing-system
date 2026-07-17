@@ -1,0 +1,73 @@
+{% extends "layout.html" %}
+{% block titel %}Anschreiben für {{ kunde_name }}{% endblock %}
+{% block inhalt %}
+<div class="seite" id="fortschritt-seite" data-status-url="/auftraege/{{ slug }}/{{ ts }}/status.json" data-zustand="{{ zustand }}">
+  <div class="formular-zurueck"><a href="/kampagnen">‹ Alle Kampagnen</a></div>
+  <h1>Anschreiben für {{ kunde_name }}</h1>
+  <p class="seiten-hilfstext">gestartet {{ gestartet_am }}{% if gestartet_von %} · von {{ gestartet_von }}{% endif %}</p>
+
+  {% if zustand == "angehalten" %}
+  <div class="fehler-box">
+    <div class="fehler-box-titel">Angehalten: Anschreiben für {{ kunde_name }} (gestartet {{ gestartet_am }})</div>
+    <div class="fehler-box-text" id="fehler-text">{{ fehler.was }} {{ fehler.nicht }} {{ fehler.tu }}</div>
+    <form method="post" action="/auftraege/{{ slug }}/{{ ts }}/fortsetzen" class="fehler-box-form">
+      <button type="submit" class="knopf-primaer">Fortsetzen</button>
+    </form>
+  </div>
+  {% elif zustand == "laeuft" %}
+  <p class="auftrag-hinweis-zeile" id="zustand-hinweis">Das System arbeitet — du musst nichts tun.</p>
+  {% elif zustand == "wartet_auf_freigabe" %}
+  <p class="auftrag-hinweis-zeile" id="zustand-hinweis">{{ wartet_seit_text }} <a href="/pruefen" class="knopf-primaer knopf-klein">Jetzt prüfen</a></p>
+  {% elif zustand == "freigegeben" %}
+  <p class="auftrag-hinweis-zeile" id="zustand-hinweis">Instantly verschickt die freigegebenen Mails nach Zeitplan.</p>
+  {% elif zustand == "uebergeben" %}
+  <p class="auftrag-hinweis-zeile" id="zustand-hinweis">Alles versendet. Hier nur noch zum Nachschauen.</p>
+  {% endif %}
+
+  <div class="schritt-liste" id="schritt-liste">
+    {% for label in schritte %}
+    {% set nr = loop.index %}
+    <div class="schritt-zeile{% if nr < schritt %} schritt-zeile--fertig{% elif nr == schritt and zustand == 'laeuft' %} schritt-zeile--aktiv{% endif %}" id="schritt-{{ nr }}">
+      <span class="schritt-status">{% if nr < schritt %}✓{% elif nr == schritt and zustand == 'laeuft' %}…{% else %}&nbsp;{% endif %}</span>
+      <span class="schritt-label">{{ label }}</span>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="auftrag-zahlen" id="auftrag-zahlen">
+    <div><span id="zahl-gefunden">{{ gefunden }}</span> gefunden</div>
+    <div><span id="zahl-ohne-email">{{ ohne_email }}</span> ohne E-Mail übersprungen</div>
+    <div><span id="zahl-verworfen">{{ verworfen }}</span> doppelt/gesperrt aussortiert</div>
+    <div><span id="zahl-fertig">{{ fertig }}</span> fertig personalisiert</div>
+    <div><span id="zahl-nacharbeit">{{ nacharbeit }}</span> von der Prüfung aussortiert</div>
+  </div>
+</div>
+
+<noscript><meta http-equiv="refresh" content="5"></noscript>
+<script>
+(function () {
+  var seite = document.getElementById("fortschritt-seite");
+  if (!seite) return;
+  var statusUrl = seite.getAttribute("data-status-url");
+  var startZustand = seite.getAttribute("data-zustand");
+  function aktualisieren() {
+    fetch(statusUrl).then(function (r) { return r.json(); }).then(function (stand) {
+      if (stand.zustand !== startZustand) {
+        location.reload();
+        return;
+      }
+      var felder = {
+        "zahl-gefunden": stand.gefunden, "zahl-ohne-email": stand.ohne_email,
+        "zahl-verworfen": stand.verworfen, "zahl-fertig": stand.fertig,
+        "zahl-nacharbeit": stand.nacharbeit
+      };
+      for (var id in felder) {
+        var el = document.getElementById(id);
+        if (el) { el.textContent = felder[id]; }
+      }
+    }).catch(function () {});
+  }
+  setInterval(aktualisieren, 3000);
+})();
+</script>
+{% endblock %}

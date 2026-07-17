@@ -230,6 +230,36 @@ def test_bearbeiten_behaelt_fremde_yaml_felder_die_das_formular_nicht_kennt(
     assert gespeichert["angebot"] == GUELTIGE_FORMULARDATEN["angebot"]
 
 
+def test_bearbeiten_mit_geleertem_pflichtfeld_loest_pruefung_aus(
+    angemeldeter_client, daten_dir
+):
+    (daten_dir / "kunden").mkdir()
+    _kunde_datei(daten_dir, "demo-gmbh").write_text(
+        yaml.safe_dump({
+            "name": "Demo GmbH",
+            "zielgruppe": {"titel": ["CEO"], "region": ["Germany"], "firmengroesse": ["11-50"]},
+            "angebot": "Altes Angebot",
+            "tonalitaet": "ruhig",
+            "absender": "Leonard",
+            "follow_up_tage": [3, 7],
+            "test_empfaenger": ["test@example.com"],
+        }, allow_unicode=True),
+        encoding="utf-8",
+    )
+    daten = dict(GUELTIGE_FORMULARDATEN)
+    daten["name"] = "Demo GmbH"
+    daten["angebot"] = ""  # Pflichtfeld im Formular geleert
+    antwort = angemeldeter_client.post(
+        "/kunden/demo-gmbh/bearbeiten", data=daten, follow_redirects=False
+    )
+    assert antwort.status_code == 400
+    assert "angebot" in antwort.text
+    assert "Pflichtfelder fehlen" in antwort.text
+
+    gespeichert = yaml.safe_load(_kunde_datei(daten_dir, "demo-gmbh").read_text(encoding="utf-8"))
+    assert gespeichert["angebot"] == "Altes Angebot"  # Datei unveraendert
+
+
 def test_pflichtfeld_fehler_zeigt_keinen_temp_pfad(angemeldeter_client, daten_dir):
     daten = dict(GUELTIGE_FORMULARDATEN)
     daten["angebot"] = ""

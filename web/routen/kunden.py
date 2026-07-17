@@ -42,6 +42,16 @@ FORMULAR_FELDER = [
 
 LEERE_WERTE = {feld: "" for feld in FORMULAR_FELDER}
 
+# Alle Schluessel, die das Formular kennt und selbst steuert (Namen wie in
+# pipeline.config.Kunde). Beim Bearbeiten duerfen NUR Schluessel ausserhalb
+# dieser Menge aus der bestehenden YAML uebernommen werden - sonst wuerde
+# ein im Formular geleertes Pflichtfeld stillschweigend den alten Wert
+# behalten, statt die load_kunde-Pruefung ("Pflichtfelder fehlen") auszuloesen.
+BEKANNTE_FELDER = {
+    "name", "zielgruppe", "angebot", "tonalitaet", "absender",
+    "follow_up_tage", "test_empfaenger", "sperrliste", "webseite",
+}
+
 VORSCHLAG_HINWEIS = "Vorschlag von der Webseite übernommen — nur leere Felder wurden ausgefüllt."
 
 WEBSEITE_FEHLT_FEHLER = (
@@ -385,10 +395,16 @@ async def kunde_bearbeiten_speichern(
         test_empfaenger=test_empfaenger, sperrliste=sperrliste,
     )
     kunden_dir = _kunden_dir(request.app.state.daten_dir)
-    # Formular-Werte OBEN AUF die bestehende YAML legen, nicht ersetzen -
-    # Felder, die das Formular nicht abbildet (z.B. von Hand ergaenzte
-    # interne Notizen), bleiben so erhalten statt beim Speichern zu verschwinden.
-    daten = {**_bestehende_daten(kunden_dir, dateiname), **_daten_fuer_load_kunde(werte)}
+    # Nur die UNBEKANNTEN Schluessel aus der bestehenden YAML uebernehmen
+    # (z.B. von Hand ergaenzte interne Notizen) - alle bekannten Felder
+    # kommen ausschliesslich vom Formular. Sonst wuerde ein im Formular
+    # geleertes Pflichtfeld stillschweigend den alten Wert behalten, statt
+    # die load_kunde-Pruefung ("Pflichtfelder fehlen") auszuloesen.
+    unbekannte_bestandsfelder = {
+        k: v for k, v in _bestehende_daten(kunden_dir, dateiname).items()
+        if k not in BEKANNTE_FELDER
+    }
+    daten = {**unbekannte_bestandsfelder, **_daten_fuer_load_kunde(werte)}
     try:
         _validieren_und_speichern(kunden_dir, dateiname, daten)
     except ValueError as fehler:

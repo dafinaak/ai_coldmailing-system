@@ -57,11 +57,21 @@ Bewusst NICHT in v1: Antworten-Erkennung/Einsortierung, Reporting.
 - Unterwegs gefunden und behoben: KI-Token-Budget 1500 war zu knapp
   (Denk-Tokens schnitten Antworten ab) -> 4000; senden-Tests von der
   Demo-Kundendatei entkoppelt. 69 Tests grün.
-- LETZTER OFFENER SCHRITT: Leonard aktiviert die Kampagne in der
-  Instantly-Oberfläche (warmes Postfach zuweisen), dann Beweise sammeln:
-  Posteingang-Screenshots aller 3 Test-Postfächer (nicht Spam!),
-  Follow-up 1 nach 1 Tag, Follow-up 2 nach 2 Tagen, Abgleich mit
-  bericht.md. Danach: Jira AP-195 auf erledigt.
+- BEWEISPROTOKOLL End-zu-End-Test (17.07.2026):
+  - Kampagne von Leonard aktiviert (Absender email@poleposition-automation.online).
+  - Versand belegt per Instantly-Historie: Mail 1 an Gmail 08:51 UTC,
+    an digitaldiamonds 09:09 UTC; Follow-ups 09:00/09:18 UTC.
+  - ZUSTELLUNG BESTÄTIGT durch Leonard: Gmail und digitaldiamonds
+    (Microsoft) beide im POSTEINGANG, nicht im Spam.
+  - IONOS-Adresse: noch in der Versand-Warteschlange (kein Fehler,
+    kein Bounce) — Überwachung läuft.
+  - ECHTER FUND durch den Test: Instantly zählt Schritt-Wartezeiten
+    NACH dem Schritt, nicht davor -> Follow-ups gingen nach Minuten
+    statt Tagen raus (nur an Leonards eigene Adressen, kein Schaden).
+    Behoben in Commit ef28ba9 (72 Tests); korrekte Tages-Abstände beim
+    nächsten Echtlauf live nachverifizieren.
+  - Noch offen für den Abschluss: IONOS-Zustellung bestätigen, dann
+    Jira AP-195 auf erledigt.
 - Für v1.1 zusätzlich vorgemerkt: Nachnamen-Schreibweise darf die KI
   nicht "korrigieren" (Fall "Boedoecs" statt "Bodocs" im Testlauf);
   kunde_name vs. Absender-Firma sauber trennen (Demo GmbH/Digital

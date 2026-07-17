@@ -374,6 +374,19 @@ class Laufmanager:
         else:
             schritt = 5
 
+        # schritt (1-5) sagt, WELCHER Schritt gerade dran ist/als letztes
+        # angefasst wurde - das ist NICHT dasselbe wie "wie viele Schritte
+        # sind fertig". Ist der Auftrag durchgelaufen (wartet_auf_freigabe/
+        # freigegeben/uebergeben), sind ALLE fuenf Schritte erledigt, auch
+        # Schritt 5 selbst (der sonst nie einen Haken bekaeme, weil
+        # schritt==5 den Maximalwert erreicht hat, aber "nr < schritt" fuer
+        # nr=5 nie wahr wird). schritt_fertig ist die fuer die Anzeige
+        # gedachte Zahl "so viele Haken".
+        if zustand in ("wartet_auf_freigabe", "freigegeben", "uebergeben"):
+            schritt_fertig = 5
+        else:
+            schritt_fertig = schritt - 1
+
         fehler = None
         if zustand == "angehalten":
             log_pfad = lauf_dir / "lauf.log"
@@ -383,6 +396,7 @@ class Laufmanager:
         return {
             "zustand": zustand,
             "schritt": schritt,
+            "schritt_fertig": schritt_fertig,
             "schritt_label": SCHRITTE[schritt - 1],
             "gefunden": len(leads["leads"]) if leads else 0,
             "ohne_email": leads["ohne_email"] if leads else 0,

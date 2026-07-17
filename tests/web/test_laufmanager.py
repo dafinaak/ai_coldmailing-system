@@ -25,7 +25,9 @@ zurueck - ein stiller Sicherheits-Bypass). Der Beweis ist zweigeteilt:
       beweisen (a) und (b) den End-zu-Ende-Vertrag, ohne dass ein Test einen
       echten Netzwerk-Unterprozess starten muesste.
 """
+import inspect
 import json
+import sys
 from pathlib import Path
 
 import pytest
@@ -37,6 +39,7 @@ from tests.test_cli import _TEST_KUNDE_YAML
 from web import laufmanager
 from web.app import create_app
 from web.laufmanager import KundeNichtGefunden, LaufBereitsAktiv, Laufmanager, LaufmanagerFehler
+from web.routen import auftraege as auftraege_modul
 
 PWD_CONTEXT = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -582,3 +585,161 @@ def test_fortsetzen_route_startet_nicht_doppelt_wenn_schon_laeuft(
         "/auftraege/test-gmbh/20260101-000000/fortsetzen", follow_redirects=False)
     assert antwort.status_code == 303
     assert aufrufe == []  # kein zweiter Unterprozess
+
+
+# Reviewer-Fixes Runde 2 -----------------------------------------------------
+# (1) Regressionstest fuer den PYTHONPATH-Fix, (2) nicht-blockierende
+# Start-/Fortsetzen-Routen, (3) Schritt-5-Anzeige nach Auftrags-Ende,
+# (4) Server-seitige Limit-Allowlist.
+
+def test_pythonpath_fix_laesst_echten_unterprozess_pipeline_importieren(tmp_path):
+    """(1) Regressionstest fuer web.laufmanager._subprozess_umgebung(): KEIN
+    subprocess.Popen-Fake hier - der Unterprozess laeuft wirklich, das ist
+    der Sinn des Tests. daten_dir (tmp_path) liegt bewusst AUSSERHALB des
+    Repos (wie im Deployment, siehe Plan Task 10), das pipeline-Package ist
+    dort nicht auffindbar, wenn PYTHONPATH nicht um die Projekt-Wurzel
+    ergaenzt wird.
+
+    Statt eines echten 'lauf'-Aufrufs (bräuchte gueltige API-Keys/Netzwerk)
+    ersetzt `befehl` die Pipeline-CLI durch ein Mini-Skript, das nur
+    'import pipeline' probiert und eine Erkennungs-Zeile ausgibt - das legt
+    keinen Laufordner an, darum landet starte() zuverlässig im "kein
+    Laufordner entstanden"-Zweig und meldet die letzte Log-Zeile im
+    Fehlertext. Diese letzte Zeile beweist, ob der Import geklappt hat.
+
+    Manuell verifiziert (siehe Report): entfernt man `env=_subprozess_umgebung()`
+    aus dem Popen-Aufruf in Laufmanager.starte() (z.B. durch `env=None`
+    ersetzt), schlaegt dieser Test fehl, weil die letzte Log-Zeile dann
+    'ModuleNotFoundError: No module named 'pipeline'' lautet statt der
+    Erkennungs-Zeile."""
+    daten_dir = tmp_path
+    kunde_datei = _kunde_datei(daten_dir)
+
+    manager = Laufmanager(
+        daten_dir,
+        befehl=[sys.executable, "-c",
+                "import pipeline; print('PYTHONPATH-REGRESSION-OK')"])
+
+    with pytest.raises(LaufmanagerFehler) as exc:
+        manager.starte(kunde_datei, 10)
+
+    assert "PYTHONPATH-REGRESSION-OK" in str(exc.value)
+    assert "No module named" not in str(exc.value)
+
+
+def test_start_und_fortsetzen_routen_sind_nicht_async(monkeypatch):
+    """(2) manager.starte() pollt bis zu 10s lang SYNCHRON (siehe
+    _warte_auf_lauf_dir); manager.setze_fort() spawnt ebenfalls synchron
+    einen Unterprozess. Als `async def`-Routen wuerden sie den kompletten
+    Event-Loop fuer ALLE gleichzeitigen Nutzer blockieren (worst case 10s
+    pro Auftrags-Start). Als normale `def`-Funktionen fuehrt FastAPI sie
+    stattdessen in einem Threadpool aus (Starlette-Verhalten fuer
+    sync-Endpunkte) - der Event-Loop bleibt frei fuer andere Anfragen."""
+    assert not inspect.iscoroutinefunction(auftraege_modul.auftrag_neu_starten)
+    assert not inspect.iscoroutinefunction(auftraege_modul.auftrag_fortsetzen)
+
+
+def test_status_schritt_fertig_ist_5_in_wartet_auf_freigabe(tmp_path, monkeypatch):
+    """(3) Ein abgeschlossener Auftrag (alle Step-Dateien vorhanden, wartet
+    nur noch auf die Pruefung) muss ALLE 5 Schritte als erledigt zeigen -
+    nicht nur 4. schritt (das "aktuelle" 1-5) bleibt bei 5 haengen, sobald
+    personalisierung.json existiert; die alte Vorlage zeigte darum fuer
+    Schritt 5 selbst nie einen Haken (nr < schritt ist fuer nr=schritt=5
+    nie wahr)."""
+    lauf_dir = _fabriziere_laufordner(
+        tmp_path, pid=123,
+        leads={"leads": [{}], "ohne_email": 0},
+        dedupe={"behalten": [{}], "verworfen": []},
+        personalisierung={"fertig": [{}], "nacharbeit": []},
+        pruefung_ok=[{"email": "a@b.de"}],
+    )
+    monkeypatch.setattr(laufmanager, "_pid_lebt", lambda pid: False)
+    stand = Laufmanager(tmp_path).status(lauf_dir)
+    assert stand["zustand"] == "wartet_auf_freigabe"
+    assert stand["schritt_fertig"] == 5
+
+
+@pytest.mark.parametrize("zustand_fixture", ["freigegeben", "uebergeben"])
+def test_status_schritt_fertig_ist_5_nach_freigabe_und_uebergabe(
+        tmp_path, monkeypatch, zustand_fixture):
+    kwargs = {"pruefung_ok": [{"email": "a@b.de"}], "freigabe": True}
+    if zustand_fixture == "uebergeben":
+        kwargs["versand_komplett"] = {"campaign_id": "camp-1"}
+    lauf_dir = _fabriziere_laufordner(
+        tmp_path, pid=123,
+        leads={"leads": [{}], "ohne_email": 0},
+        dedupe={"behalten": [{}], "verworfen": []},
+        personalisierung={"fertig": [{}], "nacharbeit": []},
+        **kwargs,
+    )
+    monkeypatch.setattr(laufmanager, "_pid_lebt", lambda pid: False)
+    stand = Laufmanager(tmp_path).status(lauf_dir)
+    assert stand["zustand"] == zustand_fixture
+    assert stand["schritt_fertig"] == 5
+
+
+def test_fortschrittsseite_zeigt_fuenf_haken_wenn_wartet_auf_freigabe(
+        angemeldeter_client, daten_dir, monkeypatch):
+    _kunde_datei(daten_dir)
+    _fabriziere_laufordner(
+        daten_dir, pid=999,
+        leads={"leads": [{}], "ohne_email": 0},
+        dedupe={"behalten": [{}], "verworfen": []},
+        personalisierung={"fertig": [{}], "nacharbeit": []},
+        pruefung_ok=[{"email": "a@b.de"}],
+        meta={"kunde_datei": "kunden/test-kunde.yaml", "limit": 25, "gestartet_am": "17.07.2026, 10:00"})
+    monkeypatch.setattr(laufmanager, "_pid_lebt", lambda pid: False)
+
+    antwort = angemeldeter_client.get("/auftraege/test-gmbh/20260101-000000")
+    assert antwort.status_code == 200
+    assert antwort.text.count("✓") == 5
+
+
+def test_start_mit_ungueltigem_limit_zeigt_deutschen_fehler_und_startet_nichts(
+        angemeldeter_client, daten_dir, monkeypatch):
+    """(4) Server-seitige Allowlist: nur 25/40/60 sind gueltig. subprocess.Popen
+    wird trotzdem gefaked (Sicherheitsnetz), damit dieser Test auch VOR dem
+    Fix (der noch keine Validierung macht) keinen echten Unterprozess
+    startet - er beweist die fehlende Validierung ueber den Statuscode/Text,
+    nicht ueber einen Absturz."""
+    _kunde_datei(daten_dir)
+    aufrufe = []
+    monkeypatch.setattr(
+        laufmanager.subprocess, "Popen",
+        lambda *a, **k: (aufrufe.append(1), FakeProzess(1, True))[1])
+
+    antwort = angemeldeter_client.post(
+        "/auftraege/neu", data={"kunde_dateiname": "test-kunde", "limit": "99"})
+
+    assert antwort.status_code == 400
+    assert "25" in antwort.text and "40" in antwort.text and "60" in antwort.text
+    assert aufrufe == []  # kein Unterprozess gestartet
+
+
+def test_start_mit_nicht_numerischem_limit_zeigt_deutschen_fehler(
+        angemeldeter_client, daten_dir, monkeypatch):
+    _kunde_datei(daten_dir)
+    monkeypatch.setattr(
+        laufmanager.subprocess, "Popen",
+        lambda *a, **k: pytest.fail("Unterprozess haette nicht starten duerfen"))
+
+    antwort = angemeldeter_client.post(
+        "/auftraege/neu", data={"kunde_dateiname": "test-kunde", "limit": "abc"})
+
+    assert antwort.status_code == 400
+
+
+def test_start_mit_gueltigem_limit_funktioniert_weiterhin(
+        angemeldeter_client, daten_dir, monkeypatch):
+    _kunde_datei(daten_dir)
+
+    def fake_popen(argv, cwd=None, stdout=None, stderr=None, env=None):
+        (daten_dir / "laeufe" / "test-gmbh" / "20260101-000000").mkdir(parents=True)
+        return FakeProzess(pid=555, laeuft=True)
+
+    monkeypatch.setattr(laufmanager.subprocess, "Popen", fake_popen)
+
+    antwort = angemeldeter_client.post(
+        "/auftraege/neu", data={"kunde_dateiname": "test-kunde", "limit": "40"},
+        follow_redirects=False)
+    assert antwort.status_code == 303

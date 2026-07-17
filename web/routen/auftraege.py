@@ -29,6 +29,8 @@ KEINE_KUNDEN_HINWEIS = (
     "erstellt werden können."
 )
 
+LIMIT_FEHLER = "Bitte einen der drei vorgegebenen Werte (25, 40 oder 60) wählen."
+
 
 def _manager(request: Request) -> Laufmanager:
     return Laufmanager(request.app.state.daten_dir)
@@ -126,18 +128,31 @@ async def auftrag_neu_formular(request: Request):
 
 
 @router.post("/auftraege/neu")
-async def auftrag_neu_starten(
+# Bewusst KEIN `async def`: manager.starte() pollt bis zu 10s lang SYNCHRON
+# auf den entstehenden Laufordner (siehe Laufmanager._warte_auf_lauf_dir).
+# Als Koroutine wuerde das den kompletten Event-Loop blockieren - fuer ALLE
+# gleichzeitigen Nutzer, nicht nur den, der gerade startet. Als normale
+# `def`-Funktion fuehrt FastAPI/Starlette die Route stattdessen in einem
+# Threadpool aus, der Event-Loop bleibt frei.
+def auftrag_neu_starten(
     request: Request,
     kunde_dateiname: str = Form(""),
-    limit: int = Form(LIMIT_DEFAULT),
+    limit: str = Form(str(LIMIT_DEFAULT)),
 ):
     if not kunde_dateiname.strip():
         return _dialog_antwort(request, fehler=KEINE_KUNDEN_HINWEIS, status_code=400)
 
+    try:
+        limit_zahl = int(limit)
+    except ValueError:
+        limit_zahl = None
+    if limit_zahl not in LIMIT_OPTIONEN:
+        return _dialog_antwort(request, fehler=LIMIT_FEHLER, status_code=400)
+
     manager = _manager(request)
     kunde_datei = f"kunden/{kunde_dateiname}.yaml"
     try:
-        lauf_dir = manager.starte(kunde_datei, limit)
+        lauf_dir = manager.starte(kunde_datei, limit_zahl)
     except LaufmanagerFehler as fehler:
         return _dialog_antwort(request, fehler=str(fehler), status_code=400)
 
@@ -194,7 +209,10 @@ async def auftrag_status_json(request: Request, slug: str, ts: str):
 
 
 @router.post("/auftraege/{slug}/{ts}/fortsetzen")
-async def auftrag_fortsetzen(request: Request, slug: str, ts: str):
+# Bewusst KEIN `async def` - gleicher Grund wie bei auftrag_neu_starten:
+# manager.setze_fort() startet synchron einen Unterprozess, soll nicht im
+# Event-Loop laufen.
+def auftrag_fortsetzen(request: Request, slug: str, ts: str):
     daten_dir = request.app.state.daten_dir
     lauf_dir = _lauf_dir_oder_404(daten_dir, slug, ts)
     manager = _manager(request)

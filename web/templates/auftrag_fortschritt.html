@@ -27,8 +27,8 @@
   <div class="schritt-liste" id="schritt-liste">
     {% for label in schritte %}
     {% set nr = loop.index %}
-    <div class="schritt-zeile{% if nr < schritt %} schritt-zeile--fertig{% elif nr == schritt and zustand == 'laeuft' %} schritt-zeile--aktiv{% endif %}" id="schritt-{{ nr }}">
-      <span class="schritt-status">{% if nr < schritt %}✓{% elif nr == schritt and zustand == 'laeuft' %}…{% else %}&nbsp;{% endif %}</span>
+    <div class="schritt-zeile{% if nr <= schritt_fertig %} schritt-zeile--fertig{% elif nr == schritt and zustand == 'laeuft' %} schritt-zeile--aktiv{% endif %}" id="schritt-{{ nr }}">
+      <span class="schritt-status">{% if nr <= schritt_fertig %}✓{% elif nr == schritt and zustand == 'laeuft' %}…{% else %}&nbsp;{% endif %}</span>
       <span class="schritt-label">{{ label }}</span>
     </div>
     {% endfor %}

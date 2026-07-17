@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;padding:0;background:#F6F5F0;color:#1C1B15;font-family:'Instrument Sans',system-ui,sans-serif;}
+a{color:#1C1B15;text-decoration:underline;text-underline-offset:2px;}
+a:hover{color:#C43D21;}
+*{box-sizing:border-box;}
+input,textarea,select,button{font-family:inherit;}
+@keyframes dcDreh{to{transform:rotate(360deg);}}
+@keyframes dcPuls{0%,100%{opacity:1;}50%{opacity:0.35;}}
+</style>
+</helmet>
+<div style="display:flex; height:100vh; overflow:hidden; background:#F6F5F0; font-size:14.5px; line-height:1.5;">
+  <aside style="width:224px; flex-shrink:0; background:#EFEDE5; border-right:1px solid #E2DFD4; display:flex; flex-direction:column;">
+    <div style="padding:18px 18px 14px; border-bottom:1px solid #E2DFD4;">
+      <div style="display:flex; align-items:center; gap:9px;">
+        <div style="display:grid; grid-template-columns:7px 7px; grid-template-rows:7px 7px;">
+          <div style="background:#1C1B15;"></div><div style="background:#C43D21;"></div>
+          <div style="background:#C43D21;"></div><div style="background:#1C1B15;"></div>
+        </div>
+        <div style="font-weight:700; font-size:15px;">Poleposition</div>
+      </div>
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#6E6A5C; letter-spacing:0.12em; margin-top:4px;">KI-KALTAKQUISE</div>
+    </div>
+    <nav style="padding:12px 10px; flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:2px;">
+      <sc-for list="{{ navListe }}" as="n" hint-placeholder-count="7">
+        <div onClick="{{ n.oeffnen }}" style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px 11px; border-radius:8px; cursor:pointer; font-weight:600; font-size:13.5px; background: {{ n.bg }}; border:1px solid {{ n.rand }}; color: {{ n.fg }};" style-hover="background:#FFFFFF;">
+          <span>{{ n.label }}</span>
+          <sc-if value="{{ n.zeigeBadge }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace; font-size:11px; background: {{ n.badgeBg }}; color: {{ n.badgeFg }}; border-radius:999px; padding:1px 8px;">{{ n.badge }}</span></sc-if>
+        </div>
+      </sc-for>
+    </nav>
+    <div style="padding:14px 18px; border-top:1px solid #E2DFD4; display:flex; align-items:center; justify-content:space-between;">
+      <div>
+        <div style="font-size:12.5px; font-weight:600;">Lena Hartmann</div>
+        <div style="font-size:11.5px; color:#6E6A5C;">Angemeldet</div>
+      </div>
+      <div style="font-size:12px; color:#6E6A5C; cursor:pointer; text-decoration:underline; text-underline-offset:2px;" style-hover="color:#C43D21;">Abmelden</div>
+    </div>
+  </aside>
+  <main style="flex:1; overflow-y:auto;">
+
+    <sc-if value="{{ istDashboard }}" hint-placeholder-val="{{ true }}">
+      <div data-screen-label="Dashboard" style="padding:30px 40px 60px; max-width:1000px;">
+        <h1 style="margin:0; font-size:24px;">Dashboard</h1>
+        <div style="color:#6E6A5C; margin:4px 0 22px; font-size:13.5px;">Hier siehst du auf einen Blick, was läuft und was auf dich wartet.</div>
+        <sc-if value="{{ angehaltenBanner }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#F9E9E4; border:2px solid #B03320; border-radius:12px; padding:16px 20px; margin-bottom:18px; display:flex; align-items:center; gap:18px; flex-wrap:wrap;">
+            <div style="flex:1; min-width:260px;">
+              <div style="font-weight:700; font-size:14.5px; color:#7A2416;">{{ angehaltenTitel }}</div>
+              <div style="font-size:13px; color:#7A2416; margin-top:3px;">{{ angehaltenBanner }}</div>
+            </div>
+            <button onClick="{{ angehaltenFortsetzen }}" style="background:#1C1B15; color:#F6F5F0; border:none; border-radius:9px; padding:11px 20px; font-weight:700; font-size:13.5px; cursor:pointer; flex-shrink:0;" style-hover="background:#33312A;">Fortsetzen</button>
+          </div>
+        </sc-if>
+        <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px;">
+          <sc-for list="{{ kacheln }}" as="k" hint-placeholder-count="4">
+            <div onClick="{{ k.oeffnen }}" style="background: {{ k.bg }}; border:1.5px solid {{ k.rand }}; border-radius:12px; padding:16px 18px; cursor:pointer;" style-hover="border-color:#6E6A5C;">
+              <div style="font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:26px; color: {{ k.fg }};">{{ k.wert }}</div>
+              <div style="font-size:12.5px; font-weight:600; color: {{ k.fg }}; margin-top:2px;">{{ k.label }}</div>
+              <div style="font-size:11.5px; color:#6E6A5C; margin-top:1px;">{{ k.sub }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <sc-if value="{{ zeigeWartende }}" hint-placeholder-val="{{ false }}">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.1em; color:#8A5D00; margin:26px 0 10px;">WARTET AUF DEINE FREIGABE</div>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <sc-for list="{{ wartende }}" as="w" hint-placeholder-count="2">
+              <div style="background:#F8EFD8; border:1.5px solid #E3CE9E; border-radius:12px; padding:15px 20px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+                <div style="flex:1; min-width:240px;">
+                  <div style="font-weight:700; font-size:14.5px; color:#5F4100;">{{ w.titel }}</div>
+                  <div style="font-size:12.5px; color:#8A5D00; margin-top:2px;">{{ w.zeile }}</div>
+                </div>
+                <button onClick="{{ w.oeffnen }}" style="background:#1C1B15; color:#F6F5F0; border:none; border-radius:9px; padding:11px 20px; font-weight:700; font-size:13.5px; cursor:pointer;" style-hover="background:#33312A;">Jetzt prüfen</button>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <div style="display:flex; align-items:baseline; justify-content:space-between; margin:28px 0 10px;">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.1em; color:#6E6A5C;">KAMPAGNEN</div>
+          <span onClick="{{ zuKampagnen }}" style="font-size:13px; font-weight:600; cursor:pointer; text-decoration:underline; text-underline-offset:2px;" style-hover="color:#C43D21;">Alle Kampagnen ansehen</span>
+        </div>
+        <div style="background:#FFFFFF; border:1px solid #E2DFD4; border-radius:12px; overflow:hidden;">
+          <sc-for list="{{ dashKampagnen }}" as="c" hint-placeholder-count="3">
+            <div onClick="{{ c.oeffnen }}" style="display:grid; grid-template-columns:2fr 1fr 1.2fr 130px; gap:14px; align-items:center; padding:13px 20px; border-bottom:1px solid #F0EEE5; cursor:pointer;" style-hover="background:#FBFAF4;">
+              <div style="font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:13px;">{{ c.name }}</div>
+              <div style="font-size:12.5px; color:#6E6A5C;">{{ c.kunde }}</div>
+              <div style="font-size:12.5px; color:#6E6A5C;">{{ c.versendetText }}</div>
+              <div><span style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; padding:3px 9px; border-radius:999px; background: {{ c.chipBg }}; color: {{ c.chipFg }};">{{ c.chipText }}</span></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ istKampagnen }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Kampagnen" style="padding:30px 40px 60px; max-width:1000px;">
+        <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+          <div>
+            <h1 style="margin:0; font-size:24px;">Kampagnen</h1>
+            <div style="color:#6E6A5C; margin-top:4px; font-size:13.5px;">Jede Kampagne entsteht aus einem geprüften und freigegebenen Auftrag. Versendet wird über Instantly.</div>
+          </div>
+          <button onClick="{{ startOeffnen }}" style="background:#1C1B15; color:#F6F5F0; border:none; border-radius:10px; padding:12px 22px; font-weight:700; font-size:14.5px; cursor:pointer;" style-hover="background:#33312A;">Anschreiben erstellen lassen</button>
+        </div>
+        <sc-if value="{{ zeigeVorbereitung }}" hint-placeholder-val="{{ false }}">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.1em; color:#6E6A5C; margin:24px 0 10px;">IN VORBEREITUNG — DARAUS WERDEN KAMPAGNEN</div>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <sc-for list="{{ vorbereitung }}" as="v" hint-placeholder-count="2">
+              <div style="background:#FFFFFF; border:1.5px solid {{ v.rand }}; border-radius:12px; padding:14px 20px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+                <div style="flex:1; min-width:260px;">
+                  <div style="font-weight:700; font-size:14px;">{{ v.titel }}</div>
+                  <div style="font-size:12.5px; margin-top:2px; color: {{ v.zeileFarbe }}; display:flex; align-items:center; gap:7px;">
+                    <sc-if value="{{ v.pulsiert }}" hint-placeholder-val="{{ false }}"><span style="width:7px; height:7px; border-radius:50%; background:currentColor; animation:dcPuls 1.2s ease-in-out infinite; flex-shrink:0;"></span></sc-if>
+                    <span>{{ v.zeile }}</span>
+                  </div>
+                </div>
+                <sc-if value="{{ v.zeigeFortsetzen }}" hint-placeholder-val="{{ false }}"><button onClick="{{ v.fortsetzen }}" style="border:1px solid #1C1B15; background:#FFFFFF; border-radius:9px; padding:9px 16px; font-size:13px; font-weight:700; cursor:pointer;" style-hover="background:#1C1B15; color:#F6F5F0;">Fortsetzen</button></sc-if>
+                <sc-if value="{{ v.zeigePruefen }}" hint-placeholder-val="{{ false }}"><button onClick="{{ v.pruefen }}" style="border:none; background:#1C1B15; color:#F6F5F0; border-radius:9px; padding:10px 16px; font-size:13px; font-weight:700; cursor:pointer;" style-hover="background:#33312A;">Jetzt prüfen</button></sc-if>
+                <sc-if value="{{ v.zeigeZusehen }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px; color:#6E6A5C;">Du musst nichts tun.</span></sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.1em; color:#6E6A5C; margin:24px 0 10px;">ALLE KAMPAGNEN</div>
+        <div style="background:#FFFFFF; border:1px solid #E2DFD4; border-radius:12px; overflow:hidden;">
+          <div style="display:grid; grid-template-columns:2fr 1fr 120px 90px 110px 130px; gap:12px; padding:11px 20px; border-bottom:1px solid #E2DFD4; font-size:11px; color:#6E6A5C; font-family:'IBM Plex Mono',monospace; letter-spacing:0.06em;">
+            <div>KAMPAGNE</div><div>KUNDE</div><div>STATUS</div><div>EMPFÄNGER</div><div>VERSENDET</div><div>FREIGEGEBEN AM</div>
+          </div>
+          <sc-for list="{{ kampagnenListe }}" as="c" hint-placeholder-count="4">
+            <div onClick="{{ c.oeffnen }}" style="display:grid; grid-template-columns:2fr 1fr 120px 90px 110px 130px; gap:12px; align-items:center; padding:13px 20px; border-bottom:1px solid #F0EEE5; font-size:13px; cursor:pointer;" style-hover="background:#FBFAF4;">
+              <div style="font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:12.5px;">{{ c.name }}</div>
+              <div style="color:#6E6A5C;">{{ c.kunde }}</div>
+              <div><span style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; padding:3px 9px; border-radius:999px; background: {{ c.chipBg }}; color: {{ c.chipFg }};">{{ c.chipText }}</span></div>
+              <div style="font-family:'IBM Plex Mono',monospace;">{{ c.gesamt }}</div>
+              <div style="font-family:'IBM Plex Mono',monospace;">{{ c.verschickt }}</div>
+              <div style="color:#6E6A5C; font-size:12px;">{{ c.freigegebenAm }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ istKampagneDetail }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Kampagne-Detail" style="padding:26px 40px 60px; max-width:860px;">
+        <div style="font-size:13px; color:#6E6A5C; margin-bottom:12px;"><span style="cursor:pointer; text-decoration:underline; text-underline-offset:2px;" onClick="{{ zuKampagnen }}">‹ Alle Kampagnen</span></div>
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+          <h1 style="margin:0; font-size:22px; font-family:'IBM Plex Mono',monospace;">{{ kdName }}</h1>
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; padding:3px 10px; border-radius:999px; background: {{ kdChipBg }}; color: {{ kdChipFg }};">{{ kdChipText }}</span>
+        </div>
+        <div style="color:#6E6A5C; margin-top:5px; font-size:13.5px;">{{ kdSatz }}</div>
+        <div style="font-size:12.5px; color:#6E6A5C; margin-top:8px;">Kunde: <b style="color:#1C1B15;">{{ kdKunde }}</b> · Freigegeben von {{ kdVon }} am {{ kdAm }} · {{ kdGesamt }} Empfänger</div>
+        <div style="background:#FFFFFF; border:1px solid #E2DFD4; border-radius:14px; padding:24px 28px; margin-top:20px;">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.1em; color:#6E6A5C;">FORTSCHRITT JE SCHRITT DER MAIL-FOLGE</div>
+          <div style="display:flex; flex-direction:column; gap:16px; margin-top:16px;">
+            <sc-for list="{{ kdSchritte }}" as="s" hint-placeholder-count="3">
+              <div>
+                <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;">
+                  <span style="font-weight:600;">{{ s.label }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;">{{ s.text }}</span>
+                </div>
+                <div style="height:8px; border-radius:999px; background:#ECEAE1; overflow:hidden;"><div style="height:100%; background:#1F7A46; width: {{ s.balken }};"></div></div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex; gap:26px; margin-top:20px; padding-top:16px; border-top:1px solid #E2DFD4; flex-wrap:wrap; align-items:center;">
+            <div><div style="font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:20px;">{{ kdAntworten }}</div><div style="font-size:11.5px; color:#6E6A5C;">Antworten — im Postfach lesen</div></div>
+            <div style="flex:1;"></div>
+            <a href="https://app.instantly.ai" target="_blank" rel="noopener" style="font-weight:600; font-size:13.5px;">Kampagne in Instantly öffnen ↗</a>
+          </div>
+        </div>
+        <sc-if value="{{ kdPausiertHinweis }}" hint-placeholder-val="{{ false }}">
+          <div style="border:1.5px solid #2E5A82; background:#EAF0F6; border-radius:12px; padding:14px 20px; margin-top:14px; font-size:13.5px; color:#2E5A82;">{{ kdPausiertHinweis }}</div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ istPruefen }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Prüfen und Freigeben" style="padding:30px 40px 60px; max-width:1100px;">
+        <h1 style="margin:0; font-size:24px;">Prüfen &amp; Freigeben</h1>
+        <div style="color:#6E6A5C; margin:4px 0 18px; font-size:13.5px; max-width:760px;">{{ pSatz }}</div>
+        <sc-if value="{{ pLeer }}" hint-placeholder-val="{{ false }}">
+          <div style="border:1px dashed #CBC7B8; border-radius:12px; padding:48px; text-align:center; color:#6E6A5C;">
+            <div style="font-weight:600; color:#1C1B15; font-size:15px; margin-bottom:4px;">Nichts wartet auf dich</div>
+            <div>Sobald neue Anschreiben fertig sind, erscheinen sie hier zum Lesen und Freigeben.</div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ pSichtbar }}" hint-placeholder-val="{{ false }}">
+          <sc-if value="{{ zeigePAuswahl }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+              <sc-for list="{{ pAuswahl }}" as="a" hint-placeholder-count="2">
+                <div onClick="{{ a.waehlen }}" style="padding:7px 14px; border-radius:999px; cursor:pointer; font-size:13px; font-weight:600; border:1.5px solid {{ a.rand }}; background: {{ a.bg }};">{{ a.label }}</div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ verfallenBanner }}" hint-placeholder-val="{{ false }}">
+            <div style="background:#F1E9F6; border:1.5px solid #C9A9E0; border-radius:12px; padding:16px 20px; margin-bottom:18px; color:#53306E;">
+              <div style="font-weight:700; font-size:14.5px;">Die Texte wurden neu erstellt — bitte noch einmal prüfen und freigeben.</div>
+              <div style="font-size:13.5px; margin-top:3px;">{{ verfallenBanner }}</div>
+            </div>
+          </sc-if>
+          <div style="display:flex; gap:22px; flex-wrap:wrap; background:#FFFFFF; border:1px solid #E2DFD4; border-radius:12px; padding:18px 22px; margin-bottom:18px;">
+            <sc-for list="{{ zahlenBoxen }}" as="z" hint-placeholder-count="5">
+              <div style="min-width:120px;">
+                <div style="font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:22px;">{{ z.wert }}</div>
+                <div style="font-size:12px; color:#6E6A5C;">{{ z.label }}</div>
+                <sc-if value="{{ z.sub }}" hint-placeholder-val="{{ false }}"><div style="font-size:11px; color:#6E6A5C; margin-top:2px;">{{ z.sub }}</div></sc-if>
+              </div>
+            </sc-for>
+          </div>
+          <sc-if value="{{ zeigeNacharbeit }}" hint-placeholder-val="{{ false }}">
+            <div style="background:#FFFFFF; border:1px solid #E2DFD4; border-radius:12px; margin-bottom:18px; overflow:hidden;">
+              <div onClick="{{ nachToggle }}" style="display:flex; align-items:center; gap:10px; padding:14px 20px; cursor:pointer;" style-hover="background:#FBFAF4;">
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; background:#F8EFD8; color:#8A5D00; border-radius:999px; padding:3px 10px;">{{ nachAnzahl }}</span>
+                <div style="font-weight:600; font-size:14px;">Von der Prüfung aussortiert — diese Texte gehen nicht raus. Du kannst sie lesen und den Grund sehen.</div>
+                <div style="flex:1;"></div>
+                <div style="color:#6E6A5C; font-size:13px;">{{ nachPfeil }}</div>
+              </div>
+              <sc-if value="{{ nachOffen }}" hint-placeholder-val="{{ false }}">
+                <div style="border-top:1px solid #E2DFD4;">
+                  <sc-for list="{{ nacharbeit }}" as="n" hint-placeholder-count="3">
+                    <div style="padding:13px 20px; border-bottom:1px solid #F0EEE5; display:grid; grid-template-columns:200px 1fr; gap:16px;">
+                      <div>
+                        <div style="font-weight:600; font-size:13.5px;">{{ n.firma }}</div>
+                        <div style="font-size:12px; color:#6E6A5C;">{{ n.person }}</div>
+                      </div>
+                      <div>
+                        <div style="font-size:13px; color:#8A5D00; font-weight:600;">{{ n.grund }}</div>
+                        <div style="font-size:12.5px; color:#6E6A5C; margin-top:2px;">Betreff war: »{{ n.betreff }}« — dieser Text geht nicht raus.</div>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+          <sc-if value="{{ zeigeTexte }}" hint-placeholder-val="{{ false }}">
+            <div style="display:grid; grid-template-columns: {{ leseSpalten }}; gap:18px; align-items:start;">
+              <sc-if value="{{ zeigeEmpfListe }}" hint-placeholder-val="{{ true }}">
+                <div style="background:#FFFFFF; border:1px solid #E2DFD4; border-radius:12px; overflow:hidden; position:sticky; top:16px; max-height:calc(100vh - 120px); display:flex; flex-direction:column;">
+                  <div style="padding:12px 16px; border-bottom:1px solid #E2DFD4; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.1em; color:#6E6A5C;">EMPFÄNGER · {{ empfAnzahl }}</div>
+                  <div style="overflow-y:auto;">
+                    <sc-for list="{{ empfListe }}" as="e" hint-placeholder-count="6">
+                      <div onClick="{{ e.waehlen }}" style="padding:10px 16px; cursor:pointer; border-left:3px solid {{ e.markRand }}; background: {{ e.markBg }};" style-hover="background:#FBFAF4;">
+                        <div style="font-weight:600; font-size:13px;">{{ e.firma }}</div>
+                        <div style="font-size:11.5px; color:#6E6A5C;">{{ e.name }} · {{ e.rolle }}</div>
+                        <div style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:#6E6A5C; margin-top:1px; overflow:hidden; text-overflow:ellipsis;">{{ e.mail }}</div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+              <div>
+                <sc-for list="{{ leseListe }}" as="e" hint-placeholder-count="1">
+                  <div style="background:#FFFFFF; border:1px solid #E2DFD4; border-radius:14px; padding:30px 34px; margin-bottom:18px;">
+                    <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; border-bottom:1px solid #E2DFD4; padding-bottom:14px; margin-bottom:18px;">
+                      <div>
+                        <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.1em; color:#6E6A5C;">AN</div>
+                        <div style="font-weight:700; font-size:16px; margin-top:2px;">{{ e.name }} · {{ e.rolle }}</div>
+                        <div style="font-size:13px; color:#6E6A5C;">{{ e.firma }}</div>
+                        <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#1C1B15; margin-top:2px;">{{ e.mail }}</div>
+                      </div>
+                      <div style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:#6E6A5C; text-align:right;">{{ e.zaehler }}<br/>Absender: {{ absenderName }}</div>
+                    </div>
+                    <div style="max-width:660px;">
+                      <div style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:0.12em; color:#C43D21;">ANSCHREIBEN (GEHT SOFORT RAUS)</div>
+                      <div style="font-weight:700; font-size:16.5px; margin:6px 0 10px;">{{ e.betreff }}</div>
+                      <div style="white-space:pre-wrap; font-size:15px; line-height:1.66;">{{ e.anschreiben }}</div>
+                      <div style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:0.12em; color:#C43D21; margin-top:26px;">NACHFASS-MAIL 1 (NACH 4 TAGEN)</div>
+                      <div style="white-space:pre-wrap; font-size:15px; line-height:1.66; margin-top:8px;">{{ e.nachfass1 }}</div>
+                      <div style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:0.12em; color:#C43D21; margin-top:26px;">NACHFASS-MAIL 2 (NACH 9 TAGEN)</div>
+                      <div style="white-space:pre-wrap; font-size:15px; line-height:1.66; margin-top:8px;">{{ e.nachfass2 }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ istBlaettern }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex; align-items:center; justify-content:center; gap:14px; margin-bottom:18px;">
+                    <button onClick="{{ vorher }}" disabled="{{ vorherAus }}" style="border:1px solid #CBC7B8; background:#FFFFFF; border-radius:8px; padding:8px 16px; font-size:13px; font-weight:600; cursor:pointer; opacity: {{ vorherDeckkraft }};" style-hover="border-color:#6E6A5C;">‹ Voriger</button>
+                    <div style="font-family:'IBM Plex Mono',monospace; font-size:13px;">{{ pagerText }}</div>
+                    <button onClick="{{ weiter }}" disabled="{{ weiterAus }}" style="border:1px solid #CBC7B8; background:#FFFFFF; border-radius:8px; padding:8px 16px; font-size:13px; font-weight:600; cursor:pointer; opacity: {{ weiterDeckkraft }};" style-hover="border-color:#6E6A5C;">Nächster ›</button>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ gateSichtbar }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; align-items:center; gap:14px; border:1px dashed #CBC7B8; border-radius:10px; padding:9px 14px; margin-top:22px; flex-wrap:wrap;">
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:0.1em; color:#6E6A5C;">NUR ENTWURF · VARIANTEN</span>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-size:12px; color:#6E6A5C;">Lesefluss:</span>
+                <sc-for list="{{ leseOpts }}" as="o" hint-placeholder-count="3">
+                  <div onClick="{{ o.waehlen }}" style="padding:4px 11px; border-radius:999px; cursor:pointer; font-size:12px; font-weight:600; border:1px solid {{ o.rand }}; background: {{ o.bg }}; color: {{ o.fg }};">{{ o.label }}</div>
+                </sc-for>
+              </div>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-size:12px; color:#6E6A5C;">Freigabe-Geste:</span>
+                <sc-for list="{{ gesteOpts }}" as="o" hint-placeholder-count="3">
+                  <div onClick="{{ o.waehlen }}" style="padding:4px 11px; border-radius:999px; cursor:pointer; font-size:12px; font-weight:600; border:1px solid {{ o.rand }}; background: {{ o.bg }}; color: {{ o.fg }};">{{ o.label }}</div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="border:2px solid #1C1B15; border-radius:14px; background:#FBFAF4; padding:24px 28px; margin-top:14px;">
+              <div style="font-size:16px; font-weight:700;">Ohne deine Freigabe wird nichts versendet.</div>
+              <div style="font-size:13.5px; color:#6E6A5C; margin-top:3px;">Freigeben heißt: Die Texte gehen als Kampagne an Instantly — zunächst pausiert. Gestartet wird dort von Hand. {{ protokollSatz }}</div>
+              <div style="display:flex; gap:22px; margin-top:18px; flex-wrap:wrap;">
+                <div onClick="{{ zielTestWaehlen }}" style="flex:1; min-width:260px; border:1.5px solid {{ zielTestRand }}; background: {{ zielTestBg }}; border-radius:10px; padding:13px 16px; cursor:pointer;">
+                  <div style="display:flex; gap:9px; align-items:center;">
+                    <div style="width:16px; height:16px; border-radius:50%; border:2px solid #1C1B15; display:flex; align-items:center; justify-content:center;"><sc-if value="{{ zielTest }}" hint-placeholder-val="{{ true }}"><div style="width:8px; height:8px; border-radius:50%; background:#1C1B15;"></div></sc-if></div>
+                    <div style="font-weight:700; font-size:14px;">Test-Modus: nur an die Test-Adressen</div>
+                  </div>
+                  <div style="font-size:12.5px; color:#6E6A5C; margin-top:5px;">{{ testEmpfText }} Die Kampagne in Instantly heißt dann <span style="font-family:'IBM Plex Mono',monospace;">[TEST] {{ kampagnenBasis }}</span>.</div>
+                </div>
+                <div onClick="{{ zielAlleWaehlen }}" style="flex:1; min-width:260px; border:1.5px solid {{ zielAlleRand }}; background: {{ zielAlleBg }}; border-radius:10px; padding:13px 16px; cursor:pointer;">
+                  <div style="display:flex; gap:9px; align-items:center;">
+                    <div style="width:16px; height:16px; border-radius:50%; border:2px solid #1C1B15; display:flex; align-items:center; justify-content:center;"><sc-if value="{{ zielAlle }}" hint-placeholder-val="{{ false }}"><div style="width:8px; height:8px; border-radius:50%; background:#1C1B15;"></div></sc-if></div>
+                    <div style="font-weight:700; font-size:14px;">An alle {{ empfAnzahl }} Empfänger</div>
+                  </div>
+                  <div style="font-size:12.5px; color:#6E6A5C; margin-top:5px;">Für den echten Versand. Die {{ nachAnzahl }} von der Prüfung aussortierten Texte gehen nicht mit.</div>
+                </div>
+              </div>
+              <sc-if value="{{ gesteCheck }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:18px; display:flex; flex-direction:column; gap:9px;">
+                  <sc-for list="{{ checkListe }}" as="c" hint-placeholder-count="3">
+                    <div onClick="{{ c.umschalten }}" style="display:flex; gap:10px; align-items:center; cursor:pointer;">
+                      <div style="width:18px; height:18px; border-radius:5px; border:2px solid #1C1B15; background: {{ c.bg }}; color:#F6F5F0; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;">{{ c.haken }}</div>
+                      <div style="font-size:13.5px; font-weight:500;">{{ c.text }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <div style="display:flex; align-items:center; gap:14px; margin-top:20px; flex-wrap:wrap;">
+                <sc-if value="{{ gesteHalten }}" hint-placeholder-val="{{ true }}">
+                  <button onPointerDown="{{ halteStart }}" onPointerUp="{{ halteStopp }}" onPointerLeave="{{ halteStopp }}" style="position:relative; overflow:hidden; background:#1F7A46; color:#FFFFFF; border:none; border-radius:10px; padding:14px 28px; font-weight:700; font-size:15px; cursor:pointer; user-select:none; touch-action:none;">
+                    <div style="position:absolute; left:0; top:0; bottom:0; background:rgba(255,255,255,0.28); width: {{ halteBreite }}; transition:width 0.04s linear;"></div>
+                    <span style="position:relative;">Zum Freigeben gedrückt halten</span>
+                  </button>
+                  <div style="font-size:12.5px; color:#6E6A5C;">Etwa eine Sekunde halten — so passiert nichts aus Versehen.</div>
+                </sc-if>
+                <sc-if value="{{ gesteTippen }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ tippenOeffnen }}" style="background:#1F7A46; color:#FFFFFF; border:none; border-radius:10px; padding:14px 28px; font-weight:700; font-size:15px; cursor:pointer;" style-hover="background:#186238;">Freigeben …</button>
+                  <div style="font-size:12.5px; color:#6E6A5C;">Zeigt erst eine Zusammenfassung; bestätigt wird durch Tippen des Wortes FREIGEBEN.</div>
+                </sc-if>
+                <sc-if value="{{ gesteCheck }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ checkFreigeben }}" disabled="{{ checksFehlen }}" style="background:#1F7A46; color:#FFFFFF; border:none; border-radius:10px; padding:14px 28px; font-weight:700; font-size:15px; cursor:pointer; opacity: {{ checkDeckkraft }};" style-hover="background:#186238;">Freigeben</button>
+                  <div style="font-size:12.5px; color:#6E6A5C;">Geht erst, wenn alle drei Punkte abgehakt sind.</div>
+                </sc-if>
+                <div style="flex:1;"></div>
+                <button onClick="{{ ablehnenOeffnen }}" style="border:1px solid #CBC7B8; background:transparent; color:#B03320; border-radius:10px; padding:12px 20px; font-weight:600; font-size:14px; cursor:pointer;" style-hover="border-color:#B03320;">Ablehnen …</button>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ handoverSicht }}" hint-placeholder-val="{{ false }}">
+            <div style="border:2px solid #1F7A46; border-radius:14px; background:#E9F3EB; padding:24px 28px; margin-top:14px;">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.14em; color:#1F7A46; font-weight:600;">FREIGEGEBEN &amp; ÜBERGEBEN</div>
+              <div style="font-size:16px; font-weight:700; margin-top:4px;">{{ handoverTitel }}</div>
+              <div style="font-size:13.5px; color:#3E5A47; margin-top:5px;">Freigegeben von {{ handoverVon }} am {{ handoverAm }}. Versendet wird noch nichts: Gestartet wird die Kampagne von Hand in Instantly. Werden die Texte neu erstellt, verfällt die Freigabe automatisch.</div>
+              <div style="margin-top:14px; display:flex; gap:18px; align-items:center; flex-wrap:wrap;">
+                <span onClick="{{ handoverZurKampagne }}" style="font-weight:600; font-size:13.5px; cursor:pointer; text-decoration:underline; text-underline-offset:2px;" style-hover="color:#C43D21;">Zur Kampagne</span>
+                <a href="https://app.instantly.ai" target="_blank" rel="noopener" style="font-weight:600; font-size:13.5px;">In Instantly öffnen ↗</a>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ abgelehntSicht }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1.5px solid #CBC7B8; border-radius:14px; background:#ECEAE1; padding:20px 26px; margin-top:14px;">
+              <div style="font-weight:700; font-size:15px;">Abgelehnt von {{ abgelehntVon }} am {{ abgelehntAm }}</div>
+              <div style="font-size:13.5px; color:#6E6A5C; margin-top:4px;">Begründung: {{ abgelehntGrund }}. Nichts wurde versendet. Lass neue Anschreiben erstellen, um frische Texte zu bekommen.</div>
+            </div>
+          </sc-if>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ istKontakte }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Kontakte" style="padding:30px 40px 60px; max-width:1050px;">
+        <h1 style="margin:0; font-size:24px;">Kontakte</h1>
+        <div style="color:#6E6A5C; margin:4px 0 16px; font-size:13.5px;">Alle Personen, die je angeschrieben wurden. Nur zum Nachschauen — geschrieben wird über Kampagnen.</div>
+        <input value="{{ kontaktSuche }}" onChange="{{ f.suche }}" placeholder="Suchen: Name, Firma oder E-Mail-Adresse" style="width:340px; max-width:100%; border:1px solid #CBC7B8; border-radius:8px; padding:9px 12px; font-size:13.5px; background:#FFFFFF; margin-bottom:14px;" />
+        <div style="background:#FFFFFF; border:1px solid #E2DFD4; border-radius:12px; overflow:hidden;">
+          <div style="display:grid; grid-template-columns:1.2fr 1.4fr 1.6fr 1fr 1.4fr 130px; gap:12px; padding:11px 20px; border-bottom:1px solid #E2DFD4; font-size:11px; color:#6E6A5C; font-family:'IBM Plex Mono',monospace; letter-spacing:0.06em;">
+            <div>NAME</div><div>FIRMA</div><div>E-MAIL</div><div>KUNDE</div><div>KAMPAGNE</div><div>ZULETZT KONTAKTIERT</div>
+          </div>
+          <sc-for list="{{ kontakte }}" as="k" hint-placeholder-count="8">
+            <div style="display:grid; grid-template-columns:1.2fr 1.4fr 1.6fr 1fr 1.4fr 130px; gap:12px; align-items:center; padding:11px 20px; border-bottom:1px solid #F0EEE5; font-size:12.5px;">
+              <div style="font-weight:600;">{{ k.name }}</div>
+              <div style="color:#6E6A5C;">{{ k.firma }}</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; overflow:hidden; text-overflow:ellipsis;">{{ k.mail }}</div>
+              <div style="color:#6E6A5C;">{{ k.kunde }}</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#6E6A5C; overflow:hidden; text-overflow:ellipsis;">{{ k.kampagne }}</div>
+              <div style="color:#6E6A5C; font-size:12px;">{{ k.zuletzt }}</div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ kontakteLeer }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:30px; text-align:center; color:#6E6A5C; font-size:13px;">Nichts gefunden. Andere Schreibweise versuchen?</div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ istPostfach }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Postfach" style="padding:30px 40px 60px; max-width:1050px;">
+        <h1 style="margin:0; font-size:24px;">Postfach</h1>
+        <div style="color:#6E6A5C; margin:4px 0 16px; font-size:13.5px;">Alle Gespräche an einem Ort: unsere Mails und die Antworten darauf. Antworten schreibst du in Instantly.</div>
+        <div style="display:grid; grid-template-columns:300px 1fr; gap:18px; align-items:start;">
+          <div style="background:#FFFFFF; border:1px solid #E2DFD4; border-radius:12px; overflow:hidden;">
+            <sc-for list="{{ threads }}" as="t" hint-placeholder-count="4">
+              <div onClick="{{ t.waehlen }}" style="padding:12px 16px; cursor:pointer; border-left:3px solid {{ t.markRand }}; background: {{ t.markBg }}; border-bottom:1px solid #F0EEE5;" style-hover="background:#FBFAF4;">
+                <div style="display:flex; align-items:center; gap:7px;">
+                  <sc-if value="{{ t.neu }}" hint-placeholder-val="{{ false }}"><span style="width:8px; height:8px; border-radius:50%; background:#C43D21; flex-shrink:0;"></span></sc-if>
+                  <div style="font-weight:700; font-size:13.5px;">{{ t.name }}</div>
+                  <div style="flex:1;"></div>
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:#6E6A5C;">{{ t.datum }}</div>
+                </div>
+                <div style="font-size:12px; color:#6E6A5C; margin-top:1px;">{{ t.firma }}</div>
+                <div style="font-size:12px; color:#6E6A5C; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ t.schnipsel }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="background:#FFFFFF; border:1px solid #E2DFD4; border-radius:12px; padding:24px 28px;">
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; border-bottom:1px solid #E2DFD4; padding-bottom:14px;">
+              <div>
+                <div style="font-weight:700; font-size:16px;">{{ threadName }}</div>
+                <div style="font-size:12.5px; color:#6E6A5C;">{{ threadMeta }}</div>
+              </div>
+              <div style="flex:1;"></div>
+              <a href="https://app.instantly.ai" target="_blank" rel="noopener" style="font-weight:600; font-size:13.5px;">In Instantly antworten ↗</a>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:14px; margin-top:18px;">
+              <sc-for list="{{ threadNachrichten }}" as="m" hint-placeholder-count="3">
+                <div style="border:1px solid {{ m.rand }}; background: {{ m.bg }}; border-radius:11px; padding:14px 18px; max-width:640px; margin-left: {{ m.einzug }};">
+                  <div style="display:flex; gap:10px; align-items:baseline;">
+                    <div style="font-weight:700; font-size:12.5px; color: {{ m.werFarbe }};">{{ m.wer }}</div>
+                    <div style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:#6E6A5C;">{{ m.datum }}</div>
+                  </div>
+                  <div style="white-space:pre-wrap; font-size:13.5px; line-height:1.6; margin-top:6px;">{{ m.text }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ istDomains }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Gesperrte Domains" style="padding:30px 40px 60px; max-width:760px;">
+        <h1 style="margin:0; font-size:24px;">Gesperrte Domains</h1>
+        <div style="color:#6E6A5C; margin:4px 0 18px; font-size:13.5px;">An Firmen mit diesen Internet-Adressen wird nie geschrieben — egal für welchen Kunden. Platzhalter wie *.bund.de sind erlaubt.</div>
+        <div style="background:#FFFFFF; border:1px solid #E2DFD4; border-radius:14px; padding:24px 28px;">
+          <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;">
+            <sc-for list="{{ globalChips }}" as="c" hint-placeholder-count="4">
+              <span style="display:inline-flex; align-items:center; gap:7px; font-family:'IBM Plex Mono',monospace; font-size:13px; background:#ECEAE1; border-radius:999px; padding:6px 13px;">{{ c.t }}<span onClick="{{ c.entfernen }}" style="cursor:pointer; color:#6E6A5C; font-weight:700;" style-hover="color:#B03320;">×</span></span>
+            </sc-for>
+          </div>
+          <input value="{{ chipGlobal }}" onChange="{{ f.chipGlobal }}" onKeyDown="{{ f.globalEnter }}" placeholder="Domain eintippen, mit Eingabetaste hinzufügen — z. B. *.bund.de" style="width:100%; border:1px solid #CBC7B8; border-radius:8px; padding:10px 12px; font-size:13.5px; background:#FDFCF9;" />
+        </div>
+        <div style="border:1px dashed #CBC7B8; border-radius:12px; padding:14px 20px; margin-top:14px; font-size:13px; color:#6E6A5C;">
+          Zusätzlich hat jeder Kunde eine eigene Liste gesperrter Domains — die pflegst du im <span onClick="{{ zuKunden }}" style="cursor:pointer; text-decoration:underline; text-underline-offset:2px; color:#1C1B15; font-weight:600;">Kunden-Formular</span>. Beide Listen gelten zusammen.
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ istKunden }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Kunden" style="padding:30px 40px 60px; max-width:860px;">
+        <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:6px;">
+          <h1 style="margin:0; font-size:24px;">Kunden</h1>
+          <button onClick="{{ neuerKunde }}" style="border:1px solid #CBC7B8; background:#FFFFFF; border-radius:8px; padding:9px 16px; font-weight:600; font-size:13.5px; cursor:pointer;" style-hover="border-color:#6E6A5C;">Kunde anlegen</button>
+        </div>
+        <div style="color:#6E6A5C; font-size:13.5px; margin-bottom:20px;">Hier pflegst du die Angaben zu jedem Kunden: Zielgruppe, Angebot, gesperrte Domains, Test-Adressen. Anschreiben erstellen lässt du unter Kampagnen.</div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <sc-for list="{{ kundenListe }}" as="k" hint-placeholder-count="3">
+            <div style="display:grid; grid-template-columns:1.2fr 1.6fr auto; gap:16px; align-items:center; background:#FFFFFF; border:1px solid #E2DFD4; border-radius:12px; padding:15px 20px;">
+              <div>
+                <div style="font-weight:700; font-size:15px;">{{ k.name }}</div>
+                <div style="font-size:12.5px; color:#6E6A5C;">{{ k.branche }}</div>
+              </div>
+              <div style="font-size:12.5px; color:#6E6A5C;">{{ k.zielText }}<br/>Absender: {{ k.absender }} · Gesperrte Domains: {{ k.sperrText }}</div>
+              <button onClick="{{ k.bearbeiten }}" style="border:1px solid #CBC7B8; background:#FFFFFF; border-radius:8px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer;" style-hover="border-color:#6E6A5C;">Bearbeiten</button>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ istForm }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="Kunde anlegen / bearbeiten" style="padding:30px 40px 60px; max-width:820px;">
+        <div style="font-size:12.5px; color:#6E6A5C; margin-bottom:8px; cursor:pointer; text-decoration:underline; text-underline-offset:2px;" onClick="{{ formZurueck }}">‹ Zurück ohne zu speichern</div>
+        <h1 style="margin:0 0 6px; font-size:24px;">{{ formTitel }}</h1>
+        <div style="color:#6E6A5C; font-size:13.5px; margin-bottom:20px;">Diese Angaben steuern, wen das System anschreibt und wie die Texte klingen.</div>
+        <div style="background:#FFFFFF; border:1px solid #E2DFD4; border-radius:14px; padding:28px;">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px 20px;">
+            <label style="display:block;">
+              <div style="font-weight:600; font-size:13px;">Name des Kunden</div>
+              <div style="font-size:11.5px; color:#6E6A5C; margin:1px 0 5px;">So heißt der Kunde überall in diesem Werkzeug.</div>
+              <input value="{{ form.name }}" onChange="{{ f.name }}" placeholder="z. B. Digital Diamonds" style="width:100%; border:1px solid #CBC7B8; border-radius:8px; padding:9px 11px; font-size:14px; background:#FDFCF9;" />
+            </label>
+            <label style="display:block;">
+              <div style="font-weight:600; font-size:13px;">Webseite der Firma</div>
+              <div style="font-size:11.5px; color:#6E6A5C; margin:1px 0 5px;">Von hier kann das System das Angebot ableiten.</div>
+              <input value="{{ form.webseite }}" onChange="{{ f.webseite }}" placeholder="z. B. www.digitaldiamonds.de" style="width:100%; border:1px solid #CBC7B8; border-radius:8px; padding:9px 11px; font-size:14px; background:#FDFCF9;" />
+            </label>
+            <label style="display:block;">
+              <div style="font-weight:600; font-size:13px;">Zielgruppe: Jobtitel</div>
+              <div style="font-size:11.5px; color:#6E6A5C; margin:1px 0 5px;">Wen soll das System suchen? Beispiel: Geschäftsführer · Deutschland · 11–50 Mitarbeiter.</div>
+              <input value="{{ form.jobtitel }}" onChange="{{ f.jobtitel }}" placeholder="z. B. Geschäftsführer, Inhaber" style="width:100%; border:1px solid #CBC7B8; border-radius:8px; padding:9px 11px; font-size:14px; background:#FDFCF9;" />
+            </label>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+              <label style="display:block;">
+                <div style="font-weight:600; font-size:13px; margin-bottom:5px;">Region</div>
+                <input value="{{ form.region }}" onChange="{{ f.region }}" placeholder="z. B. DACH" style="width:100%; border:1px solid #CBC7B8; border-radius:8px; padding:9px 11px; font-size:14px; background:#FDFCF9;" />
+              </label>
+              <label style="display:block;">
+                <div style="font-weight:600; font-size:13px; margin-bottom:5px;">Firmengröße</div>
+                <input value="{{ form.groesse }}" onChange="{{ f.groesse }}" placeholder="z. B. 10–250" style="width:100%; border:1px solid #CBC7B8; border-radius:8px; padding:9px 11px; font-size:14px; background:#FDFCF9;" />
+              </label>
+            </div>
+          </div>
+          <div style="margin-top:20px; border:1px solid #E2DFD4; border-radius:10px; padding:16px; background:#FBFAF4;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+              <div style="font-weight:600; font-size:13px;">Angebot &amp; Tonalität</div>
+              <button onClick="{{ ableiten }}" disabled="{{ ableitenLade }}" style="border:1px solid #CBC7B8; background:#FFFFFF; border-radius:8px; padding:7px 12px; font-size:12.5px; font-weight:600; cursor:pointer; color:#1C1B15;" style-hover="border-color:#6E6A5C;">Angebot automatisch von der Firmen-Webseite ableiten</button>
+            </div>
+            <sc-if value="{{ ableitenLade }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; align-items:center; gap:9px; margin-top:10px; color:#6E6A5C; font-size:13px;">
+                <div style="width:14px; height:14px; border:2px solid #CBC7B8; border-top-color:#C43D21; border-radius:50%; animation:dcDreh 0.8s linear infinite;"></div>
+                Liest die Webseite {{ form.webseite }} …
+              </div>
+            </sc-if>
+            <sc-if value="{{ vorschlagHinweis }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:10px; font-size:12.5px; color:#8A5D00; background:#F8EFD8; border-radius:8px; padding:8px 12px;">{{ vorschlagHinweis }}</div>
+            </sc-if>
+            <label style="display:block; margin-top:14px;">
+              <div style="display:flex; gap:8px; align-items:center;">
+                <div style="font-weight:600; font-size:13px;">Angebot</div>
+                <sc-if value="{{ angebotIstVorschlag }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace; font-size:10px; background:#F8EFD8; color:#8A5D00; padding:2px 7px; border-radius:999px;">VORSCHLAG VON DER WEBSEITE</span></sc-if>
+              </div>
+              <div style="font-size:11.5px; color:#6E6A5C; margin:1px 0 5px;">Was bietet der Kunde an? In zwei, drei Sätzen — die KI nutzt das für jede Mail.</div>
+              <textarea value="{{ form.angebot }}" onChange="{{ f.angebot }}" rows="4" placeholder="In eigenen Worten: Was bietet der Kunde an, für wen, mit welchem Nutzen?" style="width:100%; border:1px solid #CBC7B8; border-radius:8px; padding:9px 11px; font-size:14px; background:#FDFCF9; resize:vertical; line-height:1.55;"></textarea>
+            </label>
+            <label style="display:block; margin-top:12px;">
+              <div style="display:flex; gap:8px; align-items:center;">
+                <div style="font-weight:600; font-size:13px;">Tonalität</div>
+                <sc-if value="{{ tonIstVorschlag }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace; font-size:10px; background:#F8EFD8; color:#8A5D00; padding:2px 7px; border-radius:999px;">VORSCHLAG VON DER WEBSEITE</span></sc-if>
+              </div>
+              <div style="font-size:11.5px; color:#6E6A5C; margin:1px 0 5px;">Wie sollen die Mails klingen? Beispiel: ruhig, erklärend, keine Superlative.</div>
+              <input value="{{ form.tonalitaet }}" onChange="{{ f.tonalitaet }}" placeholder="z. B. Direkt, auf Augenhöhe, ohne Marketing-Floskeln" style="width:100%; border:1px solid #CBC7B8; border-radius:8px; padding:9px 11px; font-size:14px; background:#FDFCF9;" />
+            </label>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px 20px; margin-top:20px;">
+            <label style="display:block;">
+              <div style="font-weight:600; font-size:13px;">Absendername</div>
+              <div style="font-size:11.5px; color:#6E6A5C; margin:1px 0 5px;">Dieser Name steht unter jeder Mail.</div>
+              <input value="{{ form.absender }}" onChange="{{ f.absender }}" placeholder="Wer unterschreibt die Mails?" style="width:100%; border:1px solid #CBC7B8; border-radius:8px; padding:9px 11px; font-size:14px; background:#FDFCF9;" />
+            </label>
+            <div></div>
+            <div>
+              <div style="font-weight:600; font-size:13px; margin-bottom:3px;">Gesperrte Domains (nur dieser Kunde)</div>
+              <div style="font-size:12px; color:#6E6A5C; margin-bottom:7px;">An Firmen mit diesen Internet-Adressen wird nie geschrieben — z. B. eure eigene Firma oder Kunden. Die globale Liste gilt zusätzlich.</div>
+              <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;">
+                <sc-for list="{{ sperrChips }}" as="c" hint-placeholder-count="2">
+                  <span style="display:inline-flex; align-items:center; gap:6px; font-family:'IBM Plex Mono',monospace; font-size:12px; background:#ECEAE1; border-radius:999px; padding:4px 10px;">{{ c.t }}<span onClick="{{ c.entfernen }}" style="cursor:pointer; color:#6E6A5C; font-weight:700;" style-hover="color:#B03320;">×</span></span>
+                </sc-for>
+              </div>
+              <input value="{{ chipSperr }}" onChange="{{ f.chipSperr }}" onKeyDown="{{ f.sperrEnter }}" placeholder="Domain eintippen, mit Eingabetaste hinzufügen" style="width:100%; border:1px solid #CBC7B8; border-radius:8px; padding:9px 11px; font-size:13px; background:#FDFCF9;" />
+            </div>
+            <div>
+              <div style="font-weight:600; font-size:13px; margin-bottom:3px;">Test-Adressen</div>
+              <div style="font-size:12px; color:#6E6A5C; margin-bottom:7px;">Solange der Test-Modus an ist, gehen Mails nur an diese Adressen — an niemanden sonst. Solche Kampagnen heißen automatisch [TEST].</div>
+              <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;">
+                <sc-for list="{{ testChips }}" as="c" hint-placeholder-count="2">
+                  <span style="display:inline-flex; align-items:center; gap:6px; font-family:'IBM Plex Mono',monospace; font-size:12px; background:#ECEAE1; border-radius:999px; padding:4px 10px;">{{ c.t }}<span onClick="{{ c.entfernen }}" style="cursor:pointer; color:#6E6A5C; font-weight:700;" style-hover="color:#B03320;">×</span></span>
+                </sc-for>
+              </div>
+              <input value="{{ chipTest }}" onChange="{{ f.chipTest }}" onKeyDown="{{ f.testEnter }}" placeholder="E-Mail-Adresse, mit Eingabetaste hinzufügen" style="width:100%; border:1px solid #CBC7B8; border-radius:8px; padding:9px 11px; font-size:13px; background:#FDFCF9;" />
+            </div>
+          </div>
+          <div style="display:flex; gap:10px; margin-top:26px; align-items:center;">
+            <button onClick="{{ speichern }}" disabled="{{ speichernGesperrt }}" style="background:#1C1B15; color:#F6F5F0; border:none; border-radius:8px; padding:10px 20px; font-weight:600; font-size:14px; cursor:pointer; opacity: {{ speichernDeckkraft }};" style-hover="background:#33312A;">Speichern</button>
+            <sc-if value="{{ speichernGesperrt }}" hint-placeholder-val="{{ false }}"><span style="font-size:12.5px; color:#6E6A5C;">Mindestens der Name muss ausgefüllt sein.</span></sc-if>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+  </main>
+
+  <sc-if value="{{ startOffen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; inset:0; background:rgba(28,27,21,0.45); display:flex; align-items:center; justify-content:center; z-index:50;" onClick="{{ startSchliessen }}">
+      <div style="background:#FFFFFF; border-radius:16px; padding:30px 34px; width:560px; max-width:92vw; max-height:88vh; overflow-y:auto;" onClick="{{ nichts }}">
+        <div style="font-size:19px; font-weight:700;">Anschreiben erstellen lassen</div>
+        <div style="font-size:13.5px; color:#6E6A5C; margin-top:4px;">Das System sucht Ansprechpartner, liest die Webseite jeder Firma und schreibt persönliche Entwürfe. Versendet wird nichts — am Ende prüfst du und gibst frei.</div>
+        <div style="font-weight:600; font-size:13px; margin:18px 0 8px;">Für welchen Kunden?</div>
+        <div style="display:flex; flex-direction:column; gap:7px;">
+          <sc-for list="{{ startKunden }}" as="k" hint-placeholder-count="3">
+            <div onClick="{{ k.waehlen }}" style="display:flex; align-items:center; gap:11px; border:1.5px solid {{ k.rand }}; background: {{ k.bg }}; border-radius:10px; padding:11px 14px; cursor:pointer;">
+              <div style="width:16px; height:16px; border-radius:50%; border:2px solid #1C1B15; display:flex; align-items:center; justify-content:center; flex-shrink:0;"><sc-if value="{{ k.gewaehlt }}" hint-placeholder-val="{{ false }}"><div style="width:8px; height:8px; border-radius:50%; background:#1C1B15;"></div></sc-if></div>
+              <div style="flex:1;">
+                <div style="font-weight:700; font-size:14px;">{{ k.name }}</div>
+                <div style="font-size:12px; color:#6E6A5C;">{{ k.zielText }}</div>
+              </div>
+              <sc-if value="{{ k.warnung }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; background:#F8EFD8; color:#8A5D00; border-radius:999px; padding:2px 8px;">{{ k.warnung }}</span></sc-if>
+            </div>
+          </sc-for>
+        </div>
+        <div onClick="{{ neuerKunde }}" style="margin-top:9px; font-size:13px; color:#6E6A5C; cursor:pointer; text-decoration:underline; text-underline-offset:2px; display:inline-block;" style-hover="color:#C43D21;">+ Neuen Kunden anlegen</div>
+        <div style="font-weight:600; font-size:13px; margin:18px 0 8px;">Wie viele Ansprechpartner sollen gesucht werden?</div>
+        <div style="display:flex; gap:6px;">
+          <sc-for list="{{ leadOpts }}" as="o" hint-placeholder-count="3">
+            <div onClick="{{ o.waehlen }}" style="padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600; font-family:'IBM Plex Mono',monospace; font-size:13px; border:1.5px solid {{ o.rand }}; background: {{ o.bg }}; color: {{ o.fg }};">{{ o.wert }}</div>
+          </sc-for>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:24px; justify-content:flex-end; align-items:center;">
+          <div style="font-size:12px; color:#6E6A5C; flex:1;">Dauert einige Minuten. Der Auftrag erscheint unter Kampagnen als »In Vorbereitung«.</div>
+          <button onClick="{{ startSchliessen }}" style="border:1px solid #CBC7B8; background:#FFFFFF; border-radius:8px; padding:10px 18px; font-size:14px; font-weight:600; cursor:pointer;">Abbrechen</button>
+          <button onClick="{{ laufStarten }}" style="background:#1C1B15; color:#F6F5F0; border:none; border-radius:8px; padding:10px 22px; font-size:14px; font-weight:700; cursor:pointer;" style-hover="background:#33312A;">Erstellen lassen</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ tippenOffen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; inset:0; background:rgba(28,27,21,0.45); display:flex; align-items:center; justify-content:center; z-index:50;" onClick="{{ tippenSchliessen }}">
+      <div style="background:#FFFFFF; border-radius:16px; padding:30px 34px; width:520px; max-width:90vw;" onClick="{{ nichts }}">
+        <div style="font-size:19px; font-weight:700;">Das passiert, wenn du freigibst:</div>
+        <div style="margin-top:14px; display:flex; flex-direction:column; gap:8px; font-size:14px;">
+          <div style="display:flex; gap:10px;"><span style="color:#1F7A46; font-weight:700;">1.</span><span>Die Kampagne <span style="font-family:'IBM Plex Mono',monospace; font-size:13px;">{{ kampagnenVorschau }}</span> wird in Instantly angelegt — <b>pausiert</b>.</span></div>
+          <div style="display:flex; gap:10px;"><span style="color:#1F7A46; font-weight:700;">2.</span><span>{{ zielSatz }}</span></div>
+          <div style="display:flex; gap:10px;"><span style="color:#1F7A46; font-weight:700;">3.</span><span>Versendet wird erst, wenn jemand die Kampagne in Instantly von Hand startet.</span></div>
+        </div>
+        <div style="margin-top:18px;">
+          <div style="font-size:13px; font-weight:600; margin-bottom:6px;">Tippe zur Bestätigung das Wort <span style="font-family:'IBM Plex Mono',monospace; background:#ECEAE1; padding:1px 7px; border-radius:5px;">FREIGEBEN</span></div>
+          <input value="{{ tippenText }}" onChange="{{ f.tippen }}" placeholder="FREIGEBEN" style="width:100%; border:1.5px solid #CBC7B8; border-radius:8px; padding:11px 13px; font-size:15px; font-family:'IBM Plex Mono',monospace; background:#FDFCF9;" />
+        </div>
+        <div style="display:flex; gap:10px; margin-top:20px; justify-content:flex-end;">
+          <button onClick="{{ tippenSchliessen }}" style="border:1px solid #CBC7B8; background:#FFFFFF; border-radius:8px; padding:10px 18px; font-size:14px; font-weight:600; cursor:pointer;">Abbrechen</button>
+          <button onClick="{{ tippenBestaetigen }}" disabled="{{ tippenFalsch }}" style="background:#1F7A46; color:#FFFFFF; border:none; border-radius:8px; padding:10px 22px; font-size:14px; font-weight:700; cursor:pointer; opacity: {{ tippenDeckkraft }};">Jetzt freigeben</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ ablehnenOffen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; inset:0; background:rgba(28,27,21,0.45); display:flex; align-items:center; justify-content:center; z-index:50;" onClick="{{ ablehnenSchliessen }}">
+      <div style="background:#FFFFFF; border-radius:16px; padding:30px 34px; width:480px; max-width:90vw;" onClick="{{ nichts }}">
+        <div style="font-size:19px; font-weight:700;">Ablehnen</div>
+        <div style="font-size:13.5px; color:#6E6A5C; margin-top:4px;">Ablehnen heißt: Nichts wird versendet. Schreib kurz dazu, was nicht gepasst hat — das hilft beim nächsten Auftrag.</div>
+        <textarea value="{{ ablehnenText }}" onChange="{{ f.ablehnen }}" rows="3" placeholder="z. B. Ton zu forsch, bitte zurückhaltender" style="width:100%; border:1.5px solid #CBC7B8; border-radius:8px; padding:11px 13px; font-size:14px; margin-top:14px; background:#FDFCF9; resize:vertical;"></textarea>
+        <div style="display:flex; gap:10px; margin-top:18px; justify-content:flex-end;">
+          <button onClick="{{ ablehnenSchliessen }}" style="border:1px solid #CBC7B8; background:#FFFFFF; border-radius:8px; padding:10px 18px; font-size:14px; font-weight:600; cursor:pointer;">Abbrechen</button>
+          <button onClick="{{ ablehnenBestaetigen }}" style="background:#B03320; color:#FFFFFF; border:none; border-radius:8px; padding:10px 22px; font-size:14px; font-weight:700; cursor:pointer;">Ablehnen</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;lesefluss&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;liste&quot;, &quot;blaettern&quot;, &quot;scrollen&quot;], &quot;default&quot;: &quot;liste&quot;, &quot;section&quot;: &quot;Prüfen &amp; Freigeben&quot;, &quot;tsType&quot;: &quot;string&quot;}, &quot;geste&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;halten&quot;, &quot;tippen&quot;, &quot;checkliste&quot;], &quot;default&quot;: &quot;halten&quot;, &quot;section&quot;: &quot;Prüfen &amp; Freigeben&quot;, &quot;tsType&quot;: &quot;string&quot;}}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      bereich: 'dashboard', kampRef: null, pruefSel: null, formHerkunft: 'kunden',
+      startOffen: false, startKundeId: 'dd', leadAnzahl: 60,
+      form: null, formId: null, chipSperr: '', chipTest: '', chipGlobal: '',
+      globalDomains: ['*.bund.de', '*.polizei.de', '*.gv.at', 'digitaldiamonds.de', 'poleposition-agentur.de'],
+      kontaktSuche: '', threadIdx: 0, gelesen: [],
+      ableitenLade: false, vorschlagFelder: [], vorschlagHinweis: '',
+      empfIdx: 0, halte: 0, ziel: 'test',
+      lesefluss: null, geste: null, checks: [false, false, false],
+      tippenOffen: false, tippenText: '',
+      ablehnenOffen: false, ablehnenText: '',
+      sim: null, nachOffen: false,
+      kunden: this.baueDaten()
+    };
+  }
+  componentWillUnmount() { clearInterval(this.simInt); clearInterval(this.halteInt); }
+
+  bespokeEmpfaenger() {
+    return [
+      { name: 'Martin Häfele', rolle: 'Geschäftsführer', firma: 'Häfele Verpackungstechnik GmbH', mail: 'm.haefele@haefele-verpackung.de',
+        betreff: 'Angebotsanfragen bei Häfele: am selben Tag statt nach drei Tagen',
+        anschreiben: 'Guten Tag Herr Häfele,\n\nauf Ihrer Webseite bin ich über den Zuschnitt-Konfigurator gestolpert — dass ein Familienbetrieb mit 40 Leuten so etwas selbst anbietet, sieht man selten. Was mir dabei auffiel: Anfragen aus dem Konfigurator landen laut Ihrer Kontaktseite trotzdem im allgemeinen Postfach.\n\nGenau an dieser Stelle setzen wir an. Wir bauen kleine Automatik-Helfer, die eingehende Anfragen sortieren, die Daten ins Warenwirtschaftssystem übertragen und einen Angebotsentwurf vorbereiten. Bei einem Verpackungshersteller in Ihrer Größe hat das die Zeit bis zum Angebot von drei Tagen auf einen Nachmittag verkürzt.\n\n15 Minuten am Telefon reichen, um zu prüfen, ob das bei Ihnen ähnlich aussieht. Passt Donnerstag oder Freitag?\n\nViele Grüße\nJonas Wilde\nDigital Diamonds',
+        nachfass1: 'Guten Tag Herr Häfele,\n\nvor ein paar Tagen hatte ich Ihnen geschrieben — es ging um die Anfragen aus Ihrem Zuschnitt-Konfigurator und wie viel Handarbeit zwischen Anfrage und Angebot steckt.\n\nFalls das Thema gerade ungelegen kommt: ein kurzes »später« reicht mir völlig. Falls nicht — ich habe Donnerstagvormittag noch Zeit.\n\nViele Grüße\nJonas Wilde',
+        nachfass2: 'Guten Tag Herr Häfele,\n\nletzter Versuch meinerseits, dann höre ich auf, Sie zu behelligen.\n\nFalls schnellere Angebote irgendwann auf Ihre Liste rutschen: Wir zeigen in einer Viertelstunde am Bildschirm, wie das bei anderen Herstellern läuft. Unverbindlich, ohne Folgetermin-Pflicht.\n\nViele Grüße\nJonas Wilde' },
+      { name: 'Sandra Kowalski', rolle: 'Leiterin Disposition', firma: 'TransLog Spedition Rheinland GmbH', mail: 's.kowalski@translog-rheinland.de',
+        betreff: 'Frachtpapiere bei TransLog: abtippen war gestern',
+        anschreiben: 'Guten Tag Frau Kowalski,\n\nIhre Webseite nennt 60 eigene Züge und Nachtsprung bis Verona — Respekt, das ist für einen Mittelständler ein ordentliches Netz. Was ich aus Gesprächen mit Disponenten kenne: Die meiste Zeit frisst nicht das Fahren, sondern das Übertragen — Lieferscheine, Zollpapiere, Paletten-Konten, alles doppelt erfasst.\n\nWir bauen Automatik-Strecken, die solche Papiere auslesen und direkt ins Speditionsprogramm schreiben. Bei einer Spedition mit ähnlicher Flotte sparen die Disponenten damit rund zwei Stunden pro Schicht.\n\nWenn Sie mir sagen, welches Programm Sie einsetzen, sage ich Ihnen ehrlich, ob das bei Ihnen funktioniert. Kurzes Telefonat nächste Woche?\n\nViele Grüße\nJonas Wilde\nDigital Diamonds',
+        nachfass1: 'Guten Tag Frau Kowalski,\n\nich wollte meine Mail von letzter Woche nicht kommentarlos versickern lassen. Kurzfassung: Frachtpapiere automatisch auslesen statt abtippen, rund zwei Stunden pro Schicht und Disponent.\n\nWenn das Thema bei TransLog woanders liegt, bin ich für einen Hinweis auf die richtige Ansprechperson dankbar.\n\nViele Grüße\nJonas Wilde',
+        nachfass2: 'Guten Tag Frau Kowalski,\n\nich verspreche: Das ist meine letzte Mail zu dem Thema.\n\nFalls die Doppelerfassung in der Disposition irgendwann zu sehr nervt — wir zeigen Ihnen in 15 Minuten, wie andere Speditionen das gelöst haben. Danach entscheiden Sie in Ruhe.\n\nViele Grüße\nJonas Wilde' },
+      { name: 'Henning Voss', rolle: 'Inhaber', firma: 'Bäckerei Voss & Söhne', mail: 'h.voss@baeckerei-voss.de',
+        betreff: 'Dienstpläne für 14 Filialen — ohne Sonntagabend am Küchentisch',
+        anschreiben: 'Guten Tag Herr Voss,\n\n14 Filialen zwischen Oldenburg und Bremen, dazu ein eigener Ausbildungs-Blog — Ihre Webseite macht schnell klar, dass bei Voss & Söhne nicht nur Brötchen gebacken werden.\n\nBei Betrieben Ihrer Größe hören wir immer wieder dasselbe: Die Dienstplanung frisst jede Woche einen halben Tag, und kurzfristige Ausfälle werfen alles um. Wir bauen Helfer, die Verfügbarkeiten einsammeln, Pläne vorschlagen und bei Ausfällen automatisch Ersatz anfragen — per einfacher Nachricht, ohne dass Ihre Leute eine neue App lernen müssen.\n\nWäre ein kurzes Gespräch interessant, ob das zu Ihren Abläufen passt? Ich richte mich nach Ihrem Backstuben-Rhythmus, gern auch früh.\n\nViele Grüße\nJonas Wilde\nDigital Diamonds',
+        nachfass1: 'Guten Tag Herr Voss,\n\nvielleicht ist meine Mail von letzter Woche zwischen Frühschicht und Filialrunde untergegangen — hier die Kurzfassung: Dienstplanung für Ihre 14 Filialen weitgehend automatisch, Ersatz bei Ausfällen inklusive.\n\nEin Satz von Ihnen genügt: »interessant« oder »kein Bedarf«. Beides ist eine gute Antwort.\n\nViele Grüße\nJonas Wilde',
+        nachfass2: 'Guten Tag Herr Voss,\n\nzum Abschluss ein ehrliches Angebot: Wenn die Dienstplanung bei Ihnen gut läuft, ignorieren Sie mich getrost.\n\nWenn nicht — 15 Minuten am Bildschirm, und Sie sehen, wie eine Bäckerei mit 11 Filialen das heute macht.\n\nViele Grüße\nJonas Wilde' },
+      { name: 'Dr. Anja Reuter', rolle: 'Geschäftsführerin', firma: 'MediConsult Praxismarketing GmbH', mail: 'a.reuter@mediconsult-praxismarketing.de',
+        betreff: 'Monatsberichte für Ihre Praxen: aus 2 Tagen werden 20 Minuten',
+        anschreiben: 'Guten Tag Frau Dr. Reuter,\n\nauf Ihrer Referenzseite zählen wir über 90 betreute Arztpraxen — und wer 90 Kunden betreut, schreibt vermutlich auch 90 Monatsberichte. Ihre Stellenanzeige »Werkstudent Reporting« deutet an, wie viel Handarbeit darin steckt.\n\nWir automatisieren genau solche Berichte: Zahlen aus den Werbekonten einsammeln, in Ihre Vorlage gießen, Auffälligkeiten in verständlichen Sätzen zusammenfassen. Eine Agentur mit ähnlichem Kundenstamm braucht dafür heute 20 Minuten Kontrolle statt zwei Tage Fleißarbeit — und der Werkstudent macht jetzt Dinge, die Umsatz bringen.\n\nHaben Sie nächste Woche 15 Minuten, um sich das an einem echten Beispiel anzusehen?\n\nViele Grüße\nJonas Wilde\nDigital Diamonds',
+        nachfass1: 'Guten Tag Frau Dr. Reuter,\n\nkurzer Nachtrag zu meiner Mail von neulich: Ich habe inzwischen ein Beispiel-Reporting aus der Gesundheitsbranche, das ich Ihnen zeigen dürfte — anonymisiert, versteht sich.\n\nWenn Berichte bei MediConsult längst automatisch laufen: Glückwunsch, dann streiche ich Sie von meiner Liste.\n\nViele Grüße\nJonas Wilde',
+        nachfass2: 'Guten Tag Frau Dr. Reuter,\n\nmeine letzte Mail in dieser Sache. Falls das Thema Berichts-Automatik im Herbst relevanter wird, freue ich mich über ein kurzes Signal — ansonsten wünsche ich weiterhin gute Zahlen für Ihre 90 Praxen.\n\nViele Grüße\nJonas Wilde' },
+      { name: 'Thomas Steinbach', rolle: 'Partner', firma: 'Steinbach & Partner Ingenieurbüro', mail: 't.steinbach@steinbach-ingenieure.de',
+        betreff: 'Ausschreibungen sichten, ohne Abende zu opfern',
+        anschreiben: 'Guten Tag Herr Steinbach,\n\nIhr Büro listet Tragwerksplanung für öffentliche Bauten als Schwerpunkt — das heißt vermutlich: viele Ausschreibungsportale, viele PDF-Anhänge, viel Sichtungsarbeit, bevor klar ist, ob sich ein Angebot lohnt.\n\nWir haben für ein Planungsbüro mit neun Mitarbeitenden einen Helfer gebaut, der neue Ausschreibungen aus den Portalen zieht, die Eckdaten herausliest und in einer Übersicht bewertet: Region, Volumen, Frist, Passung zum Leistungsbild. Die Partner sichten seitdem eine Tabelle beim ersten Kaffee statt PDF-Stapel am Abend.\n\nKlingt das nach einem Problem, das Sie kennen? Dann zeige ich es Ihnen gern in 15 Minuten.\n\nViele Grüße\nJonas Wilde\nDigital Diamonds',
+        nachfass1: 'Guten Tag Herr Steinbach,\n\nich melde mich noch einmal zu meiner Mail über die automatische Ausschreibungs-Sichtung.\n\nEin Detail hatte ich unterschlagen: Der Helfer merkt sich, welche Ausschreibungen Sie verwerfen, und wird bei der Vorauswahl von Woche zu Woche treffsicherer.\n\nEin kurzes »zeigen Sie mal« genügt.\n\nViele Grüße\nJonas Wilde',
+        nachfass2: 'Guten Tag Herr Steinbach,\n\ndies ist meine letzte Nachricht dazu — versprochen. Falls die Ausschreibungs-Flut irgendwann überhandnimmt, finden Sie mich unter dieser Adresse. Ich wünsche gute Projekte und auskömmliche Fristen.\n\nViele Grüße\nJonas Wilde' },
+      { name: 'Frauke Petersen', rolle: 'Geschäftsführerin', firma: 'Nordlicht Ferienhausvermietung GmbH', mail: 'f.petersen@nordlicht-ferien.de',
+        betreff: 'Gästeanfragen bei Nordlicht: antworten, bevor die Portale es tun',
+        anschreiben: 'Guten Tag Frau Petersen,\n\nüber 120 Ferienhäuser zwischen Husum und Kappeln — und laut Ihrer Webseite beantwortet Ihr Team Anfragen »innerhalb von 24 Stunden«. Aus der Branche wissen wir: Wer nach zwei Stunden antwortet, bucht doppelt so oft.\n\nWir bauen Antwort-Helfer, die eingehende Anfragen sofort beantworten: passende Häuser vorschlagen, Verfügbarkeit prüfen, freundlich formuliert in Ihrem Ton. Ihr Team prüft nur noch und drückt auf Senden — nichts geht ungeprüft raus.\n\nBei einer Vermietung mit 80 Objekten stieg die Buchungsquote damit um ein Viertel. Mögen Sie sich das in einer ruhigen Viertelstunde ansehen?\n\nViele Grüße\nJonas Wilde\nDigital Diamonds',
+        nachfass1: 'Guten Tag Frau Petersen,\n\nkurze Erinnerung an meine Mail zur schnelleren Anfragen-Beantwortung. Gerade jetzt zur Hauptsaison zählt jede Stunde Reaktionszeit doppelt.\n\nWenn Sie mögen, rechne ich Ihnen unverbindlich vor, was zwei Stunden statt 24 Stunden bei 120 Häusern ausmachen.\n\nViele Grüße\nJonas Wilde',
+        nachfass2: 'Guten Tag Frau Petersen,\n\nich will nicht zum dritten Mal dasselbe schreiben, deshalb nur: Das Angebot steht, die Viertelstunde gehört Ihnen, wann immer es passt — auch nach der Saison.\n\nGute Buchungen wünscht\nJonas Wilde' }
+    ];
+  }
+
+  genEmpfaenger() {
+    const pool = [
+      ['Autohaus Brenner GmbH','Bernd Brenner','Herr Brenner','Geschäftsführer','Ihr Ankauf-Formular mit Foto-Upload'],
+      ['Sanitätshaus Lindow','Karin Lindow','Frau Lindow','Inhaberin','Ihre Rezept-Vorbestellung per Telefon'],
+      ['Druckerei Falkenberg','Ulf Falkenberg','Herr Falkenberg','Geschäftsführer','Ihr Online-Kalkulator für Druckaufträge'],
+      ['Möbelmanufaktur Hartwig','Jens Hartwig','Herr Hartwig','Inhaber','Ihre Maßanfertigung mit Aufmaß-Terminen'],
+      ['Reisebüro Sonnenklar Nord','Imke Albers','Frau Albers','Inhaberin','Ihre Gruppenreise-Anfragen per Formular'],
+      ['Elektro Baumgart GmbH','Rolf Baumgart','Herr Baumgart','Geschäftsführer','Ihre Wallbox-Terminanfragen'],
+      ['Gartenbau Wessels','Ole Wessels','Herr Wessels','Inhaber','Ihre Saison-Angebotsseite mit Rückruf-Bitte'],
+      ['Kanzlei Droste & Feld','Miriam Droste','Frau Droste','Partnerin','Ihr Mandanten-Fragebogen als PDF'],
+      ['Physiozentrum Am Wall','Hauke Janssen','Herr Janssen','Inhaber','Ihre Terminvergabe per Rückruf'],
+      ['Metallbau Krüger Söhne','Detlef Krüger','Herr Krüger','Geschäftsführer','Ihr Anfrageformular für Sonderanfertigungen'],
+      ['Hotel Lindenhof Rheingau','Eva Lindner','Frau Lindner','Direktorin','Ihre Tagungsanfragen per E-Mail-Formular'],
+      ['Weinhaus Kellermann KG','Bernd Kellermann','Herr Kellermann','Inhaber','Ihr Abo-Weinpaket mit Stammkundenverwaltung'],
+      ['Fahrschule Momentum','Aylin Yilmaz','Frau Yilmaz','Inhaberin','Ihre Theorie-Terminlisten als PDF'],
+      ['Dachdeckerei Ohrt & Co.','Sönke Ohrt','Herr Ohrt','Geschäftsführer','Ihre Notdienst-Anfragen übers Kontaktformular'],
+      ['Catering Feldmann','Rita Feldmann','Frau Feldmann','Inhaberin','Ihre Menü-Anfragen mit Excel-Vorlagen'],
+      ['Buchhandlung Lesezeit','Dorothee Winter','Frau Winter','Inhaberin','Ihre Bestell-Anfragen per Mail'],
+      ['Fensterbau Radtke GmbH','Carsten Radtke','Herr Radtke','Geschäftsführer','Ihr Aufmaß-Anfrageformular'],
+      ['Praxis für Ergotherapie Nord','Silke Brandt','Frau Brandt','Praxisleitung','Ihre Warteliste mit Rückruf-Zetteln'],
+      ['Umzüge Behrens & Sohn','Torben Behrens','Herr Behrens','Inhaber','Ihr Umzugs-Rechner auf der Startseite'],
+      ['Goldschmiede Atelier Lux','Claire Lux','Frau Lux','Inhaberin','Ihre Anfertigungs-Anfragen per Nachricht'],
+      ['Kfz-Sachverständige Möller','Frank Möller','Herr Möller','Inhaber','Ihre Gutachten-Anfragen per Telefon'],
+      ['Segelschule Alsterwind','Ilja Petrow','Herr Petrow','Inhaber','Ihre Kurs-Warteliste'],
+      ['Tanzschule Contretemps','Judith Sorge','Frau Sorge','Inhaberin','Ihre Probestunden-Anfragen'],
+      ['Zahntechnik Labor Weiss','Georg Weiss','Herr Weiss','Geschäftsführer','Ihre Auftragszettel aus den Praxen'],
+      ['Immobilien Quandt','Vera Quandt','Frau Quandt','Geschäftsführerin','Ihre Exposé-Anfragen'],
+      ['Brauerei Alt-Lübecker','Hannes Storm','Herr Storm','Geschäftsführer','Ihre Gastro-Bestellungen per Fax'],
+      ['Optik Sehwerk','Petra Nolte','Frau Nolte','Inhaberin','Ihre Sehtest-Erinnerungen per Postkarte'],
+      ['Schreinerei Grundmann','Kai Grundmann','Herr Grundmann','Inhaber','Ihr Projekt-Fotobuch auf der Webseite']
+    ];
+    const gen = pool.map((p, i) => {
+      const [firma, name, anrede, rolle, detail] = p;
+      const kurz = firma.replace(/ (GmbH|KG|& Co\.|& Sohn|Söhne)$/, '');
+      const um = (s) => s.toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss');
+      const teile = name.split(' ');
+      const mail = um(teile[0][0] + '.' + teile[teile.length - 1]) + '@' + um(kurz).replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') + '.de';
+      const betreffe = ['Weniger Abtipperei bei ' + kurz, kurz + ': Routinearbeit an die Automatik abgeben', 'Eine Stunde pro Tag zurück für ' + kurz];
+      const koerper = [
+        `Guten Tag ${anrede},\n\n${detail} — darüber bin ich auf Ihrer Webseite gestolpert, und genau deshalb schreibe ich Ihnen. Erfahrungsgemäß steckt dahinter viel Handarbeit: Anfragen abtippen, Rückfragen stellen, Daten mehrfach erfassen.\n\nWir bauen kleine Automatik-Helfer, die diese Routinearbeit übernehmen — angebunden an die Programme, die Sie schon nutzen. Bei Betrieben Ihrer Größe werden daraus schnell mehrere freie Stunden pro Woche.\n\nHätten Sie kommende Woche 15 Minuten für einen ehrlichen Blick darauf, ob das zu ${kurz} passt?\n\nViele Grüße\nJonas Wilde\nDigital Diamonds`,
+        `Guten Tag ${anrede},\n\nbeim Blick auf Ihre Webseite ist mir etwas aufgefallen: ${detail}. Solche Abläufe sind fast immer gute Kandidaten für Automatik — was heute per Hand übertragen wird, kann morgen von selbst im richtigen Programm landen. Geprüft von Ihren Leuten, nicht ersetzt.\n\nGenau solche Helfer bauen wir für kleine und mittlere Betriebe. Ohne neue Software-Landschaft, ohne Schulungswochen.\n\nWenn Sie mögen, zeige ich Ihnen in 15 Minuten an einem Beispiel aus Ihrer Branche, wie das aussieht.\n\nViele Grüße\nJonas Wilde\nDigital Diamonds`,
+        `Guten Tag ${anrede},\n\nich schreibe Ihnen wegen einer Kleinigkeit auf Ihrer Webseite: ${detail}. Aus Erfahrung mit ähnlichen Betrieben ahne ich, wie viel Tipp- und Übertragungsarbeit daran hängt.\n\nWir nehmen solchen Abläufen die Handarbeit ab: Eingänge werden gelesen, sortiert und landen fertig vorbereitet dort, wo Ihre Leute sowieso arbeiten. Niemand muss ein neues Programm lernen.\n\n15 Minuten am Bildschirm reichen für einen ersten ehrlichen Eindruck — danach wissen Sie, ob sich das für ${kurz} lohnt.\n\nViele Grüße\nJonas Wilde\nDigital Diamonds`
+      ];
+      return { name, rolle, firma, mail, betreff: betreffe[i % 3], anschreiben: koerper[i % 3],
+        nachfass1: `Guten Tag ${anrede},\n\nkurze Erinnerung an meine Mail von letzter Woche zu ${detail.charAt(0).toLowerCase() + detail.slice(1)}. Falls es gerade nicht passt, reicht ein kurzes »später« — dann melde ich mich im Herbst wieder.\n\nViele Grüße\nJonas Wilde`,
+        nachfass2: `Guten Tag ${anrede},\n\ndas ist meine letzte Mail zu dem Thema. Falls die Routinearbeit irgendwann überhandnimmt: 15 Minuten am Bildschirm genügen für einen ersten Eindruck. Bis dahin gute Geschäfte.\n\nViele Grüße\nJonas Wilde` };
+    });
+    return this.bespokeEmpfaenger().concat(gen);
+  }
+
+  nacharbeitBeispiel() {
+    return [
+      { firma: 'Gebrüder Manke Tiefbau', person: 'Heiko Manke · Geschäftsführer', grund: 'Prüf-KI: klingt nach Massenmail — kein echter Bezug zur Webseite gefunden.', betreff: 'Mehr Zeit für das Wesentliche' },
+      { firma: 'Café Rosenrot', person: 'Marlene Busch · Inhaberin', grund: 'Prüf-KI: Zahl falsch übernommen — Webseite sagt »seit 1978«, Text behauptet »seit 1987«.', betreff: 'Reservierungen im Rosenrot: seit 1987 per Zettel?' },
+      { firma: 'Steuerkanzlei Ohlsen', person: 'Gesa Ohlsen · Partnerin', grund: 'Prüf-KI: Anrede passt nicht — Ansprechpartnerin ist eine Frau, der Text schreibt »Herr Ohlsen«.', betreff: 'Belegchaos in der Kanzlei Ohlsen' },
+      { firma: 'Fitnessloft Bremen', person: 'Marco Steiner · Studioleiter', grund: 'Prüf-KI: Versprechen zu vollmundig — »garantiert 30 % mehr Mitglieder« ist nicht belegbar.', betreff: 'Garantiert 30 % mehr Mitglieder fürs Fitnessloft' },
+      { firma: 'Tischlerei Grothe', person: 'Ansgar Grothe · Inhaber', grund: 'Prüf-KI: Webseite war nicht erreichbar — Text beruht nur auf dem Firmennamen.', betreff: 'Weniger Papierkram in der Tischlerei' },
+      { firma: 'Apotheke am Markt', person: 'Dr. Beate Cornelius · Inhaberin', grund: 'Prüf-KI: heikle Branche (Gesundheit) — Formulierungen könnten wie Heilversprechen wirken.', betreff: 'Botendienst-Anfragen automatisch sortieren' }
+    ];
+  }
+
+  baueDaten() {
+    const emp = this.genEmpfaenger();
+    return [
+      { id: 'dd', name: 'Digital Diamonds', branche: 'Eigenvertrieb · KI-Automatisierung', webseite: 'www.digitaldiamonds.de',
+        jobtitel: 'Geschäftsführer, Inhaber', region: 'DACH', groesse: '10–250 Mitarbeitende',
+        angebot: 'Digital Diamonds baut kleine, robuste KI-Automatik-Helfer für den Mittelstand: Anfragen sortieren, Papiere auslesen, Berichte schreiben — angebunden an vorhandene Programme, ohne neue Software-Landschaft.',
+        tonalitaet: 'Direkt, auf Augenhöhe, ohne Marketing-Floskeln', absender: 'Jonas Wilde',
+        sperrliste: ['konkurrent-ki.de'], testEmpfaenger: ['jonas@digitaldiamonds.de', 'lena@digitaldiamonds.de', 'test@digitaldiamonds.de'],
+        laeufe: [
+          { nr: 14, datum: '16. Juli, 09:41', wartetSeit: 'seit 2 Std.', gewuenscht: 60, status: 'wartet',
+            zahlen: { gefunden: 58, ohneMail: 9, aussortiert: 9, aussortiertSub: '4 Dubletten · 3 gesperrte Domains · 2 unpassend', fertig: 34, nacharbeit: 6 },
+            empfaenger: emp, nacharbeitListe: this.nacharbeitBeispiel() },
+          { nr: 13, datum: '14. Juli, 15:07', gewuenscht: 60, status: 'abgebrochen', schritt: 4,
+            fehler: 'Die KI, die die Texte schreibt, hat gerade nicht geantwortet. Es ist nichts verloren gegangen — alle bisherigen Ergebnisse sind gespeichert. Versuch es in ein paar Minuten mit »Fortsetzen«.',
+            zahlen: { gefunden: 58, ohneMail: 9, aussortiert: 9, aussortiertSub: '', fertig: 12, nacharbeit: 1 } },
+          { nr: 12, datum: '10. Juli, 11:26', gewuenscht: 60, status: 'verfallen',
+            freigabe: { von: 'Jonas', am: '12. Juli, 09:14', verfallenGrund: 'Die Texte wurden am 13. Juli neu erstellt — es sind nicht mehr dieselben, die Jonas am 12. Juli freigegeben hat.' },
+            zahlen: { gefunden: 55, ohneMail: 8, aussortiert: 7, aussortiertSub: '3 Dubletten · 2 gesperrte Domains · 2 unpassend', fertig: 34, nacharbeit: 6 },
+            empfaenger: emp.slice().reverse(), nacharbeitListe: this.nacharbeitBeispiel().slice(0, 4) },
+          { nr: 11, datum: '4. Juli, 08:58', gewuenscht: 40, status: 'uebergeben',
+            freigabe: { von: 'Lena', am: '4. Juli, 11:02' },
+            kampagne: { name: '[TEST] Digital Diamonds – Welle 3', status: 'pausiert', verschickt: 0, gesamt: 3, schritte: [0, 0, 0], antworten: 0 },
+            zahlen: { gefunden: 41, ohneMail: 6, aussortiert: 6, aussortiertSub: '', fertig: 26, nacharbeit: 3 } },
+          { nr: 9, datum: '20. Juni, 16:12', laeuftSeit: '20. Juni', gewuenscht: 120, status: 'uebergeben',
+            freigabe: { von: 'Jonas', am: '20. Juni, 16:40' },
+            kampagne: { name: 'Digital Diamonds – Welle 2', status: 'aktiv', verschickt: 61, gesamt: 68, schritte: [61, 38, 9], antworten: 6 },
+            zahlen: { gefunden: 110, ohneMail: 15, aussortiert: 21, aussortiertSub: '', fertig: 68, nacharbeit: 6 } },
+          { nr: 7, datum: '5. Juni, 10:03', gewuenscht: 60, status: 'uebergeben',
+            freigabe: { von: 'Lena', am: '6. Juni, 09:30' },
+            kampagne: { name: 'Digital Diamonds – Welle 1', status: 'abgeschlossen', verschickt: 54, gesamt: 54, schritte: [54, 54, 54], antworten: 11 },
+            zahlen: { gefunden: 57, ohneMail: 8, aussortiert: 7, aussortiertSub: '', fertig: 54, nacharbeit: 4 } }
+        ] },
+      { id: 'moveo', name: 'MOVEO Personalberatung', branche: 'Personalberatung', webseite: 'www.moveo-personal.de',
+        jobtitel: 'Geschäftsführung, Leitung Personal', region: 'Nordrhein-Westfalen', groesse: '50–500 Mitarbeitende',
+        angebot: 'MOVEO besetzt Fach- und Führungspositionen im technischen Mittelstand — mit eigenem Kandidaten-Netzwerk und Besetzungsgarantie.',
+        tonalitaet: 'Seriös, warm, kurze Sätze', absender: 'Miriam Stein',
+        sperrliste: ['moveo-personal.de'], testEmpfaenger: ['m.stein@moveo-personal.de'],
+        laeufe: [
+          { nr: 5, datum: '28. Juni, 13:44', laeuftSeit: '30. Juni', gewuenscht: 80, status: 'uebergeben',
+            freigabe: { von: 'Lena', am: '30. Juni, 10:12' },
+            kampagne: { name: 'MOVEO – Geschäftsführung NRW', status: 'aktiv', verschickt: 44, gesamt: 52, schritte: [44, 21, 0], antworten: 3 },
+            zahlen: { gefunden: 77, ohneMail: 10, aussortiert: 9, aussortiertSub: '', fertig: 52, nacharbeit: 6 } }
+        ] },
+      { id: 'klarwerk', name: 'Klarwerk GmbH', branche: 'Gebäudereinigung', webseite: 'www.klarwerk-hamburg.de',
+        jobtitel: 'Objektleitung, Geschäftsführung', region: 'Hamburg und Umland', groesse: '10–200 Mitarbeitende',
+        angebot: '', tonalitaet: '', absender: 'Miriam Stein',
+        sperrliste: [], testEmpfaenger: ['probe@klarwerk-hamburg.de'],
+        laeufe: [] }
+    ];
+  }
+
+  baueKontakte() {
+    if (this._kontakte) return this._kontakte;
+    const alle = this.genEmpfaenger();
+    const zeiten2 = ['20. Juni, 09:12', '20. Juni, 09:31', '20. Juni, 10:05', '21. Juni, 08:44', '21. Juni, 09:20', '22. Juni, 11:02', '24. Juni, 08:15', '24. Juni, 09:58', '25. Juni, 10:40', '26. Juni, 09:03', '27. Juni, 08:51', '28. Juni, 10:22'];
+    const zeiten1 = ['6. Juni, 09:05', '6. Juni, 09:40', '7. Juni, 10:12', '8. Juni, 08:33', '9. Juni, 09:47', '10. Juni, 11:20', '11. Juni, 08:58', '12. Juni, 09:31', '12. Juni, 10:44', '13. Juni, 09:02'];
+    const zeitenM = ['30. Juni, 10:20', '30. Juni, 11:05', '1. Juli, 09:14', '2. Juli, 08:47', '3. Juli, 10:33', '4. Juli, 09:21', '7. Juli, 08:56', '8. Juli, 09:44'];
+    const k = [];
+    alle.slice(0, 12).forEach((e, i) => k.push(Object.assign({}, e, { kunde: 'Digital Diamonds', kampagne: 'Digital Diamonds – Welle 2', zuletzt: zeiten2[i] })));
+    alle.slice(12, 22).forEach((e, i) => k.push(Object.assign({}, e, { kunde: 'Digital Diamonds', kampagne: 'Digital Diamonds – Welle 1', zuletzt: zeiten1[i] })));
+    alle.slice(22, 30).forEach((e, i) => k.push(Object.assign({}, e, { kunde: 'MOVEO Personalberatung', kampagne: 'MOVEO – Geschäftsführung NRW', zuletzt: zeitenM[i] })));
+    this._kontakte = k;
+    return k;
+  }
+
+  baueThreads() {
+    if (this._threads) return this._threads;
+    const b = this.bespokeEmpfaenger();
+    this._threads = [
+      { kontakt: b[0], kampagne: 'Digital Diamonds – Welle 2', neu: true, datum: 'heute, 08:12',
+        nachrichten: [
+          { wer: 'wir', datum: '20. Juni, 09:12', text: b[0].anschreiben },
+          { wer: 'kontakt', datum: 'heute, 08:12', text: 'Guten Tag Herr Wilde,\n\nder Konfigurator macht uns tatsächlich mehr Arbeit, als er einspart. Donnerstag passt — rufen Sie um 10 Uhr an?\n\nMit freundlichen Grüßen\nMartin Häfele' }
+        ] },
+      { kontakt: b[3], kampagne: 'Digital Diamonds – Welle 2', neu: true, datum: 'gestern, 16:40',
+        nachrichten: [
+          { wer: 'wir', datum: '20. Juni, 10:05', text: b[3].anschreiben },
+          { wer: 'wir', datum: '24. Juni, 10:05', text: b[3].nachfass1 },
+          { wer: 'kontakt', datum: 'gestern, 16:40', text: 'Guten Tag Herr Wilde,\n\nschicken Sie mir das anonymisierte Beispiel-Reporting bitte vorab. Wenn es hält, was Ihre Mail verspricht, finden wir 15 Minuten.\n\nBeste Grüße\nDr. Anja Reuter' }
+        ] },
+      { kontakt: b[1], kampagne: 'Digital Diamonds – Welle 2', neu: false, datum: '14. Juli, 11:23',
+        nachrichten: [
+          { wer: 'wir', datum: '20. Juni, 09:31', text: b[1].anschreiben },
+          { wer: 'kontakt', datum: '14. Juli, 11:23', text: 'Hallo,\n\nwir arbeiten mit CarLo. Funktioniert Ihre Automatik damit? Wenn ja, bitte Termin­vorschlag für nächste Woche.\n\nS. Kowalski' }
+        ] },
+      { kontakt: b[5], kampagne: 'Digital Diamonds – Welle 2', neu: false, datum: '12. Juli, 09:02',
+        nachrichten: [
+          { wer: 'wir', datum: '21. Juni, 08:44', text: b[5].anschreiben },
+          { wer: 'wir', datum: '25. Juni, 08:44', text: b[5].nachfass1 },
+          { wer: 'kontakt', datum: '12. Juli, 09:02', text: 'Moin Herr Wilde,\n\ndanke für die Hartnäckigkeit — gerade ist Hauptsaison, da brennt hier alles. Melden Sie sich bitte im Oktober noch einmal, dann in Ruhe.\n\nFrauke Petersen' }
+        ] },
+      { kontakt: b[2], kampagne: 'Digital Diamonds – Welle 2', neu: false, datum: '8. Juli, 06:15',
+        nachrichten: [
+          { wer: 'wir', datum: '22. Juni, 11:02', text: b[2].anschreiben },
+          { wer: 'kontakt', datum: '8. Juli, 06:15', text: 'Guten Morgen,\n\nkein Bedarf, wir planen mit einem festen Team und das klappt. Bitte keine weiteren Mails.\n\nH. Voss' }
+        ] }
+    ];
+    return this._threads;
+  }
+
+  jetzt() {
+    const d = new Date();
+    const monate = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+    return d.getDate() + '. ' + monate[d.getMonth()] + ', ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  }
+  aendereLauf(kundeId, nr, fn) {
+    this.setState(s => ({ kunden: s.kunden.map(k => k.id !== kundeId ? k : Object.assign({}, k, { laeufe: k.laeufe.map(l => l.nr === nr ? Object.assign({}, l, fn(l)) : l) })) }));
+  }
+  pruefKandidaten() {
+    const out = [];
+    this.state.kunden.forEach(k => k.laeufe.forEach(l => {
+      if (l.empfaenger && l.empfaenger.length && ['wartet', 'verfallen', 'uebergeben', 'abgelehnt'].includes(l.status)) out.push({ kunde: k, lauf: l });
+    }));
+    return out;
+  }
+
+  simSchritte() {
+    return [
+      { label: 'Passende Firmen und Ansprechpartner suchen', dauer: 9 },
+      { label: 'E-Mail-Adressen herausfinden', dauer: 9 },
+      { label: 'Doppelte und gesperrte Empfänger aussortieren', dauer: 7 },
+      { label: 'Die Webseite jeder Firma lesen und ein persönliches Anschreiben schreiben', dauer: 22 },
+      { label: 'Jeden Text prüfen: Klingt er persönlich? Stimmt alles?', dauer: 9 }
+    ];
+  }
+  tickFuerSchritt(schritt) {
+    let acc = 0; const st = this.simSchritte();
+    for (let i = 0; i < schritt - 1; i++) acc += st[i].dauer;
+    return acc;
+  }
+  starteSim(kundeId, laufNr, abTick) {
+    clearInterval(this.simInt);
+    this.setState({ sim: { kundeId, laufNr, tick: abTick } });
+    this.aendereLauf(kundeId, laufNr, () => ({ status: 'laeuft', fehler: '' }));
+    this.simInt = setInterval(() => {
+      const s = this.state.sim;
+      if (!s) { clearInterval(this.simInt); return; }
+      const gesamt = this.simSchritte().reduce((a, b) => a + b.dauer, 0);
+      const tick = s.tick + 1;
+      if (tick >= gesamt) {
+        clearInterval(this.simInt);
+        const k = this.state.kunden.find(x => x.id === s.kundeId);
+        const lauf = k.laeufe.find(l => l.nr === s.laufNr);
+        const n = lauf.gewuenscht;
+        const gefunden = Math.round(n * 0.96), ohneMail = Math.round(gefunden * 0.15), aussortiert = Math.round(gefunden * 0.15);
+        const rest = gefunden - ohneMail - aussortiert, nach = Math.max(2, Math.round(rest * 0.14)), fertig = rest - nach;
+        const alle = this.genEmpfaenger();
+        this.aendereLauf(s.kundeId, s.laufNr, () => ({
+          status: 'wartet', schritt: 5, wartetSeit: 'seit gerade eben',
+          zahlen: { gefunden, ohneMail, aussortiert, aussortiertSub: Math.ceil(aussortiert / 2) + ' Dubletten · ' + Math.floor(aussortiert / 2) + ' gesperrte Domains', fertig, nacharbeit: nach },
+          empfaenger: alle.slice(0, Math.min(fertig, alle.length)),
+          nacharbeitListe: this.nacharbeitBeispiel().slice(0, Math.min(nach, 6))
+        }));
+        this.setState({ sim: null });
+        return;
+      }
+      let acc = 0, schritt = 1;
+      this.simSchritte().forEach((st2, i) => { if (tick >= acc) schritt = i + 1; acc += st2.dauer; });
+      this.aendereLauf(s.kundeId, s.laufNr, () => ({ schritt }));
+      this.setState({ sim: Object.assign({}, s, { tick }) });
+    }, 320);
+  }
+
+  kampChip(c) {
+    if (c.status === 'aktiv') return { t: 'AKTIV', bg: '#1F7A46', fg: '#FFFFFF' };
+    if (c.status === 'pausiert') return { t: 'PAUSIERT', bg: '#EAF0F6', fg: '#2E5A82' };
+    return { t: 'FERTIG', bg: '#ECEAE1', fg: '#6E6A5C' };
+  }
+
+  renderVals() {
+    const st = this.state;
+    const lesefluss = st.lesefluss || this.props.lesefluss || 'liste';
+    const geste = st.geste || this.props.geste || 'halten';
+    const geheZu = (bereich, extra) => () => this.setState(Object.assign({ bereich }, extra || {}));
+
+    // Sammlungen
+    const alleKampagnen = [];
+    st.kunden.forEach(k => k.laeufe.forEach(l => { if (l.kampagne) alleKampagnen.push({ kunde: k, lauf: l, kampagne: l.kampagne }); }));
+    const wartendeLaeufe = [];
+    st.kunden.forEach(k => k.laeufe.forEach(l => { if (l.status === 'wartet' || l.status === 'verfallen') wartendeLaeufe.push({ kunde: k, lauf: l }); }));
+    const angehaltene = [];
+    st.kunden.forEach(k => k.laeufe.forEach(l => { if (l.status === 'abgebrochen') angehaltene.push({ kunde: k, lauf: l }); }));
+    const laufende = [];
+    st.kunden.forEach(k => k.laeufe.forEach(l => { if (l.status === 'laeuft') laufende.push({ kunde: k, lauf: l }); }));
+    const threadsDaten = this.baueThreads();
+    const neueAntworten = threadsDaten.filter((t, i) => t.neu && !st.gelesen.includes(i)).length;
+
+    // Navigation
+    const navDef = [
+      { id: 'dashboard', label: 'Dashboard' },
+      { id: 'kampagnen', label: 'Kampagnen', badge: angehaltene.length ? '!' : '', badgeBg: '#B03320', badgeFg: '#FFFFFF' },
+      { id: 'pruefen', label: 'Prüfen & Freigeben', badge: wartendeLaeufe.length || '', badgeBg: '#C43D21', badgeFg: '#FFFFFF' },
+      { id: 'kontakte', label: 'Kontakte' },
+      { id: 'postfach', label: 'Postfach', badge: neueAntworten || '', badgeBg: '#1C1B15', badgeFg: '#F6F5F0' },
+      { id: 'domains', label: 'Gesperrte Domains' },
+      { id: 'kunden', label: 'Kunden' }
+    ];
+    const bereichAktiv = (id) => st.bereich === id || (id === 'kampagnen' && st.bereich === 'kampagneDetail') || (id === 'kunden' && st.bereich === 'form');
+    const navListe = navDef.map(n => ({ label: n.label, badge: n.badge, zeigeBadge: !!n.badge,
+      badgeBg: n.badgeBg || '#ECEAE1', badgeFg: n.badgeFg || '#1C1B15',
+      bg: bereichAktiv(n.id) ? '#FFFFFF' : 'transparent', rand: bereichAktiv(n.id) ? '#E2DFD4' : 'transparent',
+      fg: bereichAktiv(n.id) ? '#1C1B15' : '#4A473D',
+      oeffnen: geheZu(n.id) }));
+
+    // Dashboard
+    const heuteVersendet = 23;
+    const kacheln = [
+      { wert: wartendeLaeufe.length, label: 'Warten auf deine Freigabe', sub: 'Das ist deine Aufgabe', bg: wartendeLaeufe.length ? '#F8EFD8' : '#FFFFFF', rand: wartendeLaeufe.length ? '#E3CE9E' : '#E2DFD4', fg: wartendeLaeufe.length ? '#5F4100' : '#1C1B15', oeffnen: geheZu('pruefen') },
+      { wert: alleKampagnen.filter(c => c.kampagne.status === 'aktiv').length, label: 'Aktive Kampagnen', sub: 'Instantly versendet', bg: '#FFFFFF', rand: '#E2DFD4', fg: '#1C1B15', oeffnen: geheZu('kampagnen') },
+      { wert: heuteVersendet, label: 'Heute versendet', sub: 'Mails über alle Kampagnen', bg: '#FFFFFF', rand: '#E2DFD4', fg: '#1C1B15', oeffnen: geheZu('kampagnen') },
+      { wert: neueAntworten, label: 'Neue Antworten', sub: 'Im Postfach lesen', bg: '#FFFFFF', rand: '#E2DFD4', fg: '#1C1B15', oeffnen: geheZu('postfach') }
+    ];
+    const ersteAngehaltene = angehaltene[0];
+    const wartende = wartendeLaeufe.map(w => ({
+      titel: (w.lauf.zahlen ? w.lauf.zahlen.fertig + ' Anschreiben' : 'Anschreiben') + ' für ' + w.kunde.name,
+      zeile: w.lauf.status === 'verfallen'
+        ? 'Die Texte wurden neu erstellt — bitte noch einmal prüfen und freigeben.'
+        : 'Wartet ' + (w.lauf.wartetSeit || 'seit gerade eben') + ' auf Prüfung · ' + w.lauf.zahlen.nacharbeit + ' von der Prüfung aussortiert',
+      oeffnen: geheZu('pruefen', { pruefSel: w.kunde.id + ':' + w.lauf.nr, empfIdx: 0, checks: [false, false, false], halte: 0 })
+    }));
+    const dashKampagnen = alleKampagnen.slice(0, 4).map(({ kunde, lauf, kampagne }) => {
+      const chip = this.kampChip(kampagne);
+      return { name: kampagne.name, kunde: kunde.name, versendetText: kampagne.verschickt + ' von ' + kampagne.gesamt + ' versendet',
+        chipText: chip.t, chipBg: chip.bg, chipFg: chip.fg,
+        oeffnen: geheZu('kampagneDetail', { kampRef: { kundeId: kunde.id, nr: lauf.nr } }) };
+    });
+
+    // Kampagnen
+    const vorbereitung = [];
+    laufende.forEach(({ kunde, lauf }) => {
+      const s = lauf.schritt || 1;
+      let zeile;
+      if (s === 4) {
+        const zielTexte = Math.round(lauf.gewuenscht * 0.55);
+        const tick = st.sim && st.sim.laufNr === lauf.nr ? st.sim.tick : 25;
+        zeile = 'Schreibt gerade Texte … (Firma ' + Math.max(1, Math.min(zielTexte, Math.round((tick - 25) / 22 * zielTexte))) + ' von ' + zielTexte + ')';
+      } else zeile = ['Sucht passende Firmen und Ansprechpartner …', 'Findet E-Mail-Adressen heraus …', 'Sortiert doppelte und gesperrte Empfänger aus …', '', 'Prüft jeden Text …'][s - 1];
+      vorbereitung.push({ titel: 'Anschreiben für ' + kunde.name + ' · gestartet ' + lauf.datum, zeile, zeileFarbe: '#1C1B15', pulsiert: true, zeigeZusehen: true, rand: '#E2DFD4' });
+    });
+    angehaltene.forEach(({ kunde, lauf }) => {
+      vorbereitung.push({ titel: 'Anschreiben für ' + kunde.name + ' · gestartet ' + lauf.datum,
+        zeile: 'Angehalten: ' + (lauf.fehler ? lauf.fehler.split('.')[0] + '.' : '') + ' Nichts ist verloren.',
+        zeileFarbe: '#B03320', rand: '#B03320', zeigeFortsetzen: true,
+        fortsetzen: () => this.starteSim(kunde.id, lauf.nr, this.tickFuerSchritt(lauf.schritt || 1)) });
+    });
+    wartendeLaeufe.forEach(({ kunde, lauf }) => {
+      vorbereitung.push({ titel: (lauf.zahlen ? lauf.zahlen.fertig + ' Anschreiben' : 'Anschreiben') + ' für ' + kunde.name + ' · ' + lauf.datum,
+        zeile: lauf.status === 'verfallen' ? 'Die Texte wurden neu erstellt — bitte noch einmal prüfen und freigeben.' : 'Fertig — wartet ' + (lauf.wartetSeit || 'seit gerade eben') + ' auf deine Prüfung',
+        zeileFarbe: '#8A5D00', rand: '#E3CE9E', zeigePruefen: true,
+        pruefen: geheZu('pruefen', { pruefSel: kunde.id + ':' + lauf.nr, empfIdx: 0, checks: [false, false, false], halte: 0 }) });
+    });
+    const kampagnenListe = alleKampagnen.map(({ kunde, lauf, kampagne }) => {
+      const chip = this.kampChip(kampagne);
+      return { name: kampagne.name, kunde: kunde.name, chipText: chip.t, chipBg: chip.bg, chipFg: chip.fg,
+        gesamt: kampagne.gesamt, verschickt: kampagne.verschickt, freigegebenAm: lauf.freigabe ? lauf.freigabe.am : '—',
+        oeffnen: geheZu('kampagneDetail', { kampRef: { kundeId: kunde.id, nr: lauf.nr } }) };
+    });
+
+    // Kampagne-Detail
+    let kd = null;
+    if (st.kampRef) {
+      const k = st.kunden.find(x => x.id === st.kampRef.kundeId);
+      const l = k ? k.laeufe.find(x => x.nr === st.kampRef.nr) : null;
+      if (k && l && l.kampagne) kd = { k, l, c: l.kampagne };
+    }
+    const kdChip = kd ? this.kampChip(kd.c) : { t: '', bg: '#ECEAE1', fg: '#1C1B15' };
+    const kdSchritte = kd ? [
+      { label: 'Anschreiben (geht sofort raus)', v: kd.c.schritte[0] },
+      { label: 'Nachfass-Mail 1 (nach 4 Tagen)', v: kd.c.schritte[1] },
+      { label: 'Nachfass-Mail 2 (nach 9 Tagen)', v: kd.c.schritte[2] }
+    ].map(s => ({ label: s.label, text: s.v + ' von ' + kd.c.gesamt + ' versendet', balken: Math.round(100 * s.v / Math.max(1, kd.c.gesamt)) + '%' })) : [];
+
+    // Prüfen
+    const kandidaten = this.pruefKandidaten();
+    let pAkt = null;
+    if (kandidaten.length) {
+      pAkt = kandidaten.find(x => x.kunde.id + ':' + x.lauf.nr === st.pruefSel)
+        || kandidaten.find(x => x.lauf.status === 'wartet') || kandidaten.find(x => x.lauf.status === 'verfallen') || kandidaten[0];
+    }
+    const pK = pAkt ? pAkt.kunde : null, pL = pAkt ? pAkt.lauf : null;
+    const pAuswahl = kandidaten.filter(x => x.lauf.status === 'wartet' || x.lauf.status === 'verfallen' || (pAkt && x.lauf.nr === pAkt.lauf.nr && x.kunde.id === pAkt.kunde.id)).map(x => ({
+      label: (x.lauf.zahlen ? x.lauf.zahlen.fertig + ' Anschreiben' : 'Anschreiben') + ' für ' + x.kunde.name + ' · ' + x.lauf.datum,
+      rand: pAkt && x.lauf.nr === pAkt.lauf.nr && x.kunde.id === pAkt.kunde.id ? '#1C1B15' : '#CBC7B8',
+      bg: pAkt && x.lauf.nr === pAkt.lauf.nr && x.kunde.id === pAkt.kunde.id ? '#FFFFFF' : 'transparent',
+      waehlen: () => this.setState({ pruefSel: x.kunde.id + ':' + x.lauf.nr, empfIdx: 0, checks: [false, false, false], halte: 0, ziel: 'test' }) }));
+    const pSatz = pL
+      ? (pL.status === 'wartet' ? 'Lies die Texte, die gleich im Namen von ' + pK.absender + ' verschickt werden. Erst wenn du freigibst, geht etwas raus.'
+        : pL.status === 'verfallen' ? 'Die Texte wurden neu erstellt — bitte noch einmal prüfen und freigeben. Die alte Freigabe gilt nicht mehr.'
+        : pL.status === 'abgelehnt' ? 'Dieser Auftrag wurde abgelehnt. Nichts wurde versendet.'
+        : 'Diese Texte sind freigegeben und als Kampagne an Instantly übergeben.')
+      : 'Hier liest du fertige Anschreiben und gibst sie frei — oder lehnst sie ab. Ohne deine Freigabe wird nichts versendet.';
+
+    const empf = pL && pL.empfaenger ? pL.empfaenger : [];
+    const idx = Math.min(st.empfIdx, Math.max(0, empf.length - 1));
+    const leseAlle = lesefluss === 'scrollen';
+    const leseListe = (leseAlle ? empf : empf.slice(idx, idx + 1)).map((e, i) => Object.assign({}, e, {
+      zaehler: leseAlle ? (i + 1) + ' von ' + empf.length : (idx + 1) + ' von ' + empf.length }));
+    const empfListe = empf.map((e, i) => ({ firma: e.firma, name: e.name, rolle: e.rolle, mail: e.mail,
+      markRand: i === idx && !leseAlle ? '#C43D21' : 'transparent', markBg: i === idx && !leseAlle ? '#FBFAF4' : 'transparent',
+      waehlen: () => this.setState({ empfIdx: i }) }));
+    const z = pL && pL.zahlen ? pL.zahlen : {};
+    const zahlenBoxen = pL && pL.zahlen ? [
+      { wert: z.gefunden, label: 'Ansprechpartner gefunden', sub: '' },
+      { wert: z.ohneMail, label: 'ohne E-Mail-Adresse übersprungen', sub: '' },
+      { wert: z.aussortiert, label: 'doppelt oder gesperrt — aussortiert', sub: z.aussortiertSub || '' },
+      { wert: z.fertig, label: 'Anschreiben fertig', sub: '' },
+      { wert: z.nacharbeit, label: 'von der Prüfung aussortiert', sub: 'gehen nicht raus' }
+    ] : [];
+    const nacharbeit = pL ? (pL.nacharbeitListe || []) : [];
+    const gateSichtbar = !!(pL && (pL.status === 'wartet' || pL.status === 'verfallen'));
+    const welle = pK ? pK.laeufe.filter(l => l.kampagne).length + 1 : 1;
+    const kampagnenBasis = pK ? pK.name + ' – Welle ' + welle : '';
+    const kampagnenVorschau = (st.ziel === 'test' ? '[TEST] ' : '') + kampagnenBasis;
+    const freigeben = () => {
+      if (!pK || !pL) return;
+      clearInterval(this.halteInt);
+      const gesamt = st.ziel === 'test' ? pK.testEmpfaenger.length : empf.length;
+      this.aendereLauf(pK.id, pL.nr, () => ({ status: 'uebergeben',
+        freigabe: { von: 'Lena', am: this.jetzt() },
+        kampagne: { name: kampagnenVorschau, status: 'pausiert', verschickt: 0, gesamt, schritte: [0, 0, 0], antworten: 0 } }));
+      this.setState({ halte: 0, checks: [false, false, false], tippenOffen: false, tippenText: '', pruefSel: pK.id + ':' + pL.nr });
+    };
+    const checkTexte = ['Ich habe die Anschreiben und Nachfass-Mails gelesen', 'Ich habe die aussortierten Texte und ihre Gründe gesehen', 'Absender, gesperrte Domains und Test-Adressen stimmen'];
+    const checkListe = checkTexte.map((text, i) => ({ text, haken: st.checks[i] ? '✓' : '', bg: st.checks[i] ? '#1C1B15' : '#FFFFFF',
+      umschalten: () => this.setState(s => ({ checks: s.checks.map((c, j) => j === i ? !c : c) })) }));
+    const checksOk = st.checks.every(Boolean);
+    const zielSatz = st.ziel === 'test'
+      ? 'Die Mails gehen zunächst nur an die ' + (pK ? pK.testEmpfaenger.length : 0) + ' Test-Adressen — an niemanden sonst.'
+      : 'Die Mails gehen an alle ' + empf.length + ' Empfänger.';
+    const leseOpts = [['liste', 'Liste + Lesebereich'], ['blaettern', 'Blättern'], ['scrollen', 'Alles untereinander']].map(([id, label]) => ({
+      label, rand: lesefluss === id ? '#1C1B15' : '#CBC7B8', bg: lesefluss === id ? '#1C1B15' : 'transparent', fg: lesefluss === id ? '#F6F5F0' : '#6E6A5C',
+      waehlen: () => this.setState({ lesefluss: id }) }));
+    const gesteOpts = [['halten', 'Gedrückt halten'], ['tippen', 'Wort tippen'], ['checkliste', 'Checkliste']].map(([id, label]) => ({
+      label, rand: geste === id ? '#1C1B15' : '#CBC7B8', bg: geste === id ? '#1C1B15' : 'transparent', fg: geste === id ? '#F6F5F0' : '#6E6A5C',
+      waehlen: () => this.setState({ geste: id, halte: 0, checks: [false, false, false] }) }));
+
+    // Kontakte
+    const suche = st.kontaktSuche.trim().toLowerCase();
+    const kontakteAlle = this.baueKontakte();
+    const kontakte = (suche ? kontakteAlle.filter(k => (k.name + ' ' + k.firma + ' ' + k.mail).toLowerCase().includes(suche)) : kontakteAlle)
+      .map(k => ({ name: k.name, firma: k.firma, mail: k.mail, kunde: k.kunde, kampagne: k.kampagne, zuletzt: k.zuletzt }));
+
+    // Postfach
+    const tIdx = Math.min(st.threadIdx, threadsDaten.length - 1);
+    const threads = threadsDaten.map((t, i) => ({
+      name: t.kontakt.name, firma: t.kontakt.firma, datum: t.datum,
+      schnipsel: t.nachrichten[t.nachrichten.length - 1].text.split('\n').filter(Boolean)[1] || t.nachrichten[t.nachrichten.length - 1].text,
+      neu: t.neu && !st.gelesen.includes(i),
+      markRand: i === tIdx ? '#C43D21' : 'transparent', markBg: i === tIdx ? '#FBFAF4' : 'transparent',
+      waehlen: () => this.setState(s => ({ threadIdx: i, gelesen: s.gelesen.includes(i) ? s.gelesen : s.gelesen.concat([i]) })) }));
+    const aktThread = threadsDaten[tIdx];
+    const threadNachrichten = aktThread ? aktThread.nachrichten.map(m => ({
+      wer: m.wer === 'wir' ? 'Wir (' + 'Jonas Wilde' + ')' : aktThread.kontakt.name,
+      werFarbe: m.wer === 'wir' ? '#6E6A5C' : '#C43D21',
+      datum: m.datum, text: m.text,
+      bg: m.wer === 'wir' ? '#FBFAF4' : '#FFF8F0', rand: m.wer === 'wir' ? '#E2DFD4' : '#EBD0A9',
+      einzug: m.wer === 'wir' ? '0' : '36px' })) : [];
+
+    // Kunden / Formular
+    const kundenListe = st.kunden.map(k => ({ name: k.name, branche: k.branche,
+      zielText: k.jobtitel + ' · ' + k.region + ' · ' + k.groesse,
+      absender: k.absender, sperrText: k.sperrliste.length ? k.sperrliste.join(', ') : 'keine eigenen',
+      bearbeiten: () => this.setState({ bereich: 'form', formId: k.id, formHerkunft: 'kunden', vorschlagFelder: [], vorschlagHinweis: '', form: { name: k.name, webseite: k.webseite, jobtitel: k.jobtitel, region: k.region, groesse: k.groesse, angebot: k.angebot, tonalitaet: k.tonalitaet, absender: k.absender, sperrliste: k.sperrliste.slice(), testEmpfaenger: k.testEmpfaenger.slice() } }) }));
+    const form = st.form || { name: '', webseite: '', jobtitel: '', region: '', groesse: '', angebot: '', tonalitaet: '', absender: '', sperrliste: [], testEmpfaenger: [] };
+    const setForm = (feld) => (e) => this.setState(s => ({ form: Object.assign({}, s.form, { [feld]: e.target.value }), vorschlagFelder: s.vorschlagFelder.filter(x => x !== feld) }));
+    const f = {
+      name: setForm('name'), webseite: setForm('webseite'), jobtitel: setForm('jobtitel'), region: setForm('region'),
+      groesse: setForm('groesse'), angebot: setForm('angebot'), tonalitaet: setForm('tonalitaet'), absender: setForm('absender'),
+      chipSperr: (e) => this.setState({ chipSperr: e.target.value }),
+      chipTest: (e) => this.setState({ chipTest: e.target.value }),
+      chipGlobal: (e) => this.setState({ chipGlobal: e.target.value }),
+      suche: (e) => this.setState({ kontaktSuche: e.target.value }),
+      sperrEnter: (e) => { if (e.key === 'Enter') { e.preventDefault(); const v = st.chipSperr.trim(); if (v) this.setState(s => ({ form: Object.assign({}, s.form, { sperrliste: s.form.sperrliste.concat([v]) }), chipSperr: '' })); } },
+      testEnter: (e) => { if (e.key === 'Enter') { e.preventDefault(); const v = st.chipTest.trim(); if (v) this.setState(s => ({ form: Object.assign({}, s.form, { testEmpfaenger: s.form.testEmpfaenger.concat([v]) }), chipTest: '' })); } },
+      globalEnter: (e) => { if (e.key === 'Enter') { e.preventDefault(); const v = st.chipGlobal.trim(); if (v) this.setState(s => ({ globalDomains: s.globalDomains.concat([v]), chipGlobal: '' })); } },
+      ablehnen: (e) => this.setState({ ablehnenText: e.target.value }),
+      tippen: (e) => this.setState({ tippenText: e.target.value })
+    };
+    const sperrChips = form.sperrliste.map((t, i) => ({ t, entfernen: (e) => { e.stopPropagation(); this.setState(s => ({ form: Object.assign({}, s.form, { sperrliste: s.form.sperrliste.filter((_, j) => j !== i) }) })); } }));
+    const testChips = form.testEmpfaenger.map((t, i) => ({ t, entfernen: (e) => { e.stopPropagation(); this.setState(s => ({ form: Object.assign({}, s.form, { testEmpfaenger: s.form.testEmpfaenger.filter((_, j) => j !== i) }) })); } }));
+    const globalChips = st.globalDomains.map((t, i) => ({ t, entfernen: (e) => { e.stopPropagation(); this.setState(s => ({ globalDomains: s.globalDomains.filter((_, j) => j !== i) })); } }));
+
+    const startKunden = st.kunden.map(k => ({ name: k.name, zielText: k.jobtitel + ' · ' + k.region,
+      gewaehlt: st.startKundeId === k.id,
+      rand: st.startKundeId === k.id ? '#1C1B15' : '#E2DFD4', bg: st.startKundeId === k.id ? '#FBFAF4' : '#FFFFFF',
+      warnung: !k.angebot ? 'Angebot fehlt noch' : '',
+      waehlen: () => this.setState({ startKundeId: k.id }) }));
+    const leadOpts = [25, 40, 60].map(w => ({ wert: w, rand: st.leadAnzahl === w ? '#1C1B15' : '#CBC7B8',
+      bg: st.leadAnzahl === w ? '#1C1B15' : '#FFFFFF', fg: st.leadAnzahl === w ? '#F6F5F0' : '#1C1B15',
+      waehlen: () => this.setState({ leadAnzahl: w }) }));
+
+    return {
+      navListe,
+      istDashboard: st.bereich === 'dashboard', istKampagnen: st.bereich === 'kampagnen',
+      istKampagneDetail: st.bereich === 'kampagneDetail' && !!kd, istPruefen: st.bereich === 'pruefen',
+      istKontakte: st.bereich === 'kontakte', istPostfach: st.bereich === 'postfach',
+      istDomains: st.bereich === 'domains', istKunden: st.bereich === 'kunden', istForm: st.bereich === 'form',
+      zuKampagnen: geheZu('kampagnen'), zuKunden: geheZu('kunden'),
+
+      kacheln, wartende, zeigeWartende: wartende.length > 0, dashKampagnen,
+      angehaltenBanner: ersteAngehaltene ? ersteAngehaltene.lauf.fehler : '',
+      angehaltenTitel: ersteAngehaltene ? 'Angehalten: Anschreiben für ' + ersteAngehaltene.kunde.name + ' (gestartet ' + ersteAngehaltene.lauf.datum + ')' : '',
+      angehaltenFortsetzen: () => { const a = angehaltene[0]; if (a) this.starteSim(a.kunde.id, a.lauf.nr, this.tickFuerSchritt(a.lauf.schritt || 1)); },
+
+      vorbereitung, zeigeVorbereitung: vorbereitung.length > 0, kampagnenListe,
+      startOeffnen: () => this.setState({ startOffen: true }),
+      startSchliessen: () => this.setState({ startOffen: false }),
+      startOffen: st.startOffen, startKunden, leadOpts,
+      laufStarten: () => {
+        const k = st.kunden.find(x => x.id === st.startKundeId); if (!k) return;
+        const nr = Math.max(0, ...this.state.kunden.flatMap(x => x.laeufe.map(l => l.nr))) + 1;
+        this.setState(s => ({ startOffen: false, kunden: s.kunden.map(x => x.id !== k.id ? x : Object.assign({}, x, { laeufe: [{ nr, datum: this.jetzt(), gewuenscht: s.leadAnzahl, status: 'laeuft', schritt: 1 }].concat(x.laeufe) })) }));
+        setTimeout(() => this.starteSim(k.id, nr, 0), 0);
+      },
+
+      kdName: kd ? kd.c.name : '', kdChipText: kdChip.t, kdChipBg: kdChip.bg, kdChipFg: kdChip.fg,
+      kdSatz: kd ? (kd.c.status === 'pausiert' ? 'Diese Kampagne liegt pausiert in Instantly. Gestartet wird dort von Hand — hier nur zum Nachschauen.'
+        : kd.c.status === 'aktiv' ? 'Instantly verschickt die freigegebenen Mails nach Zeitplan. Hier nur zum Nachschauen.'
+        : 'Alles versendet. Hier nur noch zum Nachschauen.') : '',
+      kdKunde: kd ? kd.k.name : '', kdVon: kd && kd.l.freigabe ? kd.l.freigabe.von : '—',
+      kdAm: kd && kd.l.freigabe ? kd.l.freigabe.am : '—', kdGesamt: kd ? kd.c.gesamt : '',
+      kdSchritte, kdAntworten: kd ? kd.c.antworten : 0,
+      kdPausiertHinweis: kd && kd.c.status === 'pausiert' ? 'Noch wurde nichts versendet. Zum Starten die Kampagne in Instantly öffnen und dort von Hand starten — das ist Absicht, damit nichts aus Versehen rausgeht.' : '',
+
+      pSatz, pLeer: kandidaten.length === 0, pSichtbar: !!pL,
+      zeigePAuswahl: pAuswahl.length > 1, pAuswahl,
+      verfallenBanner: pL && pL.status === 'verfallen' && pL.freigabe ? pL.freigabe.verfallenGrund + ' Die Freigabe von ' + pL.freigabe.von + ' (' + pL.freigabe.am + ') ist damit automatisch verfallen.' : '',
+      zahlenBoxen, nacharbeit, nachAnzahl: nacharbeit.length, zeigeNacharbeit: nacharbeit.length > 0,
+      nachOffen: st.nachOffen, nachPfeil: st.nachOffen ? 'zuklappen ▴' : 'aufklappen ▾',
+      nachToggle: () => this.setState(s => ({ nachOffen: !s.nachOffen })),
+      zeigeTexte: empf.length > 0,
+      leseSpalten: lesefluss === 'liste' ? '270px 1fr' : '1fr',
+      zeigeEmpfListe: lesefluss === 'liste', istBlaettern: lesefluss === 'blaettern',
+      leseListe, empfListe: lesefluss === 'liste' ? empfListe : [], empfAnzahl: empf.length,
+      absenderName: pK ? pK.absender : '',
+      pagerText: (idx + 1) + ' von ' + empf.length,
+      vorher: () => this.setState({ empfIdx: Math.max(0, idx - 1) }),
+      weiter: () => this.setState({ empfIdx: Math.min(empf.length - 1, idx + 1) }),
+      vorherAus: idx === 0, weiterAus: idx >= empf.length - 1,
+      vorherDeckkraft: idx === 0 ? 0.4 : 1, weiterDeckkraft: idx >= empf.length - 1 ? 0.4 : 1,
+      gateSichtbar, leseOpts, gesteOpts,
+      gesteHalten: geste === 'halten', gesteTippen: geste === 'tippen', gesteCheck: geste === 'checkliste',
+      zielTest: st.ziel === 'test', zielAlle: st.ziel === 'alle',
+      zielTestWaehlen: () => this.setState({ ziel: 'test' }), zielAlleWaehlen: () => this.setState({ ziel: 'alle' }),
+      zielTestRand: st.ziel === 'test' ? '#1C1B15' : '#E2DFD4', zielTestBg: st.ziel === 'test' ? '#FFFFFF' : 'transparent',
+      zielAlleRand: st.ziel === 'alle' ? '#1C1B15' : '#E2DFD4', zielAlleBg: st.ziel === 'alle' ? '#FFFFFF' : 'transparent',
+      testEmpfText: pK ? 'Solange der Test-Modus an ist, gehen Mails nur an diese ' + pK.testEmpfaenger.length + ' Adressen — an niemanden sonst (' + pK.testEmpfaenger.join(', ') + ').' : '',
+      kampagnenBasis, kampagnenVorschau, zielSatz,
+      protokollSatz: 'Festgehalten wird: freigegeben von Lena am ' + this.jetzt() + '.',
+      halteBreite: st.halte + '%',
+      halteStart: () => {
+        clearInterval(this.halteInt);
+        this.halteInt = setInterval(() => {
+          const h = this.state.halte + 5;
+          if (h >= 100) { clearInterval(this.halteInt); freigeben(); }
+          else this.setState({ halte: h });
+        }, 45);
+      },
+      halteStopp: () => { clearInterval(this.halteInt); this.setState({ halte: 0 }); },
+      checkListe, checksFehlen: !checksOk, checkDeckkraft: checksOk ? 1 : 0.45,
+      checkFreigeben: () => { if (checksOk) freigeben(); },
+      tippenOeffnen: () => this.setState({ tippenOffen: true, tippenText: '' }),
+      tippenSchliessen: () => this.setState({ tippenOffen: false }),
+      tippenOffen: st.tippenOffen, tippenText: st.tippenText,
+      tippenFalsch: st.tippenText.trim().toUpperCase() !== 'FREIGEBEN',
+      tippenDeckkraft: st.tippenText.trim().toUpperCase() === 'FREIGEBEN' ? 1 : 0.45,
+      tippenBestaetigen: () => { if (st.tippenText.trim().toUpperCase() === 'FREIGEBEN') freigeben(); },
+      ablehnenOeffnen: () => this.setState({ ablehnenOffen: true, ablehnenText: '' }),
+      ablehnenSchliessen: () => this.setState({ ablehnenOffen: false }),
+      ablehnenOffen: st.ablehnenOffen, ablehnenText: st.ablehnenText,
+      ablehnenBestaetigen: () => {
+        if (!pK || !pL) return;
+        const grund = st.ablehnenText.trim() || 'ohne Begründung';
+        this.aendereLauf(pK.id, pL.nr, () => ({ status: 'abgelehnt', ablehnung: { von: 'Lena', am: this.jetzt(), grund } }));
+        this.setState({ ablehnenOffen: false, pruefSel: pK.id + ':' + pL.nr });
+      },
+      nichts: (e) => e.stopPropagation(),
+      handoverSicht: !!(pL && pL.status === 'uebergeben' && pL.kampagne),
+      handoverTitel: pL && pL.kampagne ? 'Die Kampagne »' + pL.kampagne.name + '« liegt jetzt pausiert in Instantly.' : '',
+      handoverVon: pL && pL.freigabe ? pL.freigabe.von : '',
+      handoverAm: pL && pL.freigabe ? pL.freigabe.am : '',
+      handoverZurKampagne: () => { if (pK && pL) this.setState({ bereich: 'kampagneDetail', kampRef: { kundeId: pK.id, nr: pL.nr } }); },
+      abgelehntSicht: !!(pL && pL.status === 'abgelehnt'),
+      abgelehntVon: pL && pL.ablehnung ? pL.ablehnung.von : '',
+      abgelehntAm: pL && pL.ablehnung ? pL.ablehnung.am : '',
+      abgelehntGrund: pL && pL.ablehnung ? pL.ablehnung.grund : '',
+
+      kontakte, kontaktSuche: st.kontaktSuche, kontakteLeer: kontakte.length === 0,
+      threads, threadName: aktThread ? aktThread.kontakt.name + ' · ' + aktThread.kontakt.firma : '',
+      threadMeta: aktThread ? aktThread.kontakt.mail + ' · Kampagne: ' + aktThread.kampagne : '',
+      threadNachrichten,
+
+      globalChips, chipGlobal: st.chipGlobal,
+
+      kundenListe,
+      neuerKunde: () => this.setState({ bereich: 'form', formId: null, startOffen: false, formHerkunft: st.startOffen ? 'kampagnen' : 'kunden', vorschlagFelder: [], vorschlagHinweis: '', form: { name: '', webseite: '', jobtitel: '', region: '', groesse: '', angebot: '', tonalitaet: '', absender: '', sperrliste: [], testEmpfaenger: [] } }),
+      form, f, sperrChips, testChips, chipSperr: st.chipSperr, chipTest: st.chipTest,
+      formTitel: st.formId ? 'Kundendaten bearbeiten' : 'Kunde anlegen',
+      formZurueck: () => this.setState({ bereich: st.formHerkunft === 'kampagnen' ? 'kampagnen' : 'kunden', form: null }),
+      speichernGesperrt: !form.name.trim(),
+      speichernDeckkraft: form.name.trim() ? 1 : 0.45,
+      speichern: () => {
+        if (!form.name.trim()) return;
+        if (st.formId) {
+          this.setState(s => ({ kunden: s.kunden.map(k => k.id === st.formId ? Object.assign({}, k, s.form) : k), bereich: 'kunden', form: null }));
+        } else {
+          const id = 'k' + Date.now();
+          this.setState(s => ({ kunden: s.kunden.concat([Object.assign({ id, branche: 'Neu angelegt', laeufe: [] }, s.form)]), bereich: s.formHerkunft === 'kampagnen' ? 'kampagnen' : 'kunden', startKundeId: id, startOffen: s.formHerkunft === 'kampagnen', form: null }));
+        }
+      },
+      ableitenLade: st.ableitenLade,
+      vorschlagHinweis: st.vorschlagHinweis,
+      angebotIstVorschlag: st.vorschlagFelder.includes('angebot'),
+      tonIstVorschlag: st.vorschlagFelder.includes('tonalitaet'),
+      ableiten: () => {
+        if (st.ableitenLade) return;
+        this.setState({ ableitenLade: true, vorschlagHinweis: '' });
+        setTimeout(() => {
+          const s = this.state; if (!s.form) return;
+          const vAngebot = s.form.name.toLowerCase().includes('klarwerk')
+            ? 'Klarwerk übernimmt Unterhalts- und Glasreinigung für Büros und Praxen in Hamburg — mit festen Ansprechpartnern, dokumentierten Qualitätskontrollen und Vertretungsgarantie bei Ausfällen.'
+            : 'Bietet Dienstleistungen für kleine und mittlere Betriebe an — mit festen Ansprechpartnern und klaren Abläufen. (Aus der Webseite abgeleitet — bitte in eigenen Worten prüfen.)';
+          const vTon = 'Bodenständig, zuverlässig, kurze Sätze';
+          const felder = [], neu = {};
+          if (!s.form.angebot.trim()) { neu.angebot = vAngebot; felder.push('angebot'); }
+          if (!s.form.tonalitaet.trim()) { neu.tonalitaet = vTon; felder.push('tonalitaet'); }
+          const hinweis = felder.length === 0
+            ? 'Angebot und Tonalität sind schon von Hand ausgefüllt — der Vorschlag überschreibt nichts. Leere die Felder, wenn du den Vorschlag sehen willst.'
+            : (felder.length === 1 ? 'Ein Feld war schon ausgefüllt und wurde nicht angetastet — nur das leere Feld wurde als Vorschlag befüllt.' : '');
+          this.setState(s2 => ({ ableitenLade: false, form: Object.assign({}, s2.form, neu), vorschlagFelder: felder, vorschlagHinweis: hinweis }));
+        }, 1800);
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

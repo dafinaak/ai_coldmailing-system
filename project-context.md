@@ -120,5 +120,14 @@ Bewusst NICHT in v1: Antworten-Erkennung/Einsortierung, Reporting.
   in der Bau-Phase.
 
 ## Nächste Schritte
-- Lösungsweg wählen (Sparring).
-- Danach: Plan erstellen, vom Menschen freigeben lassen, bauen.
+- TEAM-INTERFACE: Design eingefroren (Spec 2026-07-17, Wholix-artige
+  Struktur, Checkliste-Geste, Liste+Lesebereich; Vorlage v4 + Text-
+  Leitfaden). Bauplan geschrieben (docs/superpowers/plans/
+  2026-07-17-team-interface.md, 11 Pakete inkl. Deployment auf den
+  Arbeitsserver prod-srv01-automations — Leonard hat Deployment dorthin
+  freigegeben, Server-Doku + SSH-Schlüssel im Ordner ~/Desktop/ViralLab).
+  Freigabe des Bauplans durch Leonard steht aus.
+- Danach: paketweiser Bau mit Tests/Reviews wie bei v1; Abnahme durch
+  Kollegen-Test.
+- Parallel offen: Follow-ups der Testkampagne (ignorieren), v1.1 vor
+  erster echter Kampagne, neuer OpenRouter-Schlüssel nach dem 23.07.

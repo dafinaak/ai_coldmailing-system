@@ -38,10 +38,12 @@ Bewusst NICHT in v1: Antworten-Erkennung/Einsortierung, Reporting.
   bestätigte den Bauplan; daraus nachgezogen: Domain-Sperrliste,
   Schutz-Voreinstellungen (20 Mails/Tag, Fenster Mo–Fr 8–19).
 - OFFEN: Task 11 (End-zu-End-Nachweis) — braucht von Leonard: Okay für
-  Test-Domain-Kauf (~10–15 €/Jahr), Test-Postfächer, Apollo-Konto (gratis
-  reicht), Anthropic-API-Schlüssel, Instantly-Zugang (wer hat den
+  Test-Domain-Kauf (~10–15 €/Jahr), Test-Postfächer,
+  Anthropic-API-Schlüssel, Instantly-Zugang (wer hat den
   API-Schlüssel? enthält der Team-Tarif API v2?) und Okay für den ersten
   Schreibzugriff aufs Team-Instantly.
+- Apollo-API-Schlüssel liegt vor (16.07.2026), gespeichert in .env
+  (gitignored — Schlüssel stehen nie im Repo oder in Notizen).
 - Am echten Konto zu verifizieren (TODOs im Code markiert): Instantly
   Zeitzonen-Ersatz Europe/Belgrade, Wochentags-Konvention, daily_limit
   pro Postfach, Lead-Dedupe bei Wiederholungs-Import; Apollo id-only-Match

@@ -18,10 +18,10 @@ services:
     volumes:
       - /opt/coldmailing/daten:/daten
     networks:
-      - content-intelligence_default
+      - content-intelligence_ci-network
 
 # Gleiches Docker-Netz wie der ViralLab-Stack, damit ci-nginx per
 # Container-Name "coldmail-web" weiterleiten kann.
 networks:
-  content-intelligence_default:
+  content-intelligence_ci-network:
     external: true

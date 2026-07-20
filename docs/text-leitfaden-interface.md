@@ -126,8 +126,8 @@ Direkt unter der Überschrift, gut sichtbar (dieser Bildschirm bekommt
 bewusst mehr Erklärung als der Rest, weil hier echte E-Mails ausgelöst
 werden): **"Was heißt freigeben?"** Dein grünes Licht, dass diese E-Mails
 verschickt werden dürfen. Sie gehen dann — noch pausiert — an Instantly;
-scharf geschaltet werden sie dort von Hand. Ohne deine Freigabe passiert
-nichts.
+verschickt wird erst, wenn du die Kampagne mit »Jetzt verschicken«
+startest (Baustein 1, siehe unten). Ohne deine Freigabe passiert nichts.
 
 - Pro Empfänger sichtbar: Name, Firma, **E-Mail-Adresse**, dann:
   "Erste E-Mail (geht sofort raus)", "Nachfass-Mail 1 (nach X Tagen)",
@@ -135,8 +135,10 @@ nichts.
 - Durchgefallene Texte: **"[N] durchgefallen – geht nicht raus"** — Du
   kannst die Texte lesen und den Grund sehen.
 - Freigeben-Bereich: "**Freigeben heißt:** Die Texte gehen als Kampagne
-  (in Instantly) — zunächst pausiert. Gestartet wird dort von Hand.
-  Festgehalten wird: freigegeben von [Name] am [Datum]."
+  — noch pausiert — an Instantly. Verschickt wird erst, wenn du die
+  Kampagne mit »Jetzt verschicken« startest (auf der Kampagnen-Seite).
+  Ohne deine Freigabe passiert nichts. Festgehalten wird: freigegeben
+  von [Name] am [Datum]."
 - Ablehnen: "**Ablehnen heißt:** Nichts wird versendet. Schreib kurz
   dazu, was nicht gepasst hat — das hilft bei der nächsten E-Mail-Runde."
 

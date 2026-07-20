@@ -10,10 +10,36 @@
   {% if kd_satz %}
   <p class="seiten-hilfstext">{{ kd_satz }}</p>
   {% endif %}
-  <p class="kamp-detail-info">Angebot: <b>{{ kd_kunde }}</b> · Freigegeben von {{ kd_von }} am {{ kd_am }} · {{ kd_gesamt }} Empfänger</p>
+  <p class="kamp-detail-info">Angebot: <b>{{ kd_kunde }}</b> · Freigegeben von {{ kd_von }} am {{ kd_am }} · {{ kd_gesamt }} Empfänger{% if kd_gestartet_von %} · Gestartet von {{ kd_gestartet_von }} am {{ kd_gestartet_am }}{% endif %}</p>
 
   {% if live_stand_hinweis %}
   <div class="hinweis-kasten">{{ live_stand_hinweis }}</div>
+  {% endif %}
+
+  {% if kd_aktion_fehler %}
+  <div class="hinweis-kasten">{{ kd_aktion_fehler }}</div>
+  {% endif %}
+
+  {% if kd_kann_aktivieren %}
+  <details class="ablehnen-kasten">
+    <summary>Jetzt verschicken …</summary>
+    <div class="gate-text">{{ kd_aktivieren_bestaetigung }}</div>
+    <form method="post" action="/kampagnen/{{ slug }}/{{ ts }}/aktivieren">
+      <input type="hidden" name="bestaetigt" value="ja">
+      <button type="submit" class="knopf-primaer">Ja, jetzt verschicken</button>
+    </form>
+  </details>
+  {% endif %}
+
+  {% if kd_kann_pausieren %}
+  <details class="ablehnen-kasten">
+    <summary>Versand pausieren …</summary>
+    <div class="gate-text">{{ kd_pausieren_bestaetigung }}</div>
+    <form method="post" action="/kampagnen/{{ slug }}/{{ ts }}/pausieren">
+      <input type="hidden" name="bestaetigt" value="ja">
+      <button type="submit" class="knopf-sekundaer">Ja, pausieren</button>
+    </form>
+  </details>
   {% endif %}
 
   <div class="karte" style="margin-top: 20px;">

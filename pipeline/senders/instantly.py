@@ -170,3 +170,20 @@ class InstantlySender:
                                        ("betreff", "mail_1", "follow_up_1", "follow_up_2")}}
                  for t in texte_pro_lead]
         self._post(f"{BASIS}/leads/add", {"campaign_id": campaign_id, "leads": leads})
+
+    def aktiviere_kampagne(self, campaign_id: str) -> None:
+        """Startet eine bereits angelegte (pausierte) Kampagne - POST
+        .../activate, kein Request-Body (siehe
+        docs/instantly-api-machbarkeit.md #1, operationId "activateCampaign").
+        Baustein 1: ersetzt das bisherige manuelle Starten in Instantly durch
+        einen Knopf im eigenen Tool (web.routen.kampagnen) - diese Methode
+        selbst prueft keine Berechtigung/Bestaetigung, das ist Aufgabe der
+        Route, die sie aufruft."""
+        self._post(f"{BASIS}/campaigns/{campaign_id}/activate", None)
+
+    def pausiere_kampagne(self, campaign_id: str) -> None:
+        """Haelt eine laufende Kampagne an - POST .../pause, kein
+        Request-Body (siehe docs/instantly-api-machbarkeit.md #1, operationId
+        "pauseCampaign"). Bereits verschickte E-Mails bleiben unberuehrt,
+        Instantly stoppt nur die noch ausstehenden Schritte."""
+        self._post(f"{BASIS}/campaigns/{campaign_id}/pause", None)

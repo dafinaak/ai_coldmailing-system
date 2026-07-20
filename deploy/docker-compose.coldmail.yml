@@ -1,0 +1,27 @@
+# Team-Interface des Coldmailing-Systems auf dem Arbeitsserver.
+# Start:  cd /opt/coldmailing && sudo docker compose -f deploy/docker-compose.coldmail.yml up -d --build
+# Logs:   sudo docker logs coldmail-web
+services:
+  coldmail-web:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: coldmail-web
+    restart: unless-stopped
+    # Schluessel & Secrets: /opt/coldmailing/.env wird von compose in die
+    # Container-Umgebung injiziert (PFLICHT laut Plan - NICHT als Datei ins
+    # Image/cwd, sonst laese der Pipeline-Unterprozess sie nicht).
+    env_file:
+      - /opt/coldmailing/.env
+    environment:
+      DATEN_DIR: /daten
+    volumes:
+      - /opt/coldmailing/daten:/daten
+    networks:
+      - content-intelligence_default
+
+# Gleiches Docker-Netz wie der ViralLab-Stack, damit ci-nginx per
+# Container-Name "coldmail-web" weiterleiten kann.
+networks:
+  content-intelligence_default:
+    external: true

@@ -20,7 +20,7 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
 
 from pipeline.__main__ import SendenFehler, _versand_ausfuehren
-from pipeline.approval import approve, freigabe_info
+from pipeline.approval import approve, freigabe_info, is_approved
 from pipeline.config import load_kunde
 from pipeline.run_store import RunStore
 from web import auth
@@ -40,6 +40,32 @@ CHECKLISTE_TEXTE = [
 
 CHECKLISTE_FEHLER = "Bitte alle drei Punkte abhaken, bevor du freigibst."
 BEGRUENDUNG_FEHLER = "Bitte kurz begründen, was nicht gepasst hat."
+
+KUNDE_DATEI_FEHLER = ("Die Kunden-Datei zu diesem Auftrag ist gerade nicht lesbar oder "
+                      "beschädigt. Bitte im Kunden-Bereich prüfen.")
+
+# Review-Fund (Task 5): POST /freigeben und POST /ablehnen duerfen nur im
+# jeweils dafuer vorgesehenen Zustand etwas tun - sonst koennte z.B. ein
+# abgelehnter Auftrag trotzdem noch freigegeben und versendet werden
+# (waehrend die Ablehnen-Ansicht "Nichts wurde versendet" verspricht), oder
+# ein laengst uebergebener Auftrag im Nachhinein "abgelehnt" werden.
+# "freigegeben" ist bei FREIGEBEN bewusst mit erlaubt (nicht bei ABLEHNEN):
+# das ist der Fall "schon freigegeben, Versand aber noch nicht durch" - dafuer
+# gibt es die eigene, praezisere Meldung in freigabe_absenden() (is_approved).
+ZUSTAND_ERLAUBT_FREIGEBEN = {"wartet_auf_freigabe", "freigegeben"}
+ZUSTAND_ERLAUBT_ABLEHNEN = {"wartet_auf_freigabe"}
+
+_ZUSTAND_TEXT = {
+    "abgelehnt": "wurde bereits abgelehnt",
+    "uebergeben": "ist bereits an Instantly übergeben",
+    "laeuft": "wird gerade noch bearbeitet",
+    "angehalten": "ist noch nicht bereit dafür",
+}
+
+
+def _zustand_fehler(aktion: str, zustand: str) -> str:
+    grund = _ZUSTAND_TEXT.get(zustand, f"ist gerade nicht bereit dafür (Zustand: {zustand})")
+    return f"Dieser Auftrag {grund} — {aktion} ist jetzt nicht mehr möglich. Lade die Seite neu."
 
 
 # Hilfsfunktionen ------------------------------------------------------------
@@ -162,7 +188,17 @@ def _lese_kontext(request: Request, slug: str, ts: str, *,
     lauf_dir = _lauf_dir_oder_404(daten_dir, slug, ts)
     stand = _manager(request).status(lauf_dir)
     store = RunStore.resume(lauf_dir)
-    kunde = _kunde_fuer(daten_dir, lauf_dir)
+    # Gleicher defensiver Umgang wie in _wartende_laeufe (Review-Fund Task
+    # 5): eine kaputte/nicht mehr lesbare Kunden-Datei darf die Lese-Ansicht
+    # nicht mit einem 500er abstuerzen lassen - stattdessen ein sichtbarer,
+    # deutscher Fehlerhinweis und leere/neutrale Platzhalter fuer die
+    # kunde-abhaengigen Felder.
+    try:
+        kunde = _kunde_fuer(daten_dir, lauf_dir)
+        kunde_name, absender, follow_up_tage = kunde.name, kunde.absender, kunde.follow_up_tage
+    except (OSError, ValueError, KeyError):
+        kunde_name, absender, follow_up_tage = slug, "", []
+        fehler = fehler or KUNDE_DATEI_FEHLER
 
     personalisierung = (store.load_step("personalisierung")
                          if store.step_done("personalisierung") else {"fertig": [], "nacharbeit": []})
@@ -174,14 +210,14 @@ def _lese_kontext(request: Request, slug: str, ts: str, *,
     if abgelehnt_pfad.exists():
         abgelehnt = json.loads(abgelehnt_pfad.read_text(encoding="utf-8"))
 
-    tage = kunde.follow_up_tage or [0, 0]
+    tage = follow_up_tage or [0, 0]
 
     return {
         "nutzer": auth.aktueller_nutzer(request),
         "nav": nav_kontext(request),
         "slug": slug, "ts": ts,
-        "kunde_name": kunde.name,
-        "absender": kunde.absender,
+        "kunde_name": kunde_name,
+        "absender": absender,
         "tag_1": tage[0], "tag_2": tage[1] if len(tage) > 1 else tage[0],
         "zustand": stand["zustand"],
         "empfaenger": _empfaenger_liste(pruefung_ok, info_by_email),
@@ -268,12 +304,36 @@ def freigabe_absenden(request: Request, slug: str, ts: str,
                        checkliste: list[str] = Form([])):
     daten_dir = request.app.state.daten_dir
     lauf_dir = _lauf_dir_oder_404(daten_dir, slug, ts)
+    store = RunStore.resume(lauf_dir)
+
+    # Zustands-Waechter (Review-Fund Task 5) - MUSS vor jeder Mutation
+    # stehen: ohne ihn koennte z.B. ein abgelehnter Auftrag trotzdem noch
+    # freigegeben und an Instantly uebergeben werden.
+    zustand = _manager(request).status(lauf_dir)["zustand"]
+    if zustand not in ZUSTAND_ERLAUBT_FREIGEBEN:
+        kontext = _lese_kontext(request, slug, ts,
+                                 fehler=_zustand_fehler("Freigeben", zustand))
+        return request.app.state.templates.TemplateResponse(
+            request, "freigabe_lesen.html", kontext, status_code=400)
+
+    # Audit-Trail-Schutz (Review-Fund Task 5): ist schon freigegeben (Zustand
+    # "freigegeben" - Versand nur noch nicht durch), darf ein weiteres POST
+    # NICHT approve() erneut aufrufen (das wuerde Name/Zeitstempel der
+    # urspruenglichen Freigabe in FREIGABE.txt ueberschreiben). Der Versand-
+    # Retry hat mit /senden-erneut einen eigenen, dafuer vorgesehenen Weg.
+    if is_approved(store):
+        info = freigabe_info(store)
+        fehler = (f"Dieser Auftrag ist bereits freigegeben von {info['von'] or 'unbekannt'} "
+                  f"am {info['am']}. Zum erneuten Senden »Erneut senden« benutzen.")
+        kontext = _lese_kontext(request, slug, ts, fehler=fehler)
+        return request.app.state.templates.TemplateResponse(
+            request, "freigabe_lesen.html", kontext, status_code=400)
+
     if len(set(checkliste) & {"1", "2", "3"}) < 3:
         kontext = _lese_kontext(request, slug, ts, fehler=CHECKLISTE_FEHLER)
         return request.app.state.templates.TemplateResponse(
             request, "freigabe_lesen.html", kontext, status_code=400)
 
-    store = RunStore.resume(lauf_dir)
     approve(store, name=auth.aktueller_nutzer(request))
     return _versand_antwort(request, slug, ts)
 
@@ -289,6 +349,15 @@ async def freigabe_ablehnen(request: Request, slug: str, ts: str,
                              begruendung: str = Form("")):
     daten_dir = request.app.state.daten_dir
     lauf_dir = _lauf_dir_oder_404(daten_dir, slug, ts)
+
+    # Zustands-Waechter (Review-Fund Task 5), siehe freigabe_absenden.
+    zustand = _manager(request).status(lauf_dir)["zustand"]
+    if zustand not in ZUSTAND_ERLAUBT_ABLEHNEN:
+        kontext = _lese_kontext(request, slug, ts,
+                                 fehler=_zustand_fehler("Ablehnen", zustand))
+        return request.app.state.templates.TemplateResponse(
+            request, "freigabe_lesen.html", kontext, status_code=400)
+
     begruendung = begruendung.strip()
     if not begruendung:
         kontext = _lese_kontext(request, slug, ts, fehler=BEGRUENDUNG_FEHLER)

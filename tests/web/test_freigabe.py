@@ -111,7 +111,8 @@ def angemeldeter_client(client):
 
 def _lauf_anlegen(daten_dir: Path, *, ts: str = "20260717-090000",
                    pruefung_ok=None, nacharbeit=None, dedupe_behalten=None,
-                   freigegeben: bool = False, abgelehnt: dict | None = None) -> Path:
+                   freigegeben: bool = False, abgelehnt: dict | None = None,
+                   versand_komplett: dict | None = None) -> Path:
     lauf_dir = daten_dir / "laeufe" / KUNDE_SLUG / ts
     lauf_dir.mkdir(parents=True)
     store = RunStore.resume(lauf_dir)
@@ -120,8 +121,10 @@ def _lauf_anlegen(daten_dir: Path, *, ts: str = "20260717-090000",
     fertig = pruefung_ok if pruefung_ok is not None else [_TEXT_ANNA, _TEXT_BOB]
     store.save_step("personalisierung", {"fertig": fertig, "nacharbeit": nacharbeit or []})
     store.save_step("pruefung_ok", fertig)
-    if freigegeben:
+    if freigegeben or versand_komplett is not None:
         approve(store, name="Fruehere Freigabe")
+    if versand_komplett is not None:
+        store.save_step("versand_komplett", versand_komplett)
     if abgelehnt is not None:
         (lauf_dir / "abgelehnt.json").write_text(json.dumps(abgelehnt), encoding="utf-8")
     return lauf_dir
@@ -138,9 +141,13 @@ def test_liste_verlangt_anmeldung(client):
 # Liste ------------------------------------------------------------------
 
 def test_liste_leer_zeigt_hinweis(angemeldeter_client):
+    # Woertlich aus v4 (docs/design/Poleposition-v4.dc.html, Zeile ~193):
+    # v4 ist die eingefrorene Quelle fuer Texte, deshalb hier verbatim statt
+    # einer eigenen Formulierung (Review-Fund Task 5).
     antwort = angemeldeter_client.get("/pruefen")
     assert antwort.status_code == 200
-    assert "Kein Lauf wartet auf Freigabe" in antwort.text
+    assert "Nichts wartet auf dich" in antwort.text
+    assert "Sobald neue Anschreiben fertig sind, erscheinen sie hier zum Lesen und Freigeben." in antwort.text
 
 
 def test_liste_zeigt_nur_wartende_laeufe(angemeldeter_client, daten_dir):
@@ -158,7 +165,7 @@ def test_liste_zeigt_nur_wartende_laeufe(angemeldeter_client, daten_dir):
     assert f"/pruefen/{KUNDE_SLUG}/20260717-090000" in antwort.text
     assert f"/pruefen/{KUNDE_SLUG}/20260717-100000" not in antwort.text
     assert f"/pruefen/{KUNDE_SLUG}/20260717-110000" not in antwort.text
-    assert "Kein Lauf wartet auf Freigabe" not in antwort.text
+    assert "Nichts wartet auf dich" not in antwort.text
 
 
 # Lese-Ansicht ------------------------------------------------------------
@@ -205,6 +212,19 @@ def test_lese_ansicht_verlangt_anmeldung(client, daten_dir):
 def test_lese_ansicht_unbekannter_lauf_404(angemeldeter_client):
     antwort = angemeldeter_client.get(f"/pruefen/{KUNDE_SLUG}/nicht-da")
     assert antwort.status_code == 404
+
+
+def test_lese_ansicht_kaputte_kunden_datei_zeigt_freundlichen_fehler_statt_absturz(
+        angemeldeter_client, daten_dir):
+    # Review-Fund (Task 5): _lese_kontext muss denselben defensiven
+    # OSError/ValueError/KeyError-Umgang wie _wartende_laeufe haben, statt
+    # mit einem 500er abzustuerzen, wenn die Kunden-Datei kaputt ist (hier:
+    # Pflichtfelder fehlen, load_kunde wirft ValueError).
+    (daten_dir / "kunden" / "test-kunde.yaml").write_text("name: Test GmbH\n", encoding="utf-8")
+    _lauf_anlegen(daten_dir, dedupe_behalten=_DEDUPE_BEHALTEN)
+    antwort = angemeldeter_client.get(f"/pruefen/{KUNDE_SLUG}/20260717-090000")
+    assert antwort.status_code == 200
+    assert "nicht lesbar" in antwort.text or "beschädigt" in antwort.text
 
 
 # Freigeben ----------------------------------------------------------------
@@ -289,6 +309,61 @@ def test_freigeben_instantly_fehler_zeigt_dreiteiligen_text(angemeldeter_client,
     assert "Instantly" in antwort.text
 
 
+def test_freigeben_auf_abgelehntem_lauf_wird_verweigert(angemeldeter_client, daten_dir):
+    # Review-Fund (Task 5): ohne Zustands-Waechter wuerde freigeben() hier
+    # trotzdem eine Kampagne anlegen, obwohl die Ablehnen-Ansicht "Nichts
+    # wurde versendet" verspricht.
+    app = angemeldeter_client.app
+    fake = FakeInstantly()
+    app.state.instantly = fake
+    lauf_dir = _lauf_anlegen(
+        daten_dir, dedupe_behalten=_DEDUPE_BEHALTEN,
+        abgelehnt={"von": "Lena", "am": "17.07.2026", "begruendung": "x"})
+
+    antwort = angemeldeter_client.post(
+        f"/pruefen/{KUNDE_SLUG}/20260717-090000/freigeben",
+        data={"checkliste": ["1", "2", "3"]},
+    )
+    assert antwort.status_code == 400
+    assert not (lauf_dir / "FREIGABE.txt").exists()
+    assert fake.campaigns_erstellt == []
+    assert fake.leads_importiert == []
+
+
+def test_freigeben_bereits_freigegeben_ueberschreibt_audit_trail_nicht(angemeldeter_client, daten_dir):
+    # Review-Fund (Task 5): ein zweites POST /freigeben (z.B. Doppelklick,
+    # oder ein Retry-Versuch nach einem fehlgeschlagenen Versand) darf
+    # FREIGABE.txt NICHT neu schreiben - der Versand-Retry laeuft ueber
+    # /senden-erneut, nicht ueber ein zweites freigeben().
+    app = angemeldeter_client.app
+    fake = FakeInstantly(fehler_bei="create_campaign")
+    app.state.instantly = fake
+    lauf_dir = _lauf_anlegen(daten_dir, dedupe_behalten=_DEDUPE_BEHALTEN)
+
+    erste = angemeldeter_client.post(
+        f"/pruefen/{KUNDE_SLUG}/20260717-090000/freigeben",
+        data={"checkliste": ["1", "2", "3"]},
+    )
+    assert erste.status_code == 200
+    erster_inhalt = (lauf_dir / "FREIGABE.txt").read_text(encoding="utf-8")
+    assert "Lena Hartmann" in erster_inhalt
+    assert Laufmanager(daten_dir).status(lauf_dir)["zustand"] == "freigegeben"
+
+    zweite = angemeldeter_client.post(
+        f"/pruefen/{KUNDE_SLUG}/20260717-090000/freigeben",
+        data={"checkliste": ["1", "2", "3"]},
+    )
+    assert zweite.status_code == 400
+    assert "bereits freigegeben" in zweite.text
+    assert "Lena Hartmann" in zweite.text
+
+    zweiter_inhalt = (lauf_dir / "FREIGABE.txt").read_text(encoding="utf-8")
+    assert zweiter_inhalt == erster_inhalt
+    # Kein zweiter Versand-Versuch ueber freigeben() ausgeloest - der
+    # Versand-Retry bleibt der eigene /senden-erneut-Weg vorbehalten.
+    assert fake.campaigns_erstellt == []
+
+
 def test_freigeben_verlangt_anmeldung(client, daten_dir):
     _lauf_anlegen(daten_dir, dedupe_behalten=_DEDUPE_BEHALTEN)
     antwort = client.post(
@@ -307,6 +382,20 @@ def test_ablehnen_ohne_begruendung_gibt_fehler(angemeldeter_client, daten_dir):
         f"/pruefen/{KUNDE_SLUG}/20260717-090000/ablehnen", data={"begruendung": ""})
     assert antwort.status_code == 400
     assert not (lauf_dir / "abgelehnt.json").exists()
+
+
+def test_ablehnen_auf_uebergebenem_lauf_wird_verweigert(angemeldeter_client, daten_dir):
+    lauf_dir = _lauf_anlegen(
+        daten_dir, dedupe_behalten=_DEDUPE_BEHALTEN,
+        versand_komplett={"campaign_id": "camp-alt"})
+
+    antwort = angemeldeter_client.post(
+        f"/pruefen/{KUNDE_SLUG}/20260717-090000/ablehnen",
+        data={"begruendung": "zu spaet"},
+    )
+    assert antwort.status_code == 400
+    assert not (lauf_dir / "abgelehnt.json").exists()
+    assert Laufmanager(daten_dir).status(lauf_dir)["zustand"] == "uebergeben"
 
 
 def test_ablehnen_mit_begruendung_speichert_und_verschwindet_aus_liste(angemeldeter_client, daten_dir):

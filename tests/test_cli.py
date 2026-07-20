@@ -111,6 +111,24 @@ def test_senden_verweigert_erneuten_versand_nach_erfolgreichem_lauf(tmp_path, mo
     with pytest.raises(SystemExit, match="camp-9"):
         senden(store.run_dir)
 
+def test_senden_verweigert_abgelehnten_lauf(tmp_path, monkeypatch):
+    # Review-Fund (Task 5): abgelehnt.json muss den Versand an der EINEN
+    # Stelle sperren, die sowohl CLI (senden) als auch die Web-Route
+    # (_versand_ausfuehren) teilen - unabhaengig davon, ob der Lauf
+    # (versehentlich oder durch eine Race) trotzdem freigegeben wurde.
+    monkeypatch.setenv("INSTANTLY_API_KEY", "test-key")
+    store = _freigegebener_lauf(tmp_path)
+    (store.run_dir / "abgelehnt.json").write_text(
+        json.dumps({"von": "Lena", "am": "17.07.2026", "begruendung": "Ton passt nicht"}),
+        encoding="utf-8")
+    poison_session = FakeSession([])  # jeder Aufruf wuerde IndexError werfen
+    monkeypatch.setattr(
+        cli, "InstantlySender",
+        lambda api_key: InstantlySender(api_key, session=poison_session))
+    with pytest.raises(SystemExit, match="abgelehnt"):
+        cli.senden(store.run_dir)
+    assert poison_session.aufrufe == []
+
 def test_senden_wiederholt_nach_fehlgeschlagenem_lead_import_ohne_neue_kampagne(
         tmp_path, monkeypatch):
     monkeypatch.setenv("INSTANTLY_API_KEY", "test-key")

@@ -131,6 +131,13 @@ def _versand_ausfuehren(store, sender, kunde=None) -> str:
     derselben Schnittstelle in Tests/Web) - so bleibt diese Funktion
     unabhaengig davon, WO der API-Key herkommt.
 
+    Sperrt IMMER (auch bei bestehender Freigabe - Review-Fund Task 5), wenn
+    abgelehnt.json im Laufordner liegt: Ablehnen muss ein absolutes Veto
+    sein, egal ob/wie es zu einer (fehlerhaften oder zeitlich versetzten)
+    Freigabe kam. Diese Pruefung sitzt bewusst HIER (statt nur in der
+    Web-Route), weil sowohl die CLI (senden()) als auch die Web-Route
+    dieselbe Funktion aufrufen - eine Web-only-Sperre waere umgehbar.
+
     `kunde` ist optional: Standard None laedt ihn selbst ueber den in
     kunde_pfad.json gespeicherten Pfad, der relativ zum Arbeitsverzeichnis
     ist (funktioniert fuer die CLI, die immer mit cwd=daten_dir laeuft, s.
@@ -139,6 +146,9 @@ def _versand_ausfuehren(store, sender, kunde=None) -> str:
     ist - er laedt den Kunden deshalb selbst (relativ zu daten_dir aufgeloest)
     und uebergibt ihn hier direkt, statt den Pfad blind nochmal relativ zum
     falschen Arbeitsverzeichnis zu lesen."""
+    if (store.run_dir / "abgelehnt.json").exists():
+        raise SendenFehler(
+            "Dieser Auftrag wurde abgelehnt - es darf nichts versendet werden.")
     if not is_approved(store):
         raise SendenFehler("Keine Freigabe fuer diesen Lauf (FREIGABE.txt fehlt).")
     if store.step_done("versand_komplett"):

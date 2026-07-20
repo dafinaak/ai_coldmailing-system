@@ -15,7 +15,7 @@ PWD_CONTEXT = CryptContext(schemes=["bcrypt"], deprecated="auto")
 SIEBEN_BEREICHE = [
     "Dashboard",
     "Kampagnen",
-    "Prüfen &amp; Freigeben",  # Jinja escaped korrekt HTML-sicher; das "&" bleibt sichtbarer Text
+    "Lesen &amp; Freigeben",  # Jinja escaped korrekt HTML-sicher; das "&" bleibt sichtbarer Text
     "Kontakte",
     "Postfach",
     "Gesperrte Domains",
@@ -104,11 +104,25 @@ def test_richtiges_login_setzt_cookie_und_zeigt_name_und_nav(client):
     assert antwort.headers["location"] == "/"
     assert len(client.cookies) > 0
 
+    # Copy-Rework (20.07.2026): erster Aufruf von "/" ohne das Cookie
+    # 'intro_gesehen' leitet einmalig zur Einstiegsseite "So funktioniert's"
+    # um (siehe web.routen.dashboard/web.routen.intro) - eigener Test unten
+    # (test_erster_dashboard_aufruf_ohne_intro_cookie_leitet_um) prueft genau
+    # das; hier simulieren wir einen wiederkehrenden Nutzer, um Name/Nav zu
+    # pruefen.
+    client.cookies.set("intro_gesehen", "1")
     start = client.get("/")
     assert start.status_code == 200
     assert "Lena Hartmann" in start.text
     for label in SIEBEN_BEREICHE:
         assert label in start.text
+
+
+def test_erster_dashboard_aufruf_ohne_intro_cookie_leitet_um(client):
+    client.post("/login", data={"name": "Lena Hartmann", "passwort": "richtig123"})
+    antwort = client.get("/", follow_redirects=False)
+    assert antwort.status_code == 303
+    assert antwort.headers["location"] == "/so-funktionierts"
 
 
 def test_health_ohne_login_erreichbar(client):

@@ -24,4 +24,4 @@ def check(texte, lead, kunde, ki):
     urteil = ki.frage(SYSTEM, prompt).strip()
     if urteil.upper().startswith("JA"):
         return True, "bestanden"
-    return False, f"KI-Prüfer: {urteil}"
+    return False, f"Qualitätskontrolle: {urteil}"

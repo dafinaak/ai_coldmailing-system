@@ -191,7 +191,7 @@ def test_starte_verweigert_zweiten_lauf_fuer_gleichen_kunden(tmp_path, monkeypat
     manager = Laufmanager(daten_dir)
     manager.starte(kunde_datei, 25)
 
-    with pytest.raises(LaufBereitsAktiv, match="läuft gerade schon ein Auftrag"):
+    with pytest.raises(LaufBereitsAktiv, match="läuft gerade schon eine E-Mail-Runde"):
         manager.starte(kunde_datei, 25)
 
 
@@ -481,6 +481,8 @@ def client(app):
 @pytest.fixture
 def angemeldeter_client(client):
     client.post("/login", data={"name": "Lena Hartmann", "passwort": "richtig123"})
+    # Copy-Rework (20.07.2026): siehe tests/web/test_dashboard.py fuer den Grund.
+    client.cookies.set("intro_gesehen", "1")
     return client
 
 
@@ -501,7 +503,7 @@ def test_dialog_listet_kunden_und_zeigt_leitfaden_text(angemeldeter_client, date
     antwort = angemeldeter_client.get("/auftraege/neu")
     assert antwort.status_code == 200
     assert "Test GmbH" in antwort.text
-    assert "Anschreiben erstellen lassen" in antwort.text
+    assert "E-Mails schreiben lassen" in antwort.text
     assert "Versendet wird nichts" in antwort.text
 
 
@@ -542,7 +544,7 @@ def test_start_bei_gesperrtem_kunden_zeigt_deutschen_fehler(angemeldeter_client,
     antwort = angemeldeter_client.post(
         "/auftraege/neu", data={"kunde_dateiname": "test-kunde", "limit": "25"})
     assert antwort.status_code == 400
-    assert "Für diesen Kunden läuft gerade schon ein Auftrag." in antwort.text
+    assert "Für diesen Kunden läuft gerade schon eine E-Mail-Runde." in antwort.text
 
 
 def test_fortschrittsseite_zeigt_schritte_und_zahlen_waehrend_laeuft(
@@ -556,7 +558,7 @@ def test_fortschrittsseite_zeigt_schritte_und_zahlen_waehrend_laeuft(
 
     antwort = angemeldeter_client.get("/auftraege/test-gmbh/20260101-000000")
     assert antwort.status_code == 200
-    assert "Anschreiben für Test GmbH" in antwort.text
+    assert "E-Mail-Runde für Test GmbH" in antwort.text
     assert "Das System arbeitet — du musst nichts tun." in antwort.text
     assert "Passende Firmen und Ansprechpartner suchen" in antwort.text
     assert "Jeden Text prüfen: Klingt er persönlich? Stimmt alles?" in antwort.text
@@ -574,7 +576,7 @@ def test_fortschrittsseite_zeigt_fehlerbox_und_fortsetzen_knopf_bei_angehalten(
 
     antwort = angemeldeter_client.get("/auftraege/test-gmbh/20260101-000000")
     assert antwort.status_code == 200
-    assert "Angehalten: Anschreiben für Test GmbH" in antwort.text
+    assert "Angehalten: E-Mail-Runde für Test GmbH" in antwort.text
     assert "Die Firmen-Datenbank hat gerade nicht geantwortet." in antwort.text
     assert "Fortsetzen" in antwort.text
     assert 'action="/auftraege/test-gmbh/20260101-000000/fortsetzen"' in antwort.text
@@ -591,8 +593,8 @@ def test_fortschrittsseite_zeigt_wartet_seit_text_bei_wartet_auf_freigabe(
     antwort = angemeldeter_client.get("/auftraege/test-gmbh/20260101-000000")
     assert antwort.status_code == 200
     assert "Wartet seit" in antwort.text
-    assert "auf Prüfung" in antwort.text
-    assert "Jetzt prüfen" in antwort.text
+    assert "darauf, dass du sie liest" in antwort.text
+    assert "Jetzt lesen" in antwort.text
 
 
 def test_fortschrittsseite_404_bei_unbekanntem_lauf(angemeldeter_client):

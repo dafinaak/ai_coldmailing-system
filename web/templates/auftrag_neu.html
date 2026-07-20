@@ -1,9 +1,9 @@
 {% extends "layout.html" %}
-{% block titel %}Anschreiben erstellen lassen{% endblock %}
+{% block titel %}E-Mails schreiben lassen{% endblock %}
 {% block inhalt %}
 <div class="seite seite--schmal">
-  <h1>Anschreiben erstellen lassen</h1>
-  <p class="seiten-hilfstext">Das System sucht Ansprechpartner, liest die Webseite jeder Firma und schreibt persönliche Entwürfe. Versendet wird nichts — am Ende prüfst du und gibst frei.</p>
+  <h1>E-Mails schreiben lassen</h1>
+  <p class="seiten-hilfstext">Das System sucht Ansprechpartner, liest die Webseite jeder Firma und schreibt persönliche Entwürfe. Versendet wird nichts — am Ende liest du die Texte und gibst frei.</p>
 
   {% if fehler %}
   <div class="formular-fehler">{{ fehler }}</div>
@@ -11,7 +11,7 @@
 
   {% if not kunden %}
   <div class="hinweis-kasten">
-    {{ "Noch keine Kunden angelegt." }} <a href="/kunden/neu">Kunde anlegen</a>, bevor Anschreiben erstellt werden können.
+    {{ "Noch keine Kunden angelegt." }} <a href="/kunden/neu">Kunde anlegen</a>, bevor E-Mails geschrieben werden können.
   </div>
   {% else %}
   <form method="post" action="/auftraege/neu" class="karte auftrag-form">
@@ -40,9 +40,9 @@
     </div>
 
     <div class="formular-fuss">
-      <button type="submit" class="knopf-primaer">Erstellen lassen</button>
+      <button type="submit" class="knopf-primaer">Schreiben lassen</button>
       <a href="/kampagnen" class="knopf-sekundaer">Abbrechen</a>
-      <span class="auftrag-hinweis">Dauert einige Minuten. Der Auftrag erscheint unter Kampagnen als »In Vorbereitung«.</span>
+      <span class="auftrag-hinweis">Dauert einige Minuten. Die E-Mail-Runde erscheint unter Kampagnen als »In Vorbereitung«.</span>
     </div>
   </form>
   {% endif %}

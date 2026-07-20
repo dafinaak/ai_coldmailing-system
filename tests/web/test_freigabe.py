@@ -106,6 +106,8 @@ def client(app):
 @pytest.fixture
 def angemeldeter_client(client):
     client.post("/login", data={"name": "Lena Hartmann", "passwort": "richtig123"})
+    # Copy-Rework (20.07.2026): siehe tests/web/test_dashboard.py fuer den Grund.
+    client.cookies.set("intro_gesehen", "1")
     return client
 
 
@@ -141,13 +143,13 @@ def test_liste_verlangt_anmeldung(client):
 # Liste ------------------------------------------------------------------
 
 def test_liste_leer_zeigt_hinweis(angemeldeter_client):
-    # Woertlich aus v4 (docs/design/Poleposition-v4.dc.html, Zeile ~193):
-    # v4 ist die eingefrorene Quelle fuer Texte, deshalb hier verbatim statt
-    # einer eigenen Formulierung (Review-Fund Task 5).
+    # Urspruenglich woertlich aus v4 (docs/design/Poleposition-v4.dc.html,
+    # Zeile ~193); Copy-Rework (20.07.2026, docs/copy-rework-brief.md) hat
+    # den Wortlaut auf Alltagssprache umgestellt (Anschreiben -> E-Mails).
     antwort = angemeldeter_client.get("/pruefen")
     assert antwort.status_code == 200
     assert "Nichts wartet auf dich" in antwort.text
-    assert "Sobald neue Anschreiben fertig sind, erscheinen sie hier zum Lesen und Freigeben." in antwort.text
+    assert "Sobald neue E-Mails fertig sind, erscheinen sie hier zum Lesen und Freigeben." in antwort.text
 
 
 def test_liste_zeigt_nur_wartende_laeufe(angemeldeter_client, daten_dir):

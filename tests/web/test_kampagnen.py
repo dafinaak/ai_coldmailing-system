@@ -102,6 +102,8 @@ def client(app):
 @pytest.fixture
 def angemeldeter_client(client):
     client.post("/login", data={"name": "Lena Hartmann", "passwort": "richtig123"})
+    # Copy-Rework (20.07.2026): siehe tests/web/test_dashboard.py fuer den Grund.
+    client.cookies.set("intro_gesehen", "1")
     return client
 
 
@@ -208,7 +210,7 @@ def test_liste_zeigt_vorbereitung_fuer_wartende_und_angehaltene_auftraege(angeme
     text = antwort.text
     assert "IN VORBEREITUNG" in text
     assert "Demo GmbH" in text
-    assert "Jetzt prüfen" in text
+    assert "Jetzt lesen" in text
     assert "/pruefen/demo-gmbh/20260720-090000" in text
     assert "Angehalten" in text
     assert "/auftraege/moveo/20260720-091500" in text
@@ -220,7 +222,7 @@ def test_liste_zeigt_vorbereitung_fuer_wartende_und_angehaltene_auftraege(angeme
 def test_liste_zeigt_anschreiben_erstellen_lassen_knopf(angemeldeter_client):
     antwort = angemeldeter_client.get("/kampagnen")
     assert antwort.status_code == 200
-    assert "Anschreiben erstellen lassen" in antwort.text
+    assert "E-Mails schreiben lassen" in antwort.text
     assert "/auftraege/neu" in antwort.text
 
 
@@ -313,7 +315,7 @@ def test_detail_zeigt_schritte_mit_echten_tagen_und_wer_wann(angemeldeter_client
     # follow_up_tage: [4, 9] fuer Demo GmbH
     assert "nach 4 Tagen" in text
     assert "nach 9 Tagen" in text
-    assert "Anschreiben (geht sofort raus)" in text
+    assert "Erste E-Mail (geht sofort raus)" in text
     assert "Freigegeben von Lena Hartmann am" in text
     assert "3 von 1 versendet" in text or "3 von" in text
     assert "app.instantly.ai/app/campaign/camp-a" in text

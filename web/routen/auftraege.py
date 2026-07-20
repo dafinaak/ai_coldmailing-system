@@ -27,8 +27,8 @@ LIMIT_OPTIONEN = [25, 40, 60]
 LIMIT_DEFAULT = 60
 
 KEINE_KUNDEN_HINWEIS = (
-    "Noch keine Kunden angelegt. Leg zuerst einen Kunden an, bevor Anschreiben "
-    "erstellt werden können."
+    "Noch keine Kunden angelegt. Leg zuerst einen Kunden an, bevor E-Mails "
+    "geschrieben werden können."
 )
 
 LIMIT_FEHLER = "Bitte einen der drei vorgegebenen Werte (25, 40 oder 60) wählen."
@@ -98,9 +98,9 @@ def _lauf_dir_oder_404(daten_dir, slug: str, ts: str) -> Path:
     try:
         aufgeloest = lauf_dir.resolve()
     except OSError:
-        raise HTTPException(status_code=404, detail="Auftrag nicht gefunden.")
+        raise HTTPException(status_code=404, detail="E-Mail-Runde nicht gefunden.")
     if laeufe_wurzel not in aufgeloest.parents or not aufgeloest.is_dir():
-        raise HTTPException(status_code=404, detail="Auftrag nicht gefunden.")
+        raise HTTPException(status_code=404, detail="E-Mail-Runde nicht gefunden.")
     return aufgeloest
 
 

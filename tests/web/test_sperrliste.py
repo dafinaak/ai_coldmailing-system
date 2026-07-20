@@ -33,6 +33,8 @@ def client(daten_dir):
 @pytest.fixture
 def angemeldeter_client(client):
     client.post("/login", data={"name": "Lena Hartmann", "passwort": "richtig123"})
+    # Copy-Rework (20.07.2026): siehe tests/web/test_dashboard.py fuer den Grund.
+    client.cookies.set("intro_gesehen", "1")
     return client
 
 

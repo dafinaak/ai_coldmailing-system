@@ -1,4 +1,4 @@
-"""Route fuer "Prüfen & Freigeben" (Task 5) - die sicherheitskritischste
+"""Route fuer "Lesen & Freigeben" (Task 5, Copy-Rework 20.07.2026) - die sicherheitskritischste
 Seite des Interfaces: Liste der Auftraege, die auf eine Person warten,
 Lese-/Freigabe-Ansicht mit der eingefrorenen Checklisten-Geste (drei Haken,
 siehe docs/design/Poleposition-v4.dc.html, checkTexte) und Ablehnen.
@@ -34,15 +34,15 @@ router = APIRouter()
 # Woertlich aus docs/design/Poleposition-v4.dc.html (checkTexte) - die drei
 # Punkte der Freigabe-Checkliste, eingefroren als Freigabe-Geste.
 CHECKLISTE_TEXTE = [
-    "Ich habe die Anschreiben und Nachfass-Mails gelesen",
-    "Ich habe die aussortierten Texte und ihre Gründe gesehen",
+    "Ich habe die E-Mails und Nachfass-Mails gelesen",
+    "Ich habe die durchgefallenen Texte und ihre Gründe gesehen",
     "Absender, gesperrte Domains und Test-Adressen stimmen",
 ]
 
 CHECKLISTE_FEHLER = "Bitte alle drei Punkte abhaken, bevor du freigibst."
 BEGRUENDUNG_FEHLER = "Bitte kurz begründen, was nicht gepasst hat."
 
-KUNDE_DATEI_FEHLER = ("Die Kunden-Datei zu diesem Auftrag ist gerade nicht lesbar oder "
+KUNDE_DATEI_FEHLER = ("Die Kunden-Datei zu dieser E-Mail-Runde ist gerade nicht lesbar oder "
                       "beschädigt. Bitte im Kunden-Bereich prüfen.")
 
 # Review-Fund (Task 5): POST /freigeben und POST /ablehnen duerfen nur im
@@ -66,7 +66,7 @@ _ZUSTAND_TEXT = {
 
 def _zustand_fehler(aktion: str, zustand: str) -> str:
     grund = _ZUSTAND_TEXT.get(zustand, f"ist gerade nicht bereit dafür (Zustand: {zustand})")
-    return f"Dieser Auftrag {grund} — {aktion} ist jetzt nicht mehr möglich. Lade die Seite neu."
+    return f"Diese E-Mail-Runde {grund} — {aktion} ist jetzt nicht mehr möglich. Lade die Seite neu."
 
 
 # E-Fix 6 (Doppelklick-Schutz): EIN threading.Lock JE Laufordner, in einem
@@ -118,9 +118,9 @@ def _lauf_dir_oder_404(daten_dir, slug: str, ts: str) -> Path:
     try:
         aufgeloest = lauf_dir.resolve()
     except OSError:
-        raise HTTPException(status_code=404, detail="Auftrag nicht gefunden.")
+        raise HTTPException(status_code=404, detail="E-Mail-Runde nicht gefunden.")
     if laeufe_wurzel not in aufgeloest.parents or not aufgeloest.is_dir():
-        raise HTTPException(status_code=404, detail="Auftrag nicht gefunden.")
+        raise HTTPException(status_code=404, detail="E-Mail-Runde nicht gefunden.")
     return aufgeloest
 
 
@@ -338,7 +338,7 @@ def freigabe_absenden(request: Request, slug: str, ts: str,
     # Retry hat mit /senden-erneut einen eigenen, dafuer vorgesehenen Weg.
     if is_approved(store):
         info = freigabe_info(store)
-        fehler = (f"Dieser Auftrag ist bereits freigegeben von {info['von'] or 'unbekannt'} "
+        fehler = (f"Diese E-Mail-Runde ist bereits freigegeben von {info['von'] or 'unbekannt'} "
                   f"am {info['am']}. Zum erneuten Senden »Erneut senden« benutzen.")
         kontext = _lese_kontext(request, slug, ts, fehler=fehler)
         return request.app.state.templates.TemplateResponse(

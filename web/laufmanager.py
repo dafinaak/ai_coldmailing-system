@@ -61,7 +61,7 @@ SCHRITTE = [
     "Passende Firmen und Ansprechpartner suchen",
     "E-Mail-Adressen herausfinden",
     "Doppelte und gesperrte Empfänger aussortieren",
-    "Die Webseite jeder Firma lesen und ein persönliches Anschreiben schreiben",
+    "Die Webseite jeder Firma lesen und eine persönliche E-Mail schreiben",
     "Jeden Text prüfen: Klingt er persönlich? Stimmt alles?",
 ]
 
@@ -99,8 +99,8 @@ FEHLER_MUSTER = [
 
 
 def wartet_seit_text(lauf_dir: Path) -> str:
-    """Formuliert 'Wartet seit ... auf Prüfung' - wörtliches Muster aus dem
-    Karten-Beispiel im Leitfaden (docs/text-leitfaden-interface.md), nur die
+    """Formuliert 'Wartet seit ... darauf, dass du sie liest' - wörtliches
+    Muster aus dem Leitfaden (docs/text-leitfaden-interface.md), nur die
     Dauer ist dynamisch (dort als Beispiel '2 Std.' vorgegeben). Hierher
     verschoben (Task 7, aus web.routen.auftraege) - web.routen.freigabe,
     web.routen.kampagnen UND jetzt web.wartende brauchen dieselbe Funktion;
@@ -117,7 +117,7 @@ def wartet_seit_text(lauf_dir: Path) -> str:
         dauer = f"{int(sekunden // 60)} Min."
     else:
         dauer = f"{int(sekunden // 3600)} Std."
-    return f"Wartet seit {dauer} auf Prüfung"
+    return f"Wartet seit {dauer} darauf, dass du sie liest"
 
 
 class LaufmanagerFehler(Exception):
@@ -215,7 +215,7 @@ class Laufmanager:
             alte_pid = int(inhalt) if inhalt.isdigit() else None
             if alte_pid is not None and _pid_lebt(alte_pid):
                 raise LaufBereitsAktiv(
-                    "Für diesen Kunden läuft gerade schon ein Auftrag.")
+                    "Für diesen Kunden läuft gerade schon eine E-Mail-Runde.")
             sperr_pfad.unlink()  # verwaiste Sperre (Prozess tot) - aufraeumen
         return sperr_pfad
 

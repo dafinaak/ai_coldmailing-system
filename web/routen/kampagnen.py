@@ -140,8 +140,8 @@ def _vorbereitung_zeile(eintrag: dict) -> dict:
     oder Uebergabe steckt fest). Verweist auf die Seite, auf der es
     weitergeht (Fortschritt bzw. Pruefen & Freigeben), statt die Aktion
     hier zu duplizieren."""
-    titel = (f"{eintrag['empf_anzahl']} Anschreiben für {eintrag['kunde_name']}"
-             if eintrag["empf_anzahl"] else f"Anschreiben für {eintrag['kunde_name']}")
+    titel = (f"E-Mail-Runde für {eintrag['kunde_name']} · {eintrag['empf_anzahl']} Empfänger"
+             if eintrag["empf_anzahl"] else f"E-Mail-Runde für {eintrag['kunde_name']}")
     zustand = eintrag["zustand"]
     if zustand == "laeuft":
         return {"titel": titel, "zeile": f"{eintrag['schritt_label']} …",
@@ -153,7 +153,7 @@ def _vorbereitung_zeile(eintrag: dict) -> dict:
                 "link": f"/auftraege/{eintrag['slug']}/{eintrag['ts']}", "link_text": "Fortsetzen"}
     if zustand == "wartet_auf_freigabe":
         return {"titel": titel, "zeile": eintrag["wartet_seit_text"],
-                "link": f"/pruefen/{eintrag['slug']}/{eintrag['ts']}", "link_text": "Jetzt prüfen"}
+                "link": f"/pruefen/{eintrag['slug']}/{eintrag['ts']}", "link_text": "Jetzt lesen"}
     # zustand == "freigegeben" ohne campaign_id: Sonderfall, bei dem die
     # Kampagne in Instantly noch nicht (vollstaendig) angelegt werden
     # konnte (siehe _campaign_id_fuer) - Ansehen fuehrt zu "Erneut senden".
@@ -284,7 +284,7 @@ def kampagne_detail(request: Request, slug: str, ts: str):
     name = stand.get("name") or f"[TEST] {kunde_name}"
 
     schritt_labels = [
-        "Anschreiben (geht sofort raus)",
+        "Erste E-Mail (geht sofort raus)",
         f"Nachfass-Mail 1 (nach {tag_1} Tagen)",
         f"Nachfass-Mail 2 (nach {tag_2} Tagen)",
     ]

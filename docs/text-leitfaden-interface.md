@@ -1,57 +1,94 @@
 # Text-Leitfaden für das Team-Interface (verbindliche Texte)
 
-Stand: 17.07.2026. Dieser Leitfaden ist die eine Wahrheit für alle Texte
+Stand: 20.07.2026 (Copy-Überarbeitung für komplette Anfänger, siehe
+docs/copy-rework-brief.md — der Auftrag von Leonard, freigegeben
+20.07.2026). Dieser Leitfaden ist die eine Wahrheit für alle Texte
 in der Oberfläche. Das Design-Tool und später der Bau übernehmen diese
 Texte wörtlich — sie erfinden keine eigenen.
+
+## Copy-Überarbeitung 20.07.2026 — was sich geändert hat
+
+Ziel: Oberfläche für komplette Anfänger verständlich, Anrede "du". Das
+Wörterbuch unten (Abschnitt "Wörterbuch: alt → neu") ist entsprechend
+aktualisiert; die wichtigsten Änderungen gegenüber dem Stand vom
+17.07.2026:
+
+| Alt | Neu |
+|---|---|
+| Auftrag / Anschreiben-Auftrag | **E-Mail-Runde** ("Ein Schwung fertiger E-Mails für einen Kunden") |
+| Knopf "Anschreiben erstellen lassen" | **"E-Mails schreiben lassen"** (kurz auf kleinen Knöpfen: "Schreiben lassen") |
+| Karten-Titel "34 Anschreiben für X" | **"E-Mail-Runde für X · 34 Empfänger"** |
+| Anschreiben (die einzelne Mail) | **E-Mail** (erste = "erste E-Mail", dann "Nachfass-Mail 1 / 2") |
+| Bereich/Nav "Prüfen & Freigeben" | **"Lesen & Freigeben"** |
+| freigeben / Freigabe | bleibt "freigeben", ABER überall erklärt: *dein grünes Licht, dass die E-Mails verschickt werden dürfen* — auf dem Freigabe-Bildschirm steht das jetzt gut sichtbar direkt unter der Überschrift (siehe unten) |
+| aussortiert (Überschrift) | **"durchgefallen – geht nicht raus"** |
+| Prüfung / Prüf-KI / "KI-Prüfer:" | **"automatische Qualitätskontrolle" / "Qualitätskontrolle:"** (pipeline/quality.py) |
+| "wartet auf Prüfung" | **"wartet darauf, dass du sie liest"** |
+| Kampagne (erste Nennung je Seite) | **"Kampagne (in Instantly)"** |
+
+Neu: eine Einstiegsseite "So funktioniert's" (Route `/so-funktionierts`),
+die beim ersten Login automatisch gezeigt wird (Cookie `intro_gesehen`,
+einmal wegklickbar, danach jederzeit über die Seitenleiste erreichbar) —
+Wortlaut siehe Abschnitt "Einstiegsseite" unten.
 
 ## Das Grundprinzip
 
 **Wir benennen Dinge nach dem, was der Nutzer sieht und tut — nicht
 nach dem, was das System innen macht.** Daraus folgen drei Regeln:
 
-1. **Verben auf Knöpfen.** Nicht "Neuer Lauf", sondern "Anschreiben
-   erstellen lassen". Ein Knopf sagt, was passiert, wenn man drückt.
+1. **Verben auf Knöpfen.** Nicht "Neuer Lauf", sondern "E-Mails
+   schreiben lassen". Ein Knopf sagt, was passiert, wenn man drückt.
 2. **Kein Wort ohne Bild im Kopf.** Begriffe wie "Lauf" oder
-   "Nacharbeit" sind Systemdenken. Der Nutzer kennt: Anschreiben,
-   Entwürfe, prüfen, freigeben, versenden. Nur damit arbeiten wir.
+   "Nacharbeit" sind Systemdenken. Der Nutzer kennt: E-Mails,
+   Entwürfe, lesen, freigeben, versenden. Nur damit arbeiten wir.
 3. **Jede Ansicht beginnt mit einem Satz, der sagt, was sie ist und
    was hier meine Aufgabe ist.** Wer irgendwo hineinspringt, liest
    einen Satz und weiß Bescheid.
 
 ## Wörterbuch: alt → neu
 
-| Bisher (Entwurf) | Verbindlich ab jetzt | Anmerkung |
+Stand 20.07.2026 — ersetzt die Karten-/Knopf-Wortwahl vom 17.07.2026 (siehe
+Tabelle oben unter "Copy-Überarbeitung 20.07.2026"). Zusammengeführt in
+einer Tabelle:
+
+| Bisher | Verbindlich ab jetzt | Anmerkung |
 |---|---|---|
-| Lauf | **"Anschreiben für [Kunde]"** — die Karte heißt nach ihrem Inhalt, z.B. "34 Anschreiben für MOVEO · 16. Juli" | Das abstrakte Behälter-Wort verschwindet aus der Oberfläche. Wo ein Sammelwort nötig ist: "Auftrag". |
-| Lauf starten | **"Anschreiben erstellen lassen"** | Verb, Ergebnis klar. |
+| Lauf / Auftrag / Anschreiben-Auftrag | **"E-Mail-Runde"** — die Karte heißt "E-Mail-Runde für [Kunde] · [N] Empfänger", z.B. "E-Mail-Runde für MOVEO Personalberatung · 34 Empfänger" | Das abstrakte Behälter-Wort verschwindet aus der Oberfläche. Sammelwort: "E-Mail-Runde" (nicht mehr "Auftrag"). |
+| Lauf starten / "Anschreiben erstellen lassen" | **"E-Mails schreiben lassen"** (Kurzform auf kleinen Knöpfen: "Schreiben lassen") | Verb, Ergebnis klar. |
 | Lauf fortsetzen | **"Weitermachen, wo es aufgehört hat"** (Kurzform auf kleinen Knöpfen: "Fortsetzen") | |
-| Freigabe (Bereich) | **"Prüfen & freigeben"** | "Freigabe" als Wort bleibt, aber die Aufgabe steht im Titel. |
+| Freigabe (Bereich) / "Prüfen & freigeben" | **"Lesen & Freigeben"** | "Freigabe" als Wort bleibt, aber die Aufgabe steht im Titel. Zusätzlich: eine erklärende Zeile "Was heißt freigeben?" direkt unter der Überschrift der Lese-Ansicht — dieser Bildschirm bekommt bewusst MEHR Erklärung als der Rest, weil hier echte E-Mails ausgelöst werden. |
 | Sicherheits-Tor | Kein Etikett mehr — stattdessen der Satz: **"Ohne deine Freigabe wird nichts versendet."** | Die Metapher weg, die Aussage bleibt. |
-| Freigabe verfallen | **"Die Texte wurden neu erstellt — bitte noch einmal prüfen und freigeben."** | Sagt Ursache und Aufgabe in einem. |
-| Nacharbeit | **"Von der Prüfung aussortiert"** | Mit einem Satz daneben: "Diese Texte gehen nicht raus. Du kannst sie lesen und den Grund sehen." |
+| Freigabe verfallen | **"Die Texte wurden neu erstellt — bitte noch einmal lesen und freigeben."** | Sagt Ursache und Aufgabe in einem. |
+| Nacharbeit / "von der Prüfung aussortiert" | **"durchgefallen – geht nicht raus"** | Mit einem Satz daneben: "Du kannst die Texte lesen und den Grund sehen." |
+| Anschreiben (die einzelne Mail) | **"E-Mail"** — erste = "erste E-Mail", dann "Nachfass-Mail 1 / 2" | Nur der Sammelbegriff für den Auftrag wird "E-Mail-Runde"; die einzelne Nachricht bleibt "E-Mail". |
+| "wartet auf Prüfung" | **"wartet darauf, dass du sie liest"** | |
+| Prüfung / Prüf-KI / "KI-Prüfer: …" | **"automatische Qualitätskontrolle"** / **"Qualitätskontrolle: …"** (pipeline/quality.py) | Die menschliche Aufgabe heißt "lesen" (Lesen & Freigeben); "prüfen" bleibt nur für die automatische Qualitätskontrolle der KI. |
 | Sperrliste | **"Gesperrte Domains"** + Hilfssatz: "An Firmen mit diesen Internet-Adressen wird nie geschrieben — z.B. eure eigene Firma oder Kunden." | |
 | Test-Empfänger | **"Test-Adressen"** + Hilfssatz: "Solange der Test-Modus an ist, gehen Mails nur an diese Adressen — an niemanden sonst." | |
 | Am Zug: du / Maschine | **"Jetzt bist du dran: …"** bzw. **"Das System arbeitet — du musst nichts tun."** | |
-| Kampagne | **"Kampagne in Instantly"** — immer mit Ortsangabe | Das Wort kennt das Team aus Instantly; alleinstehend bleibt es vage. |
+| Kampagne | **"Kampagne (in Instantly)"** — bei der ersten Nennung je Seite, danach reicht "Kampagne" | Das Wort kennt das Team aus Instantly; alleinstehend bleibt es vage. |
+
+Unverändert (schon klar genug): Dashboard, Kunden, Kontakte, Postfach,
+Gesperrte Domains, Empfänger, Zielgruppe.
 
 ## Die vier Spalten des Boards
 
 1. **"Wird vorbereitet"** — Untertitel: "Das System sucht Ansprechpartner und schreibt Entwürfe. Du musst nichts tun."
-2. **"Bitte prüfen und freigeben"** — Untertitel: "Das ist deine Aufgabe: Texte lesen, dann freigeben oder ablehnen."
+2. **"Bitte lesen und freigeben"** — Untertitel: "Das ist deine Aufgabe: Texte lesen, dann freigeben oder ablehnen."
 3. **"Wird versendet"** — Untertitel: "Instantly verschickt die freigegebenen Mails nach Zeitplan."
 4. **"Fertig"** — Untertitel: "Alles versendet. Hier nur noch zum Nachschauen."
 
-Kopfzeile über dem Board: **"Hier siehst du alle Anschreiben-Aufträge.
+Kopfzeile über dem Board: **"Hier siehst du alle E-Mail-Runden.
 Sie wandern von links nach rechts. Alles in der zweiten Spalte wartet
 auf dich."**
 
 ## Eine Karte (Beispiel)
 
-> **34 Anschreiben für MOVEO Personalberatung**
+> **E-Mail-Runde für MOVEO Personalberatung · 34 Empfänger**
 > gestartet 16. Juli, 14:20 · von Lena
 > [Zustandszeile, je nach Spalte:]
 > – "Schreibt gerade Texte … (Firma 12 von 34)"
-> – "Wartet seit 2 Std. auf Prüfung" → Knopf: **"Jetzt prüfen"**
+> – "Wartet seit 2 Std. darauf, dass du sie liest" → Knopf: **"Jetzt lesen"**
 > – "8 von 34 Mails versendet · läuft seit gestern"
 > – Bei Problem, unübersehbar: **"Angehalten: Die Firmen-Datenbank hat
 >   nicht geantwortet. Nichts ist verloren."** → Knopf: "Fortsetzen"
@@ -61,22 +98,57 @@ auf dich."**
 1. "Passende Firmen und Ansprechpartner suchen"
 2. "E-Mail-Adressen herausfinden"
 3. "Doppelte und gesperrte Empfänger aussortieren"
-4. "Die Webseite jeder Firma lesen und ein persönliches Anschreiben schreiben"
-5. "Jeden Text prüfen: Klingt er persönlich? Stimmt alles?"
+4. "Die Webseite jeder Firma lesen und eine persönliche E-Mail schreiben"
+5. "Jeden Text prüfen: Klingt er persönlich? Stimmt alles?" (automatische Qualitätskontrolle)
 
-## Die Prüf-und-Freigabe-Ansicht
+## Die Lese-und-Freigabe-Ansicht
 
 Kopfsatz: **"Lies die Texte, die gleich im Namen von [Absender]
 verschickt werden. Erst wenn du freigibst, geht etwas raus."**
 
+Direkt unter der Überschrift, gut sichtbar (dieser Bildschirm bekommt
+bewusst mehr Erklärung als der Rest, weil hier echte E-Mails ausgelöst
+werden): **"Was heißt freigeben?"** Dein grünes Licht, dass diese E-Mails
+verschickt werden dürfen. Sie gehen dann — noch pausiert — an Instantly;
+scharf geschaltet werden sie dort von Hand. Ohne deine Freigabe passiert
+nichts.
+
 - Pro Empfänger sichtbar: Name, Firma, **E-Mail-Adresse**, dann:
-  "Anschreiben (geht sofort raus)", "Nachfass-Mail 1 (nach X Tagen)",
+  "Erste E-Mail (geht sofort raus)", "Nachfass-Mail 1 (nach X Tagen)",
   "Nachfass-Mail 2 (nach Y Tagen)".
+- Durchgefallene Texte: **"[N] durchgefallen – geht nicht raus"** — Du
+  kannst die Texte lesen und den Grund sehen.
 - Freigeben-Bereich: "**Freigeben heißt:** Die Texte gehen als Kampagne
-  an Instantly — zunächst pausiert. Gestartet wird dort von Hand.
+  (in Instantly) — zunächst pausiert. Gestartet wird dort von Hand.
   Festgehalten wird: freigegeben von [Name] am [Datum]."
 - Ablehnen: "**Ablehnen heißt:** Nichts wird versendet. Schreib kurz
-  dazu, was nicht gepasst hat — das hilft beim nächsten Auftrag."
+  dazu, was nicht gepasst hat — das hilft bei der nächsten E-Mail-Runde."
+
+## Einstiegsseite "So funktioniert's"
+
+Route `/so-funktionierts`. Wird einem angemeldeten Nutzer beim allerersten
+Aufruf von "/" automatisch gezeigt (kein Cookie `intro_gesehen` gesetzt),
+danach jederzeit über den Seitenleisten-Eintrag "So funktioniert's"
+erreichbar. Text (wörtlich):
+
+> **So funktioniert Poleposition**
+>
+> Dieses Werkzeug schreibt für dich Kalt-E-Mails an mögliche neue
+> Kunden — für jeden Empfänger einzeln, passend zu seiner Firma.
+>
+> 1. **Kunde anlegen:** Für wen und mit welchem Angebot geschrieben
+>    werden soll.
+> 2. **E-Mail-Runde starten:** Das System sucht passende Firmen, liest
+>    deren Webseiten und schreibt die E-Mails von allein.
+> 3. **Lesen & freigeben:** Du liest die fertigen E-Mails und gibst dein
+>    grünes Licht. Ohne dein Ja wird nichts verschickt.
+> 4. **Verschicken:** Erst danach übergibt das System die E-Mails an
+>    Instantly, das sie nach Zeitplan verschickt.
+>
+> Alles, was auf dich wartet, findest du auf dem Dashboard unter
+> "Bitte lesen und freigeben".
+>
+> [Verstanden, los geht's]
 
 ## Fehlertexte (Muster)
 

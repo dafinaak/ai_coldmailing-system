@@ -101,6 +101,11 @@ def client(app):
 @pytest.fixture
 def angemeldeter_client(client):
     client.post("/login", data={"name": "Lena Hartmann", "passwort": "richtig123"})
+    # Copy-Rework (20.07.2026): ohne das Cookie leitet '/' zur Einstiegsseite
+    # "So funktioniert's" um (siehe web.routen.dashboard/web.routen.intro) -
+    # fuer Tests, die das NICHT selbst pruefen, hier wie ein wiederkehrender
+    # Nutzer simuliert.
+    client.cookies.set("intro_gesehen", "1")
     return client
 
 
@@ -229,16 +234,16 @@ def test_wartende_liste_mit_jetzt_pruefen_knopf(angemeldeter_client, daten_dir):
     antwort = angemeldeter_client.get("/")
     assert antwort.status_code == 200
     text = antwort.text
-    assert "WARTET AUF DEINE FREIGABE" in text
-    assert "1 Anschreiben für Demo GmbH" in text
-    assert "Jetzt prüfen" in text
+    assert "BITTE LESEN UND FREIGEBEN" in text
+    assert "E-Mail-Runde für Demo GmbH · 1 Empfänger" in text
+    assert "Jetzt lesen" in text
     assert "/pruefen/demo-gmbh/20260720-090000" in text
 
 
 def test_wartende_liste_leer_wird_nicht_angezeigt(angemeldeter_client):
     antwort = angemeldeter_client.get("/")
     assert antwort.status_code == 200
-    assert "WARTET AUF DEINE FREIGABE" not in antwort.text
+    assert "BITTE LESEN UND FREIGEBEN" not in antwort.text
 
 
 # Angehalten-Banner --------------------------------------------------------

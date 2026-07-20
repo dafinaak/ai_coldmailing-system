@@ -1,16 +1,23 @@
 {% extends "layout.html" %}
-{% block titel %}Prüfen & Freigeben — {{ kunde_name }}{% endblock %}
+{% block titel %}Lesen & Freigeben — {{ kunde_name }}{% endblock %}
 {% block inhalt %}
 <div class="seite seite--breit">
-  <div class="formular-zurueck"><a href="/pruefen">‹ Alle wartenden Aufträge</a></div>
-  <h1>Prüfen &amp; Freigeben</h1>
+  <div class="formular-zurueck"><a href="/pruefen">‹ Alle wartenden E-Mail-Runden</a></div>
+  <h1>Lesen &amp; Freigeben</h1>
+
+  <div class="hinweis-kasten">
+    <b>Was heißt freigeben?</b> Dein grünes Licht, dass diese E-Mails
+    verschickt werden dürfen. Sie gehen dann — noch pausiert — an
+    Instantly; scharf geschaltet werden sie dort von Hand. Ohne deine
+    Freigabe passiert nichts.
+  </div>
 
   {% if zustand in ("wartet_auf_freigabe", "freigegeben") %}
   <p class="seiten-hilfstext">Lies die Texte, die gleich im Namen von {{ absender }} verschickt werden. Erst wenn du freigibst, geht etwas raus.</p>
   {% elif zustand == "uebergeben" %}
-  <p class="seiten-hilfstext">Diese Texte sind freigegeben und als Kampagne an Instantly übergeben.</p>
+  <p class="seiten-hilfstext">Diese Texte sind freigegeben und als Kampagne (in Instantly) übergeben.</p>
   {% elif zustand == "abgelehnt" %}
-  <p class="seiten-hilfstext">Dieser Auftrag wurde abgelehnt. Nichts wurde versendet.</p>
+  <p class="seiten-hilfstext">Diese E-Mail-Runde wurde abgelehnt. Nichts wurde versendet.</p>
   {% endif %}
 
   {% if fehler %}
@@ -38,7 +45,7 @@
   {% if zustand == "abgelehnt" and abgelehnt %}
   <div class="abgelehnt-kasten">
     <div class="abgelehnt-titel">Abgelehnt von {{ abgelehnt.von }} am {{ abgelehnt.am }}</div>
-    <div class="abgelehnt-text">Begründung: {{ abgelehnt.begruendung }}. Nichts wurde versendet. Lass neue Anschreiben erstellen, um frische Texte zu bekommen.</div>
+    <div class="abgelehnt-text">Begründung: {{ abgelehnt.begruendung }}. Nichts wurde versendet. Lass neue E-Mails schreiben, um frische Texte zu bekommen.</div>
   </div>
   {% endif %}
 
@@ -53,13 +60,13 @@
   {% endif %}
 
   <div class="pruef-zahlen">
-    <div><span class="pruef-zahl">{{ empf_anzahl }}</span> Anschreiben fertig</div>
-    <div><span class="pruef-zahl">{{ nacharbeit_anzahl }}</span> von der Prüfung aussortiert</div>
+    <div><span class="pruef-zahl">{{ empf_anzahl }}</span> E-Mails fertig</div>
+    <div><span class="pruef-zahl">{{ nacharbeit_anzahl }}</span> durchgefallen – geht nicht raus</div>
   </div>
 
   {% if nacharbeit %}
   <details class="nacharbeit-kasten">
-    <summary>{{ nacharbeit_anzahl }} von der Prüfung aussortiert — diese Texte gehen nicht raus. Du kannst sie lesen und den Grund sehen.</summary>
+    <summary>{{ nacharbeit_anzahl }} durchgefallen – geht nicht raus. Du kannst die Texte lesen und den Grund sehen.</summary>
     {% for n in nacharbeit %}
     <div class="nacharbeit-eintrag">
       <div class="nacharbeit-kopf"><b>{{ n.name }}</b> · {{ n.firma }} · {{ n.email }}</div>
@@ -99,7 +106,7 @@
           <div class="lese-firma">{{ e.firma }}</div>
           <div class="lese-mail">{{ e.email }}</div>
         </div>
-        <div class="lese-textteil-label">Anschreiben (geht sofort raus)</div>
+        <div class="lese-textteil-label">Erste E-Mail (geht sofort raus)</div>
         <div class="lese-betreff">{{ e.betreff }}</div>
         <div class="lese-text">{{ e.mail_1 }}</div>
         <div class="lese-textteil-label">Nachfass-Mail 1 (nach {{ tag_1 }} Tagen)</div>
@@ -116,7 +123,7 @@
   {% if zustand == "wartet_auf_freigabe" %}
   <div class="gate-kasten">
     <div class="gate-titel">Ohne deine Freigabe wird nichts versendet.</div>
-    <div class="gate-text">Freigeben heißt: Die Texte gehen als Kampagne an Instantly — zunächst pausiert. Gestartet wird dort von Hand. Festgehalten wird: freigegeben von {{ nutzer }} am {{ heute }}.</div>
+    <div class="gate-text">Freigeben heißt: Die Texte gehen als Kampagne (in Instantly) — zunächst pausiert. Gestartet wird dort von Hand. Festgehalten wird: freigegeben von {{ nutzer }} am {{ heute }}.</div>
 
     <form method="post" action="/pruefen/{{ slug }}/{{ ts }}/freigeben" id="freigeben-form">
       <div class="checkliste" id="checkliste">
@@ -135,7 +142,7 @@
 
     <details class="ablehnen-kasten">
       <summary>Ablehnen …</summary>
-      <div class="gate-text">Ablehnen heißt: Nichts wird versendet. Schreib kurz dazu, was nicht gepasst hat — das hilft beim nächsten Auftrag.</div>
+      <div class="gate-text">Ablehnen heißt: Nichts wird versendet. Schreib kurz dazu, was nicht gepasst hat — das hilft bei der nächsten E-Mail-Runde.</div>
       <form method="post" action="/pruefen/{{ slug }}/{{ ts }}/ablehnen" class="ablehnen-form">
         <textarea name="begruendung" class="formular-textarea" placeholder="Was hat nicht gepasst?"></textarea>
         <button type="submit" class="knopf-sekundaer">Ablehnen</button>

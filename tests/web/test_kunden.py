@@ -77,8 +77,8 @@ def test_liste_verlangt_anmeldung(client):
 def test_liste_zeigt_leeren_zustand(angemeldeter_client):
     antwort = angemeldeter_client.get("/kunden")
     assert antwort.status_code == 200
-    assert "Noch keine Kunden angelegt." in antwort.text
-    assert "Kunde anlegen" in antwort.text
+    assert "Noch keine Angebote angelegt." in antwort.text
+    assert "Angebot anlegen" in antwort.text
 
 
 def test_liste_zeigt_vorhandenen_kunden(angemeldeter_client, daten_dir):

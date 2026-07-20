@@ -30,7 +30,7 @@ NAV_BEREICHE = [
     ("kontakte", "/kontakte", "Kontakte"),
     ("postfach", "/postfach", "Postfach"),
     ("domains", "/domains", "Gesperrte Domains"),
-    ("kunden", "/kunden", "Kunden"),
+    ("kunden", "/kunden", "Angebote"),
     ("so-funktionierts", "/so-funktionierts", "So funktioniert's"),
 ]
 

@@ -1,12 +1,12 @@
 {% extends "layout.html" %}
-{% block titel %}Kunden{% endblock %}
+{% block titel %}Angebote{% endblock %}
 {% block inhalt %}
 <div class="seite">
   <div class="kunden-kopf">
-    <h1>Kunden</h1>
-    <a href="/kunden/neu" class="knopf-sekundaer">Kunde anlegen</a>
+    <h1>Angebote</h1>
+    <a href="/kunden/neu" class="knopf-sekundaer">Angebot anlegen</a>
   </div>
-  <p class="seiten-hilfstext">Hier pflegst du die Angaben zu jedem Kunden: Zielgruppe, Angebot, gesperrte Domains, Test-Adressen. E-Mails schreiben lässt du unter Kampagnen.</p>
+  <p class="seiten-hilfstext">Hier pflegst du die Angaben zu jedem Angebot: Zielgruppe, Angebotstext, gesperrte Domains, Test-Adressen. E-Mails schreiben lässt du unter Kampagnen.</p>
 
   <div class="kunden-liste">
     {% for kunde in kunden %}
@@ -16,7 +16,7 @@
       <a href="/kunden/{{ kunde.dateiname }}/bearbeiten" class="knopf-sekundaer">Bearbeiten</a>
     </div>
     {% else %}
-    <p class="kunden-leer">Noch keine Kunden angelegt.</p>
+    <p class="kunden-leer">Noch keine Angebote angelegt.</p>
     {% endfor %}
   </div>
 </div>

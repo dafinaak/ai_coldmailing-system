@@ -215,7 +215,7 @@ class Laufmanager:
             alte_pid = int(inhalt) if inhalt.isdigit() else None
             if alte_pid is not None and _pid_lebt(alte_pid):
                 raise LaufBereitsAktiv(
-                    "Für diesen Kunden läuft gerade schon eine E-Mail-Runde.")
+                    "Für dieses Angebot läuft gerade schon eine E-Mail-Runde.")
             sperr_pfad.unlink()  # verwaiste Sperre (Prozess tot) - aufraeumen
         return sperr_pfad
 
@@ -271,7 +271,7 @@ class Laufmanager:
         if kunde_pfad and kunde_pfad.get("pfad"):
             return kunde_pfad["pfad"]
         raise LaufmanagerFehler(
-            f"Kein Kunde für Laufordner {lauf_dir} ermittelbar.")
+            f"Kein Angebot für Laufordner {lauf_dir} ermittelbar.")
 
     def _limit_fuer(self, lauf_dir: Path) -> int:
         meta = _lade_json_sicher(lauf_dir / "auftrag_meta.json")
@@ -287,7 +287,7 @@ class Laufmanager:
         oben) und liefert den entstandenen Laufordner zurueck."""
         kunde_voller_pfad = self.daten_dir / kunde_datei
         if not kunde_voller_pfad.exists():
-            raise KundeNichtGefunden(f"Kunden-Datei nicht gefunden: {kunde_datei}")
+            raise KundeNichtGefunden(f"Angebots-Datei nicht gefunden: {kunde_datei}")
         try:
             kunde = load_kunde(kunde_voller_pfad)
         except ValueError as fehler:

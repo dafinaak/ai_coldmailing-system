@@ -1,11 +1,11 @@
 {% extends "layout.html" %}
-{% block titel %}{{ "Kunde bearbeiten" if modus == "bearbeiten" else "Kunde anlegen" }}{% endblock %}
+{% block titel %}{{ "Angebot bearbeiten" if modus == "bearbeiten" else "Angebot anlegen" }}{% endblock %}
 {% block inhalt %}
 {% set speichern_url = "/kunden/" ~ dateiname ~ "/bearbeiten" if modus == "bearbeiten" else "/kunden/neu" %}
 {% set ableiten_url = "/kunden/" ~ dateiname ~ "/ableiten" if modus == "bearbeiten" else "/kunden/neu/ableiten" %}
 <div class="seite">
   <a href="/kunden" class="formular-zurueck">‹ Zurück ohne zu speichern</a>
-  <h1>{{ "Kunde bearbeiten" if modus == "bearbeiten" else "Kunde anlegen" }}</h1>
+  <h1>{{ "Angebot bearbeiten" if modus == "bearbeiten" else "Angebot anlegen" }}</h1>
   <p class="seiten-hilfstext">Diese Angaben steuern, wen das System anschreibt und wie die Texte klingen.</p>
 
   {% if fehler %}
@@ -15,8 +15,8 @@
   <form method="post" action="{{ speichern_url }}" class="formular-karte">
     <div class="formular-grid">
       <label class="formular-feld">
-        <div class="formular-label">Name des Kunden</div>
-        <div class="formular-hilfstext">So heißt der Kunde überall in diesem Werkzeug.</div>
+        <div class="formular-label">Name des Angebots</div>
+        <div class="formular-hilfstext">So heißt das Angebot überall in diesem Werkzeug.</div>
         <input type="text" name="name" value="{{ werte.name }}" placeholder="z. B. Digital Diamonds" class="formular-eingabe">
       </label>
       <label class="formular-feld">
@@ -51,11 +51,11 @@
       {% endif %}
       <label class="formular-feld formular-feld--mitabstand">
         <div class="formular-label-zeile">
-          <div class="formular-label">Angebot</div>
+          <div class="formular-label">Angebotstext</div>
           {% if angebot_ist_vorschlag %}<span class="vorschlag-badge">VORSCHLAG VON DER WEBSEITE</span>{% endif %}
         </div>
-        <div class="formular-hilfstext">Was bietet der Kunde an? In zwei, drei Sätzen — die KI nutzt das für jede Mail.</div>
-        <textarea name="angebot" rows="4" placeholder="In eigenen Worten: Was bietet der Kunde an, für wen, mit welchem Nutzen?" class="formular-textarea">{{ werte.angebot }}</textarea>
+        <div class="formular-hilfstext">Was bietet ihr an? In zwei, drei Sätzen — die KI nutzt das für jede Mail.</div>
+        <textarea name="angebot" rows="4" placeholder="In eigenen Worten: Was bietet ihr an, für wen, mit welchem Nutzen?" class="formular-textarea">{{ werte.angebot }}</textarea>
       </label>
       <label class="formular-feld formular-feld--mitabstand">
         <div class="formular-label-zeile">
@@ -84,8 +84,8 @@
         </label>
       </div>
       <label class="formular-feld">
-        <div class="formular-label">Gesperrte Domains (nur dieser Kunde)</div>
-        <div class="formular-hilfstext">An Firmen mit diesen Internet-Adressen wird nie geschrieben — z. B. eure eigene Firma oder Kunden. Die globale Liste gilt zusätzlich.</div>
+        <div class="formular-label">Gesperrte Domains (nur dieses Angebot)</div>
+        <div class="formular-hilfstext">An Firmen mit diesen Internet-Adressen wird nie geschrieben — z. B. eure eigene Firma. Die globale Liste gilt zusätzlich.</div>
         <textarea name="sperrliste" rows="3" placeholder="eine Adresse pro Zeile" class="formular-textarea">{{ werte.sperrliste }}</textarea>
       </label>
       <label class="formular-feld">

@@ -49,9 +49,9 @@ def test_seite_zeigt_leitfaden_saetze(angemeldeter_client):
     assert antwort.status_code == 200
     assert (
         "An Firmen mit diesen Internet-Adressen wird nie geschrieben — egal "
-        "für welchen Kunden." in antwort.text
+        "für welches Angebot." in antwort.text
     )
-    assert "Kunden-Formular" in antwort.text
+    assert "Angebot-Formular" in antwort.text
     assert "Beide Listen gelten zusammen." in antwort.text
 
 

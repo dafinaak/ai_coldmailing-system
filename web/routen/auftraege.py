@@ -27,7 +27,7 @@ LIMIT_OPTIONEN = [25, 40, 60]
 LIMIT_DEFAULT = 60
 
 KEINE_KUNDEN_HINWEIS = (
-    "Noch keine Kunden angelegt. Leg zuerst einen Kunden an, bevor E-Mails "
+    "Noch keine Angebote angelegt. Leg zuerst ein Angebot an, bevor E-Mails "
     "geschrieben werden können."
 )
 

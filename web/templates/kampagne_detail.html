@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+{% block titel %}{{ kd_name }}{% endblock %}
+{% block inhalt %}
+<div class="seite seite--schmal">
+  <div class="formular-zurueck"><a href="/kampagnen">‹ Alle Kampagnen</a></div>
+  <div class="kamp-detail-kopf">
+    <h1>{{ kd_name }}</h1>
+    <span class="kamp-status" style="background: {{ chip_bg }}; color: {{ chip_fg }};">{{ chip_text }}</span>
+  </div>
+  {% if kd_satz %}
+  <p class="seiten-hilfstext">{{ kd_satz }}</p>
+  {% endif %}
+  <p class="kamp-detail-info">Kunde: <b>{{ kd_kunde }}</b> · Freigegeben von {{ kd_von }} am {{ kd_am }} · {{ kd_gesamt }} Empfänger</p>
+
+  {% if live_stand_hinweis %}
+  <div class="hinweis-kasten">{{ live_stand_hinweis }}</div>
+  {% endif %}
+
+  <div class="karte" style="margin-top: 20px;">
+    <div class="kamp-abschnitt-titel">FORTSCHRITT JE SCHRITT DER MAIL-FOLGE</div>
+    <div class="kamp-schritt-liste">
+      {% for s in kd_schritte %}
+      <div class="kamp-schritt">
+        <div class="kamp-schritt-kopf"><span>{{ s.label }}</span><span>{{ s.text }}</span></div>
+        <div class="kamp-balken"><div class="kamp-balken-fuellung" style="width: {{ s.balken }};"></div></div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="kamp-detail-fuss">
+      <div>
+        <div class="kamp-antworten-zahl">{{ kd_antworten }}</div>
+        <div class="kamp-antworten-label">Antworten — im Postfach lesen</div>
+      </div>
+      <div style="flex:1;"></div>
+      <a href="https://app.instantly.ai/app/campaign/{{ campaign_id }}" target="_blank" rel="noopener" class="knopf-sekundaer">Kampagne in Instantly öffnen ↗</a>
+    </div>
+  </div>
+
+  {% if kd_pausiert_hinweis %}
+  <div class="kamp-pausiert-hinweis">{{ kd_pausiert_hinweis }}</div>
+  {% endif %}
+</div>
+{% endblock %}

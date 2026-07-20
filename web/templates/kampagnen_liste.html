@@ -1,0 +1,54 @@
+{% extends "layout.html" %}
+{% block titel %}Kampagnen{% endblock %}
+{% block inhalt %}
+<div class="seite">
+  <div class="kunden-kopf">
+    <div>
+      <h1>Kampagnen</h1>
+      <p class="seiten-hilfstext">Jede Kampagne entsteht aus einem geprüften und freigegebenen Auftrag. Versendet wird über Instantly.</p>
+    </div>
+    <a href="/auftraege/neu" class="knopf-primaer">Anschreiben erstellen lassen</a>
+  </div>
+
+  {% if live_stand_hinweis %}
+  <div class="hinweis-kasten">{{ live_stand_hinweis }}</div>
+  {% endif %}
+
+  {% if vorbereitung %}
+  <div class="kamp-abschnitt-titel">IN VORBEREITUNG — DARAUS WERDEN KAMPAGNEN</div>
+  <div class="kunden-liste">
+    {% for v in vorbereitung %}
+    <div class="kunden-karte">
+      <div class="kunden-name">{{ v.titel }}</div>
+      <div class="kunden-info">{{ v.zeile }}</div>
+      <a href="{{ v.link }}" class="knopf-sekundaer knopf-klein">{{ v.link_text }}</a>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="kamp-abschnitt-titel">ALLE KAMPAGNEN</div>
+  {% if not kampagnen %}
+  <div class="leer-kasten">
+    <div class="leer-kasten-titel">Noch keine Kampagne</div>
+    <div>Sobald ein Auftrag geprüft und freigegeben ist, erscheint die Kampagne hier.</div>
+  </div>
+  {% else %}
+  <div class="kamp-tabelle">
+    <div class="kamp-kopf">
+      <div>KAMPAGNE</div><div>KUNDE</div><div>STATUS</div><div>EMPFÄNGER</div><div>VERSENDET</div><div>FREIGEGEBEN AM</div>
+    </div>
+    {% for c in kampagnen %}
+    <a href="/kampagnen/{{ c.slug }}/{{ c.ts }}" class="kamp-zeile">
+      <div class="kamp-name">{{ c.name }}</div>
+      <div class="kamp-gedaempft">{{ c.kunde }}</div>
+      <div><span class="kamp-status" style="background: {{ c.chip_bg }}; color: {{ c.chip_fg }};">{{ c.chip_text }}</span></div>
+      <div class="kamp-zahl">{{ c.gesamt }}</div>
+      <div class="kamp-zahl">{{ c.verschickt }}</div>
+      <div class="kamp-gedaempft">{{ c.freigegeben_am }}</div>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

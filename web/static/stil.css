@@ -711,3 +711,88 @@ h1 { margin: 0; font-size: 24px; }
 }
 .abgelehnt-titel { font-weight: 700; font-size: 15px; }
 .abgelehnt-text { font-size: 13.5px; color: var(--farbe-gedaempft); margin-top: 4px; }
+
+/* Kampagnen (Task 6) ------------------------------------------------------ */
+
+.kamp-abschnitt-titel {
+  font-family: var(--schrift-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--farbe-gedaempft);
+  margin: 24px 0 10px;
+}
+
+.kamp-tabelle {
+  background: var(--farbe-weiss);
+  border: 1px solid var(--farbe-rand);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.kamp-kopf {
+  display: grid;
+  grid-template-columns: 2fr 1fr 150px 100px 110px 130px;
+  gap: 12px;
+  padding: 11px 20px;
+  border-bottom: 1px solid var(--farbe-rand);
+  font-size: 11px;
+  color: var(--farbe-gedaempft);
+  font-family: var(--schrift-mono);
+  letter-spacing: 0.06em;
+}
+.kamp-zeile {
+  display: grid;
+  grid-template-columns: 2fr 1fr 150px 100px 110px 130px;
+  gap: 12px;
+  align-items: center;
+  padding: 13px 20px;
+  border-bottom: 1px solid #F0EEE5;
+  font-size: 13px;
+  color: var(--farbe-text);
+  text-decoration: none;
+}
+.kamp-zeile:last-child { border-bottom: none; }
+.kamp-zeile:hover { background: #FBFAF4; color: var(--farbe-text); }
+.kamp-name { font-family: var(--schrift-mono); font-weight: 600; font-size: 12.5px; }
+.kamp-gedaempft { color: var(--farbe-gedaempft); font-size: 12.5px; }
+.kamp-zahl { font-family: var(--schrift-mono); }
+
+.kamp-status {
+  font-family: var(--schrift-mono);
+  font-size: 10.5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.kamp-detail-kopf { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.kamp-detail-kopf h1 { font-family: var(--schrift-mono); font-size: 22px; }
+.kamp-detail-info { font-size: 12.5px; color: var(--farbe-gedaempft); margin-top: 2px; }
+
+.kamp-schritt-liste { display: flex; flex-direction: column; gap: 16px; margin-top: 16px; }
+.kamp-schritt-kopf { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; }
+.kamp-schritt-kopf span:first-child { font-weight: 600; }
+.kamp-schritt-kopf span:last-child { font-family: var(--schrift-mono); }
+.kamp-balken { height: 8px; border-radius: 999px; background: #ECEAE1; overflow: hidden; }
+.kamp-balken-fuellung { height: 100%; background: #1F7A46; }
+
+.kamp-detail-fuss {
+  display: flex;
+  gap: 26px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--farbe-rand);
+  flex-wrap: wrap;
+  align-items: center;
+}
+.kamp-antworten-zahl { font-family: var(--schrift-mono); font-weight: 700; font-size: 20px; }
+.kamp-antworten-label { font-size: 11.5px; color: var(--farbe-gedaempft); }
+
+.kamp-pausiert-hinweis {
+  border: 1.5px solid #2E5A82;
+  background: #EAF0F6;
+  border-radius: 12px;
+  padding: 14px 20px;
+  margin-top: 14px;
+  font-size: 13.5px;
+  color: #2E5A82;
+}

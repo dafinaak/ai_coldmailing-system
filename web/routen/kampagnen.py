@@ -29,18 +29,37 @@ _CHIP = {
     "aktiv": {"text": "AKTIV", "bg": "#1F7A46", "fg": "#FFFFFF"},
     "pausiert": {"text": "PAUSIERT", "bg": "#EAF0F6", "fg": "#2E5A82"},
     "abgeschlossen": {"text": "FERTIG", "bg": "#ECEAE1", "fg": "#6E6A5C"},
+    # Review-Fund: Konto-Stoerungen (Account Suspended/Unhealthy/Bounce
+    # Protect - siehe web.instantly_leser) sind KEIN normales "pausiert" -
+    # eigener, lauter Chip in denselben Rot-Tönen wie die "Angehalten"-
+    # Fehlerkarten/-boxen (var(--farbe-fehler-hintergrund)/-rand in
+    # web/static/stil.css), damit ein Konto-Problem nicht als harmloser,
+    # gewollter Zustand durchgeht.
+    "kontoproblem": {"text": "KONTO-PROBLEM", "bg": "#F9E9E4", "fg": "#B03320"},
 }
 # Live-Stand noch nie erfolgreich abgerufen - eigener, neutraler Chip statt
-# einen der drei echten Zustaende zu erraten.
+# einen der echten Zustaende zu erraten.
 _CHIP_UNBEKANNT = {"text": "LIVE-STAND UNBEKANNT", "bg": "#ECEAE1", "fg": "#6E6A5C"}
 
 # Woertlich aus dem Leitfaden/v4 (kdSatz) - nur waehrend die Kampagne
-# tatsaechlich pausiert ist.
+# tatsaechlich (gewollt) pausiert ist.
 PAUSIERT_SATZ = ("Diese Kampagne liegt pausiert in Instantly. Gestartet wird dort von Hand "
                  "— hier nur zum Nachschauen.")
 PAUSIERT_HINWEIS = ("Noch wurde nichts versendet. Zum Starten die Kampagne in Instantly öffnen "
                     "und dort von Hand starten — das ist Absicht, damit nichts aus Versehen "
                     "rausgeht.")
+
+# Eigener, ehrlicher Hinweis fuer "kontoproblem" (Review-Fund) - ersetzt
+# PAUSIERT_HINWEIS komplett fuer diesen Zustand: "das ist Absicht" waere
+# hier schlicht falsch, das Ruhen ist ein Fehler am Instantly-Konto, keine
+# gewollte Pause. Dreiteiliges Muster aus dem Leitfaden (Was ist passiert ·
+# was ist NICHT passiert · was du tun kannst), plus der bestehende
+# Instantly-Link (immer sichtbar, siehe kampagne_detail.html) fuehrt direkt
+# zur Fehlerbehebung dort.
+KONTOPROBLEM_HINWEIS = (
+    "Das Instantly-Konto hinter dieser Kampagne hat ein Problem — der Versand ruht deshalb. "
+    "An den Texten und Empfängern hat sich nichts geändert. Bitte in Instantly nachsehen "
+    "(Konto neu verbinden oder Zustellbarkeits-Warnung prüfen).")
 
 
 def _hole_leser(request: Request):
@@ -265,6 +284,10 @@ async def kampagne_detail(request: Request, slug: str, ts: str):
 
     freigabe = freigabe_info(store)
     ist_pausiert = stand.get("erreichbar") and stand.get("status") == "pausiert"
+    # Review-Fund: "kontoproblem" bekommt seinen EIGENEN Hinweis statt
+    # PAUSIERT_HINWEIS - die beiden Zustaende schliessen sich gegenseitig
+    # aus (siehe _CHIP/_STATUS_TEXT), nie beide gleichzeitig gesetzt.
+    ist_kontoproblem = stand.get("erreichbar") and stand.get("status") == "kontoproblem"
 
     live_stand_hinweis = _live_stand_hinweis([stand])
 
@@ -278,6 +301,7 @@ async def kampagne_detail(request: Request, slug: str, ts: str):
             "chip_text": chip["text"], "chip_bg": chip["bg"], "chip_fg": chip["fg"],
             "kd_satz": PAUSIERT_SATZ if ist_pausiert else "",
             "kd_pausiert_hinweis": PAUSIERT_HINWEIS if ist_pausiert else "",
+            "kd_kontoproblem_hinweis": KONTOPROBLEM_HINWEIS if ist_kontoproblem else "",
             "kd_von": freigabe["von"] or "unbekannt", "kd_am": freigabe["am"] or "—",
             "kd_gesamt": gesamt,
             "kd_schritte": kd_schritte,

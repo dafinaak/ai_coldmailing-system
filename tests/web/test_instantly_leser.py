@@ -71,7 +71,12 @@ def test_kampagnen_stand_parst_status_name_versendet_und_schritte():
 
 @pytest.mark.parametrize("status_zahl,erwartet", [
     (0, "pausiert"), (1, "aktiv"), (2, "pausiert"), (3, "abgeschlossen"),
-    (4, "aktiv"), (-99, "pausiert"), (-1, "pausiert"), (-2, "pausiert"),
+    (4, "aktiv"),
+    # Konto-Stoerungen (Account Suspended/Unhealthy/Bounce Protect) sind KEIN
+    # normales "pausiert" (das waere absichtlich und harmlos) - sie brauchen
+    # einen eigenen, lauten Zustand, damit sie in der Oberflaeche nicht still
+    # als "ganz normal pausiert" untergehen (Review-Fund).
+    (-99, "kontoproblem"), (-1, "kontoproblem"), (-2, "kontoproblem"),
 ])
 def test_status_zahlen_werden_korrekt_uebersetzt(status_zahl, erwartet):
     session = FakeSession(_standard_antworten(status=status_zahl))

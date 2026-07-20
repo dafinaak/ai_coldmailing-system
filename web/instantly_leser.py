@@ -22,7 +22,14 @@ markierte TODOs bleiben offen.
   InstantlySender) Kampagnen nie per Code aktiviert, ist der Zustand direkt
   nach dem Anlegen immer 0 (Draft) - fuer die Anzeige bedeutet das
   "sendet nichts", genau wie "Paused", deshalb bildet _STATUS_TEXT unten
-  sowohl 0 als auch 2 auf "pausiert" ab (siehe Kommentar dort).
+  sowohl 0 als auch 2 auf "pausiert" ab (siehe Kommentar dort). Die drei
+  negativen Sonderzustaende sind dagegen KEIN normales "pausiert" - eine
+  Kampagne, die deshalb ruht, hat ein echtes Konto-Problem (Konto gesperrt/
+  ungesund/Bounce-Protect ausgeloest), kein absichtlich ruhiger Zustand.
+  Review-Fund: wuerden diese still als "pausiert" angezeigt, saehe das
+  identisch aus wie eine ganz normale, gewollt pausierte Kampagne - _STATUS_
+  TEXT bildet sie deshalb auf einen eigenen, lauten Zustand "kontoproblem"
+  ab (siehe web.routen.kampagnen fuer den roten Chip/Hinweis dazu).
 - GET /api/v2/campaigns/analytics (Query-Parameter "id" ODER wiederholtes
   "ids", plus "start_date"/"end_date"/"exclude_total_leads_count"): liefert
   eine LISTE (auch bei genau einer angefragten ID); Pflichtfelder je
@@ -63,19 +70,21 @@ CACHE_TTL_SEKUNDEN = 60
 # Campaign.status -> Anzeige-Text (siehe Modul-Docstring fuer die Quelle).
 # 0 (Draft) und 2 (Paused) werden beide als "pausiert" angezeigt: aus
 # Nutzersicht ist der Unterschied irrelevant (in beiden Faellen sendet
-# Instantly nichts). 4 (Running Subsequences) zaehlt als "aktiv" (die
-# Kampagne versendet noch). Die negativen Sonderzustaende (Konto
-# gesperrt/ungesund/Bounce-Protect) sind ebenfalls "sendet nichts" - werden
-# defensiv als "pausiert" angezeigt statt als unbekannter Zustand.
+# Instantly nichts, und beides ist ein normaler/gewollter Zustand). 4
+# (Running Subsequences) zaehlt als "aktiv" (die Kampagne versendet noch).
+# Die drei negativen Sonderzustaende (Konto gesperrt/ungesund/Bounce-
+# Protect) sind KEIN normales "pausiert" - das Ruhen ist dort ein Fehler,
+# keine Absicht, deshalb eigener, lauter Zustand "kontoproblem" statt sie
+# still unter "pausiert" verschwinden zu lassen (Review-Fund).
 _STATUS_TEXT = {
     0: "pausiert",
     1: "aktiv",
     2: "pausiert",
     3: "abgeschlossen",
     4: "aktiv",
-    -99: "pausiert",
-    -1: "pausiert",
-    -2: "pausiert",
+    -99: "kontoproblem",
+    -1: "kontoproblem",
+    -2: "kontoproblem",
 }
 
 

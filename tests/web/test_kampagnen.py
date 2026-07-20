@@ -222,6 +222,23 @@ def test_liste_zeigt_anschreiben_erstellen_lassen_knopf(angemeldeter_client):
     assert "/auftraege/neu" in antwort.text
 
 
+def test_liste_zeigt_konto_problem_chip_statt_pausiert(angemeldeter_client, daten_dir):
+    # Review-Fund: Instantly-Konto-Stoerungen (Account Suspended/Unhealthy/
+    # Bounce Protect) duerfen nicht als harmloses "pausiert" durchgehen -
+    # eigener, lauter Chip "KONTO-PROBLEM".
+    app = angemeldeter_client.app
+    app.state.instantly_leser = FakeInstantlyLeser({
+        "camp-a": _stand(status="kontoproblem", name="[TEST] Demo GmbH"),
+    })
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml", ts="20260720-090000",
+                  zustand="uebergeben", campaign_id="camp-a")
+
+    antwort = angemeldeter_client.get("/kampagnen")
+    assert antwort.status_code == 200
+    assert "KONTO-PROBLEM" in antwort.text
+    assert "PAUSIERT" not in antwort.text
+
+
 def test_liste_bei_api_ausfall_zeigt_freundlichen_hinweis_statt_absturz(angemeldeter_client, daten_dir):
     class KaputterLeser:
         def kampagnen_stand(self, campaign_ids):
@@ -288,6 +305,27 @@ def test_detail_zeigt_keinen_pausiert_hinweis_wenn_aktiv(angemeldeter_client, da
     antwort = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-090000")
     assert antwort.status_code == 200
     assert "liegt pausiert in Instantly" not in antwort.text
+
+
+def test_detail_zeigt_konto_problem_hinweis_statt_pausiert_saetze(angemeldeter_client, daten_dir):
+    # Review-Fund: bei "kontoproblem" muss die eigene, laute Erklaerung
+    # erscheinen - NICHT die pausiert-Saetze ("das ist Absicht" waere hier
+    # schlicht falsch, das Ruhen ist ein Fehler, keine Absicht).
+    app = angemeldeter_client.app
+    app.state.instantly_leser = FakeInstantlyLeser({
+        "camp-a": _stand(status="kontoproblem"),
+    })
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml", ts="20260720-090000",
+                  zustand="uebergeben", campaign_id="camp-a")
+    antwort = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-090000")
+    assert antwort.status_code == 200
+    text = antwort.text
+    assert "KONTO-PROBLEM" in text
+    assert "Instantly-Konto" in text and "hat ein Problem" in text
+    assert "An den Texten und Empfängern hat sich nichts geändert" in text
+    assert "liegt pausiert in Instantly" not in text
+    assert "das ist Absicht" not in text
+    assert "app.instantly.ai/app/campaign/camp-a" in text
 
 
 def test_detail_ohne_kampagne_404(angemeldeter_client, daten_dir):

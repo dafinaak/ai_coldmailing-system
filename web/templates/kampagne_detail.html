@@ -39,5 +39,12 @@
   {% if kd_pausiert_hinweis %}
   <div class="kamp-pausiert-hinweis">{{ kd_pausiert_hinweis }}</div>
   {% endif %}
+
+  {% if kd_kontoproblem_hinweis %}
+  <div class="fehler-box">
+    <div class="fehler-box-titel">Konto-Problem bei Instantly</div>
+    <div class="fehler-box-text">{{ kd_kontoproblem_hinweis }}</div>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}

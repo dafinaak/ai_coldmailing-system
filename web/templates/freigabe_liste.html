@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+{% block titel %}Prüfen & Freigeben{% endblock %}
+{% block inhalt %}
+<div class="seite">
+  <h1>Prüfen &amp; Freigeben</h1>
+  <p class="seiten-hilfstext">Hier liest du fertige Anschreiben und gibst sie frei — oder lehnst sie ab. Ohne deine Freigabe wird nichts versendet.</p>
+
+  {% if not laeufe %}
+  <div class="leer-kasten">
+    <div class="leer-kasten-titel">Nichts wartet auf dich</div>
+    <div>Sobald neue Anschreiben fertig sind, erscheinen sie hier zum Lesen und Freigeben.</div>
+  </div>
+  {% else %}
+  <div class="kunden-liste">
+    {% for lauf in laeufe %}
+    <div class="kunden-karte">
+      <div class="kunden-name">{{ lauf.fertig }} Anschreiben für {{ lauf.kunde_name }}</div>
+      <div class="kunden-info">{{ lauf.wartet_seit_text }} · {{ lauf.nacharbeit }} von der Prüfung aussortiert</div>
+      <a href="/pruefen/{{ lauf.slug }}/{{ lauf.ts }}" class="knopf-primaer knopf-klein">Jetzt prüfen</a>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

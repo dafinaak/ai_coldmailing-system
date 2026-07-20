@@ -1,5 +1,6 @@
 import pytest
-from pipeline.config import load_kunde
+import yaml
+from pipeline.config import load_kunde, lade_globale_sperrliste
 
 GUELTIG = """
 name: Demo GmbH
@@ -32,6 +33,16 @@ def test_sperrliste_ist_optional(tmp_path):
     p = tmp_path / "kunde.yaml"
     p.write_text(GUELTIG, encoding="utf-8")
     assert load_kunde(p).sperrliste == []
+
+def test_webseite_ist_optional_und_leer_per_default(tmp_path):
+    p = tmp_path / "kunde.yaml"
+    p.write_text(GUELTIG, encoding="utf-8")
+    assert load_kunde(p).webseite == ""
+
+def test_webseite_wird_geladen_wenn_vorhanden(tmp_path):
+    p = tmp_path / "kunde.yaml"
+    p.write_text(GUELTIG + "\nwebseite: https://digitaldiamonds.de\n", encoding="utf-8")
+    assert load_kunde(p).webseite == "https://digitaldiamonds.de"
 
 def test_demo_gmbh_laedt_weiterhin():
     assert load_kunde("kunden/demo-gmbh.yaml").name == "Demo GmbH"
@@ -83,3 +94,17 @@ def test_sperrliste_muss_liste_sein_wenn_vorhanden(tmp_path):
     p.write_text(GUELTIG + "\nsperrliste: nicht-eine-liste\n", encoding="utf-8")
     with pytest.raises(ValueError, match="sperrliste"):
         load_kunde(p)
+
+def test_lade_globale_sperrliste_liest_datei(tmp_path):
+    (tmp_path / "sperrliste-global.yaml").write_text(
+        yaml.safe_dump(["*.bund.de", "digitaldiamonds.de"]), encoding="utf-8")
+    assert lade_globale_sperrliste(tmp_path) == ["*.bund.de", "digitaldiamonds.de"]
+
+def test_lade_globale_sperrliste_ohne_datei_gibt_leere_liste(tmp_path):
+    assert lade_globale_sperrliste(tmp_path) == []
+
+def test_lade_globale_sperrliste_wirft_bei_falschem_aufbau(tmp_path):
+    (tmp_path / "sperrliste-global.yaml").write_text(
+        yaml.safe_dump({"nicht": "eine-liste"}), encoding="utf-8")
+    with pytest.raises(ValueError, match="sperrliste-global.yaml"):
+        lade_globale_sperrliste(tmp_path)

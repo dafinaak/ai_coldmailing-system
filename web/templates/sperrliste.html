@@ -1,0 +1,36 @@
+{% extends "layout.html" %}
+{% block titel %}Gesperrte Domains{% endblock %}
+{% block inhalt %}
+<div class="seite seite--schmal">
+  <h1>Gesperrte Domains</h1>
+  <p class="seiten-hilfstext">An Firmen mit diesen Internet-Adressen wird nie geschrieben — egal für welchen Kunden. Platzhalter wie *.bund.de sind erlaubt.</p>
+
+  {% if fehler %}
+  <div class="formular-fehler">{{ fehler }}</div>
+  {% endif %}
+
+  <div class="karte">
+    <div class="chip-liste">
+      {% for domain in domains %}
+      <span class="chip">
+        <span class="chip-text">{{ domain }}</span>
+        <form method="post" action="/domains/entfernen" class="chip-entfernen-form">
+          <input type="hidden" name="domain" value="{{ domain }}">
+          <button type="submit" class="chip-entfernen-knopf" aria-label="{{ domain }} entfernen">×</button>
+        </form>
+      </span>
+      {% else %}
+      <span class="chip-leer">Noch keine gesperrten Domains.</span>
+      {% endfor %}
+    </div>
+    <form method="post" action="/domains/hinzufuegen" class="chip-hinzufuegen-form">
+      <input type="text" name="domain" placeholder="Domain eintippen, mit Eingabetaste hinzufügen — z. B. *.bund.de" class="chip-eingabe">
+      <button type="submit" class="chip-hinzufuegen-knopf">Hinzufügen</button>
+    </form>
+  </div>
+
+  <div class="hinweis-kasten">
+    Zusätzlich hat jeder Kunde eine eigene Liste gesperrter Domains — die pflegst du im <a href="/kunden">Kunden-Formular</a>. Beide Listen gelten zusammen.
+  </div>
+</div>
+{% endblock %}

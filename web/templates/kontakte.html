@@ -1,0 +1,34 @@
+{% extends "layout.html" %}
+{% block titel %}Kontakte{% endblock %}
+{% block inhalt %}
+<div class="seite">
+  <h1>Kontakte</h1>
+  <p class="seiten-hilfstext">Alle Personen, die je angeschrieben wurden. Nur zum Nachschauen — geschrieben wird über Kampagnen.</p>
+
+  <form method="get" action="/kontakte" class="kontakte-suche-form">
+    <input type="text" name="q" value="{{ kontakt_suche }}" placeholder="Suchen: Name, Firma oder E-Mail-Adresse" class="formular-eingabe kontakte-suche-eingabe">
+    <button type="submit" class="knopf-sekundaer knopf-klein">Suchen</button>
+  </form>
+
+  <p class="kontakte-anzahl">{{ anzahl }} Kontakte</p>
+
+  <div class="kamp-tabelle">
+    <div class="kontakte-kopf">
+      <div>NAME</div><div>FIRMA</div><div>E-MAIL</div><div>KUNDE</div><div>KAMPAGNE</div><div>ZULETZT KONTAKTIERT</div>
+    </div>
+    {% for k in kontakte %}
+    <div class="kontakte-zeile">
+      <div class="kontakte-name">{{ k.name }}</div>
+      <div class="kamp-gedaempft">{{ k.firma }}</div>
+      <div class="kontakte-mail">{{ k.email }}</div>
+      <div class="kamp-gedaempft">{{ k.kunde }}</div>
+      <div class="kontakte-kampagne">{{ k.kampagne }}</div>
+      <div class="kamp-gedaempft">{{ k.zuletzt }}</div>
+    </div>
+    {% endfor %}
+    {% if kontakte_leer %}
+    <div class="kontakte-leer">Nichts gefunden. Andere Schreibweise versuchen?</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

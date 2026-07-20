@@ -1,7 +1,7 @@
 import argparse, os, sys
 from collections import Counter
 from pathlib import Path
-from pipeline.config import load_kunde
+from pipeline.config import load_kunde, lade_globale_sperrliste
 from pipeline.env import lade_dotenv, brauche_env as _brauche_env, brauche_env_eines_von as _brauche_env_eines_von
 from pipeline.run_store import RunStore
 from pipeline.sources.apollo import ApolloSource
@@ -64,7 +64,14 @@ def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None
              for d in stand_leads["leads"]]
 
     if not store.step_done("dedupe"):
-        behalten, verworfen = dedupe_leads(leads, store.run_dir.parent, kunde.sperrliste,
+        # Globale Sperrliste (gilt fuer alle Kunden) + die eigene Liste des
+        # Kunden zusammen anwenden (Vereinigung, Reihenfolge egal). Der
+        # daten_dir fuer die globale Liste ist hier bewusst der aktuelle
+        # Arbeitsordner (Projekt-Wurzel, wo kunden/ und laeufe/ liegen) -
+        # wie der Rest der CLI schon cwd-relativ arbeitet (siehe LAEUFE oben).
+        globale_sperrliste = lade_globale_sperrliste(Path("."))
+        sperrliste = list(set(kunde.sperrliste) | set(globale_sperrliste))
+        behalten, verworfen = dedupe_leads(leads, store.run_dir.parent, sperrliste,
                                            aktueller_lauf=store.run_dir)
         store.save_step("dedupe", {"behalten": [l.__dict__ for l in behalten],
                                    "verworfen": verworfen})
@@ -83,7 +90,12 @@ def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None
             if ok:
                 fertig.append({"email": lead.email, **texte})
             else:
-                nacharbeit.append({"email": lead.email, "grund": grund})
+                # texte ist {} wenn personalize() selbst schon scheiterte
+                # (kein Text erzeugt), sonst der volle Text, den nur check()
+                # abgelehnt hat. Wird mitgespeichert, damit die "Von der
+                # Pruefung aussortiert"-Ansicht im Web-Interface (Task 5) den
+                # abgelehnten Text aufklappbar zeigen kann statt nur den Grund.
+                nacharbeit.append({"email": lead.email, "grund": grund, **texte})
         store.save_step("personalisierung", {"fertig": fertig, "nacharbeit": nacharbeit})
     ergebnis = store.load_step("personalisierung")
     store.save_step("pruefung_ok", ergebnis["fertig"])
@@ -100,27 +112,66 @@ def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None
     print("Naechster Schritt: pruefen, dann 'python -m pipeline freigeben <laufordner>'")
 
 def freigeben(laufordner: str):
-    approve(RunStore.resume(laufordner))
+    # E-Fix 7: Konsistenz mit dem Web-Guard (web.routen.freigabe -
+    # ZUSTAND_ERLAUBT_FREIGEBEN schliesst "abgelehnt" aus) - abgelehnt.json
+    # muss ein absolutes Veto sein, egal ueber welchen Weg (CLI oder Web)
+    # jemand versucht, danach doch noch freizugeben.
+    store = RunStore.resume(laufordner)
+    if (store.run_dir / "abgelehnt.json").exists():
+        sys.exit(
+            "Dieser Auftrag wurde abgelehnt - er darf nicht mehr freigegeben werden.")
+    approve(store)
     print("Freigegeben. Senden mit: python -m pipeline senden", laufordner)
 
-def senden(laufordner: str):
-    _brauche_env("INSTANTLY_API_KEY")
-    store = RunStore.resume(laufordner)
+class SendenFehler(Exception):
+    """Fasst die Abbruchgruende von '_versand_ausfuehren' als Exception statt
+    sys.exit zusammen, damit dieselbe Kernlogik von zwei Aufrufern genutzt
+    werden kann: der CLI (senden(), macht sys.exit(str(fehler)) daraus) und
+    der Web-Route web/routen/freigabe.py (Task 5, macht daraus eine deutsche
+    Fehlermeldung auf der Seite). Der Test-Empfaenger-Gate darf dadurch an
+    genau einer Stelle stehen, nie dupliziert werden."""
+
+
+def _versand_ausfuehren(store, sender, kunde=None) -> str:
+    """Kernlogik von 'senden': Freigabe-/Empfaenger-Gate pruefen, Kampagne
+    anlegen (oder eine schon angelegte wiederverwenden) und Leads
+    importieren. `sender` ist ein InstantlySender (oder ein Fake mit
+    derselben Schnittstelle in Tests/Web) - so bleibt diese Funktion
+    unabhaengig davon, WO der API-Key herkommt.
+
+    Sperrt IMMER (auch bei bestehender Freigabe - Review-Fund Task 5), wenn
+    abgelehnt.json im Laufordner liegt: Ablehnen muss ein absolutes Veto
+    sein, egal ob/wie es zu einer (fehlerhaften oder zeitlich versetzten)
+    Freigabe kam. Diese Pruefung sitzt bewusst HIER (statt nur in der
+    Web-Route), weil sowohl die CLI (senden()) als auch die Web-Route
+    dieselbe Funktion aufrufen - eine Web-only-Sperre waere umgehbar.
+
+    `kunde` ist optional: Standard None laedt ihn selbst ueber den in
+    kunde_pfad.json gespeicherten Pfad, der relativ zum Arbeitsverzeichnis
+    ist (funktioniert fuer die CLI, die immer mit cwd=daten_dir laeuft, s.
+    web/laufmanager.py). Der Web-Aufrufer (web/routen/freigabe.py) laeuft
+    dagegen IM SELBEN Prozess wie der Webserver, dessen cwd nicht daten_dir
+    ist - er laedt den Kunden deshalb selbst (relativ zu daten_dir aufgeloest)
+    und uebergibt ihn hier direkt, statt den Pfad blind nochmal relativ zum
+    falschen Arbeitsverzeichnis zu lesen."""
+    if (store.run_dir / "abgelehnt.json").exists():
+        raise SendenFehler(
+            "Dieser Auftrag wurde abgelehnt - es darf nichts versendet werden.")
     if not is_approved(store):
-        sys.exit("Keine Freigabe fuer diesen Lauf (FREIGABE.txt fehlt).")
+        raise SendenFehler("Keine Freigabe fuer diesen Lauf (FREIGABE.txt fehlt).")
     if store.step_done("versand_komplett"):
         campaign_id = store.load_step("versand_komplett")["campaign_id"]
-        sys.exit(f"Kampagne bereits angelegt: {campaign_id}")
-    kunde = load_kunde(store.load_step("kunde_pfad")["pfad"])
+        raise SendenFehler(f"Kampagne bereits angelegt: {campaign_id}")
+    if kunde is None:
+        kunde = load_kunde(store.load_step("kunde_pfad")["pfad"])
     texte = store.load_step("pruefung_ok")
     erlaubt = {e.strip().lower() for e in kunde.test_empfaenger}
     fremde = [t["email"] for t in texte if t["email"] not in erlaubt]
     if fremde:
-        sys.exit(f"Abbruch: Empfaenger nicht in Test-Empfaenger-Liste: {fremde}")
+        raise SendenFehler(f"Abbruch: Empfaenger nicht in Test-Empfaenger-Liste: {fremde}")
     if not texte:
-        sys.exit("Abbruch: keine freigegebenen Texte zum Versenden.")
+        raise SendenFehler("Abbruch: keine freigegebenen Texte zum Versenden.")
 
-    sender = InstantlySender(os.environ["INSTANTLY_API_KEY"])
     if store.step_done("versand"):
         # Kampagne wurde in einem frueheren, abgebrochenen Lauf schon
         # angelegt (z.B. weil der Lead-Import scheiterte) - dieselbe
@@ -129,13 +180,23 @@ def senden(laufordner: str):
         # Kampagne per E-Mail? Sonst koennen Wiederholungs-Importe nach
         # Teilfehler Leads doppeln.
         campaign_id = store.load_step("versand")["campaign_id"]
-        print(f"Kampagne {campaign_id} bereits angelegt - importiere Leads erneut.")
     else:
         campaign_id = sender.create_campaign(kunde)
         store.save_step("versand", {"campaign_id": campaign_id})
 
     sender.import_leads(campaign_id, texte)
     store.save_step("versand_komplett", {"campaign_id": campaign_id})
+    return campaign_id
+
+
+def senden(laufordner: str):
+    _brauche_env("INSTANTLY_API_KEY")
+    store = RunStore.resume(laufordner)
+    sender = InstantlySender(os.environ["INSTANTLY_API_KEY"])
+    try:
+        campaign_id = _versand_ausfuehren(store, sender)
+    except SendenFehler as fehler:
+        sys.exit(str(fehler))
     print(f"Kampagne {campaign_id} pausiert angelegt - Aktivierung von Hand in Instantly.")
 
 def main():

@@ -1,0 +1,66 @@
+{% extends "layout.html" %}
+{% block titel %}Postfach{% endblock %}
+{% block inhalt %}
+<div class="seite">
+  <h1>Postfach</h1>
+  <p class="seiten-hilfstext">{{ postfach_hinweis }}</p>
+
+  {% if live_stand_hinweis %}
+  <div class="hinweis-kasten">{{ live_stand_hinweis }}</div>
+  {% endif %}
+
+  {% if konversationen_leer %}
+  <div class="leer-kasten">
+    <div class="leer-kasten-titel">Noch keine Konversation</div>
+    <div>{{ keine_antworten_hinweis or "Sobald jemand antwortet, erscheint das Gespräch hier." }}</div>
+  </div>
+  {% else %}
+  {% if keine_antworten_hinweis %}
+  <div class="hinweis-kasten">{{ keine_antworten_hinweis }}</div>
+  {% endif %}
+  <div class="postfach-layout">
+    <div class="postfach-liste">
+      {% for k in konversationen %}
+      <a href="/postfach?kontakt={{ k.kontakt_email }}"
+         class="postfach-eintrag{% if k.aktiv %} postfach-eintrag--aktiv{% endif %}">
+        <div class="postfach-eintrag-kopf">
+          <div class="postfach-eintrag-name">{{ k.name }}</div>
+          <div class="postfach-eintrag-zeit">{{ k.letzte_zeit }}</div>
+        </div>
+        {% if k.firma %}<div class="kamp-gedaempft">{{ k.firma }}</div>{% endif %}
+        <div class="postfach-eintrag-betreff">{{ k.betreff }}</div>
+        <span class="postfach-richtung postfach-richtung--{{ k.richtung_letzte }}">
+          {{ "Antwort erhalten" if k.richtung_letzte == "empfangen" else "Von uns gesendet" }}
+        </span>
+      </a>
+      {% endfor %}
+    </div>
+
+    <div class="postfach-detail">
+      {% if detail %}
+      <div class="postfach-detail-kopf">
+        <div>
+          <div class="postfach-detail-name">{{ detail.name }}</div>
+          <div class="kamp-gedaempft">{{ detail.firma }}{% if detail.firma %} · {% endif %}{{ detail.kontakt_email }}</div>
+        </div>
+        <div style="flex:1;"></div>
+        <a href="{{ instantly_link }}" target="_blank" rel="noopener" class="knopf-sekundaer">{{ instantly_knopf_text }}</a>
+      </div>
+      <div class="postfach-nachrichten">
+        {% for m in detail.nachrichten %}
+        <div class="postfach-nachricht postfach-nachricht--{{ m.richtung }}">
+          <div class="postfach-nachricht-kopf">
+            <span class="postfach-nachricht-wer">{{ m.wer }}</span>
+            <span class="postfach-nachricht-zeit">{{ m.zeit }}</span>
+          </div>
+          <div class="postfach-nachricht-betreff">{{ m.betreff }}</div>
+          <div class="postfach-nachricht-text">{{ m.text }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

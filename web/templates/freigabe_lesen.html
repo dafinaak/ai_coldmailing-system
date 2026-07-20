@@ -1,0 +1,170 @@
+{% extends "layout.html" %}
+{% block titel %}Prüfen & Freigeben — {{ kunde_name }}{% endblock %}
+{% block inhalt %}
+<div class="seite seite--breit">
+  <div class="formular-zurueck"><a href="/pruefen">‹ Alle wartenden Aufträge</a></div>
+  <h1>Prüfen &amp; Freigeben</h1>
+
+  {% if zustand in ("wartet_auf_freigabe", "freigegeben") %}
+  <p class="seiten-hilfstext">Lies die Texte, die gleich im Namen von {{ absender }} verschickt werden. Erst wenn du freigibst, geht etwas raus.</p>
+  {% elif zustand == "uebergeben" %}
+  <p class="seiten-hilfstext">Diese Texte sind freigegeben und als Kampagne an Instantly übergeben.</p>
+  {% elif zustand == "abgelehnt" %}
+  <p class="seiten-hilfstext">Dieser Auftrag wurde abgelehnt. Nichts wurde versendet.</p>
+  {% endif %}
+
+  {% if fehler %}
+  <div class="formular-fehler">{{ fehler }}</div>
+  {% endif %}
+
+  {% if versand_fehler %}
+  <div class="fehler-box">
+    <div class="fehler-box-titel">{{ versand_fehler.was }}</div>
+    <div class="fehler-box-text">{{ versand_fehler.nicht }} {{ versand_fehler.tu }}</div>
+  </div>
+  {% endif %}
+
+  {% if zustand == "uebergeben" %}
+  <div class="handover-kasten">
+    <div class="handover-label">FREIGEGEBEN &amp; ÜBERGEBEN</div>
+    <div class="handover-titel">Die Kampagne »{{ kunde_name }}« liegt jetzt pausiert in Instantly.</div>
+    <div class="handover-text">Freigegeben von {{ freigabe.von }} am {{ freigabe.am }}. Versendet wird noch nichts: Gestartet wird die Kampagne von Hand in Instantly. Werden die Texte neu erstellt, verfällt die Freigabe automatisch.</div>
+    {% if campaign_id %}
+    <a href="https://app.instantly.ai/app/campaign/{{ campaign_id }}" target="_blank" rel="noopener" class="knopf-sekundaer">In Instantly öffnen ↗</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if zustand == "abgelehnt" and abgelehnt %}
+  <div class="abgelehnt-kasten">
+    <div class="abgelehnt-titel">Abgelehnt von {{ abgelehnt.von }} am {{ abgelehnt.am }}</div>
+    <div class="abgelehnt-text">Begründung: {{ abgelehnt.begruendung }}. Nichts wurde versendet. Lass neue Anschreiben erstellen, um frische Texte zu bekommen.</div>
+  </div>
+  {% endif %}
+
+  {% if zustand == "freigegeben" %}
+  <div class="gate-kasten">
+    <div class="gate-titel">Freigegeben — noch nicht an Instantly übergeben.</div>
+    <div class="gate-text">Freigegeben von {{ freigabe.von }} am {{ freigabe.am }}.</div>
+    <form method="post" action="/pruefen/{{ slug }}/{{ ts }}/senden-erneut">
+      <button type="submit" class="knopf-primaer">Erneut senden</button>
+    </form>
+  </div>
+  {% endif %}
+
+  <div class="pruef-zahlen">
+    <div><span class="pruef-zahl">{{ empf_anzahl }}</span> Anschreiben fertig</div>
+    <div><span class="pruef-zahl">{{ nacharbeit_anzahl }}</span> von der Prüfung aussortiert</div>
+  </div>
+
+  {% if nacharbeit %}
+  <details class="nacharbeit-kasten">
+    <summary>{{ nacharbeit_anzahl }} von der Prüfung aussortiert — diese Texte gehen nicht raus. Du kannst sie lesen und den Grund sehen.</summary>
+    {% for n in nacharbeit %}
+    <div class="nacharbeit-eintrag">
+      <div class="nacharbeit-kopf"><b>{{ n.name }}</b> · {{ n.firma }} · {{ n.email }}</div>
+      <div class="nacharbeit-grund">{{ n.grund }}</div>
+      {% if n.hat_text %}
+      <details class="nacharbeit-text">
+        <summary>Text lesen</summary>
+        <div><b>Betreff:</b> {{ n.betreff }}</div>
+        <div class="lese-text">{{ n.mail_1 }}</div>
+      </details>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </details>
+  {% endif %}
+
+  <div class="pruef-lese-grid" id="pruef-lese-grid">
+    <div class="empf-liste" id="empf-liste">
+      <div class="empf-liste-kopf">EMPFÄNGER · {{ empf_anzahl }}</div>
+      {% for e in empfaenger %}
+      <div class="empf-zeile" data-empf-index="{{ loop.index0 }}">
+        <span class="empf-gelesen-haken" data-gelesen-haken>&nbsp;</span>
+        <div>
+          <div class="empf-zeile-name">{{ e.firma }}</div>
+          <div class="empf-zeile-info">{{ e.name }} · {{ e.rolle }}</div>
+          <div class="empf-zeile-mail">{{ e.email }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="lese-liste">
+      {% for e in empfaenger %}
+      <div class="lese-karte">
+        <div class="lese-kopf">
+          <div class="lese-an-label">AN</div>
+          <div class="lese-name">{{ e.name }} · {{ e.rolle }}</div>
+          <div class="lese-firma">{{ e.firma }}</div>
+          <div class="lese-mail">{{ e.email }}</div>
+        </div>
+        <div class="lese-textteil-label">Anschreiben (geht sofort raus)</div>
+        <div class="lese-betreff">{{ e.betreff }}</div>
+        <div class="lese-text">{{ e.mail_1 }}</div>
+        <div class="lese-textteil-label">Nachfass-Mail 1 (nach {{ tag_1 }} Tagen)</div>
+        <div class="lese-text">{{ e.follow_up_1 }}</div>
+        <div class="lese-textteil-label">Nachfass-Mail 2 (nach {{ tag_2 }} Tagen)</div>
+        <div class="lese-text">{{ e.follow_up_2 }}</div>
+      </div>
+      {% else %}
+      <p class="kunden-leer">Keine Texte zum Lesen.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% if zustand == "wartet_auf_freigabe" %}
+  <div class="gate-kasten">
+    <div class="gate-titel">Ohne deine Freigabe wird nichts versendet.</div>
+    <div class="gate-text">Freigeben heißt: Die Texte gehen als Kampagne an Instantly — zunächst pausiert. Gestartet wird dort von Hand. Festgehalten wird: freigegeben von {{ nutzer }} am {{ heute }}.</div>
+
+    <form method="post" action="/pruefen/{{ slug }}/{{ ts }}/freigeben" id="freigeben-form">
+      <div class="checkliste" id="checkliste">
+        {% for text in checkliste_texte %}
+        <label class="checkliste-zeile">
+          <input type="checkbox" name="checkliste" value="{{ loop.index }}" class="checkliste-box">
+          <span>{{ text }}</span>
+        </label>
+        {% endfor %}
+      </div>
+      <div class="gate-knopf-zeile">
+        <button type="submit" class="knopf-primaer" id="freigeben-knopf" disabled>Freigeben</button>
+        <div class="auftrag-hinweis">Geht erst, wenn alle drei Punkte abgehakt sind.</div>
+      </div>
+    </form>
+
+    <details class="ablehnen-kasten">
+      <summary>Ablehnen …</summary>
+      <div class="gate-text">Ablehnen heißt: Nichts wird versendet. Schreib kurz dazu, was nicht gepasst hat — das hilft beim nächsten Auftrag.</div>
+      <form method="post" action="/pruefen/{{ slug }}/{{ ts }}/ablehnen" class="ablehnen-form">
+        <textarea name="begruendung" class="formular-textarea" placeholder="Was hat nicht gepasst?"></textarea>
+        <button type="submit" class="knopf-sekundaer">Ablehnen</button>
+      </form>
+    </details>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+(function () {
+  var boxen = document.querySelectorAll('#checkliste .checkliste-box');
+  var knopf = document.getElementById('freigeben-knopf');
+  function aktualisieren() {
+    if (!knopf) return;
+    var alle = true;
+    boxen.forEach(function (b) { if (!b.checked) alle = false; });
+    knopf.disabled = !alle;
+  }
+  boxen.forEach(function (b) { b.addEventListener('change', aktualisieren); });
+  aktualisieren();
+
+  document.querySelectorAll('#empf-liste .empf-zeile').forEach(function (zeile) {
+    zeile.addEventListener('click', function () {
+      zeile.classList.toggle('empf-zeile--gelesen');
+      var haken = zeile.querySelector('[data-gelesen-haken]');
+      if (haken) { haken.textContent = zeile.classList.contains('empf-zeile--gelesen') ? '✓' : ' '; }
+    });
+  });
+})();
+</script>
+{% endblock %}

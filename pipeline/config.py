@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from pathlib import Path
 import yaml
 
 PFLICHTFELDER = ["name", "zielgruppe", "angebot", "tonalitaet",
@@ -14,6 +15,7 @@ class Kunde:
     follow_up_tage: list
     test_empfaenger: list
     sperrliste: list = field(default_factory=list)  # Domains, nie anschreiben
+    webseite: str = ""  # Firmen-Webseite, Basis fuer die Angebots-Ableitung im Web-Interface
 
 def load_kunde(path) -> Kunde:
     with open(path, encoding="utf-8") as f:
@@ -50,4 +52,21 @@ def load_kunde(path) -> Kunde:
                 f"gefunden: {daten['sperrliste']!r}")
 
     return Kunde(**{k: daten[k] for k in PFLICHTFELDER},
-                 sperrliste=daten.get("sperrliste") or [])
+                 sperrliste=daten.get("sperrliste") or [],
+                 webseite=daten.get("webseite") or "")
+
+def lade_globale_sperrliste(daten_dir) -> list:
+    """Liest sperrliste-global.yaml aus daten_dir: eine einfache Liste aus
+    Domains (Wildcards wie *.bund.de erlaubt, siehe pipeline.dedupe), die
+    fuer ALLE Kunden zusaetzlich zu deren eigener sperrliste gilt. Fehlt die
+    Datei, gibt es (noch) keine globalen Sperren - das ist kein Fehler."""
+    pfad = Path(daten_dir) / "sperrliste-global.yaml"
+    if not pfad.exists():
+        return []
+    inhalt = yaml.safe_load(pfad.read_text(encoding="utf-8")) or []
+    if not isinstance(inhalt, list):
+        raise ValueError(
+            f"sperrliste-global.yaml in {pfad} ist falsch aufgebaut: erwartet wird eine "
+            f"einfache Liste von Domains (z.B. '- konkurrent-ki.de'), gefunden wurde "
+            f"stattdessen: {type(inhalt).__name__}.")
+    return inhalt

@@ -13,6 +13,28 @@ def write_preview(store, texte_pro_lead, nacharbeit):
 def is_approved(store) -> bool:
     return (store.run_dir / "FREIGABE.txt").exists()
 
-def approve(store):
-    (store.run_dir / "FREIGABE.txt").write_text(
-        f"Freigegeben am {datetime.now().isoformat()}\n", encoding="utf-8")
+def approve(store, name: str | None = None):
+    """Schreibt FREIGABE.txt. `name` ist optional (Standard None) fuer
+    Abwaertskompatibilitaet mit dem CLI-Aufruf (pipeline.__main__.freigeben),
+    der keinen angemeldeten Nutzer kennt; das Web-Interface (Task 5) ruft
+    immer mit dem Namen der angemeldeten Person auf, damit spaeter sichtbar
+    ist, wer freigegeben hat."""
+    zeilen = [f"Freigegeben am {datetime.now().isoformat()}"]
+    if name:
+        zeilen.append(f"Freigegeben von {name}")
+    (store.run_dir / "FREIGABE.txt").write_text("\n".join(zeilen) + "\n", encoding="utf-8")
+
+def freigabe_info(store) -> dict:
+    """Liest FREIGABE.txt und gibt {'am': str, 'von': str|None} zurueck -
+    fuer die Web-Anzeige ('Freigegeben von X am Y'). Gibt leere Werte
+    zurueck, wenn (noch) keine Freigabe existiert, statt zu werfen."""
+    pfad = store.run_dir / "FREIGABE.txt"
+    if not pfad.exists():
+        return {"am": None, "von": None}
+    am, von = None, None
+    for zeile in pfad.read_text(encoding="utf-8").splitlines():
+        if zeile.startswith("Freigegeben am "):
+            am = zeile[len("Freigegeben am "):].strip()
+        elif zeile.startswith("Freigegeben von "):
+            von = zeile[len("Freigegeben von "):].strip()
+    return {"am": am, "von": von}

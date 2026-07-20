@@ -1,0 +1,78 @@
+{% extends "layout.html" %}
+{% block titel %}Dashboard{% endblock %}
+{% block inhalt %}
+<div class="seite">
+  <h1>Dashboard</h1>
+  <p class="dash-hinweis">{{ dash_hinweis }}</p>
+
+  {% if angehalten_banner %}
+  <div class="fehler-box">
+    <div class="fehler-box-titel">{{ angehalten_banner.titel }}</div>
+    <div class="fehler-box-text">{{ angehalten_banner.text }}</div>
+    <div class="fehler-box-form"><a href="{{ angehalten_banner.link }}" class="knopf-primaer">Fortsetzen</a></div>
+  </div>
+  {% endif %}
+
+  {% if kontoproblem %}
+  <div class="dash-konto-liste">
+    {% for k in kontoproblem %}
+    <div class="dash-konto-zeile">
+      <div class="dash-konto-info">Konto-Problem bei <b>{{ k.name }}</b> ({{ k.kunde_name }}) — der Versand ruht.</div>
+      <a href="/kampagnen/{{ k.slug }}/{{ k.ts }}" class="knopf-sekundaer knopf-klein">Ansehen</a>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="dash-kacheln">
+    {% for k in kacheln %}
+    <a href="{{ k.link }}" class="dash-kachel{% if k.hervorgehoben %} dash-kachel--hervorgehoben{% endif %}">
+      <div class="dash-kachel-wert">{{ k.wert }}</div>
+      <div class="dash-kachel-label">{{ k.label }}</div>
+      <div class="dash-kachel-sub">{{ k.sub }}</div>
+    </a>
+    {% endfor %}
+  </div>
+
+  {% if wartende %}
+  <div class="dash-abschnitt-titel">WARTET AUF DEINE FREIGABE</div>
+  <div class="dash-wartend-liste">
+    {% for w in wartende %}
+    <div class="dash-wartend-karte">
+      <div class="dash-wartend-info">
+        <div class="dash-wartend-titel">{{ w.fertig }} Anschreiben für {{ w.kunde_name }}</div>
+        <div class="dash-wartend-zeile">{{ w.wartet_seit_text }} · {{ w.nacharbeit }} von der Prüfung aussortiert</div>
+      </div>
+      <a href="/pruefen/{{ w.slug }}/{{ w.ts }}" class="knopf-primaer knopf-klein">Jetzt prüfen</a>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="dash-kopf-zeile">
+    <div class="kamp-abschnitt-titel">KAMPAGNEN</div>
+    <a href="/kampagnen" class="dash-alle-kampagnen-link">Alle Kampagnen ansehen</a>
+  </div>
+  {% if not dash_kampagnen %}
+  <div class="leer-kasten">
+    <div class="leer-kasten-titel">Noch keine Kampagne</div>
+    <div>Sobald ein Auftrag geprüft und freigegeben ist, erscheint die Kampagne hier.</div>
+  </div>
+  {% else %}
+  <div class="dash-kamp-tabelle">
+    {% for c in dash_kampagnen %}
+    <a href="/kampagnen/{{ c.slug }}/{{ c.ts }}" class="dash-kamp-zeile">
+      <div class="kamp-name">{{ c.name }}</div>
+      <div class="kamp-gedaempft">{{ c.kunde }}</div>
+      <div class="kamp-gedaempft">{{ c.verschickt }} von {{ c.gesamt }} versendet</div>
+      <div><span class="kamp-status" style="background: {{ c.chip_bg }}; color: {{ c.chip_fg }};">{{ c.chip_text }}</span></div>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if live_stand_hinweis %}
+  <div class="hinweis-kasten">{{ live_stand_hinweis }}</div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -101,6 +101,12 @@ passiert (Beruhigung) · Was du tun kannst.
 - Gesperrte Domains — Hilfssatz siehe Wörterbuch.
 - Test-Adressen — Hilfssatz siehe Wörterbuch.
 
+## Anmeldung
+
+- Login-Seite: "Melde dich an, um weiterzumachen." Felder: Name, Passwort.
+- Fehlermeldung bei falschen Daten: "Name oder Passwort stimmt nicht."
+- Abmelden-Link: "Abmelden".
+
 ## Prüffrage für jeden Text
 
 Würde ein neuer Kollege ohne ein einziges erklärendes Gespräch

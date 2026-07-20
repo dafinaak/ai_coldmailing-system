@@ -1,0 +1,50 @@
+{% extends "layout.html" %}
+{% block titel %}Anschreiben erstellen lassen{% endblock %}
+{% block inhalt %}
+<div class="seite seite--schmal">
+  <h1>Anschreiben erstellen lassen</h1>
+  <p class="seiten-hilfstext">Das System sucht Ansprechpartner, liest die Webseite jeder Firma und schreibt persönliche Entwürfe. Versendet wird nichts — am Ende prüfst du und gibst frei.</p>
+
+  {% if fehler %}
+  <div class="formular-fehler">{{ fehler }}</div>
+  {% endif %}
+
+  {% if not kunden %}
+  <div class="hinweis-kasten">
+    {{ "Noch keine Kunden angelegt." }} <a href="/kunden/neu">Kunde anlegen</a>, bevor Anschreiben erstellt werden können.
+  </div>
+  {% else %}
+  <form method="post" action="/auftraege/neu" class="karte auftrag-form">
+    <div class="formular-label">Für welchen Kunden?</div>
+    <div class="auftrag-kunden-liste">
+      {% for k in kunden %}
+      <label class="auftrag-kunde-option">
+        <input type="radio" name="kunde_dateiname" value="{{ k.dateiname }}" {% if loop.first %}checked{% endif %}>
+        <span class="auftrag-kunde-info">
+          <span class="auftrag-kunde-name">{{ k.name }}</span>
+          <span class="auftrag-kunde-ziel">{{ k.ziel_text }}</span>
+        </span>
+      </label>
+      {% endfor %}
+    </div>
+    <a href="/kunden/neu" class="auftrag-neuer-kunde">+ Neuen Kunden anlegen</a>
+
+    <div class="formular-label formular-feld--mitabstand">Wie viele Ansprechpartner sollen gesucht werden?</div>
+    <div class="auftrag-limit-liste">
+      {% for opt in limit_optionen %}
+      <label class="auftrag-limit-option">
+        <input type="radio" name="limit" value="{{ opt }}" {% if opt == limit_default %}checked{% endif %}>
+        <span>{{ opt }}</span>
+      </label>
+      {% endfor %}
+    </div>
+
+    <div class="formular-fuss">
+      <button type="submit" class="knopf-primaer">Erstellen lassen</button>
+      <a href="/kampagnen" class="knopf-sekundaer">Abbrechen</a>
+      <span class="auftrag-hinweis">Dauert einige Minuten. Der Auftrag erscheint unter Kampagnen als »In Vorbereitung«.</span>
+    </div>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

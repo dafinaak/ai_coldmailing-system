@@ -12,6 +12,24 @@ from web.auth import lade_nutzer
 
 PWD_CONTEXT = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
+class _FakeInstantlyLeser:
+    """Minimaler Fake fuer app.state.instantly_leser (Baustein 2): das
+    Dashboard ruft seitdem IMMER InstantlyLeser.postfaecher() auf (siehe
+    web.routen.dashboard._postfach_probleme), unabhaengig davon, ob es
+    ueberhaupt eine Kampagne gibt - ohne diesen Fake wuerde jeder Test hier,
+    der bis zum Dashboard durchklickt, an der fehlenden INSTANTLY_API_KEY
+    scheitern. Diese Tests pruefen Anmeldung/Session/Seitenleiste, keine
+    Instantly-Daten - ein leerer, erreichbarer Stand reicht."""
+
+    def kampagnen_stand(self, campaign_ids):
+        return {cid: {"erreichbar": False, "status": None, "name": None,
+                       "versendet": None, "antworten": None, "schritte": [],
+                       "stand": None} for cid in campaign_ids}
+
+    def postfaecher(self):
+        return {"postfaecher": [], "erreichbar": True, "stand": None}
+
 SIEBEN_BEREICHE = [
     "Dashboard",
     "Kampagnen",
@@ -41,6 +59,7 @@ def daten_dir(tmp_path, monkeypatch):
 @pytest.fixture
 def client(daten_dir):
     app = create_app(daten_dir)
+    app.state.instantly_leser = _FakeInstantlyLeser()
     return TestClient(app)
 
 

@@ -1,0 +1,55 @@
+{% extends "layout.html" %}
+{% block titel %}Postfächer{% endblock %}
+{% block inhalt %}
+<div class="seite">
+  <h1>Postfächer</h1>
+  <p class="seiten-hilfstext">{{ postfaecher_hinweis }}</p>
+  <p class="hinweis-kasten">{{ nur_lesen_hinweis }}</p>
+
+  {% if hat_problem %}
+  <div class="fehler-box">
+    <div class="fehler-box-titel">{{ problem_banner_titel }}</div>
+    <div class="fehler-box-text">{{ problem_banner_text }}</div>
+    <div class="fehler-box-form">
+      <a href="{{ instantly_link }}" target="_blank" rel="noopener" class="knopf-sekundaer">{{ instantly_knopf_text }}</a>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if live_stand_hinweis %}
+  <div class="hinweis-kasten">{{ live_stand_hinweis }}</div>
+  {% endif %}
+
+  {% if postfaecher_leer %}
+  <div class="leer-kasten">
+    <div class="leer-kasten-titel">Noch kein Postfach</div>
+    <div>Sobald ein Postfach in Instantly angeschlossen ist, erscheint es hier.</div>
+  </div>
+  {% elif postfaecher %}
+  <div class="pf-tabelle">
+    <div class="pf-kopf">
+      <div>Postfach</div>
+      <div>Verbindung</div>
+      <div>Aufwärmen</div>
+      <div>Tageslimit</div>
+    </div>
+    {% for p in postfaecher %}
+    <div class="pf-zeile">
+      <div class="pf-email">{{ p.email }}</div>
+      <div><span class="kamp-status" style="background: {{ p.chip_bg }}; color: {{ p.chip_fg }};">{{ p.chip_text }}</span></div>
+      <div class="kamp-gedaempft">{{ p.warmup_text }}</div>
+      <div class="kamp-zahl">{{ p.daily_limit }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if stand_text %}
+  <p class="kamp-gedaempft" style="margin-top: 14px;">Stand {{ stand_text }}</p>
+  {% endif %}
+
+  <div style="margin-top: 14px;">
+    <a href="{{ instantly_link }}" target="_blank" rel="noopener" class="knopf-sekundaer">{{ instantly_knopf_text }}</a>
+  </div>
+</div>
+{% endblock %}

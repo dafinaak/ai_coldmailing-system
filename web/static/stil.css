@@ -890,6 +890,39 @@ h1 { margin: 0; font-size: 24px; }
 }
 .dash-kamp-zeile:last-child { border-bottom: none; }
 
+/* Postfaecher (Baustein 2) ------------------------------------------------ */
+
+.pf-tabelle {
+  background: var(--farbe-weiss);
+  border: 1px solid var(--farbe-rand);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-top: 14px;
+}
+.pf-kopf {
+  display: grid;
+  grid-template-columns: 2fr 150px 170px 120px;
+  gap: 12px;
+  padding: 11px 20px;
+  border-bottom: 1px solid var(--farbe-rand);
+  font-size: 11px;
+  color: var(--farbe-gedaempft);
+  font-family: var(--schrift-mono);
+  letter-spacing: 0.06em;
+}
+.pf-zeile {
+  display: grid;
+  grid-template-columns: 2fr 150px 170px 120px;
+  gap: 12px;
+  align-items: center;
+  padding: 13px 20px;
+  border-bottom: 1px solid #F0EEE5;
+  font-size: 13px;
+  color: var(--farbe-text);
+}
+.pf-zeile:last-child { border-bottom: none; }
+.pf-email { font-family: var(--schrift-mono); font-weight: 600; font-size: 12.5px; }
+
 /* Kontakte (Task 8) --------------------------------------------------- */
 
 .kontakte-suche-form { display: flex; gap: 10px; align-items: center; margin: 4px 0 14px; }

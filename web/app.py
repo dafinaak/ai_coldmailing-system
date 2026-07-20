@@ -24,6 +24,7 @@ from .routen import intro as intro_routen
 from .routen import kontakte as kontakte_routen
 from .routen import kunden as kunden_routen
 from .routen import postfach as postfach_routen
+from .routen import postfaecher as postfaecher_routen
 from .routen import sperrliste as sperrliste_routen
 
 BASIS = Path(__file__).resolve().parent
@@ -34,7 +35,7 @@ BASIS = Path(__file__).resolve().parent
 # Bereiche mit eigenem Routen-Modul werden unten aus dieser Liste
 # ausgenommen, sobald ihre echte Route registriert ist.
 BEREICHE_MIT_EIGENER_ROUTE = {"dashboard", "domains", "kunden", "pruefen", "kampagnen", "kontakte",
-                               "postfach", "so-funktionierts"}
+                               "postfach", "postfaecher", "so-funktionierts"}
 
 
 def create_app(daten_dir: Path) -> FastAPI:
@@ -73,6 +74,7 @@ def create_app(daten_dir: Path) -> FastAPI:
     app.include_router(kampagnen_routen.router)
     app.include_router(kontakte_routen.router)
     app.include_router(postfach_routen.router)
+    app.include_router(postfaecher_routen.router)
     app.include_router(dashboard_routen.router)
     app.include_router(intro_routen.router)
 

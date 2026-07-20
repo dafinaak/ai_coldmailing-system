@@ -11,11 +11,11 @@
 
   {% if not kunden %}
   <div class="hinweis-kasten">
-    {{ "Noch keine Kunden angelegt." }} <a href="/kunden/neu">Kunde anlegen</a>, bevor E-Mails geschrieben werden können.
+    {{ "Noch keine Angebote angelegt." }} <a href="/kunden/neu">Angebot anlegen</a>, bevor E-Mails geschrieben werden können.
   </div>
   {% else %}
   <form method="post" action="/auftraege/neu" class="karte auftrag-form">
-    <div class="formular-label">Für welchen Kunden?</div>
+    <div class="formular-label">Für welches Angebot?</div>
     <div class="auftrag-kunden-liste">
       {% for k in kunden %}
       <label class="auftrag-kunde-option">
@@ -27,7 +27,7 @@
       </label>
       {% endfor %}
     </div>
-    <a href="/kunden/neu" class="auftrag-neuer-kunde">+ Neuen Kunden anlegen</a>
+    <a href="/kunden/neu" class="auftrag-neuer-kunde">+ Neues Angebot anlegen</a>
 
     <div class="formular-label formular-feld--mitabstand">Wie viele Ansprechpartner sollen gesucht werden?</div>
     <div class="auftrag-limit-liste">

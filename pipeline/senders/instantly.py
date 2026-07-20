@@ -127,7 +127,7 @@ class InstantlySender:
         if b <= a:
             raise ValueError(
                 f"follow_up_tage muss aufsteigend sein (Tag a < Tag b), "
-                f"gefunden: [{a}, {b}]. Bitte kunde.yaml korrigieren.")
+                f"gefunden: [{a}, {b}]. Bitte die Angebots-Datei korrigieren.")
         sequenz_schritte = [
             {"type": "email", "delay": a,
              "variants": [{"subject": "{{betreff}}", "body": "{{mail_1}}"}]},

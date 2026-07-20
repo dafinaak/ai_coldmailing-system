@@ -42,8 +42,8 @@ CHECKLISTE_TEXTE = [
 CHECKLISTE_FEHLER = "Bitte alle drei Punkte abhaken, bevor du freigibst."
 BEGRUENDUNG_FEHLER = "Bitte kurz begründen, was nicht gepasst hat."
 
-KUNDE_DATEI_FEHLER = ("Die Kunden-Datei zu dieser E-Mail-Runde ist gerade nicht lesbar oder "
-                      "beschädigt. Bitte im Kunden-Bereich prüfen.")
+KUNDE_DATEI_FEHLER = ("Die Angebots-Datei zu dieser E-Mail-Runde ist gerade nicht lesbar oder "
+                      "beschädigt. Bitte im Angebote-Bereich prüfen.")
 
 # Review-Fund (Task 5): POST /freigeben und POST /ablehnen duerfen nur im
 # jeweils dafuer vorgesehenen Zustand etwas tun - sonst koennte z.B. ein

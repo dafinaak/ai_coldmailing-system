@@ -495,7 +495,7 @@ def test_dialog_verlangt_anmeldung(client):
 def test_dialog_ohne_kunden_zeigt_hinweis(angemeldeter_client):
     antwort = angemeldeter_client.get("/auftraege/neu")
     assert antwort.status_code == 200
-    assert "Noch keine Kunden angelegt." in antwort.text
+    assert "Noch keine Angebote angelegt." in antwort.text
 
 
 def test_dialog_listet_kunden_und_zeigt_leitfaden_text(angemeldeter_client, daten_dir):
@@ -512,7 +512,7 @@ def test_start_ohne_kunden_auswahl_zeigt_deutschen_fehler(angemeldeter_client, d
     antwort = angemeldeter_client.post(
         "/auftraege/neu", data={"kunde_dateiname": "", "limit": "25"})
     assert antwort.status_code == 400
-    assert "Noch keine Kunden angelegt." in antwort.text
+    assert "Noch keine Angebote angelegt." in antwort.text
 
 
 def test_start_redirect_zur_fortschrittsseite(angemeldeter_client, daten_dir, monkeypatch):
@@ -544,7 +544,7 @@ def test_start_bei_gesperrtem_kunden_zeigt_deutschen_fehler(angemeldeter_client,
     antwort = angemeldeter_client.post(
         "/auftraege/neu", data={"kunde_dateiname": "test-kunde", "limit": "25"})
     assert antwort.status_code == 400
-    assert "Für diesen Kunden läuft gerade schon eine E-Mail-Runde." in antwort.text
+    assert "Für dieses Angebot läuft gerade schon eine E-Mail-Runde." in antwort.text
 
 
 def test_fortschrittsseite_zeigt_schritte_und_zahlen_waehrend_laeuft(

@@ -1,5 +1,17 @@
 # Projekt: AI Coldmailing System
 
+## Nordstern (geklärt 20.07.2026)
+Das Tool wird INTERN genutzt (nicht für externe Kunden) und soll Wholix
+1:1 ersetzen: EINE eigene Plattform fürs Team, die alles kann, was Wholix
+kann — mit Instantly als unsichtbarem Motor darunter (Versand, Anwärmen,
+Zustellbarkeit; bewusst zugekauft, NICHT selbst gebaut). Der Wholix-Account
+dient nur als Vorlage zum Nachbauen. "1:1 für den Nutzer, Motor bleibt
+Instantly" — nicht den Versand-Motor selbst nachbauen (Monate + Spam-Risiko).
+Begriff "Kunde" → "Angebot" umbenannt (interne Setups, keine echten Kunden).
+Noch zum vollen Wholix-Ersatz fehlend (Fahrplan folgt): volles Postfach
+(Antworten lesen+schreiben im Tool), Kampagne im Tool scharf schalten,
+Postfach-Anbindung/Anwärm-Status, CRM-Rand (Anrufe/Notizen/AI-Chat).
+
 ## Worum es geht
 Ein wiederverwendbares KI-Coldmailing-System als eigenes Angebot/Produkt —
 einsetzbar bei mehreren Kunden. Hintergrund laut interner Notiz (16.07.2026):

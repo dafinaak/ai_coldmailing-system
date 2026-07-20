@@ -31,6 +31,21 @@ die beim ersten Login automatisch gezeigt wird (Cookie `intro_gesehen`,
 einmal wegklickbar, danach jederzeit über die Seitenleiste erreichbar) —
 Wortlaut siehe Abschnitt "Einstiegsseite" unten.
 
+## Umbenennung 20.07.2026 — "Kunde" heißt jetzt "Angebot"
+
+Das Werkzeug wird intern genutzt (nicht für externe Kunden) — jeder
+Eintrag ist ein internes Anschreib-Setup (Angebot + Zielgruppe +
+Tonalität + Absender + Sperrliste + Test-Adressen), nicht ein externer
+Kunde. Deshalb heißt der Bereich jetzt überall in der Oberfläche
+"Angebot" / "Angebote" statt "Kunde" / "Kunden" (Nav-Label, Überschriften,
+Knöpfe, Hilfstexte, Fehlermeldungen). Es bleibt eine Liste — das Team
+pflegt mehrere Angebote gleichzeitig.
+
+Namens-Kollision: Ein Eintrag hatte schon ein inneres Feld "Angebot"
+(der Angebotstext selbst). Weil der ganze Eintrag jetzt "Angebot" heißt,
+bekommt dieses innere Feld das Label **"Angebotstext"** (Hilfssatz bleibt
+sinngemäß gleich, nur "der Kunde" wird zu "ihr/euer").
+
 ## Das Grundprinzip
 
 **Wir benennen Dinge nach dem, was der Nutzer sieht und tut — nicht
@@ -53,7 +68,8 @@ einer Tabelle:
 
 | Bisher | Verbindlich ab jetzt | Anmerkung |
 |---|---|---|
-| Lauf / Auftrag / Anschreiben-Auftrag | **"E-Mail-Runde"** — die Karte heißt "E-Mail-Runde für [Kunde] · [N] Empfänger", z.B. "E-Mail-Runde für MOVEO Personalberatung · 34 Empfänger" | Das abstrakte Behälter-Wort verschwindet aus der Oberfläche. Sammelwort: "E-Mail-Runde" (nicht mehr "Auftrag"). |
+| Lauf / Auftrag / Anschreiben-Auftrag | **"E-Mail-Runde"** — die Karte heißt "E-Mail-Runde für [Name] · [N] Empfänger", z.B. "E-Mail-Runde für MOVEO Personalberatung · 34 Empfänger" | Das abstrakte Behälter-Wort verschwindet aus der Oberfläche. Sammelwort: "E-Mail-Runde" (nicht mehr "Auftrag"). [Name] ist der Name des Angebots. |
+| Kunde / Kunden (Bereich) | **"Angebot" / "Angebote"** | Internes Werkzeug, keine externen Kunden — siehe Abschnitt "Umbenennung 20.07.2026" oben. Das innere Feld "Angebot" (Angebotstext) heißt jetzt "Angebotstext". |
 | Lauf starten / "Anschreiben erstellen lassen" | **"E-Mails schreiben lassen"** (Kurzform auf kleinen Knöpfen: "Schreiben lassen") | Verb, Ergebnis klar. |
 | Lauf fortsetzen | **"Weitermachen, wo es aufgehört hat"** (Kurzform auf kleinen Knöpfen: "Fortsetzen") | |
 | Freigabe (Bereich) / "Prüfen & freigeben" | **"Lesen & Freigeben"** | "Freigabe" als Wort bleibt, aber die Aufgabe steht im Titel. Zusätzlich: eine erklärende Zeile "Was heißt freigeben?" direkt unter der Überschrift der Lese-Ansicht — dieser Bildschirm bekommt bewusst MEHR Erklärung als der Rest, weil hier echte E-Mails ausgelöst werden. |
@@ -63,12 +79,12 @@ einer Tabelle:
 | Anschreiben (die einzelne Mail) | **"E-Mail"** — erste = "erste E-Mail", dann "Nachfass-Mail 1 / 2" | Nur der Sammelbegriff für den Auftrag wird "E-Mail-Runde"; die einzelne Nachricht bleibt "E-Mail". |
 | "wartet auf Prüfung" | **"wartet darauf, dass du sie liest"** | |
 | Prüfung / Prüf-KI / "KI-Prüfer: …" | **"automatische Qualitätskontrolle"** / **"Qualitätskontrolle: …"** (pipeline/quality.py) | Die menschliche Aufgabe heißt "lesen" (Lesen & Freigeben); "prüfen" bleibt nur für die automatische Qualitätskontrolle der KI. |
-| Sperrliste | **"Gesperrte Domains"** + Hilfssatz: "An Firmen mit diesen Internet-Adressen wird nie geschrieben — z.B. eure eigene Firma oder Kunden." | |
+| Sperrliste | **"Gesperrte Domains"** + Hilfssatz: "An Firmen mit diesen Internet-Adressen wird nie geschrieben — z.B. eure eigene Firma." | |
 | Test-Empfänger | **"Test-Adressen"** + Hilfssatz: "Solange der Test-Modus an ist, gehen Mails nur an diese Adressen — an niemanden sonst." | |
 | Am Zug: du / Maschine | **"Jetzt bist du dran: …"** bzw. **"Das System arbeitet — du musst nichts tun."** | |
 | Kampagne | **"Kampagne (in Instantly)"** — bei der ersten Nennung je Seite, danach reicht "Kampagne" | Das Wort kennt das Team aus Instantly; alleinstehend bleibt es vage. |
 
-Unverändert (schon klar genug): Dashboard, Kunden, Kontakte, Postfach,
+Unverändert (schon klar genug): Dashboard, Kontakte, Postfach,
 Gesperrte Domains, Empfänger, Zielgruppe.
 
 ## Die vier Spalten des Boards
@@ -136,8 +152,8 @@ erreichbar. Text (wörtlich):
 > Dieses Werkzeug schreibt für dich Kalt-E-Mails an mögliche neue
 > Kunden — für jeden Empfänger einzeln, passend zu seiner Firma.
 >
-> 1. **Kunde anlegen:** Für wen und mit welchem Angebot geschrieben
->    werden soll.
+> 1. **Angebot anlegen:** Für wen geschrieben werden soll und was ihr
+>    anbietet.
 > 2. **E-Mail-Runde starten:** Das System sucht passende Firmen, liest
 >    deren Webseiten und schreibt die E-Mails von allein.
 > 3. **Lesen & freigeben:** Du liest die fertigen E-Mails und gibst dein
@@ -159,13 +175,13 @@ passiert (Beruhigung) · Was du tun kannst.
 > verloren gegangen — alle bisherigen Ergebnisse sind gespeichert.
 > Versuch es in ein paar Minuten mit »Fortsetzen«."
 
-## Kunden-Formular (jedes Feld mit Hilfssatz)
+## Angebot-Formular (jedes Feld mit Hilfssatz)
 
-- Name — "So heißt der Kunde überall in diesem Werkzeug."
+- Name — "So heißt das Angebot überall in diesem Werkzeug."
 - Webseite der Firma — "Von hier kann das System das Angebot ableiten."
 - Zielgruppe: Jobtitel / Region / Firmengröße — "Wen soll das System
   suchen? Beispiel: Geschäftsführer · Deutschland · 11–50 Mitarbeiter."
-- Angebot — "Was bietet der Kunde an? In zwei, drei Sätzen — die KI
+- Angebotstext — "Was bietet ihr an? In zwei, drei Sätzen — die KI
   nutzt das für jede Mail."
 - Tonalität — "Wie sollen die Mails klingen? Beispiel: ruhig,
   erklärend, keine Superlative."

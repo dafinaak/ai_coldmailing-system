@@ -46,7 +46,7 @@ def test_intro_seite_zeigt_die_vier_schritte(angemeldeter_client):
     assert antwort.status_code == 200
     text = antwort.text
     assert "So funktioniert Poleposition" in text
-    assert "Kunde anlegen" in text
+    assert "Angebot anlegen" in text
     assert "E-Mail-Runde starten" in text
     assert "Lesen &amp; freigeben" in text
     assert "Verschicken" in text

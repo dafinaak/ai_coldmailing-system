@@ -19,7 +19,7 @@ SIEBEN_BEREICHE = [
     "Kontakte",
     "Postfach",
     "Gesperrte Domains",
-    "Kunden",
+    "Angebote",
 ]
 
 

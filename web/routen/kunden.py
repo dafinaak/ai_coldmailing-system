@@ -61,8 +61,8 @@ WEBSEITE_FEHLT_FEHLER = (
 )
 
 KUNDE_DATEI_KAPUTT_FEHLER = (
-    "Diese Kunden-Datei ist gerade nicht lesbar oder beschädigt. Bitte die Datei von Hand "
-    "prüfen oder den Kunden neu anlegen."
+    "Diese Angebots-Datei ist gerade nicht lesbar oder beschädigt. Bitte die Datei von Hand "
+    "prüfen oder das Angebot neu anlegen."
 )
 
 ABLEITEN_FEHLER = (
@@ -354,7 +354,7 @@ async def kunde_neu_formular(request: Request):
 async def kunde_bearbeiten_formular(request: Request, dateiname: str):
     pfad = _kunden_dir(request.app.state.daten_dir) / f"{dateiname}.yaml"
     if not pfad.exists():
-        raise HTTPException(status_code=404, detail="Kunde nicht gefunden.")
+        raise HTTPException(status_code=404, detail="Angebot nicht gefunden.")
     # E-Fix 2a: eine kaputte/nicht mehr lesbare Kunden-Datei darf das
     # Bearbeiten-Formular nicht mit einem 500er abstuerzen lassen (gleiches
     # Prinzip wie web.routen.freigabe._lese_kontext) - stattdessen ein
@@ -428,7 +428,7 @@ async def kunde_bearbeiten_speichern(
     # diesem Fall schon 404 (siehe kunde_bearbeiten_formular oben), das
     # POST muss dasselbe tun statt schweigend zu erschaffen.
     if not (kunden_dir / f"{dateiname}.yaml").exists():
-        raise HTTPException(status_code=404, detail="Kunde nicht gefunden.")
+        raise HTTPException(status_code=404, detail="Angebot nicht gefunden.")
     # Nur die UNBEKANNTEN Schluessel aus der bestehenden YAML uebernehmen
     # (z.B. von Hand ergaenzte interne Notizen) - alle bekannten Felder
     # kommen ausschliesslich vom Formular. Sonst wuerde ein im Formular

@@ -112,7 +112,15 @@ def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None
     print("Naechster Schritt: pruefen, dann 'python -m pipeline freigeben <laufordner>'")
 
 def freigeben(laufordner: str):
-    approve(RunStore.resume(laufordner))
+    # E-Fix 7: Konsistenz mit dem Web-Guard (web.routen.freigabe -
+    # ZUSTAND_ERLAUBT_FREIGEBEN schliesst "abgelehnt" aus) - abgelehnt.json
+    # muss ein absolutes Veto sein, egal ueber welchen Weg (CLI oder Web)
+    # jemand versucht, danach doch noch freizugeben.
+    store = RunStore.resume(laufordner)
+    if (store.run_dir / "abgelehnt.json").exists():
+        sys.exit(
+            "Dieser Auftrag wurde abgelehnt - er darf nicht mehr freigegeben werden.")
+    approve(store)
     print("Freigegeben. Senden mit: python -m pipeline senden", laufordner)
 
 class SendenFehler(Exception):

@@ -129,6 +129,23 @@ def test_senden_verweigert_abgelehnten_lauf(tmp_path, monkeypatch):
         cli.senden(store.run_dir)
     assert poison_session.aufrufe == []
 
+def test_freigeben_verweigert_abgelehnten_lauf(tmp_path):
+    # E-Fix 7: Konsistenz mit dem Web-Guard (web.routen.freigabe -
+    # ZUSTAND_ERLAUBT_FREIGEBEN schliesst "abgelehnt" aus) - auch die CLI
+    # 'freigeben' muss abgelehnt.json respektieren, statt eine bereits
+    # abgelehnte Anschreiben-Runde im Nachhinein doch noch freizugeben.
+    store = RunStore(tmp_path, "Demo")
+    store.save_step("pruefung_ok", [])
+    (store.run_dir / "abgelehnt.json").write_text(
+        json.dumps({"von": "Lena", "am": "17.07.2026", "begruendung": "Ton passt nicht"}),
+        encoding="utf-8")
+
+    with pytest.raises(SystemExit, match="abgelehnt"):
+        cli.freigeben(str(store.run_dir))
+
+    assert not (store.run_dir / "FREIGABE.txt").exists()
+
+
 def test_senden_wiederholt_nach_fehlgeschlagenem_lead_import_ohne_neue_kampagne(
         tmp_path, monkeypatch):
     monkeypatch.setenv("INSTANTLY_API_KEY", "test-key")

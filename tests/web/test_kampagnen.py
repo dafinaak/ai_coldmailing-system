@@ -5,6 +5,7 @@ tests/web/test_freigabe.py (dort app.state.instantly fuer den
 Schreib-Pfad)."""
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from pathlib import Path
 
@@ -261,6 +262,41 @@ def test_liste_bei_api_ausfall_zeigt_freundlichen_hinweis_statt_absturz(angemeld
 
 
 # Detail --------------------------------------------------------------------
+
+def test_liste_zeigt_freigegeben_am_als_deutsches_datum_nicht_iso(angemeldeter_client, daten_dir):
+    # E-Fix 3: FREIGABE.txt speichert 'am' als ISO-Zeitstempel (siehe
+    # pipeline.approval.approve, datetime.now().isoformat()) - roh angezeigt
+    # waere das fuer Laien unlesbar ("2026-07-17T09:33:00.123"). Ein
+    # gemeinsamer Helfer formatiert das als deutsches Datum
+    # "17.07.2026, 09:33 Uhr".
+    app = angemeldeter_client.app
+    app.state.instantly_leser = FakeInstantlyLeser({
+        "camp-a": _stand(status="aktiv", name="[TEST] Demo GmbH"),
+    })
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml", ts="20260720-090000",
+                  zustand="uebergeben", campaign_id="camp-a")
+
+    antwort = angemeldeter_client.get("/kampagnen")
+    assert antwort.status_code == 200
+    assert re.search(r"\d{2}\.\d{2}\.\d{4}, \d{2}:\d{2} Uhr", antwort.text)
+    # Kein roher ISO-Zeitstempel (enthaelt ein 'T' zwischen Datum und Zeit)
+    # mehr in der Antwort:
+    assert not re.search(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}", antwort.text)
+
+
+def test_detail_zeigt_freigegeben_am_als_deutsches_datum_nicht_iso(angemeldeter_client, daten_dir):
+    app = angemeldeter_client.app
+    app.state.instantly_leser = FakeInstantlyLeser({
+        "camp-a": _stand(status="aktiv"),
+    })
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml", ts="20260720-090000",
+                  zustand="uebergeben", campaign_id="camp-a")
+
+    antwort = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-090000")
+    assert antwort.status_code == 200
+    assert re.search(r"\d{2}\.\d{2}\.\d{4}, \d{2}:\d{2} Uhr", antwort.text)
+    assert not re.search(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}", antwort.text)
+
 
 def test_detail_zeigt_schritte_mit_echten_tagen_und_wer_wann(angemeldeter_client, daten_dir):
     app = angemeldeter_client.app

@@ -13,9 +13,11 @@ from __future__ import annotations
 
 import json
 import os
+import threading
 from datetime import datetime
 from pathlib import Path
 
+import requests
 from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
 
@@ -23,7 +25,7 @@ from pipeline.__main__ import SendenFehler, _versand_ausfuehren
 from pipeline.approval import approve, freigabe_info, is_approved
 from pipeline.run_store import RunStore
 from web import auth
-from web.laufmanager import Laufmanager
+from web.laufmanager import Laufmanager, _lade_json_sicher
 from web.nav import nav_kontext
 from web.wartende import kunde_fuer as _kunde_fuer, wartende_laeufe
 
@@ -65,6 +67,31 @@ _ZUSTAND_TEXT = {
 def _zustand_fehler(aktion: str, zustand: str) -> str:
     grund = _ZUSTAND_TEXT.get(zustand, f"ist gerade nicht bereit dafür (Zustand: {zustand})")
     return f"Dieser Auftrag {grund} — {aktion} ist jetzt nicht mehr möglich. Lade die Seite neu."
+
+
+# E-Fix 6 (Doppelklick-Schutz): EIN threading.Lock JE Laufordner, in einem
+# module-level Dict gehalten - schuetzt _versand_ausfuehren gegen einen
+# Doppelklick-/Retry-Race auf "Freigeben"/"Erneut senden": FastAPI fuehrt
+# diese synchronen Routen in einem Threadpool aus (siehe Kommentare an den
+# Routen unten), zwei fast gleichzeitige POSTs koennten sonst beide
+# store.step_done("versand") als False lesen, bevor der erste seinen
+# Kampagnen-Anlage-Schritt speichert, und beide eine Kampagne anlegen. Der
+# Zugriff auf das Dict selbst ist durch einen eigenen Lock abgesichert
+# (Erzeugen eines neuen Locks fuer einen bisher unbekannten Laufordner ist
+# selbst ein Race, wenn zwei Threads gleichzeitig den ersten Zugriff
+# machen).
+_VERSAND_LOCKS: dict[str, threading.Lock] = {}
+_VERSAND_LOCKS_GUARD = threading.Lock()
+
+
+def _versand_lock_fuer(lauf_dir: Path) -> threading.Lock:
+    schluessel = str(lauf_dir)
+    with _VERSAND_LOCKS_GUARD:
+        lock = _VERSAND_LOCKS.get(schluessel)
+        if lock is None:
+            lock = threading.Lock()
+            _VERSAND_LOCKS[schluessel] = lock
+        return lock
 
 
 # Hilfsfunktionen ------------------------------------------------------------
@@ -177,10 +204,13 @@ def _lese_kontext(request: Request, slug: str, ts: str, *,
     pruefung_ok = store.load_step("pruefung_ok") if store.step_done("pruefung_ok") else []
     info_by_email = _dedupe_info_by_email(lauf_dir)
 
-    abgelehnt = None
-    abgelehnt_pfad = lauf_dir / "abgelehnt.json"
-    if abgelehnt_pfad.exists():
-        abgelehnt = json.loads(abgelehnt_pfad.read_text(encoding="utf-8"))
+    # E-Fix 4: sicheres JSON-Lade-Muster (web.laufmanager._lade_json_sicher)
+    # statt direktem json.loads - eine kaputte/nicht mehr gueltige
+    # abgelehnt.json (z.B. Unterprozess mitten im Schreiben abgebrochen)
+    # darf die Lese-Ansicht nicht mit einem 500er abstuerzen lassen. Das
+    # Template zeigt den Abgelehnt-Kasten ohnehin nur, wenn abgelehnt
+    # truthy ist (siehe freigabe_lesen.html) - None ist hier also sicher.
+    abgelehnt = _lade_json_sicher(lauf_dir / "abgelehnt.json")
 
     tage = follow_up_tage or [0, 0]
 
@@ -233,14 +263,27 @@ def _versand_antwort(request: Request, slug: str, ts: str, status_code: int = 20
     lauf_dir = _lauf_dir_oder_404(daten_dir, slug, ts)
     store = RunStore.resume(lauf_dir)
     sender = _hole_instantly(request)
+    # E-Fix 6: Doppelklick-/Retry-Schutz - siehe _versand_lock_fuer oben.
+    lock = _versand_lock_fuer(lauf_dir)
     try:
         # kunde wird HIER (relativ zu daten_dir) geladen und durchgereicht -
         # _versand_ausfuehren wuerde den in kunde_pfad.json gespeicherten
         # Pfad sonst relativ zum cwd DIESES Prozesses (des Webservers, nicht
         # daten_dir) lesen und ihn nicht finden (siehe Docstring dort).
         kunde = _kunde_fuer(daten_dir, lauf_dir)
-        _versand_ausfuehren(store, sender, kunde=kunde)
-    except Exception as fehler:  # SendenFehler (Gate) oder RuntimeError (Instantly-HTTP)
+        with lock:
+            _versand_ausfuehren(store, sender, kunde=kunde)
+    # E-Fix 5: vorher `except Exception` - das verschluckte auch echte
+    # Programmierfehler (TypeError/AttributeError/...) und zeigte sie
+    # faelschlich als "Instantly hat gerade nicht geantwortet" an. Konkret
+    # erwartet sind: SendenFehler (Gate-Ablehnung durch die Pipeline),
+    # RuntimeError (Instantly-HTTP-Fehler, siehe InstantlySender._post),
+    # ValueError (z.B. create_campaign()-Validierung/leerer Lead-Import),
+    # requests.RequestException (Netzwerk-/Timeout-Probleme) sowie
+    # OSError/KeyError (_kunde_fuer kann beim Laden der Kunden-Datei
+    # scheitern, gleicher Umgang wie web.wartende.wartende_laeufe).
+    except (SendenFehler, RuntimeError, ValueError, requests.RequestException,
+            OSError, KeyError) as fehler:
         kontext = _lese_kontext(request, slug, ts, versand_fehler=_versand_fehlertext(fehler))
         return request.app.state.templates.TemplateResponse(
             request, "freigabe_lesen.html", kontext, status_code=status_code)

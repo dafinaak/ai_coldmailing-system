@@ -17,6 +17,8 @@ from __future__ import annotations
 import tempfile
 from pathlib import Path
 
+import anthropic
+import requests
 import yaml
 from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
@@ -56,6 +58,11 @@ VORSCHLAG_HINWEIS = "Vorschlag von der Webseite übernommen — nur leere Felder
 
 WEBSEITE_FEHLT_FEHLER = (
     "Trag zuerst die Webseite der Firma ein — daraus wird das Angebot abgeleitet."
+)
+
+KUNDE_DATEI_KAPUTT_FEHLER = (
+    "Diese Kunden-Datei ist gerade nicht lesbar oder beschädigt. Bitte die Datei von Hand "
+    "prüfen oder den Kunden neu anlegen."
 )
 
 ABLEITEN_FEHLER = (
@@ -288,7 +295,16 @@ def _ableiten_antwort(request: Request, *, modus: str, dateiname: str | None, we
         ki = _hole_ki(request)
         text = fetch_text(werte["webseite"].strip())
         entwurf = draft_offer(text, ki)
-    except Exception:
+    # E-Fix 5: vorher `except Exception` - das verschluckte auch echte
+    # Programmierfehler und zeigte sie faelschlich als "hat gerade nicht
+    # geklappt" an. Konkret erwartet: ValueError (draft_offer, "KI-Entwurf
+    # unvollstaendig"), RuntimeError (KI.frage auf dem OpenRouter-Pfad bei
+    # HTTP-Fehler, oder fehlender KI-Schluessel), requests.RequestException
+    # (Netzwerk-/Timeout-Probleme auf dem OpenRouter-Pfad; fetch_text faengt
+    # eigene Netzwerkfehler zwar schon selbst ab, aber defensiv hier
+    # mitgefangen) sowie anthropic.AnthropicError (KI.frage auf dem
+    # Anthropic-SDK-Pfad).
+    except (ValueError, RuntimeError, requests.RequestException, anthropic.AnthropicError):
         return _formular_antwort(
             request, modus=modus, dateiname=dateiname, werte=werte, fehler=ABLEITEN_FEHLER,
         )
@@ -339,7 +355,17 @@ async def kunde_bearbeiten_formular(request: Request, dateiname: str):
     pfad = _kunden_dir(request.app.state.daten_dir) / f"{dateiname}.yaml"
     if not pfad.exists():
         raise HTTPException(status_code=404, detail="Kunde nicht gefunden.")
-    kunde = load_kunde(pfad)
+    # E-Fix 2a: eine kaputte/nicht mehr lesbare Kunden-Datei darf das
+    # Bearbeiten-Formular nicht mit einem 500er abstuerzen lassen (gleiches
+    # Prinzip wie web.routen.freigabe._lese_kontext) - stattdessen ein
+    # sichtbarer deutscher Fehlerhinweis mit leeren Platzhalter-Feldern.
+    try:
+        kunde = load_kunde(pfad)
+    except ValueError:
+        return _formular_antwort(
+            request, modus="bearbeiten", dateiname=dateiname, werte=dict(LEERE_WERTE),
+            fehler=KUNDE_DATEI_KAPUTT_FEHLER,
+        )
     return _formular_antwort(
         request, modus="bearbeiten", dateiname=dateiname, werte=_werte_aus_kunde(kunde),
     )
@@ -395,6 +421,14 @@ async def kunde_bearbeiten_speichern(
         test_empfaenger=test_empfaenger, sperrliste=sperrliste,
     )
     kunden_dir = _kunden_dir(request.app.state.daten_dir)
+    # E-Fix 2b: ohne diese Pruefung wuerde ein POST auf einen (noch) nicht
+    # existierenden Dateinamen still einen NEUEN Kunden anlegen - ein
+    # unbeabsichtigter zweiter Weg, Kunden anzulegen (an /kunden/neu
+    # vorbei, ueber eine erratene/veraltete URL). Das GET-Formular gibt in
+    # diesem Fall schon 404 (siehe kunde_bearbeiten_formular oben), das
+    # POST muss dasselbe tun statt schweigend zu erschaffen.
+    if not (kunden_dir / f"{dateiname}.yaml").exists():
+        raise HTTPException(status_code=404, detail="Kunde nicht gefunden.")
     # Nur die UNBEKANNTEN Schluessel aus der bestehenden YAML uebernehmen
     # (z.B. von Hand ergaenzte interne Notizen) - alle bekannten Felder
     # kommen ausschliesslich vom Formular. Sonst wuerde ein im Formular

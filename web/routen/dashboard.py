@@ -128,11 +128,14 @@ def dashboard(request: Request):
             "wert": KEIN_WERT, "label": "Heute versendet",
             "sub": "Mails über alle Kampagnen", "link": "/kampagnen",
         },
-        # TODO(Task 9 Postfach): echte Neu-Zaehlung. InstantlyLeser.
-        # kampagnen_stand()["antworten"] (Task 6) ist der LIFETIME-
-        # reply_count der Kampagne, nicht "neu seit dem letzten Besuch" -
-        # das hier auszugeben waere irrefuehrend (Reviewer-Fix 1), deshalb
-        # bis Task 9 der gleiche ehrliche Platzhalter wie 'Heute versendet'.
+        # TODO(spaeter): echte Neu-Zaehlung braucht Gelesen-Markierung.
+        # InstantlyLeser.kampagnen_stand()["antworten"] (Task 6) ist der
+        # LIFETIME-reply_count der Kampagne, nicht "neu seit dem letzten
+        # Besuch" - das hier auszugeben waere irrefuehrend (Reviewer-Fix 1).
+        # Postfach (Task 9) ist inzwischen gebaut, kennt aber selbst keinen
+        # Gelesen/Ungelesen-Status je Nachricht - ohne den gibt es keine
+        # ehrliche Zahl fuer "neu", deshalb bleibt es bei diesem ehrlichen
+        # Platzhalter wie bei 'Heute versendet'.
         {
             "wert": KEIN_WERT, "label": "Neue Antworten",
             "sub": "Im Postfach lesen", "link": "/postfach",

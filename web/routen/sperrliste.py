@@ -7,6 +7,8 @@ Liste gilt fuer ALLE Kunden zusaetzlich zu deren eigener Sperrliste (die
 im Kunden-Formular gepflegt wird, siehe Task 3)."""
 from __future__ import annotations
 
+import os
+import tempfile
 from pathlib import Path
 
 import yaml
@@ -23,9 +25,21 @@ DATEINAME = "sperrliste-global.yaml"
 
 
 def _speichern(daten_dir: Path, domains: list[str]) -> None:
-    (Path(daten_dir) / DATEINAME).write_text(
-        yaml.safe_dump(domains, allow_unicode=True), encoding="utf-8"
-    )
+    """E-Fix 1: temp-Datei + os.replace statt direktem write_text (gleiches
+    Muster wie web.routen.kunden._validieren_und_speichern) - os.replace ist
+    ein atomarer Betriebssystem-Rename, die Zieldatei ist also NIE
+    kurzzeitig leer/halb geschrieben sichtbar (z.B. fuer einen parallelen
+    Lauf, der pipeline.config.lade_globale_sperrliste genau in diesem
+    Moment liest)."""
+    daten_dir = Path(daten_dir)
+    ziel = daten_dir / DATEINAME
+    with tempfile.NamedTemporaryFile(
+        "w", dir=daten_dir, prefix=f".{DATEINAME}-", suffix=".tmp",
+        delete=False, encoding="utf-8",
+    ) as tmp:
+        yaml.safe_dump(domains, tmp, allow_unicode=True)
+        tmp_pfad = Path(tmp.name)
+    os.replace(tmp_pfad, ziel)
 
 
 def _seite(request: Request, fehler: str | None = None, status_code: int = 200):

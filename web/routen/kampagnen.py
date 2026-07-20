@@ -16,7 +16,7 @@ from pipeline.run_store import RunStore
 from web import auth
 from web.laufmanager import Laufmanager, wartet_seit_text as _wartet_seit_text
 from web.nav import nav_kontext
-from web.wartende import kunde_fuer as _kunde_fuer
+from web.wartende import format_deutsches_datum, kunde_fuer as _kunde_fuer
 
 router = APIRouter()
 
@@ -214,7 +214,7 @@ def _kampagnen_zeilen_aus_stand(mit_kampagne: list[dict], stand_by_id: dict[str,
             "chip_text": chip["text"], "chip_bg": chip["bg"], "chip_fg": chip["fg"],
             "gesamt": eintrag["empf_anzahl"],
             "verschickt": versendet if versendet is not None else "—",
-            "freigegeben_am": eintrag["freigabe"]["am"] or "—",
+            "freigegeben_am": format_deutsches_datum(eintrag["freigabe"]["am"]) or "—",
         })
     return zeilen
 
@@ -316,7 +316,8 @@ def kampagne_detail(request: Request, slug: str, ts: str):
             "kd_satz": PAUSIERT_SATZ if ist_pausiert else "",
             "kd_pausiert_hinweis": PAUSIERT_HINWEIS if ist_pausiert else "",
             "kd_kontoproblem_hinweis": KONTOPROBLEM_HINWEIS if ist_kontoproblem else "",
-            "kd_von": freigabe["von"] or "unbekannt", "kd_am": freigabe["am"] or "—",
+            "kd_von": freigabe["von"] or "unbekannt",
+            "kd_am": format_deutsches_datum(freigabe["am"]) or "—",
             "kd_gesamt": gesamt,
             "kd_schritte": kd_schritte,
             "kd_antworten": stand.get("antworten") if stand.get("antworten") is not None else "—",

@@ -7,6 +7,7 @@ test_kampagnen.py nicht schreibt."""
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -125,6 +126,20 @@ def test_aggregiert_ueber_zwei_kunden_drei_laeufe_inkl_legacy_leads(daten_dir):
 
     # Sortierung: neuester Lauf zuerst (Bob 07-05 > Carla 07-03 > Anna 07-01).
     assert [k["email"] for k in kontakte] == ["bob@demo.de", "carla@moveo.de", "anna@demo.de"]
+
+
+def test_angeschrieben_am_zeigt_deutsches_datum_nicht_iso(daten_dir):
+    # E-Fix 3: freigabe_info()["am"] ist ein ISO-Zeitstempel (siehe
+    # pipeline.approval.approve) - fuer die Anzeige muss das als deutsches
+    # Datum "17.07.2026, 09:33 Uhr" erscheinen, nicht roh.
+    _lauf(daten_dir, "demo-gmbh", "demo-gmbh.yaml", "20260705-090000",
+          leads=[_lead("Bob", "Beispiel", "bob@demo.de", "Demo GmbH")],
+          pruefung_ok=[{"email": "bob@demo.de", "betreff": "Betreff"}],
+          versand_komplett=True)
+
+    kontakte = sammle_kontakte(daten_dir)
+    zuletzt = kontakte[0]["zuletzt"]
+    assert re.match(r"angeschrieben am \d{2}\.\d{2}\.\d{4}, \d{2}:\d{2} Uhr$", zuletzt)
 
 
 def test_gefunden_und_uebergeben_wird_ehrlich_als_angeschrieben_beschriftet(daten_dir):

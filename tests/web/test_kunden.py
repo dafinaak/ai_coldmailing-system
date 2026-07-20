@@ -168,6 +168,33 @@ def test_bearbeiten_formular_zeigt_vorhandene_werte(angemeldeter_client, daten_d
     assert 'value="3"' in antwort.text and 'value="7"' in antwort.text
 
 
+def test_bearbeiten_formular_bei_kaputter_datei_zeigt_freundlichen_fehler_statt_absturz(
+    angemeldeter_client, daten_dir
+):
+    # E-Fix 2a: GET .../bearbeiten auf einer kaputten Kunden-Datei (z.B.
+    # Pflichtfelder fehlen, load_kunde wirft ValueError) darf nicht mit
+    # einem 500er abstuerzen - gleiches Prinzip wie web.routen.freigabe.
+    # _lese_kontext (siehe test_freigabe.py, "kaputte Kunden-Datei").
+    (daten_dir / "kunden").mkdir()
+    _kunde_datei(daten_dir, "demo-gmbh").write_text("name: Demo GmbH\n", encoding="utf-8")
+    antwort = angemeldeter_client.get("/kunden/demo-gmbh/bearbeiten")
+    assert antwort.status_code == 200
+    assert "nicht lesbar" in antwort.text or "beschädigt" in antwort.text
+
+
+def test_bearbeiten_speichern_fuer_nicht_vorhandenen_kunden_gibt_404(
+    angemeldeter_client, daten_dir
+):
+    # E-Fix 2b: POST .../bearbeiten auf einen Dateinamen, der noch gar
+    # nicht existiert, darf nicht still einen neuen Kunden anlegen (das
+    # waere ein Umgehen von /kunden/neu ueber eine erratene URL) - sondern
+    # muss 404 geben, wie das GET-Pendant es schon tut.
+    daten = dict(GUELTIGE_FORMULARDATEN)
+    antwort = angemeldeter_client.post("/kunden/gibts-nicht/bearbeiten", data=daten)
+    assert antwort.status_code == 404
+    assert not _kunde_datei(daten_dir, "gibts-nicht").exists()
+
+
 def test_bearbeiten_speichert_aenderungen_unter_gleichem_dateinamen(
     angemeldeter_client, daten_dir
 ):
@@ -341,6 +368,30 @@ def test_ableiten_bei_ki_fehler_zeigt_dreiteiligen_deutschen_fehler(
     assert "noch einmal versuchen" in antwort.text  # Was du tun kannst
     assert "Neue Firma GmbH" in antwort.text  # Eingaben bleiben erhalten
     assert "VORSCHLAG VON DER WEBSEITE" not in antwort.text
+
+
+def test_ableiten_laesst_programmierfehler_durch_statt_ihn_zu_verschlucken(
+    angemeldeter_client, app, monkeypatch
+):
+    # E-Fix 5: _ableiten_antwort hatte `except Exception` - das wuerde auch
+    # echte Programmierfehler (z.B. ein TypeError in eigenem Code) leise
+    # verschlucken und als "hat gerade nicht geklappt" anzeigen. Jetzt sind
+    # nur noch die konkret erwarteten Ausnahmen gefangen (requests-/KI-
+    # Fehler), ein TypeError muss sichtbar bleiben.
+    class KaputteKIProgrammierfehler:
+        def frage(self, system, prompt):
+            raise TypeError("das ist ein Programmierfehler, kein erwarteter KI-Fehler")
+
+    monkeypatch.setattr(
+        "web.routen.kunden.fetch_text", lambda url: "Wir bauen Automationen."
+    )
+    app.state.ki = KaputteKIProgrammierfehler()
+
+    daten = dict(GUELTIGE_FORMULARDATEN)
+    daten["angebot"] = ""
+    daten["tonalitaet"] = ""
+    with pytest.raises(TypeError):
+        angemeldeter_client.post("/kunden/neu/ableiten", data=daten)
 
 
 def test_ableiten_ohne_webseite_bricht_ab_ohne_ki_aufruf(angemeldeter_client, app):

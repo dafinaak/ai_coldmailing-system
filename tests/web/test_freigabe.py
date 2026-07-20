@@ -214,6 +214,24 @@ def test_lese_ansicht_unbekannter_lauf_404(angemeldeter_client):
     assert antwort.status_code == 404
 
 
+def test_lese_ansicht_kaputte_abgelehnt_json_zeigt_seite_statt_absturz(
+        angemeldeter_client, daten_dir):
+    # E-Fix 4: abgelehnt.json wird ueber das sichere JSON-Lade-Muster
+    # gelesen (web.laufmanager._lade_json_sicher) - eine kaputte/nicht
+    # gueltige abgelehnt.json (z.B. Unterprozess mitten im Schreiben
+    # abgebrochen) darf die Lese-Ansicht nicht mit einem 500er abstuerzen
+    # lassen. status()/_ist_wartend_reine_dateipruefung pruefen ohnehin nur
+    # Datei-EXISTENZ (nicht den Inhalt), der Zustand ist hier also
+    # "abgelehnt" - das Template zeigt den Abgelehnt-Kasten nur, wenn der
+    # geparste Wert vorhanden ist (siehe freigabe_lesen.html), sonst bleibt
+    # er einfach weg statt abzustuerzen.
+    lauf_dir = _lauf_anlegen(daten_dir, dedupe_behalten=_DEDUPE_BEHALTEN)
+    (lauf_dir / "abgelehnt.json").write_text("{das ist kein gueltiges JSON", encoding="utf-8")
+
+    antwort = angemeldeter_client.get(f"/pruefen/{KUNDE_SLUG}/20260717-090000")
+    assert antwort.status_code == 200
+
+
 def test_lese_ansicht_kaputte_kunden_datei_zeigt_freundlichen_fehler_statt_absturz(
         angemeldeter_client, daten_dir):
     # Review-Fund (Task 5): _lese_kontext muss denselben defensiven
@@ -362,6 +380,57 @@ def test_freigeben_bereits_freigegeben_ueberschreibt_audit_trail_nicht(angemelde
     # Kein zweiter Versand-Versuch ueber freigeben() ausgeloest - der
     # Versand-Retry bleibt der eigene /senden-erneut-Weg vorbehalten.
     assert fake.campaigns_erstellt == []
+
+
+def test_freigeben_laesst_programmierfehler_durch_statt_ihn_zu_verschlucken(
+        angemeldeter_client, daten_dir):
+    # E-Fix 5: _versand_antwort hatte `except Exception` - das wuerde auch
+    # echte Programmierfehler (z.B. ein TypeError im Sender/eigenen Code)
+    # leise verschlucken und als "Instantly hat gerade nicht geantwortet"
+    # anzeigen. Jetzt sind nur noch die konkret erwarteten Ausnahmen
+    # gefangen (SendenFehler, RuntimeError, ValueError, requests.
+    # RequestException, plus OSError/KeyError fuer _kunde_fuer) - ein
+    # TypeError muss sichtbar bleiben.
+    class KaputterSenderProgrammierfehler:
+        def create_campaign(self, kunde):
+            raise TypeError("das ist ein Programmierfehler, kein erwarteter Instantly-Fehler")
+
+    app = angemeldeter_client.app
+    app.state.instantly = KaputterSenderProgrammierfehler()
+    _lauf_anlegen(daten_dir, dedupe_behalten=_DEDUPE_BEHALTEN)
+
+    with pytest.raises(TypeError):
+        angemeldeter_client.post(
+            f"/pruefen/{KUNDE_SLUG}/20260717-090000/freigeben",
+            data={"checkliste": ["1", "2", "3"]},
+        )
+
+
+def test_senden_erneut_doppelklick_legt_nur_eine_kampagne_an(angemeldeter_client, daten_dir):
+    # E-Fix 6: Doppelklick-Schutz - zwei (hier sequentielle, siehe
+    # Aufgabenbrief: eine echte Nebenlaeufigkeits-Pruefung waere flaky)
+    # POSTs auf /senden-erneut duerfen nicht beide eine Kampagne anlegen.
+    # Die Versand-Ausfuehrung wird ueber einen Lock JE Laufordner
+    # abgesichert (web.routen.freigabe._versand_lock_fuer).
+    from web.routen import freigabe as freigabe_modul
+    assert hasattr(freigabe_modul, "_versand_lock_fuer")  # Lock-Infrastruktur existiert
+
+    app = angemeldeter_client.app
+    fake = FakeInstantly()
+    app.state.instantly = fake
+    _lauf_anlegen(daten_dir, dedupe_behalten=_DEDUPE_BEHALTEN, freigegeben=True)
+
+    erste = angemeldeter_client.post(f"/pruefen/{KUNDE_SLUG}/20260717-090000/senden-erneut")
+    assert erste.status_code == 200
+    assert fake.campaigns_erstellt == [KUNDE_NAME]
+
+    zweite = angemeldeter_client.post(f"/pruefen/{KUNDE_SLUG}/20260717-090000/senden-erneut")
+    assert zweite.status_code == 200
+    # Zweiter Klick nimmt den "bereits angelegt"-Pfad (versand_komplett ist
+    # nach dem ersten Klick schon da) - keine zweite Kampagne.
+    assert fake.campaigns_erstellt == [KUNDE_NAME]
+    assert len(fake.leads_importiert) == 1
+    assert "bereits angelegt" in zweite.text
 
 
 def test_freigeben_verlangt_anmeldung(client, daten_dir):

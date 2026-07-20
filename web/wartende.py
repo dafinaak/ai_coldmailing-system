@@ -12,11 +12,29 @@ von web.laufmanager (ebenfalls ein Leaf-Modul) und der Pipeline ab, nie von
 web.nav oder einem web.routen.*-Modul."""
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 
 from pipeline.config import load_kunde
 from pipeline.run_store import RunStore
 from web.laufmanager import Laufmanager, wartet_seit_text
+
+
+def format_deutsches_datum(iso_text: str | None) -> str | None:
+    """Formatiert einen ISO-8601-Zeitstempel (wie ihn pipeline.approval.
+    approve() in FREIGABE.txt schreibt, ueber datetime.now().isoformat())
+    als deutsches Datum "17.07.2026, 09:33 Uhr" - fuer Laien lesbar statt
+    dem rohen "2026-07-17T09:33:00.123456". E-Fix 3 (geteilter Helfer, siehe
+    web.routen.kampagnen/web.kontakte). None/leer/nicht parsebar kommt
+    UNVERAENDERT zurueck (roh anzeigen ist besser als abzustuerzen oder das
+    Feld verschwinden zu lassen)."""
+    if not iso_text:
+        return iso_text
+    try:
+        zeitpunkt = datetime.fromisoformat(iso_text)
+    except ValueError:
+        return iso_text
+    return zeitpunkt.strftime("%d.%m.%Y, %H:%M Uhr")
 
 
 def kunde_fuer(daten_dir, lauf_dir: Path):

@@ -37,7 +37,7 @@ from pathlib import Path
 
 from pipeline.approval import freigabe_info
 from pipeline.run_store import RunStore
-from web.wartende import kunde_fuer
+from web.wartende import format_deutsches_datum, kunde_fuer
 
 
 def _leads_eintraege(daten) -> list:
@@ -88,7 +88,7 @@ def _kontakte_aus_lauf(daten_dir, kunden_ordner: Path, lauf_dir: Path,
     zuletzt_angeschrieben = None
     if versand_komplett:
         store = RunStore.resume(lauf_dir)
-        am = freigabe_info(store)["am"] or "unbekanntem Zeitpunkt"
+        am = format_deutsches_datum(freigabe_info(store)["am"]) or "unbekanntem Zeitpunkt"
         zuletzt_angeschrieben = f"angeschrieben am {am}"
 
     for eintrag in eintraege:

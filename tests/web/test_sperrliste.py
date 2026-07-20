@@ -99,6 +99,18 @@ def test_domain_hinzufuegen_doppelt_gibt_deutschen_fehler_und_aendert_datei_nich
     assert inhalt == ["konkurrent-ki.de"]
 
 
+def test_speichern_hinterlaesst_keine_temporaeren_dateien(angemeldeter_client, daten_dir):
+    # E-Fix 1: sperrliste-global.yaml wird atomar geschrieben (temp-Datei +
+    # os.replace, gleiches Muster wie web.routen.kunden._validieren_und_
+    # speichern) - nach dem Schreiben darf keine liegen gebliebene temporaere
+    # Datei im Datenverzeichnis zurueckbleiben (z.B. bei einem Absturz
+    # mitten im write_text waere die Zieldatei vorher kurzzeitig
+    # kaputt/leer gewesen).
+    angemeldeter_client.post("/domains/hinzufuegen", data={"domain": "konkurrent.de"})
+    reste = [p for p in daten_dir.iterdir() if p.name.startswith(".sperrliste-global")]
+    assert reste == []
+
+
 def test_domain_entfernen_aendert_datei(angemeldeter_client, daten_dir):
     (daten_dir / "sperrliste-global.yaml").write_text(
         yaml.safe_dump(["konkurrent-ki.de", "*.bund.de"]), encoding="utf-8"

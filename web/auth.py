@@ -35,7 +35,7 @@ def hole_secret() -> str:
     if not secret:
         raise RuntimeError(
             "Fehlende Umgebungsvariable: WEB_SECRET. Bitte in .env eintragen "
-            "(ein zufaelliger Text als Wert reicht, z.B. erzeugt mit "
+            "(ein zufälliger Text als Wert reicht, z.B. erzeugt mit "
             "`openssl rand -hex 32`)."
         )
     return secret
@@ -55,7 +55,7 @@ def lade_nutzer(daten_dir: Path) -> list[dict]:
     if not isinstance(inhalt, list):
         raise RuntimeError(
             f"users.yaml in {pfad} ist falsch aufgebaut: erwartet wird eine "
-            f"Liste von Eintraegen wie in users.yaml.example, gefunden wurde "
+            f"Liste von Einträgen wie in users.yaml.example, gefunden wurde "
             f"stattdessen: {type(inhalt).__name__}."
         )
     for i, eintrag in enumerate(inhalt):

@@ -54,7 +54,7 @@ _DEDUPE_BEHALTEN = [
      "company": "Firma GmbH", "title": "CTO", "website": "", "source": "apollo"},
 ]
 
-_NACHARBEIT = [{"email": "carla@firma.de", "grund": "Betreff laenger als 60 Zeichen",
+_NACHARBEIT = [{"email": "carla@firma.de", "grund": "Betreff länger als 60 Zeichen",
                 "betreff": "X" * 61, "mail_1": "Text der nicht rausgeht",
                 "follow_up_1": "F1", "follow_up_2": "F2"}]
 
@@ -198,7 +198,7 @@ def test_lese_ansicht_zeigt_aussortierte_texte_aufklappbar(angemeldeter_client, 
     assert antwort.status_code == 200
     text = antwort.text
     assert "carla@firma.de" in text
-    assert "Betreff laenger als 60 Zeichen" in text
+    assert "Betreff länger als 60 Zeichen" in text
     assert "Text der nicht rausgeht" in text
     assert "<details" in text and "<summary" in text
 

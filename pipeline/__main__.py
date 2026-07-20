@@ -35,8 +35,8 @@ def _setze_schritte_zurueck(store, ab_schritt: str):
     freigabe_pfad = store.run_dir / "FREIGABE.txt"
     if freigabe_pfad.exists():
         freigabe_pfad.unlink()
-        print("Alte Freigabe verworfen (FREIGABE.txt geloescht) - dieser Lauf "
-             "muss nach --neu-ab erneut geprueft und freigegeben werden.")
+        print("Alte Freigabe verworfen (FREIGABE.txt gelöscht) - dieser Lauf "
+             "muss nach --neu-ab erneut geprüft und freigegeben werden.")
 
 def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None = None):
     _brauche_env("APOLLO_API_KEY")
@@ -109,7 +109,7 @@ def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None
                          "gruende_verworfen": gruende,
                          "ohne_email": stand_leads["ohne_email"]})
     print(f"Vorschau: {store.run_dir / 'freigabe-vorschau.md'}")
-    print("Naechster Schritt: pruefen, dann 'python -m pipeline freigeben <laufordner>'")
+    print("Nächster Schritt: prüfen, dann 'python -m pipeline freigeben <laufordner>'")
 
 def freigeben(laufordner: str):
     # E-Fix 7: Konsistenz mit dem Web-Guard (web.routen.freigabe -
@@ -158,7 +158,7 @@ def _versand_ausfuehren(store, sender, kunde=None) -> str:
         raise SendenFehler(
             "Dieser Auftrag wurde abgelehnt - es darf nichts versendet werden.")
     if not is_approved(store):
-        raise SendenFehler("Keine Freigabe fuer diesen Lauf (FREIGABE.txt fehlt).")
+        raise SendenFehler("Keine Freigabe für diesen Lauf (FREIGABE.txt fehlt).")
     if store.step_done("versand_komplett"):
         campaign_id = store.load_step("versand_komplett")["campaign_id"]
         raise SendenFehler(f"Kampagne bereits angelegt: {campaign_id}")
@@ -168,7 +168,7 @@ def _versand_ausfuehren(store, sender, kunde=None) -> str:
     erlaubt = {e.strip().lower() for e in kunde.test_empfaenger}
     fremde = [t["email"] for t in texte if t["email"] not in erlaubt]
     if fremde:
-        raise SendenFehler(f"Abbruch: Empfaenger nicht in Test-Empfaenger-Liste: {fremde}")
+        raise SendenFehler(f"Abbruch: Empfänger nicht in Test-Empfänger-Liste: {fremde}")
     if not texte:
         raise SendenFehler("Abbruch: keine freigegebenen Texte zum Versenden.")
 

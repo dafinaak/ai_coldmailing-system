@@ -6,12 +6,12 @@ SYSTEM = "Du bist ein strenger Pruefer fuer B2B-Kaltakquise-Texte."
 def _regeln(texte: dict) -> str:
     alle = " ".join(texte.values())
     if "{" in alle or "[" in alle:
-        return "Platzhalter im Text uebrig"
+        return "Platzhalter im Text übrig"
     if len(texte["betreff"]) > 60:
-        return "Betreff laenger als 60 Zeichen"
+        return "Betreff länger als 60 Zeichen"
     woerter = len(texte["mail_1"].split())
     if not 40 <= woerter <= 160:
-        return f"mail_1 hat {woerter} Woerter (erlaubt 40-160)"
+        return f"mail_1 hat {woerter} Wörter (erlaubt 40-160)"
     return ""
 
 def check(texte, lead, kunde, ki):
@@ -24,4 +24,4 @@ def check(texte, lead, kunde, ki):
     urteil = ki.frage(SYSTEM, prompt).strip()
     if urteil.upper().startswith("JA"):
         return True, "bestanden"
-    return False, f"KI-Pruefer: {urteil}"
+    return False, f"KI-Prüfer: {urteil}"

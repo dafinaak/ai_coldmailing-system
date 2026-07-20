@@ -17,7 +17,7 @@ def test_entfernt_bekannte_aus_frueheren_laeufen(tmp_path):
     (alt / "leads.json").write_text(json.dumps([{"email": "a@x.de"}]), encoding="utf-8")
     behalten, verworfen = dedupe([_lead("a@x.de"), _lead("neu@x.de")], tmp_path)
     assert [l.email for l in behalten] == ["neu@x.de"]
-    assert verworfen[0]["grund"] == "bereits in frueherem Lauf angeschrieben"
+    assert verworfen[0]["grund"] == "bereits in früherem Lauf angeschrieben"
 
 def test_sperrliste_blockt_domains_auch_mit_wildcard(tmp_path):
     leads = [_lead("chef@digitaldiamonds.agency"), _lead("amt@stadt.bund.de"),
@@ -44,7 +44,7 @@ def test_sperrliste_greift_auch_ohne_schema(tmp_path):
 def test_eigener_lauf_zaehlt_nicht_als_frueherer_lauf(tmp_path):
     # Regression: CLI speichert leads.json im aktuellen Laufordner, BEVOR
     # dedupe laeuft. Ohne Ausnahme fuer den eigenen Lauf wuerde dedupe jeden
-    # Lead als "bereits in frueherem Lauf angeschrieben" verwerfen.
+    # Lead als "bereits in früherem Lauf angeschrieben" verwerfen.
     aktueller_lauf = tmp_path / "20260101-000000"
     aktueller_lauf.mkdir()
     (aktueller_lauf / "leads.json").write_text(

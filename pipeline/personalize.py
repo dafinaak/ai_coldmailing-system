@@ -17,5 +17,5 @@ def personalize(lead, kunde, ki, webseiten_text: str) -> dict:
     except ValueError:
         daten = {}
     if any(not daten.get(k) for k in PFLICHT):
-        raise ValueError(f"KI-Antwort unvollstaendig fuer {lead.email}")
+        raise ValueError(f"KI-Antwort unvollständig für {lead.email}")
     return {k: daten[k] for k in PFLICHT}

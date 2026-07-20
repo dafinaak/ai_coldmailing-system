@@ -20,7 +20,7 @@ def draft_offer(website_text: str, ki) -> dict:
     except ValueError:
         daten = {}
     if any(not daten.get(k) for k in FELDER):
-        raise ValueError("KI-Entwurf unvollstaendig")
+        raise ValueError("KI-Entwurf unvollständig")
     return {k: daten[k] for k in FELDER}
 
 def uebernehmen(kunde_pfad, entwurf: dict):

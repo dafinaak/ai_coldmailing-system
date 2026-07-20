@@ -15,4 +15,4 @@ def test_bericht_enthaelt_ohne_email_zeile(tmp_path):
     write_report(store, {"gefunden": 10, "verworfen": 3, "personalisiert": 6,
                          "nacharbeit": 1, "gruende_verworfen": [], "ohne_email": 4})
     text = (store.run_dir / "bericht.md").read_text(encoding="utf-8")
-    assert "Ohne E-Mail uebersprungen: 4" in text
+    assert "Ohne E-Mail übersprungen: 4" in text

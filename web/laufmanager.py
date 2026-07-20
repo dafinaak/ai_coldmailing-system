@@ -271,7 +271,7 @@ class Laufmanager:
         if kunde_pfad and kunde_pfad.get("pfad"):
             return kunde_pfad["pfad"]
         raise LaufmanagerFehler(
-            f"Kein Kunde fuer Laufordner {lauf_dir} ermittelbar.")
+            f"Kein Kunde für Laufordner {lauf_dir} ermittelbar.")
 
     def _limit_fuer(self, lauf_dir: Path) -> int:
         meta = _lade_json_sicher(lauf_dir / "auftrag_meta.json")

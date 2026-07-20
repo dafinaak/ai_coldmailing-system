@@ -29,7 +29,7 @@ def test_unvollstaendige_antwort_wirft_fehler():
 
 def test_kaputtes_json_wirft_valueerror():
     ki = FakeKI('{"betreff": kaputt}')
-    with pytest.raises(ValueError, match="unvollstaendig"):
+    with pytest.raises(ValueError, match="unvollständig"):
         personalize(LEAD, KUNDE, ki, webseiten_text="")
 
 def test_prosa_um_json_herum_wird_toleriert():

@@ -47,7 +47,7 @@ def dedupe(leads, kunde_laeufe_dir, sperrliste=(), aktueller_lauf=None):
             verworfen.append({"email": lead.email, "grund": "doppelt in dieser Liste"})
         elif lead.email in bekannte:
             verworfen.append({"email": lead.email,
-                              "grund": "bereits in frueherem Lauf angeschrieben"})
+                              "grund": "bereits in früherem Lauf angeschrieben"})
         else:
             gesehen.add(lead.email)
             behalten.append(lead)

@@ -1,7 +1,7 @@
 def write_report(store, zahlen: dict):
     zeilen = ["# Lauf-Bericht", "",
               f"- Gefunden: {zahlen['gefunden']}",
-              f"- Ohne E-Mail uebersprungen: {zahlen['ohne_email']}",
+              f"- Ohne E-Mail übersprungen: {zahlen['ohne_email']}",
               f"- Verworfen: {zahlen['verworfen']} ({'; '.join(zahlen['gruende_verworfen']) or 'keine'})",
               f"- Personalisiert: {zahlen['personalisiert']}",
               f"- Nacharbeit: {zahlen['nacharbeit']}"]

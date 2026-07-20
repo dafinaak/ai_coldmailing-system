@@ -45,7 +45,7 @@ class KI:
             self.client = anthropic.Anthropic()  # liest ANTHROPIC_API_KEY
         else:
             raise RuntimeError(
-                "Kein KI-Schluessel gefunden: weder OPENROUTER_API_KEY noch "
+                "Kein KI-Schlüssel gefunden: weder OPENROUTER_API_KEY noch "
                 "ANTHROPIC_API_KEY ist gesetzt. Bitte in .env eintragen "
                 "(siehe .env.example).")
 

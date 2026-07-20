@@ -4,12 +4,12 @@ zielgruppe:
   region: [Germany]
   firmengroesse: ["11-50"]
 angebot: >-
-  KI-Automatisierung fuer Vertriebsprozesse: Wir analysieren, wo im
+  KI-Automatisierung für Vertriebsprozesse: Wir analysieren, wo im
   Vertrieb Zeit verloren geht, und bauen Automationen, die Routinearbeit
-  uebernehmen - von der Lead-Recherche bis zum Nachfassen.
-tonalitaet: ruhig, erklaerend, keine Superlative, keine Ausrufezeichen
+  übernehmen - von der Lead-Recherche bis zum Nachfassen.
+tonalitaet: ruhig, erklärend, keine Superlative, keine Ausrufezeichen
 absender: Leonard von Digital Diamonds
-# Fuer den Endnachweis verkuerzt (statt 3/7), damit der Beweis schnell steht:
+# Für den Endnachweis verkürzt (statt 3/7), damit der Beweis schnell steht:
 follow_up_tage: [1, 2]
 test_empfaenger:
   - leonardluzhnica7@gmail.com

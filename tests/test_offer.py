@@ -15,7 +15,7 @@ def test_uebernehmen_fuellt_nur_leere_felder(tmp_path):
 
 def test_kaputtes_json_wirft_valueerror():
     ki = FakeKI('{"angebot": kaputt}')
-    with pytest.raises(ValueError, match="unvollstaendig"):
+    with pytest.raises(ValueError, match="unvollständig"):
         draft_offer("Text", ki)
 
 def test_main_ohne_genug_argumente_bricht_kontrolliert_ab(monkeypatch, capsys):

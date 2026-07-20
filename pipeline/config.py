@@ -33,8 +33,8 @@ def load_kunde(path) -> Kunde:
     if not all(tage[i] < tage[i + 1] for i in range(len(tage) - 1)):
         raise ValueError(
             f"follow_up_tage in {path} muss aufsteigend sortiert sein, jeder Tag also "
-            f"spaeter als der vorherige (z.B. [3, 7], nicht [7, 3] oder [3, 3]) - "
-            f"gefunden: {tage!r}. Grund: Instantly zaehlt den Abstand jeweils zum "
+            f"später als der vorherige (z.B. [3, 7], nicht [7, 3] oder [3, 3]) - "
+            f"gefunden: {tage!r}. Grund: Instantly zählt den Abstand jeweils zum "
             f"vorherigen Schritt, aus [a, b] wird also 'Follow-up 1 nach a Tagen, "
             f"Follow-up 2 nach (b - a) weiteren Tagen'.")
 

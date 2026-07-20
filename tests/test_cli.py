@@ -55,7 +55,7 @@ def test_senden_verweigert_fremde_empfaenger(tmp_path, monkeypatch):
     store.save_step("pruefung_ok", [{"email": "fremd@echt.de", "betreff": "B",
                                      "mail_1": "M", "follow_up_1": "F", "follow_up_2": "F"}])
     approve(store)
-    with pytest.raises(SystemExit, match="Test-Empfaenger"):
+    with pytest.raises(SystemExit, match="Test-Empfänger"):
         senden(store.run_dir)
 
 def test_laedt_dotenv_ohne_vorhandene_variablen_zu_ueberschreiben(tmp_path, monkeypatch):
@@ -236,10 +236,10 @@ def test_lauf_personalisiert_end_zu_ende_und_dedupe_greift_erst_im_naechsten_lau
     erste_leads = json.loads((erster_lauf / "leads.json").read_text(encoding="utf-8"))
     assert len(erste_leads["leads"]) == 2 and erste_leads["ohne_email"] == 0
     bericht = (erster_lauf / "bericht.md").read_text(encoding="utf-8")
-    assert "Ohne E-Mail uebersprungen: 0" in bericht
+    assert "Ohne E-Mail übersprungen: 0" in bericht
 
     # Zweiter, frischer Lauf: jetzt muessen beide Leads aus dem ersten Lauf
-    # als "bereits in frueherem Lauf angeschrieben" verworfen werden - das
+    # als "bereits in früherem Lauf angeschrieben" verworfen werden - das
     # beweist, dass Dedupe ueber Laeufe hinweg weiterhin greift.
     cli.lauf("kunden/demo-gmbh.yaml", 10, None)
 
@@ -247,7 +247,7 @@ def test_lauf_personalisiert_end_zu_ende_und_dedupe_greift_erst_im_naechsten_lau
     assert len(laeufe) == 2
     zweiter_dedupe = json.loads((laeufe[1] / "dedupe.json").read_text(encoding="utf-8"))
     assert len(zweiter_dedupe["verworfen"]) == 2
-    assert all(v["grund"] == "bereits in frueherem Lauf angeschrieben"
+    assert all(v["grund"] == "bereits in früherem Lauf angeschrieben"
                for v in zweiter_dedupe["verworfen"])
 
 def test_lauf_globale_sperrliste_blockt_lead_auch_ohne_eigene_kunden_sperrliste(

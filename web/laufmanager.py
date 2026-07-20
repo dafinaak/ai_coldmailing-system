@@ -98,6 +98,28 @@ FEHLER_MUSTER = [
 ]
 
 
+def wartet_seit_text(lauf_dir: Path) -> str:
+    """Formuliert 'Wartet seit ... auf Prüfung' - wörtliches Muster aus dem
+    Karten-Beispiel im Leitfaden (docs/text-leitfaden-interface.md), nur die
+    Dauer ist dynamisch (dort als Beispiel '2 Std.' vorgegeben). Hierher
+    verschoben (Task 7, aus web.routen.auftraege) - web.routen.freigabe,
+    web.routen.kampagnen UND jetzt web.wartende brauchen dieselbe Funktion;
+    ein Leaf-Modul ohne Route-Importe verhindert Zirkel-Importe (siehe
+    web/wartende.py)."""
+    pruefung_pfad = lauf_dir / "pruefung_ok.json"
+    try:
+        sekunden = time.time() - pruefung_pfad.stat().st_mtime
+    except OSError:
+        sekunden = 0
+    if sekunden < 60:
+        dauer = "gerade eben"
+    elif sekunden < 3600:
+        dauer = f"{int(sekunden // 60)} Min."
+    else:
+        dauer = f"{int(sekunden // 3600)} Std."
+    return f"Wartet seit {dauer} auf Prüfung"
+
+
 class LaufmanagerFehler(Exception):
     """Basisklasse fuer alle Fehler, die eine Route direkt als deutschen
     Formular-/Seitenfehler anzeigen darf (str(fehler) ist bereits fertiger

@@ -26,7 +26,7 @@ from pipeline.run_store import RunStore
 from web import auth
 from web.laufmanager import Laufmanager
 from web.nav import nav_kontext
-from web.routen.auftraege import _wartet_seit_text
+from web.wartende import wartende_laeufe
 
 router = APIRouter()
 
@@ -156,30 +156,11 @@ def _nacharbeit_liste(nacharbeit: list, info_by_email: dict) -> list[dict]:
 
 
 def _wartende_laeufe(request: Request) -> list[dict]:
-    daten_dir = request.app.state.daten_dir
-    manager = _manager(request)
-    laeufe_wurzel = Path(daten_dir) / "laeufe"
-    eintraege = []
-    if not laeufe_wurzel.is_dir():
-        return eintraege
-    for kunden_ordner in sorted(p for p in laeufe_wurzel.iterdir() if p.is_dir()):
-        for lauf_dir in sorted(p for p in kunden_ordner.iterdir() if p.is_dir()):
-            stand = manager.status(lauf_dir)
-            if stand["zustand"] != "wartet_auf_freigabe":
-                continue
-            try:
-                kunde_name = _kunde_fuer(daten_dir, lauf_dir).name
-            except (OSError, ValueError, KeyError):
-                kunde_name = kunden_ordner.name
-            eintraege.append({
-                "slug": kunden_ordner.name,
-                "ts": lauf_dir.name,
-                "kunde_name": kunde_name,
-                "fertig": stand["fertig"],
-                "nacharbeit": stand["nacharbeit"],
-                "wartet_seit_text": _wartet_seit_text(lauf_dir),
-            })
-    return eintraege
+    # Task 7: die Aggregation selbst lebt jetzt in web.wartende (geteilt mit
+    # dem Dashboard und dem Sidebar-Badge) - hier nur noch ein duenner
+    # Wrapper, damit der Rest dieser Datei (freigabe_liste) unveraendert
+    # bleibt.
+    return wartende_laeufe(request.app.state.daten_dir)
 
 
 def _lese_kontext(request: Request, slug: str, ts: str, *,

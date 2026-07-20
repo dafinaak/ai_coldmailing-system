@@ -796,3 +796,97 @@ h1 { margin: 0; font-size: 24px; }
   font-size: 13.5px;
   color: #2E5A82;
 }
+
+/* Dashboard (Task 7) ------------------------------------------------------ */
+
+.dash-hinweis { color: var(--farbe-gedaempft); margin: 4px 0 22px; font-size: 13.5px; }
+
+.dash-konto-liste { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+.dash-konto-zeile {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: var(--farbe-fehler-hintergrund);
+  border: 1.5px solid var(--farbe-fehler-rand);
+  border-radius: 12px;
+  padding: 13px 20px;
+}
+.dash-konto-info { flex: 1; min-width: 240px; font-size: 13px; color: var(--farbe-fehler-text); }
+
+.dash-kacheln {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+@media (max-width: 760px) { .dash-kacheln { grid-template-columns: repeat(2, 1fr); } }
+
+.dash-kachel {
+  display: block;
+  background: var(--farbe-weiss);
+  border: 1.5px solid var(--farbe-rand);
+  border-radius: 12px;
+  padding: 16px 18px;
+  text-decoration: none;
+  color: var(--farbe-text);
+}
+.dash-kachel:hover { border-color: var(--farbe-gedaempft); color: var(--farbe-text); }
+.dash-kachel--hervorgehoben { background: #F8EFD8; border-color: #E3CE9E; }
+.dash-kachel--hervorgehoben .dash-kachel-wert,
+.dash-kachel--hervorgehoben .dash-kachel-label { color: #5F4100; }
+
+.dash-kachel-wert { font-family: var(--schrift-mono); font-weight: 700; font-size: 26px; }
+.dash-kachel-label { font-size: 12.5px; font-weight: 600; margin-top: 2px; }
+.dash-kachel-sub { font-size: 11.5px; color: var(--farbe-gedaempft); margin-top: 1px; }
+
+.dash-abschnitt-titel {
+  font-family: var(--schrift-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: #8A5D00;
+  margin: 26px 0 10px;
+}
+
+.dash-wartend-liste { display: flex; flex-direction: column; gap: 10px; }
+.dash-wartend-karte {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: #F8EFD8;
+  border: 1.5px solid #E3CE9E;
+  border-radius: 12px;
+  padding: 15px 20px;
+}
+.dash-wartend-info { flex: 1; min-width: 240px; }
+.dash-wartend-titel { font-weight: 700; font-size: 14.5px; color: #5F4100; }
+.dash-wartend-zeile { font-size: 12.5px; color: #8A5D00; margin-top: 2px; }
+
+.dash-kopf-zeile {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 28px 0 10px;
+}
+.dash-kopf-zeile .kamp-abschnitt-titel { margin: 0; }
+.dash-alle-kampagnen-link { font-size: 13px; font-weight: 600; }
+
+.dash-kamp-tabelle {
+  background: var(--farbe-weiss);
+  border: 1px solid var(--farbe-rand);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.dash-kamp-zeile {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1.4fr 140px;
+  gap: 14px;
+  align-items: center;
+  padding: 13px 20px;
+  border-bottom: 1px solid #F0EEE5;
+  font-size: 13px;
+  color: var(--farbe-text);
+  text-decoration: none;
+}
+.dash-kamp-zeile:last-child { border-bottom: none; }
+.dash-kamp-zeile:hover { background: #FBFAF4; color: var(--farbe-text); }

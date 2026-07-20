@@ -16,9 +16,8 @@ from pipeline.approval import freigabe_info
 from pipeline.config import load_kunde
 from pipeline.run_store import RunStore
 from web import auth
-from web.laufmanager import Laufmanager
+from web.laufmanager import Laufmanager, wartet_seit_text as _wartet_seit_text
 from web.nav import nav_kontext
-from web.routen.auftraege import _wartet_seit_text
 
 router = APIRouter()
 
@@ -192,14 +191,24 @@ def _live_stand_hinweis(staende: list[dict]) -> str | None:
     return "Live-Stand gerade nicht erreichbar — noch kein Stand abgerufen."
 
 
-def _kampagnen_zeilen(request: Request, laeufe: list[dict]) -> tuple[list[dict], str | None]:
-    mit_kampagne = [l for l in laeufe if l["campaign_id"]]
+def _stand_fuer(request: Request, mit_kampagne: list[dict]) -> dict[str, dict]:
+    """Der EINE Instantly-Abruf (InstantlyLeser.kampagnen_stand, 60s-Cache)
+    fuer alle uebergebenen Laeufe mit campaign_id. Bewusst von der
+    Zeilen-Aufbereitung getrennt (siehe _kampagnen_zeilen_aus_stand), damit
+    andere Ansichten mit demselben Bedarf (Task 7, web.routen.dashboard)
+    sich EIN Ergebnis teilen koennen statt je Kachel/Abschnitt erneut
+    abzufragen - bei kaltem Cache + ausgefallener API wuerde ein zweiter
+    Abruf 2x drei sequentielle GETs je Kampagne bedeuten (siehe
+    InstantlyLeser._hole_frisch) und die Seite unnoetig lange blockieren."""
     if not mit_kampagne:
-        return [], None
-
+        return {}
     leser = _hole_leser(request)
-    stand_by_id = leser.kampagnen_stand([l["campaign_id"] for l in mit_kampagne])
+    return leser.kampagnen_stand([l["campaign_id"] for l in mit_kampagne])
 
+
+def _kampagnen_zeilen_aus_stand(mit_kampagne: list[dict], stand_by_id: dict[str, dict]) -> list[dict]:
+    """Reine Aufbereitung (kein Netzwerk-Zugriff) - baut aus einem bereits
+    abgerufenen stand_by_id (siehe _stand_fuer) die Anzeige-Zeilen."""
     zeilen = []
     for eintrag in mit_kampagne:
         stand = stand_by_id.get(eintrag["campaign_id"], {})
@@ -214,7 +223,7 @@ def _kampagnen_zeilen(request: Request, laeufe: list[dict]) -> tuple[list[dict],
             "verschickt": versendet if versendet is not None else "—",
             "freigegeben_am": eintrag["freigabe"]["am"] or "—",
         })
-    return zeilen, _live_stand_hinweis(list(stand_by_id.values()))
+    return zeilen
 
 
 # Routen ------------------------------------------------------------------
@@ -229,7 +238,10 @@ async def kampagnen_liste(request: Request):
         if l["campaign_id"] is None and l["zustand"] in
         ("laeuft", "angehalten", "wartet_auf_freigabe", "freigegeben")
     ]
-    kampagnen_zeilen, live_stand_hinweis = _kampagnen_zeilen(request, laeufe)
+    mit_kampagne = [l for l in laeufe if l["campaign_id"]]
+    stand_by_id = _stand_fuer(request, mit_kampagne)
+    kampagnen_zeilen = _kampagnen_zeilen_aus_stand(mit_kampagne, stand_by_id)
+    live_stand_hinweis = _live_stand_hinweis(list(stand_by_id.values()))
 
     return request.app.state.templates.TemplateResponse(
         request, "kampagnen_liste.html",

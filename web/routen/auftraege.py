@@ -6,7 +6,6 @@ Formulare/URLs in Aufrufe davon und rendert die Vorlagen aus dem Leitfaden."""
 from __future__ import annotations
 
 import json
-import time
 from datetime import datetime
 from pathlib import Path
 
@@ -15,7 +14,10 @@ from fastapi.responses import JSONResponse, RedirectResponse
 
 from pipeline.config import load_kunde
 from web import auth
-from web.laufmanager import LaufBereitsAktiv, Laufmanager, LaufmanagerFehler, SCHRITTE
+from web.laufmanager import (
+    LaufBereitsAktiv, Laufmanager, LaufmanagerFehler, SCHRITTE,
+    wartet_seit_text as _wartet_seit_text,
+)
 from web.nav import nav_kontext
 from web.routen.kunden import _kunden_dir, _zielgruppe_text
 
@@ -78,24 +80,6 @@ def _ergaenze_meta(lauf_dir: Path, **felder) -> None:
     daten = json.loads(meta_pfad.read_text(encoding="utf-8")) if meta_pfad.exists() else {}
     daten.update(felder)
     meta_pfad.write_text(json.dumps(daten, ensure_ascii=False), encoding="utf-8")
-
-
-def _wartet_seit_text(lauf_dir: Path) -> str:
-    """Formuliert 'Wartet seit ... auf Prüfung' - wörtliches Muster aus dem
-    Karten-Beispiel im Leitfaden (docs/text-leitfaden-interface.md), nur die
-    Dauer ist dynamisch (dort als Beispiel '2 Std.' vorgegeben)."""
-    pruefung_pfad = lauf_dir / "pruefung_ok.json"
-    try:
-        sekunden = time.time() - pruefung_pfad.stat().st_mtime
-    except OSError:
-        sekunden = 0
-    if sekunden < 60:
-        dauer = "gerade eben"
-    elif sekunden < 3600:
-        dauer = f"{int(sekunden // 60)} Min."
-    else:
-        dauer = f"{int(sekunden // 3600)} Std."
-    return f"Wartet seit {dauer} auf Prüfung"
 
 
 def _lade_meta(lauf_dir: Path) -> dict:

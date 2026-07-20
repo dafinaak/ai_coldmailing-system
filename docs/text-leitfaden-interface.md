@@ -126,8 +126,8 @@ Direkt unter der Überschrift, gut sichtbar (dieser Bildschirm bekommt
 bewusst mehr Erklärung als der Rest, weil hier echte E-Mails ausgelöst
 werden): **"Was heißt freigeben?"** Dein grünes Licht, dass diese E-Mails
 verschickt werden dürfen. Sie gehen dann — noch pausiert — an Instantly;
-scharf geschaltet werden sie dort von Hand. Ohne deine Freigabe passiert
-nichts.
+verschickt wird erst, wenn du die Kampagne mit »Jetzt verschicken«
+startest (Baustein 1, siehe unten). Ohne deine Freigabe passiert nichts.
 
 - Pro Empfänger sichtbar: Name, Firma, **E-Mail-Adresse**, dann:
   "Erste E-Mail (geht sofort raus)", "Nachfass-Mail 1 (nach X Tagen)",
@@ -135,10 +135,40 @@ nichts.
 - Durchgefallene Texte: **"[N] durchgefallen – geht nicht raus"** — Du
   kannst die Texte lesen und den Grund sehen.
 - Freigeben-Bereich: "**Freigeben heißt:** Die Texte gehen als Kampagne
-  (in Instantly) — zunächst pausiert. Gestartet wird dort von Hand.
-  Festgehalten wird: freigegeben von [Name] am [Datum]."
+  — noch pausiert — an Instantly. Verschickt wird erst, wenn du die
+  Kampagne mit »Jetzt verschicken« startest (auf der Kampagnen-Seite).
+  Ohne deine Freigabe passiert nichts. Festgehalten wird: freigegeben
+  von [Name] am [Datum]."
 - Ablehnen: "**Ablehnen heißt:** Nichts wird versendet. Schreib kurz
   dazu, was nicht gepasst hat — das hilft bei der nächsten E-Mail-Runde."
+
+## Kampagne im Tool starten und pausieren (Baustein 1, 20.07.2026)
+
+Die Kampagnen-Detailseite bekommt zwei Knöpfe, wenn Instantly die Kampagne
+noch pausiert zeigt bzw. gerade aktiv sendet. Beide sind bewusst KEIN
+Ein-Klick-Knopf: erst klappt ein Kasten mit dem ehrlichen Satz auf, dann
+bestätigt ein zweiter, eigener Knopf.
+
+- Hinweis auf der Detailseite (statt des alten "... Gestartet wird dort
+  von Hand — hier nur zum Nachschauen."): **"Diese Kampagne ist in
+  Instantly angelegt, aber noch nicht gestartet."** Darunter: "Noch wurde
+  nichts verschickt. Drück unten auf »Jetzt verschicken«, wenn es losgehen
+  soll — bis dahin passiert nichts von allein." Der Link "Kampagne in
+  Instantly öffnen ↗" bleibt als zweite, unaufdringliche Möglichkeit stehen.
+- Knopf **"Jetzt verschicken"** (nur sichtbar, wenn unser Tool die Kampagne
+  vollständig angelegt hat UND Instantly sie als pausiert/nicht gestartet
+  meldet). Aufgeklappter Bestätigungssatz: **"Wenn du jetzt startest,
+  verschickt Instantly die E-Mails dieser Kampagne nach Zeitplan.
+  Fortfahren?"** Bestätigungsknopf: "Ja, jetzt verschicken".
+- Knopf **"Versand pausieren"** (nur sichtbar, wenn Instantly die Kampagne
+  gerade als aktiv meldet). Aufgeklappter Bestätigungssatz: **"Der Versand
+  wird angehalten. Schon verschickte E-Mails bleiben unberührt."**
+  Bestätigungsknopf: "Ja, pausieren".
+- Nach dem Start: **"Gestartet von [Name] am [Datum]"** erscheint in der
+  Kopfzeile der Detailseite, neben "Freigegeben von … am …".
+- Scheitert der Instantly-Aufruf: **"Instantly hat gerade nicht
+  geantwortet. Es ist nichts verloren gegangen — versuch es in ein paar
+  Minuten noch einmal."**
 
 ## Einstiegsseite "So funktioniert's"
 

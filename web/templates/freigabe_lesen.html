@@ -123,7 +123,7 @@
   {% if zustand == "wartet_auf_freigabe" %}
   <div class="gate-kasten">
     <div class="gate-titel">Ohne deine Freigabe wird nichts versendet.</div>
-    <div class="gate-text">Freigeben heißt: Die Texte gehen als Kampagne (in Instantly) — zunächst pausiert. Gestartet wird dort von Hand. Festgehalten wird: freigegeben von {{ nutzer }} am {{ heute }}.</div>
+    <div class="gate-text">Freigeben heißt: Die Texte gehen als Kampagne — noch pausiert — an Instantly. Verschickt wird erst, wenn du die Kampagne mit »Jetzt verschicken« startest (auf der Kampagnen-Seite). Ohne deine Freigabe passiert nichts. Festgehalten wird: freigegeben von {{ nutzer }} am {{ heute }}.</div>
 
     <form method="post" action="/pruefen/{{ slug }}/{{ ts }}/freigeben" id="freigeben-form">
       <div class="checkliste" id="checkliste">

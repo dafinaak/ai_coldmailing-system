@@ -5,6 +5,7 @@ tests/web/test_freigabe.py (dort app.state.instantly fuer den
 Schreib-Pfad)."""
 from __future__ import annotations
 
+import json
 import re
 from datetime import datetime
 from pathlib import Path
@@ -47,6 +48,28 @@ sperrliste: []
 
 _TEXT = {"email": "anna@firma.de", "betreff": "Betreff", "mail_1": "Text",
          "follow_up_1": "F1", "follow_up_2": "F2"}
+
+
+class FakeInstantly:
+    """Ersetzt pipeline.senders.instantly.InstantlySender fuer den
+    Schreib-Pfad (Baustein 1: scharf schalten/pausieren) - exakt das Muster
+    aus tests/web/test_freigabe.py FakeInstantly, hier um
+    aktiviere_kampagne/pausiere_kampagne erweitert."""
+
+    def __init__(self, fehler_bei: str | None = None):
+        self.aktiviert: list[str] = []
+        self.pausiert: list[str] = []
+        self.fehler_bei = fehler_bei
+
+    def aktiviere_kampagne(self, campaign_id: str) -> None:
+        if self.fehler_bei == "aktivieren":
+            raise RuntimeError("Instantly antwortet mit 500 auf /activate: Server-Fehler")
+        self.aktiviert.append(campaign_id)
+
+    def pausiere_kampagne(self, campaign_id: str) -> None:
+        if self.fehler_bei == "pausieren":
+            raise RuntimeError("Instantly antwortet mit 500 auf /pause: Server-Fehler")
+        self.pausiert.append(campaign_id)
 
 
 class FakeInstantlyLeser:
@@ -322,6 +345,8 @@ def test_detail_zeigt_schritte_mit_echten_tagen_und_wer_wann(angemeldeter_client
 
 
 def test_detail_zeigt_pausiert_hinweis_nur_wenn_pausiert(angemeldeter_client, daten_dir):
+    # Baustein 1 (20.07.2026): Text geaendert - der Start passiert jetzt HIER
+    # im Tool (Knopf "Jetzt verschicken"), nicht mehr "von Hand" in Instantly.
     app = angemeldeter_client.app
     app.state.instantly_leser = FakeInstantlyLeser({
         "camp-a": _stand(status="pausiert"),
@@ -330,8 +355,9 @@ def test_detail_zeigt_pausiert_hinweis_nur_wenn_pausiert(angemeldeter_client, da
                   zustand="uebergeben", campaign_id="camp-a")
     antwort = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-090000")
     assert antwort.status_code == 200
-    assert "Diese Kampagne liegt pausiert in Instantly. Gestartet wird dort von Hand" in antwort.text
-    assert "hier nur zum Nachschauen." in antwort.text
+    assert "Diese Kampagne ist in Instantly angelegt, aber noch nicht gestartet." in antwort.text
+    assert "Jetzt verschicken" in antwort.text
+    assert "Gestartet wird dort von Hand" not in antwort.text
 
 
 def test_detail_zeigt_keinen_pausiert_hinweis_wenn_aktiv(angemeldeter_client, daten_dir):
@@ -440,3 +466,181 @@ def test_instantly_leser_wird_beim_start_eager_gebaut_und_zwischen_requests_gete
     zweite = client.get("/kampagnen/demo-gmbh/20260720-090000")
     assert erste.status_code == 200 and zweite.status_code == 200
     assert len(aufrufe) == 1  # immer noch nur EIN InstantlyLeser fuer beide Requests
+
+
+# Baustein 1: Kampagne im Tool scharf schalten/pausieren ---------------------
+
+def test_detail_zeigt_jetzt_verschicken_nur_wenn_bekannt_und_pausiert(angemeldeter_client, daten_dir):
+    app = angemeldeter_client.app
+    app.state.instantly_leser = FakeInstantlyLeser({
+        "camp-a": _stand(status="pausiert"),
+    })
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml", ts="20260720-090000",
+                  zustand="uebergeben", campaign_id="camp-a")
+    antwort = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-090000")
+    assert antwort.status_code == 200
+    assert "Jetzt verschicken" in antwort.text
+    assert "Versand pausieren" not in antwort.text
+
+
+def test_detail_zeigt_versand_pausieren_nur_wenn_aktiv(angemeldeter_client, daten_dir):
+    app = angemeldeter_client.app
+    app.state.instantly_leser = FakeInstantlyLeser({
+        "camp-a": _stand(status="aktiv"),
+    })
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml", ts="20260720-090000",
+                  zustand="uebergeben", campaign_id="camp-a")
+    antwort = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-090000")
+    assert antwort.status_code == 200
+    assert "Versand pausieren" in antwort.text
+    assert "Jetzt verschicken" not in antwort.text
+
+
+def test_detail_zeigt_keinen_aktions_knopf_bei_kontoproblem(angemeldeter_client, daten_dir):
+    app = angemeldeter_client.app
+    app.state.instantly_leser = FakeInstantlyLeser({
+        "camp-a": _stand(status="kontoproblem"),
+    })
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml", ts="20260720-090000",
+                  zustand="uebergeben", campaign_id="camp-a")
+    antwort = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-090000")
+    assert antwort.status_code == 200
+    assert "Jetzt verschicken" not in antwort.text
+    assert "Versand pausieren" not in antwort.text
+
+
+def test_detail_zeigt_keinen_aktions_knopf_ohne_versand_komplett(angemeldeter_client, daten_dir):
+    # Lead-Import noch nicht abgeschlossen (nur "versand", kein
+    # "versand_komplett") - kein "bekannt" im Sinne des Bausteins, deshalb
+    # kein Scharf-schalten-Knopf, auch wenn Instantly schon "pausiert" meldet.
+    app = angemeldeter_client.app
+    app.state.instantly_leser = FakeInstantlyLeser({
+        "camp-a": _stand(status="pausiert"),
+    })
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml", ts="20260720-090000",
+                  zustand="freigegeben_mit_versand", campaign_id="camp-a")
+    antwort = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-090000")
+    assert antwort.status_code == 200
+    assert "Jetzt verschicken" not in antwort.text
+    assert "Versand pausieren" not in antwort.text
+
+
+def test_aktivieren_verlangt_anmeldung(client, daten_dir):
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml", ts="20260720-090000",
+                  zustand="uebergeben", campaign_id="camp-a")
+    antwort = client.post("/kampagnen/demo-gmbh/20260720-090000/aktivieren",
+                           data={"bestaetigt": "ja"}, follow_redirects=False)
+    assert antwort.status_code == 303
+    assert antwort.headers["location"] == "/login"
+
+
+def test_aktivieren_ohne_bestaetigung_ruft_instantly_nicht_auf(angemeldeter_client, daten_dir):
+    app = angemeldeter_client.app
+    fake = FakeInstantly()
+    app.state.instantly = fake
+    app.state.instantly_leser = FakeInstantlyLeser({"camp-a": _stand(status="pausiert")})
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml", ts="20260720-090000",
+                  zustand="uebergeben", campaign_id="camp-a")
+    antwort = angemeldeter_client.post("/kampagnen/demo-gmbh/20260720-090000/aktivieren")
+    assert antwort.status_code in (200, 303)
+    assert fake.aktiviert == []
+
+
+def test_aktivieren_mit_bestaetigung_ruft_instantly_auf_und_schreibt_audit(
+        angemeldeter_client, daten_dir):
+    app = angemeldeter_client.app
+    fake = FakeInstantly()
+    app.state.instantly = fake
+    app.state.instantly_leser = FakeInstantlyLeser({"camp-a": _stand(status="aktiv")})
+    lauf_dir = _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml", ts="20260720-090000",
+                              zustand="uebergeben", campaign_id="camp-a")
+    antwort = angemeldeter_client.post(
+        "/kampagnen/demo-gmbh/20260720-090000/aktivieren",
+        data={"bestaetigt": "ja"}, follow_redirects=False)
+    assert antwort.status_code == 303
+    assert antwort.headers["location"] == "/kampagnen/demo-gmbh/20260720-090000"
+    assert fake.aktiviert == ["camp-a"]
+    audit = json.loads((lauf_dir / "aktiviert.json").read_text(encoding="utf-8"))
+    assert audit["von"] == "Lena Hartmann"
+    assert audit["am"]
+
+    folge = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-090000")
+    assert "Gestartet von Lena Hartmann am" in folge.text
+
+
+def test_aktivieren_bei_instantly_fehler_zeigt_freundlichen_hinweis(angemeldeter_client, daten_dir):
+    app = angemeldeter_client.app
+    fake = FakeInstantly(fehler_bei="aktivieren")
+    app.state.instantly = fake
+    app.state.instantly_leser = FakeInstantlyLeser({"camp-a": _stand(status="pausiert")})
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml", ts="20260720-090000",
+                  zustand="uebergeben", campaign_id="camp-a")
+    antwort = angemeldeter_client.post(
+        "/kampagnen/demo-gmbh/20260720-090000/aktivieren", data={"bestaetigt": "ja"})
+    assert antwort.status_code == 200
+    assert "nicht geantwortet" in antwort.text or "Instantly" in antwort.text
+
+
+def test_aktivieren_unbekannter_lauf_404(angemeldeter_client, daten_dir):
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml", ts="20260720-090000",
+                  zustand="wartet_auf_freigabe")
+    antwort = angemeldeter_client.post(
+        "/kampagnen/demo-gmbh/20260720-090000/aktivieren", data={"bestaetigt": "ja"})
+    assert antwort.status_code == 404
+
+
+def test_pausieren_verlangt_anmeldung(client, daten_dir):
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml", ts="20260720-090000",
+                  zustand="uebergeben", campaign_id="camp-a")
+    antwort = client.post("/kampagnen/demo-gmbh/20260720-090000/pausieren",
+                           data={"bestaetigt": "ja"}, follow_redirects=False)
+    assert antwort.status_code == 303
+    assert antwort.headers["location"] == "/login"
+
+
+def test_pausieren_ohne_bestaetigung_ruft_instantly_nicht_auf(angemeldeter_client, daten_dir):
+    app = angemeldeter_client.app
+    fake = FakeInstantly()
+    app.state.instantly = fake
+    app.state.instantly_leser = FakeInstantlyLeser({"camp-a": _stand(status="aktiv")})
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml", ts="20260720-090000",
+                  zustand="uebergeben", campaign_id="camp-a")
+    antwort = angemeldeter_client.post("/kampagnen/demo-gmbh/20260720-090000/pausieren")
+    assert antwort.status_code in (200, 303)
+    assert fake.pausiert == []
+
+
+def test_pausieren_mit_bestaetigung_ruft_instantly_auf(angemeldeter_client, daten_dir):
+    app = angemeldeter_client.app
+    fake = FakeInstantly()
+    app.state.instantly = fake
+    app.state.instantly_leser = FakeInstantlyLeser({"camp-a": _stand(status="aktiv")})
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml", ts="20260720-090000",
+                  zustand="uebergeben", campaign_id="camp-a")
+    antwort = angemeldeter_client.post(
+        "/kampagnen/demo-gmbh/20260720-090000/pausieren",
+        data={"bestaetigt": "ja"}, follow_redirects=False)
+    assert antwort.status_code == 303
+    assert antwort.headers["location"] == "/kampagnen/demo-gmbh/20260720-090000"
+    assert fake.pausiert == ["camp-a"]
+
+
+def test_pausieren_bei_instantly_fehler_zeigt_freundlichen_hinweis(angemeldeter_client, daten_dir):
+    app = angemeldeter_client.app
+    fake = FakeInstantly(fehler_bei="pausieren")
+    app.state.instantly = fake
+    app.state.instantly_leser = FakeInstantlyLeser({"camp-a": _stand(status="aktiv")})
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml", ts="20260720-090000",
+                  zustand="uebergeben", campaign_id="camp-a")
+    antwort = angemeldeter_client.post(
+        "/kampagnen/demo-gmbh/20260720-090000/pausieren", data={"bestaetigt": "ja"})
+    assert antwort.status_code == 200
+    assert "nicht geantwortet" in antwort.text or "Instantly" in antwort.text
+
+
+def test_pausieren_unbekannter_lauf_404(angemeldeter_client, daten_dir):
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml", ts="20260720-090000",
+                  zustand="wartet_auf_freigabe")
+    antwort = angemeldeter_client.post(
+        "/kampagnen/demo-gmbh/20260720-090000/pausieren", data={"bestaetigt": "ja"})
+    assert antwort.status_code == 404

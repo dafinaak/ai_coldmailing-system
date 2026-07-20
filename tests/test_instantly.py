@@ -76,3 +76,51 @@ def test_fehlermeldung_enthaelt_ausschnitt_der_antwort():
     sender = InstantlySender("key", session=session)
     with pytest.raises(RuntimeError, match="Datenbank nicht erreichbar"):
         sender.create_campaign(KUNDE)
+
+
+# Baustein 1: Kampagne im Tool scharf schalten/pausieren ---------------------
+# Eigene FakeSession (statt der geteilten aus tests.test_apollo), weil hier
+# zusaetzlich die genaue URL geprueft wird (Endpunkte laut
+# docs/instantly-api-machbarkeit.md #1: POST .../activate bzw. .../pause,
+# kein Request-Body) - die geteilte FakeSession zeichnet nur den Payload auf.
+class _FakeSessionMitURL:
+    def __init__(self, antworten):
+        self.antworten, self.aufrufe = list(antworten), []
+
+    def post(self, url, json=None, headers=None, timeout=None):
+        self.aufrufe.append((url, json))
+        return self.antworten.pop(0)
+
+
+def test_aktiviert_kampagne_ruft_activate_endpunkt_ohne_body_auf():
+    session = _FakeSessionMitURL([FakeResponse(200, {"id": "camp-1", "status": 1})])
+    sender = InstantlySender("key", session=session)
+    ergebnis = sender.aktiviere_kampagne("camp-1")
+    assert ergebnis is None
+    url, payload = session.aufrufe[0]
+    assert url == "https://api.instantly.ai/api/v2/campaigns/camp-1/activate"
+    assert payload is None
+
+
+def test_pausiert_kampagne_ruft_pause_endpunkt_ohne_body_auf():
+    session = _FakeSessionMitURL([FakeResponse(200, {"id": "camp-1", "status": 2})])
+    sender = InstantlySender("key", session=session)
+    ergebnis = sender.pausiere_kampagne("camp-1")
+    assert ergebnis is None
+    url, payload = session.aufrufe[0]
+    assert url == "https://api.instantly.ai/api/v2/campaigns/camp-1/pause"
+    assert payload is None
+
+
+def test_aktivieren_fehler_wirft_runtime_error():
+    session = _FakeSessionMitURL([FakeResponse(500, {}, text="Server-Fehler")])
+    sender = InstantlySender("key", session=session)
+    with pytest.raises(RuntimeError, match="500"):
+        sender.aktiviere_kampagne("camp-1")
+
+
+def test_pausieren_fehler_wirft_runtime_error():
+    session = _FakeSessionMitURL([FakeResponse(500, {}, text="Server-Fehler")])
+    sender = InstantlySender("key", session=session)
+    with pytest.raises(RuntimeError, match="500"):
+        sender.pausiere_kampagne("camp-1")

@@ -7,18 +7,39 @@ den Schreib-Pfad. Diese Route liest NUR (web.instantly_leser.InstantlyLeser,
 nur GET) - sie legt nie eine Kampagne an und aktiviert nie eine."""
 from __future__ import annotations
 
+import json
+import os
+from datetime import datetime
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, Request
+import requests
+from fastapi import APIRouter, Form, HTTPException, Request
+from fastapi.responses import RedirectResponse
 
 from pipeline.approval import freigabe_info
 from pipeline.run_store import RunStore
 from web import auth
-from web.laufmanager import Laufmanager, wartet_seit_text as _wartet_seit_text
+from web.laufmanager import Laufmanager, _lade_json_sicher, wartet_seit_text as _wartet_seit_text
 from web.nav import nav_kontext
 from web.wartende import format_deutsches_datum, kunde_fuer as _kunde_fuer
 
 router = APIRouter()
+
+# Baustein 1 (Kampagne im Tool scharf schalten/pausieren) - Bestaetigungssaetze
+# woertlich aus dem Auftrag/Leitfaden (docs/text-leitfaden-interface.md):
+# ehrlich sagen, was beim Klick passiert, statt es hinter einem
+# beilaeufigen Knopf zu verstecken.
+AKTIVIEREN_BESTAETIGUNG = ("Wenn du jetzt startest, verschickt Instantly die E-Mails dieser "
+                          "Kampagne nach Zeitplan. Fortfahren?")
+PAUSIEREN_BESTAETIGUNG = ("Der Versand wird angehalten. Schon verschickte E-Mails bleiben "
+                         "unberührt.")
+
+# Fehlertext, wenn aktiviere_kampagne()/pausiere_kampagne() scheitert (HTTP-
+# Fehler oder Netzwerkproblem, siehe pipeline.senders.instantly._post) -
+# gleiches Prinzip wie web.routen.freigabe._versand_fehlertext: nichts ist
+# verloren gegangen, der bisherige Zustand bleibt bestehen.
+_AKTION_FEHLERTEXT = ("Instantly hat gerade nicht geantwortet. Es ist nichts verloren gegangen — "
+                     "versuch es in ein paar Minuten noch einmal.")
 
 # Chip-Farben woertlich aus docs/design/Poleposition-v4.dc.html (Methode
 # kampChip) - Liste und Detail zeigen damit dieselben Farben wie die
@@ -39,13 +60,15 @@ _CHIP = {
 # einen der echten Zustaende zu erraten.
 _CHIP_UNBEKANNT = {"text": "LIVE-STAND UNBEKANNT", "bg": "#ECEAE1", "fg": "#6E6A5C"}
 
-# Woertlich aus dem Leitfaden/v4 (kdSatz) - nur waehrend die Kampagne
-# tatsaechlich (gewollt) pausiert ist.
-PAUSIERT_SATZ = ("Diese Kampagne liegt pausiert in Instantly. Gestartet wird dort von Hand "
-                 "— hier nur zum Nachschauen.")
-PAUSIERT_HINWEIS = ("Noch wurde nichts versendet. Zum Starten die Kampagne in Instantly öffnen "
-                    "und dort von Hand starten — das ist Absicht, damit nichts aus Versehen "
-                    "rausgeht.")
+# Baustein 1 (20.07.2026): ersetzt den frueheren Hinweis "... Gestartet wird
+# dort von Hand — hier nur zum Nachschauen." — das stimmt seit diesem
+# Baustein nicht mehr, der Start passiert jetzt HIER im Tool (Knopf "Jetzt
+# verschicken" unten), Instantly bleibt nur die sekundaere Option ("Kampagne
+# in Instantly öffnen"-Link). Nur waehrend die Kampagne tatsaechlich
+# (gewollt) pausiert ist UND unser Tool sie kennt (siehe kd_kann_aktivieren).
+PAUSIERT_SATZ = "Diese Kampagne ist in Instantly angelegt, aber noch nicht gestartet."
+PAUSIERT_HINWEIS = ('Noch wurde nichts verschickt. Drück unten auf »Jetzt verschicken«, wenn es '
+                    "losgehen soll — bis dahin passiert nichts von allein.")
 
 # Eigener, ehrlicher Hinweis fuer "kontoproblem" (Review-Fund) - ersetzt
 # PAUSIERT_HINWEIS komplett fuer diesen Zustand: "das ist Absicht" waere
@@ -73,6 +96,32 @@ def _hole_leser(request: Request):
     from web.instantly_leser import geteilten_leser
 
     return geteilten_leser(request.app)
+
+
+def _hole_instantly(request: Request):
+    """Wie web.routen.freigabe._hole_instantly (Baustein 1: derselbe
+    app.state.instantly-Schreib-Pfad, hier fuer aktiviere_kampagne/
+    pausiere_kampagne statt create_campaign/import_leads): app.state.instantly
+    gewinnt (Tests faken hier), sonst ein echter InstantlySender mit dem
+    Umgebungs-Key. Bewusst NICHT mit web.routen.freigabe geteilt (gleiche
+    Duplikation wie _lauf_dir_oder_404/_hole_leser oben in dieser Datei) -
+    diese Route ist unabhaengig von der Freigabe-Route lauffaehig."""
+    instantly = getattr(request.app.state, "instantly", None)
+    if instantly is not None:
+        return instantly
+    from pipeline.senders.instantly import InstantlySender
+
+    return InstantlySender(os.environ["INSTANTLY_API_KEY"])
+
+
+def _aktiviert_info(lauf_dir: Path) -> dict | None:
+    """Liest aktiviert.json (falls vorhanden) - der Audit-Trail fuer 'wer hat
+    diese Kampagne im Tool gestartet, wann' (Baustein 1), gleiches
+    Sicherheits-Muster wie abgelehnt.json in web.routen.freigabe
+    (_lade_json_sicher statt json.loads direkt: eine kaputte/halb
+    geschriebene Datei darf die Detailseite nicht mit einem 500er
+    abstuerzen lassen)."""
+    return _lade_json_sicher(lauf_dir / "aktiviert.json")
 
 
 def _lauf_dir_oder_404(daten_dir, slug: str, ts: str) -> Path:
@@ -254,11 +303,13 @@ def kampagnen_liste(request: Request):
     )
 
 
-@router.get("/kampagnen/{slug}/{ts}")
-# Bewusst KEIN `async def` - gleicher Grund wie kampagnen_liste oben:
-# _hole_leser(request).kampagnen_stand(...) ist ein synchroner, blockierender
-# HTTP-Aufruf.
-def kampagne_detail(request: Request, slug: str, ts: str):
+def _detail_kontext(request: Request, slug: str, ts: str, *, aktion_fehler: str | None = None) -> dict:
+    """Baut den kompletten Anzeige-Kontext fuer kampagne_detail.html - eigene
+    Funktion (statt Code direkt in der GET-Route), damit die POST-Routen
+    unten (aktivieren/pausieren) bei einem Instantly-Fehler dieselbe Ansicht
+    MIT einer zusaetzlichen Fehlerzeile zurueckgeben koennen, ohne die
+    komplette Detail-Logik zu duplizieren (gleiches Muster wie
+    web.routen.freigabe._lese_kontext + _versand_fehlertext)."""
     daten_dir = request.app.state.daten_dir
     lauf_dir = _lauf_dir_oder_404(daten_dir, slug, ts)
     store = RunStore.resume(lauf_dir)
@@ -298,30 +349,121 @@ def kampagne_detail(request: Request, slug: str, ts: str):
 
     freigabe = freigabe_info(store)
     ist_pausiert = stand.get("erreichbar") and stand.get("status") == "pausiert"
+    ist_aktiv = stand.get("erreichbar") and stand.get("status") == "aktiv"
     # Review-Fund: "kontoproblem" bekommt seinen EIGENEN Hinweis statt
     # PAUSIERT_HINWEIS - die beiden Zustaende schliessen sich gegenseitig
     # aus (siehe _CHIP/_STATUS_TEXT), nie beide gleichzeitig gesetzt.
     ist_kontoproblem = stand.get("erreichbar") and stand.get("status") == "kontoproblem"
 
+    # Baustein 1: "bekannt" heisst versand_komplett (Kampagne UND Leads
+    # vollstaendig angelegt) - siehe _campaign_id_fuer-Docstring. Nur
+    # "versand" (Lead-Import (noch) nicht durch) zeigt zwar noch die
+    # Detailseite (unveraendertes Verhalten), aber KEINEN
+    # Scharf-schalten/Pausieren-Knopf: eine unvollstaendig angelegte
+    # Kampagne im Tool zu starten waere ein Versand ohne (alle) Empfaenger.
+    bekannt = store.step_done("versand_komplett")
+    kd_kann_aktivieren = bekannt and ist_pausiert
+    kd_kann_pausieren = bekannt and ist_aktiv
+
+    aktiviert = _aktiviert_info(lauf_dir)
+
     live_stand_hinweis = _live_stand_hinweis([stand])
 
-    return request.app.state.templates.TemplateResponse(
-        request, "kampagne_detail.html",
-        {
-            "nutzer": auth.aktueller_nutzer(request),
-            "nav": nav_kontext(request),
-            "slug": slug, "ts": ts,
-            "kd_name": name, "kd_kunde": kunde_name,
-            "chip_text": chip["text"], "chip_bg": chip["bg"], "chip_fg": chip["fg"],
-            "kd_satz": PAUSIERT_SATZ if ist_pausiert else "",
-            "kd_pausiert_hinweis": PAUSIERT_HINWEIS if ist_pausiert else "",
-            "kd_kontoproblem_hinweis": KONTOPROBLEM_HINWEIS if ist_kontoproblem else "",
-            "kd_von": freigabe["von"] or "unbekannt",
-            "kd_am": format_deutsches_datum(freigabe["am"]) or "—",
-            "kd_gesamt": gesamt,
-            "kd_schritte": kd_schritte,
-            "kd_antworten": stand.get("antworten") if stand.get("antworten") is not None else "—",
-            "campaign_id": campaign_id,
-            "live_stand_hinweis": live_stand_hinweis,
-        },
-    )
+    return {
+        "nutzer": auth.aktueller_nutzer(request),
+        "nav": nav_kontext(request),
+        "slug": slug, "ts": ts,
+        "kd_name": name, "kd_kunde": kunde_name,
+        "chip_text": chip["text"], "chip_bg": chip["bg"], "chip_fg": chip["fg"],
+        "kd_satz": PAUSIERT_SATZ if kd_kann_aktivieren else "",
+        "kd_pausiert_hinweis": PAUSIERT_HINWEIS if kd_kann_aktivieren else "",
+        "kd_kontoproblem_hinweis": KONTOPROBLEM_HINWEIS if ist_kontoproblem else "",
+        "kd_von": freigabe["von"] or "unbekannt",
+        "kd_am": format_deutsches_datum(freigabe["am"]) or "—",
+        "kd_gesamt": gesamt,
+        "kd_schritte": kd_schritte,
+        "kd_antworten": stand.get("antworten") if stand.get("antworten") is not None else "—",
+        "campaign_id": campaign_id,
+        "live_stand_hinweis": live_stand_hinweis,
+        "kd_kann_aktivieren": kd_kann_aktivieren,
+        "kd_kann_pausieren": kd_kann_pausieren,
+        "kd_aktivieren_bestaetigung": AKTIVIEREN_BESTAETIGUNG,
+        "kd_pausieren_bestaetigung": PAUSIEREN_BESTAETIGUNG,
+        "kd_gestartet_von": aktiviert["von"] if aktiviert else None,
+        "kd_gestartet_am": aktiviert["am"] if aktiviert else None,
+        "kd_aktion_fehler": aktion_fehler,
+    }
+
+
+@router.get("/kampagnen/{slug}/{ts}")
+# Bewusst KEIN `async def` - gleicher Grund wie kampagnen_liste oben:
+# _hole_leser(request).kampagnen_stand(...) ist ein synchroner, blockierender
+# HTTP-Aufruf (ueber _detail_kontext).
+def kampagne_detail(request: Request, slug: str, ts: str):
+    kontext = _detail_kontext(request, slug, ts)
+    return request.app.state.templates.TemplateResponse(request, "kampagne_detail.html", kontext)
+
+
+def _kampagne_lauf_oder_404(daten_dir, slug: str, ts: str) -> tuple[Path, RunStore, str]:
+    """Gemeinsame Vorpruefung fuer die POST-Routen unten (aktivieren/
+    pausieren): 404, wenn der Laufordner nicht existiert ODER die Kampagne
+    fuer unser Tool nicht 'bekannt' ist (siehe kampagne_detail-Kommentar zu
+    versand_komplett) - ohne vollstaendigen Lead-Import darf hier nichts
+    scharf geschaltet/pausiert werden."""
+    lauf_dir = _lauf_dir_oder_404(daten_dir, slug, ts)
+    store = RunStore.resume(lauf_dir)
+    if not store.step_done("versand_komplett"):
+        raise HTTPException(status_code=404, detail="Kampagne nicht gefunden.")
+    campaign_id = store.load_step("versand_komplett")["campaign_id"]
+    return lauf_dir, store, campaign_id
+
+
+@router.post("/kampagnen/{slug}/{ts}/aktivieren")
+# Bewusst KEIN `async def` - blockierender HTTP-Aufruf an Instantly (gleicher
+# Grund wie web.routen.freigabe.freigabe_absenden).
+def kampagne_aktivieren(request: Request, slug: str, ts: str, bestaetigt: str = Form("")):
+    daten_dir = request.app.state.daten_dir
+    lauf_dir, _store, campaign_id = _kampagne_lauf_oder_404(daten_dir, slug, ts)
+
+    # Der Knopf im Template ist immer hinter der Bestaetigungs-Geste
+    # versteckt (details/summary + eigener "Ja, ..."-Knopf, siehe
+    # kampagne_detail.html) - ein POST ohne "bestaetigt=ja" kommt also nur
+    # bei einem manipulierten/direkten Aufruf vor. Sicherheitsnetz statt
+    # Fehlermeldung: einfach zurueck zur Ansicht, KEIN Instantly-Aufruf.
+    if bestaetigt != "ja":
+        return RedirectResponse(f"/kampagnen/{slug}/{ts}", status_code=303)
+
+    sender = _hole_instantly(request)
+    try:
+        sender.aktiviere_kampagne(campaign_id)
+    except (RuntimeError, requests.RequestException):
+        kontext = _detail_kontext(request, slug, ts, aktion_fehler=_AKTION_FEHLERTEXT)
+        return request.app.state.templates.TemplateResponse(
+            request, "kampagne_detail.html", kontext, status_code=200)
+
+    (lauf_dir / "aktiviert.json").write_text(json.dumps({
+        "von": auth.aktueller_nutzer(request),
+        "am": datetime.now().strftime("%d.%m.%Y, %H:%M"),
+    }, ensure_ascii=False), encoding="utf-8")
+
+    return RedirectResponse(f"/kampagnen/{slug}/{ts}", status_code=303)
+
+
+@router.post("/kampagnen/{slug}/{ts}/pausieren")
+# Bewusst KEIN `async def` - siehe kampagne_aktivieren.
+def kampagne_pausieren(request: Request, slug: str, ts: str, bestaetigt: str = Form("")):
+    daten_dir = request.app.state.daten_dir
+    _lauf_dir, _store, campaign_id = _kampagne_lauf_oder_404(daten_dir, slug, ts)
+
+    if bestaetigt != "ja":
+        return RedirectResponse(f"/kampagnen/{slug}/{ts}", status_code=303)
+
+    sender = _hole_instantly(request)
+    try:
+        sender.pausiere_kampagne(campaign_id)
+    except (RuntimeError, requests.RequestException):
+        kontext = _detail_kontext(request, slug, ts, aktion_fehler=_AKTION_FEHLERTEXT)
+        return request.app.state.templates.TemplateResponse(
+            request, "kampagne_detail.html", kontext, status_code=200)
+
+    return RedirectResponse(f"/kampagnen/{slug}/{ts}", status_code=303)

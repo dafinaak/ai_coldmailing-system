@@ -120,14 +120,27 @@ Bewusst NICHT in v1: Antworten-Erkennung/Einsortierung, Reporting.
   in der Bau-Phase.
 
 ## Nächste Schritte
-- TEAM-INTERFACE: Design eingefroren (Spec 2026-07-17, Wholix-artige
-  Struktur, Checkliste-Geste, Liste+Lesebereich; Vorlage v4 + Text-
-  Leitfaden). Bauplan geschrieben (docs/superpowers/plans/
-  2026-07-17-team-interface.md, 11 Pakete inkl. Deployment auf den
-  Arbeitsserver prod-srv01-automations — Leonard hat Deployment dorthin
-  freigegeben, Server-Doku + SSH-Schlüssel im Ordner ~/Desktop/ViralLab).
-  Freigabe des Bauplans durch Leonard steht aus.
-- Danach: paketweiser Bau mit Tests/Reviews wie bei v1; Abnahme durch
-  Kollegen-Test.
-- Parallel offen: Follow-ups der Testkampagne (ignorieren), v1.1 vor
-  erster echter Kampagne, neuer OpenRouter-Schlüssel nach dem 23.07.
+- TEAM-INTERFACE: GEBAUT, GEPRÜFT, DEPLOYED (20.07.2026).
+  - Alle 9 Bau-Pakete + Abschluss-Review + Fix-Wave: 280 Tests grün,
+    nach main gemergt (Merge 2149b42). Abschluss-Reviewer: "Ready to
+    merge: Yes" nach verifizierten Fixes (u.a. bewiesener
+    Kundensperren-Bug, Instantly-Cache in Produktion, blockierende
+    Routen, Produktions-Einstiegspunkt web/main.py).
+  - LIVE unter https://mailingsystem.polepositionautomation.de
+    (Cloudflare → ci-nginx [Template mailingsystem.conf.template,
+    Container-Neustart nötig statt reload!] → Container coldmail-web
+    auf prod-srv01-automations; Code /opt/coldmailing/app, Daten-Volume
+    /opt/coldmailing/daten, Schlüssel via compose env_file
+    /opt/coldmailing/.env — nie im Image).
+  - Smoke bestanden: /health 200 übers Internet, Login-Seite korrekt,
+    echter Mini-Lauf (limit 1) im Container: Apollo+KI erreicht,
+    Laufordner+Bericht geschrieben, Stopp vor Freigabe.
+  - Erstzugang: Nutzer "Leonard", Passwort in
+    /opt/coldmailing/ERSTZUGANG.txt auf dem Server (chmod 600) — nach
+    erstem Login löschen. Weitere Team-Nutzer: users.yaml in
+    /opt/coldmailing/daten (Hash-Einzeiler in deploy/DEPLOY.md).
+- OFFEN: IF-Task 11 Abnahme = Kollegen-Test (Termin von Leonard);
+  Backlog aus Abschluss-Review in .superpowers/sdd/progress.md.
+- Parallel offen: v1.1 vor erster echter Kampagne, neuer
+  OpenRouter-Schlüssel nach dem 23.07., Instantly-Status-Mapping am
+  echten Konto verifizieren.

@@ -88,7 +88,14 @@ def _kontoproblem_zeilen(mit_kampagne: list[dict], stand_by_id: dict) -> list[di
 
 
 @router.get("/")
-async def dashboard(request: Request):
+# Bewusst KEIN `async def` - IMPORTANT Review-Fund: _aktive_kampagnen_kachel
+# ruft ueber _stand_fuer synchron InstantlyLeser.kampagnen_stand auf
+# (blockierende HTTP-Aufrufe bei kaltem Cache, siehe Modul-Docstring). Als
+# Koroutine wuerde das den Event-Loop fuer ALLE gleichzeitigen Nutzer
+# blockieren (gleicher Grund wie web/routen/auftraege.py). Als normale
+# `def`-Funktion fuehrt FastAPI die Route stattdessen in einem Threadpool
+# aus.
+def dashboard(request: Request):
     daten_dir = request.app.state.daten_dir
     laeufe = kampagnen_routen._alle_laeufe(daten_dir)
     wartende = wartende_laeufe(daten_dir)

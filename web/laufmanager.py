@@ -219,10 +219,25 @@ class Laufmanager:
             sperr_pfad.unlink()  # verwaiste Sperre (Prozess tot) - aufraeumen
         return sperr_pfad
 
-    def _sperre_loesen(self, slug: str) -> None:
+    def _sperre_loesen(self, slug: str, nur_wenn_pid: int | None = None) -> None:
+        """Loescht die Sperrdatei fuer diesen Kunden. `nur_wenn_pid`
+        (CRITICAL Review-Fund, siehe status()): wird sie uebergeben, wird NUR
+        geloescht, wenn der Sperrdatei-Inhalt exakt dieser PID entspricht -
+        sonst koennte status() fuer einen ALTEN, laengst toten Laufordner die
+        Sperre eines NEUEREN, gerade aktiv laufenden Auftrags DESSELBEN
+        Kunden loeschen. status() wird fuer JEDEN Laufordner aufgerufen
+        (Dashboard/Kampagnen/Pruefen iterieren ueber ALLE Laeufe aller
+        Kunden) - ohne diesen Abgleich wuerde jeder Seitenaufruf, der auch
+        einen alten toten Lauf sieht, den Sperr-Schutz eines aktiven neueren
+        Laufs desselben Kunden aufheben."""
         sperr_pfad = self._sperr_pfad(slug)
-        if sperr_pfad.exists():
-            sperr_pfad.unlink()
+        if not sperr_pfad.exists():
+            return
+        if nur_wenn_pid is not None:
+            inhalt = sperr_pfad.read_text(encoding="utf-8").strip()
+            if inhalt != str(nur_wenn_pid):
+                return
+        sperr_pfad.unlink()
 
     def _warte_auf_lauf_dir(self, kunden_ordner: Path, vorher: set,
                              prozess, timeout: float = 10.0,
@@ -385,9 +400,13 @@ class Laufmanager:
             zustand = "angehalten"
 
         if pid is not None and not laeuft:
-            # Der Prozess ist tot (egal ob erfolgreich fertig oder
-            # abgebrochen) - die Sperre fuer diesen Kunden gilt nicht mehr.
-            self._sperre_loesen(slug)
+            # Der Prozess DIESES Laufordners ist tot - die Sperre darf aber
+            # nur geloescht werden, wenn sie WIRKLICH noch diese PID traegt
+            # (CRITICAL Review-Fund, siehe _sperre_loesen): ein neuerer,
+            # gerade aktiv laufender Auftrag desselben Kunden koennte die
+            # Sperre laengst mit seiner eigenen (lebenden) PID ueberschrieben
+            # haben.
+            self._sperre_loesen(slug, nur_wenn_pid=pid)
 
         # Altes Listenformat abfangen (siehe pipeline.__main__.lauf): vor der
         # "ohne_email"-Zaehlung war leads.json eine reine Liste.

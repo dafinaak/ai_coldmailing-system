@@ -95,6 +95,7 @@ SCHEMA verifiziert, nicht gegen ein echtes Konto.
   # behandelt."""
 from __future__ import annotations
 
+import os
 from datetime import datetime
 
 import requests
@@ -383,3 +384,27 @@ class InstantlyLeser:
         DIREKT auf (ein Abruf speist dort sowohl die Konversationsliste als
         auch den Live-Stand-Hinweis, siehe emails_stand()-Docstring)."""
         return konversationen_aus_email_stand(self.emails_stand(campaign_ids))
+
+
+def geteilten_leser(app) -> InstantlyLeser:
+    """Liefert EINEN InstantlyLeser, geteilt ueber ALLE Requests dieser App
+    (IMPORTANT Review-Fund: der 60s-Cache oben wirkt nur, wenn wirklich
+    dasselbe Objekt wiederverwendet wird - ein frischer InstantlyLeser pro
+    Request/Aufruf haette IMMER einen leeren Cache, egal was CACHE_TTL_
+    SEKUNDEN sagt). web.app.create_app baut ihn EAGER beim App-Start, wenn
+    INSTANTLY_API_KEY zu dem Zeitpunkt schon gesetzt ist; ist er das nicht
+    (z.B. Tests, die die Variable erst spaeter setzen), wird er hier beim
+    ERSTEN Bedarf gebaut - abgesichert durch app.state._instantly_leser_lock
+    gegen einen Race, wenn zwei Requests gleichzeitig als erste ankommen
+    (FastAPI/Starlette fuehrt sync-Routen in einem Threadpool aus, siehe
+    web.routen.kampagnen/postfach _hole_leser - echte Nebenlaeufigkeit ist
+    hier also moeglich, kein theoretisches Risiko)."""
+    leser = getattr(app.state, "instantly_leser", None)
+    if leser is not None:
+        return leser
+    with app.state._instantly_leser_lock:
+        leser = getattr(app.state, "instantly_leser", None)
+        if leser is None:
+            leser = InstantlyLeser(os.environ["INSTANTLY_API_KEY"])
+            app.state.instantly_leser = leser
+        return leser

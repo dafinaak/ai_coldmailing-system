@@ -21,8 +21,6 @@ Kein Antwortfeld, keine POST-Route - der Bereich ist bewusst rein lesend
 (Plan Task 9: "Read-only: no POST routes, no reply field")."""
 from __future__ import annotations
 
-import os
-
 from fastapi import APIRouter, Request
 
 from web import auth
@@ -60,13 +58,16 @@ def _hole_leser(request: Request):
     dupliziert statt importiert - dieses Modul soll nicht von einer
     privaten Funktion eines anderen web.routen.*-Moduls fuer seinen
     zentralen Instantly-Zugriff abhaengen, nur fuer die reine
-    Lauf-Aggregation unten)."""
+    Lauf-Aggregation unten). Nutzt genau wie dort den GETEILTEN
+    InstantlyLeser der App (IMPORTANT Review-Fund, siehe
+    web.instantly_leser.geteilten_leser), sonst ist der 60s-Cache nie
+    wirksam."""
     leser = getattr(request.app.state, "instantly_leser", None)
     if leser is not None:
         return leser
-    from web.instantly_leser import InstantlyLeser
+    from web.instantly_leser import geteilten_leser
 
-    return InstantlyLeser(os.environ["INSTANTLY_API_KEY"])
+    return geteilten_leser(request.app)
 
 
 def _kontakt_info_je_email(daten_dir) -> dict[str, dict]:
@@ -118,7 +119,13 @@ def _nachrichten_zeilen(nachrichten: list[dict], kontakt_name: str) -> list[dict
 
 
 @router.get("/postfach")
-async def postfach(request: Request):
+# Bewusst KEIN `async def` - IMPORTANT Review-Fund: _hole_leser(request).
+# emails_stand(...) ist ein synchroner, blockierender HTTP-Aufruf (siehe
+# web.instantly_leser). Als Koroutine wuerde das den Event-Loop fuer ALLE
+# gleichzeitigen Nutzer blockieren (gleicher Grund wie
+# web/routen/auftraege.py). Als normale `def`-Funktion fuehrt FastAPI die
+# Route stattdessen in einem Threadpool aus.
+def postfach(request: Request):
     daten_dir = request.app.state.daten_dir
     laeufe = kampagnen_routen._alle_laeufe(daten_dir)
     campaign_ids = sorted({l["campaign_id"] for l in laeufe if l["campaign_id"]})

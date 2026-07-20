@@ -272,7 +272,7 @@ def _formular_antwort(
     )
 
 
-async def _ableiten_antwort(request: Request, *, modus: str, dateiname: str | None, werte: dict):
+def _ableiten_antwort(request: Request, *, modus: str, dateiname: str | None, werte: dict):
     if not werte["webseite"].strip():
         # Ohne Webseite gibt es nichts zu lesen - erst gar nicht bei der KI
         # nachfragen (unnoetiger Aufruf, unnoetige Wartezeit).
@@ -416,7 +416,13 @@ async def kunde_bearbeiten_speichern(
 
 
 @router.post("/kunden/neu/ableiten")
-async def kunde_neu_ableiten(
+# Bewusst KEIN `async def` - IMPORTANT Review-Fund: _ableiten_antwort macht
+# ueber fetch_text/draft_offer synchrone, blockierende Netzwerk-/KI-Aufrufe.
+# Als Koroutine wuerde das den Event-Loop fuer ALLE gleichzeitigen Nutzer
+# blockieren (gleicher Grund wie web/routen/auftraege.py). Als normale
+# `def`-Funktion fuehrt FastAPI die Route stattdessen in einem Threadpool
+# aus.
+def kunde_neu_ableiten(
     request: Request,
     name: str = Form(""), webseite: str = Form(""),
     zielgruppe_titel: str = Form(""), zielgruppe_region: str = Form(""),
@@ -433,11 +439,12 @@ async def kunde_neu_ableiten(
         follow_up_tag_1=follow_up_tag_1, follow_up_tag_2=follow_up_tag_2,
         test_empfaenger=test_empfaenger, sperrliste=sperrliste,
     )
-    return await _ableiten_antwort(request, modus="neu", dateiname=None, werte=werte)
+    return _ableiten_antwort(request, modus="neu", dateiname=None, werte=werte)
 
 
 @router.post("/kunden/{dateiname}/ableiten")
-async def kunde_bearbeiten_ableiten(
+# Bewusst KEIN `async def` - gleicher Grund wie kunde_neu_ableiten oben.
+def kunde_bearbeiten_ableiten(
     request: Request, dateiname: str,
     name: str = Form(""), webseite: str = Form(""),
     zielgruppe_titel: str = Form(""), zielgruppe_region: str = Form(""),
@@ -454,4 +461,4 @@ async def kunde_bearbeiten_ableiten(
         follow_up_tag_1=follow_up_tag_1, follow_up_tag_2=follow_up_tag_2,
         test_empfaenger=test_empfaenger, sperrliste=sperrliste,
     )
-    return await _ableiten_antwort(request, modus="bearbeiten", dateiname=dateiname, werte=werte)
+    return _ableiten_antwort(request, modus="bearbeiten", dateiname=dateiname, werte=werte)

@@ -16,6 +16,7 @@ from passlib.context import CryptContext
 from pipeline.approval import approve
 from pipeline.run_store import RunStore
 from web.app import create_app
+from web.instantly_leser import InstantlyLeser
 
 PWD_CONTEXT = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -354,3 +355,50 @@ def test_detail_bei_api_ausfall_zeigt_freundlichen_hinweis(angemeldeter_client, 
     antwort = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-090000")
     assert antwort.status_code == 200
     assert "Live-Stand gerade nicht erreichbar" in antwort.text
+
+
+# Geteilter InstantlyLeser (IMPORTANT Review-Fund) ---------------------------
+
+def test_instantly_leser_wird_beim_start_eager_gebaut_und_zwischen_requests_geteilt(
+        daten_dir, monkeypatch):
+    """Der 60s-Cache in InstantlyLeser (siehe web.instantly_leser Klassen-
+    Docstring) wirkt nur, wenn ALLE Requests denselben InstantlyLeser
+    teilen. Vorher baute _hole_leser() ohne app.state.instantly_leser (der
+    Normalfall in Produktion - nur Tests faken ihn) bei JEDEM Request einen
+    frischen InstantlyLeser, der Cache griff nie. Beweis hier: KEIN
+    app.state.instantly_leser wird von Hand gesetzt (anders als die anderen
+    Tests in dieser Datei) - INSTANTLY_API_KEY ist schon VOR create_app()
+    gesetzt (eager-Pfad), zwei GET-Requests treffen auf denselben, echten
+    InstantlyLeser (gezaehlt ueber __init__-Aufrufe; die eigentlichen
+    HTTP-Aufrufe sind ueber _get gefaked, damit kein echtes Netzwerk
+    angefasst wird)."""
+    aufrufe = []
+    original_init = InstantlyLeser.__init__
+
+    def zaehlender_init(self, *a, **kw):
+        aufrufe.append(1)
+        original_init(self, *a, **kw)
+
+    def gefakter_get(self, pfad, params):
+        if "steps" in pfad:
+            return []
+        if "analytics" in pfad:
+            return [{"emails_sent_count": 1, "reply_count": 0}]
+        return {"status": 1, "name": "X"}
+
+    monkeypatch.setattr(InstantlyLeser, "__init__", zaehlender_init)
+    monkeypatch.setattr(InstantlyLeser, "_get", gefakter_get)
+    monkeypatch.setenv("INSTANTLY_API_KEY", "fake-schluessel-nur-fuer-test")
+
+    app = create_app(daten_dir)
+    assert len(aufrufe) == 1  # eager beim App-Start gebaut
+
+    client = TestClient(app)
+    client.post("/login", data={"name": "Lena Hartmann", "passwort": "richtig123"})
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml", ts="20260720-090000",
+                  zustand="uebergeben", campaign_id="camp-a")
+
+    erste = client.get("/kampagnen/demo-gmbh/20260720-090000")
+    zweite = client.get("/kampagnen/demo-gmbh/20260720-090000")
+    assert erste.status_code == 200 and zweite.status_code == 200
+    assert len(aufrufe) == 1  # immer noch nur EIN InstantlyLeser fuer beide Requests

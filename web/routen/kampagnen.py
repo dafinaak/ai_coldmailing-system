@@ -7,7 +7,6 @@ den Schreib-Pfad. Diese Route liest NUR (web.instantly_leser.InstantlyLeser,
 nur GET) - sie legt nie eine Kampagne an und aktiviert nie eine."""
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request
@@ -63,15 +62,17 @@ KONTOPROBLEM_HINWEIS = (
 
 def _hole_leser(request: Request):
     """Wie web.routen.freigabe._hole_instantly: app.state.instantly_leser
-    gewinnt (Tests faken hier), sonst ein echter InstantlyLeser mit dem
-    Umgebungs-Key - der Import passiert erst hier, damit Tests nie
-    'requests' brauchen."""
+    gewinnt (Tests faken hier), sonst der GETEILTE InstantlyLeser der App
+    (IMPORTANT Review-Fund, siehe web.instantly_leser.geteilten_leser/
+    web.app.create_app - EIN Objekt fuer alle Requests, sonst ist der
+    60s-Cache nie wirksam). Der Import passiert erst hier, damit Tests ohne
+    app.state.instantly_leser nie 'requests' brauchen."""
     leser = getattr(request.app.state, "instantly_leser", None)
     if leser is not None:
         return leser
-    from web.instantly_leser import InstantlyLeser
+    from web.instantly_leser import geteilten_leser
 
-    return InstantlyLeser(os.environ["INSTANTLY_API_KEY"])
+    return geteilten_leser(request.app)
 
 
 def _lauf_dir_oder_404(daten_dir, slug: str, ts: str) -> Path:
@@ -221,7 +222,13 @@ def _kampagnen_zeilen_aus_stand(mit_kampagne: list[dict], stand_by_id: dict[str,
 # Routen ------------------------------------------------------------------
 
 @router.get("/kampagnen")
-async def kampagnen_liste(request: Request):
+# Bewusst KEIN `async def` - IMPORTANT Review-Fund: _stand_fuer ruft
+# synchron InstantlyLeser.kampagnen_stand auf (blockierende HTTP-Aufrufe bei
+# kaltem Cache, siehe Modul-Docstring). Als Koroutine wuerde das den
+# Event-Loop fuer ALLE gleichzeitigen Nutzer blockieren (gleicher Grund wie
+# web/routen/auftraege.py). Als normale `def`-Funktion fuehrt FastAPI die
+# Route stattdessen in einem Threadpool aus.
+def kampagnen_liste(request: Request):
     daten_dir = request.app.state.daten_dir
     laeufe = _alle_laeufe(daten_dir)
 
@@ -248,7 +255,10 @@ async def kampagnen_liste(request: Request):
 
 
 @router.get("/kampagnen/{slug}/{ts}")
-async def kampagne_detail(request: Request, slug: str, ts: str):
+# Bewusst KEIN `async def` - gleicher Grund wie kampagnen_liste oben:
+# _hole_leser(request).kampagnen_stand(...) ist ein synchroner, blockierender
+# HTTP-Aufruf.
+def kampagne_detail(request: Request, slug: str, ts: str):
     daten_dir = request.app.state.daten_dir
     lauf_dir = _lauf_dir_oder_404(daten_dir, slug, ts)
     store = RunStore.resume(lauf_dir)

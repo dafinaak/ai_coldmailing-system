@@ -4,6 +4,8 @@ laeufe/ und sperrliste-global.yaml (letztere drei kommen erst in spaeteren
 Paketen dazu, dieses Paket legt nur das Geruest mit Anmeldung an)."""
 from __future__ import annotations
 
+import os
+import threading
 from pathlib import Path
 
 from fastapi import FastAPI, Form, Request
@@ -42,6 +44,20 @@ def create_app(daten_dir: Path) -> FastAPI:
     app.state.daten_dir = daten_dir
     app.state.secret = auth.hole_secret()
     app.state.serializer = URLSafeTimedSerializer(app.state.secret, salt=auth.SESSION_SALT)
+
+    # IMPORTANT Review-Fund: EIN InstantlyLeser fuer die ganze App-Laufzeit
+    # (statt einem frischen pro Request) - sonst ist der 60s-Cache in
+    # web.instantly_leser.InstantlyLeser nie wirksam. app.state.instantly_
+    # leser bleibt None, wenn INSTANTLY_API_KEY hier noch fehlt (dann baut
+    # web.instantly_leser.geteilten_leser ihn beim ersten Bedarf, siehe
+    # dort) - Tests setzen app.state.instantly_leser weiterhin selbst
+    # (gewinnt in _hole_leser vor allem anderen, unveraendertes Muster).
+    app.state.instantly_leser = None
+    app.state._instantly_leser_lock = threading.Lock()
+    if os.environ.get("INSTANTLY_API_KEY"):
+        from .instantly_leser import InstantlyLeser
+
+        app.state.instantly_leser = InstantlyLeser(os.environ["INSTANTLY_API_KEY"])
 
     app.mount("/static", StaticFiles(directory=str(BASIS / "static")), name="static")
     templates = Jinja2Templates(directory=str(BASIS / "templates"))

@@ -327,6 +327,44 @@ def test_status_loescht_sperre_wenn_pid_tot(tmp_path, monkeypatch):
     assert not sperr_pfad.exists()
 
 
+def test_status_erhaelt_fremde_sperre_eines_neueren_lebenden_laufs(tmp_path, monkeypatch):
+    # CRITICAL Review-Fund: status() wird fuer JEDEN Laufordner desselben
+    # Kunden aufgerufen (Dashboard/Kampagnen/Pruefen iterieren ueber ALLE
+    # Laeufe). Ein alter, laengst toter Lauf darf NICHT die Sperrdatei
+    # loeschen, wenn die Sperre inzwischen einem NEUEREN, gerade aktiv
+    # laufenden Auftrag desselben Kunden gehoert (andere PID) - sonst
+    # wuerde jeder Seitenaufruf, der auch den alten Laufordner sieht, den
+    # Sperr-Schutz fuer den aktiven neueren Lauf aufheben.
+    daten_dir = tmp_path
+    alter_lauf = _fabriziere_laufordner(daten_dir, ts="20260101-000000", pid=111)
+    sperr_pfad = daten_dir / "laeufe" / "test-gmbh" / ".lauf-aktiv"
+    sperr_pfad.write_text("222", encoding="utf-8")  # gehoert dem neueren, lebenden Lauf
+
+    monkeypatch.setattr(laufmanager, "_pid_lebt", lambda pid: pid == 222)
+
+    stand = Laufmanager(daten_dir).status(alter_lauf)
+
+    assert stand["zustand"] == "angehalten"  # 111 ist tot, dieser Lauf ist angehalten
+    assert sperr_pfad.exists()
+    assert sperr_pfad.read_text(encoding="utf-8") == "222"
+
+
+def test_status_loescht_sperre_nur_wenn_inhalt_exakt_dieser_pid_entspricht(tmp_path, monkeypatch):
+    # Gegenstueck zum obigen Test: bestaetigt, dass der bestehende
+    # Aufraeum-Vertrag (Sperre IST dieser tote pid -> loeschen) durch den
+    # Fix nicht verloren geht - siehe test_status_loescht_sperre_wenn_pid_tot
+    # oben fuer den einfachen Fall, hier zusaetzlich mit zwei Laufordnern.
+    daten_dir = tmp_path
+    lauf_dir = _fabriziere_laufordner(daten_dir, ts="20260101-000000", pid=123)
+    sperr_pfad = daten_dir / "laeufe" / "test-gmbh" / ".lauf-aktiv"
+    sperr_pfad.write_text("123", encoding="utf-8")  # Sperre gehoert GENAU diesem toten Lauf
+    monkeypatch.setattr(laufmanager, "_pid_lebt", lambda pid: False)
+
+    Laufmanager(daten_dir).status(lauf_dir)
+
+    assert not sperr_pfad.exists()
+
+
 def test_status_wartet_auf_freigabe(tmp_path, monkeypatch):
     lauf_dir = _fabriziere_laufordner(tmp_path, pid=123, pruefung_ok=[{"email": "a@b.de"}])
     monkeypatch.setattr(laufmanager, "_pid_lebt", lambda pid: False)
@@ -666,6 +704,26 @@ def test_start_und_fortsetzen_routen_sind_nicht_async(monkeypatch):
     sync-Endpunkte) - der Event-Loop bleibt frei fuer andere Anfragen."""
     assert not inspect.iscoroutinefunction(auftraege_modul.auftrag_neu_starten)
     assert not inspect.iscoroutinefunction(auftraege_modul.auftrag_fortsetzen)
+
+
+def test_weitere_blockierende_routen_sind_ebenfalls_nicht_async():
+    """IMPORTANT Review-Fund: sechs weitere Routen sind `async def`, tun
+    aber blockierende Netzwerkarbeit (Instantly ueber InstantlyLeser/KI ueber
+    fetch_text+draft_offer) und wuerden damit den Event-Loop fuer ALLE
+    gleichzeitigen Nutzer einfrieren - gleicher Grund/gleiche Loesung wie
+    oben (plain `def` statt `async def`, FastAPI fuehrt sie im Threadpool
+    aus)."""
+    from web.routen import dashboard as dashboard_modul
+    from web.routen import kampagnen as kampagnen_modul
+    from web.routen import kunden as kunden_modul
+    from web.routen import postfach as postfach_modul
+
+    assert not inspect.iscoroutinefunction(dashboard_modul.dashboard)
+    assert not inspect.iscoroutinefunction(kampagnen_modul.kampagnen_liste)
+    assert not inspect.iscoroutinefunction(kampagnen_modul.kampagne_detail)
+    assert not inspect.iscoroutinefunction(postfach_modul.postfach)
+    assert not inspect.iscoroutinefunction(kunden_modul.kunde_neu_ableiten)
+    assert not inspect.iscoroutinefunction(kunden_modul.kunde_bearbeiten_ableiten)
 
 
 def test_status_schritt_fertig_ist_5_in_wartet_auf_freigabe(tmp_path, monkeypatch):

@@ -340,6 +340,27 @@ def test_ohne_postfach_problem_keine_laute_zeile(angemeldeter_client):
     assert "Postfach-Problem bei" not in antwort.text
 
 
+def test_dashboard_ohne_instantly_key_und_ohne_kampagnen_stuerzt_nicht_ab(
+        angemeldeter_client, monkeypatch):
+    # Regression (Review-Fund): das Dashboard ruft _postfach_probleme() JETZT
+    # IMMER auf, unabhaengig von lokalen Kampagnen (anders als der
+    # Kampagnen-Pfad, der bei mit_kampagne == [] den Leser gar nicht erst
+    # anfasst). Ohne INSTANTLY_API_KEY UND ohne app.state.instantly_leser
+    # (kein Fake injiziert - simuliert einen App-Start ohne Schluessel)
+    # wirft web.instantly_leser.geteilten_leser() ein KeyError beim Bauen
+    # des Lesers, BEVOR InstantlyLeser.postfaecher() seine eigene
+    # Fehlertoleranz greifen lassen kann - das darf die Seite nicht mit
+    # einem 500er abschiessen, sondern muss genauso degradieren wie ein
+    # erreichbarer, aber fehlgeschlagener Abruf (Zeile einfach abwesend).
+    monkeypatch.delenv("INSTANTLY_API_KEY", raising=False)
+    app = angemeldeter_client.app
+    app.state.instantly_leser = None
+    antwort = angemeldeter_client.get("/")
+    assert antwort.status_code == 200
+    assert "Dashboard" in antwort.text
+    assert "Postfach-Problem bei" not in antwort.text
+
+
 # Kampagnen-Kurzliste --------------------------------------------------------
 
 def test_kampagnen_kurzliste_mit_link_zu_allen_kampagnen(angemeldeter_client, daten_dir):

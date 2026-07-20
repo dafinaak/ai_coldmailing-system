@@ -187,6 +187,22 @@ def test_api_ausfall_mit_cache_zeigt_letzten_bekannten_stand(angemeldeter_client
     assert "Live-Stand gerade nicht erreichbar" in text
 
 
+def test_ohne_instantly_key_zeigt_seite_statt_absturz(angemeldeter_client, monkeypatch):
+    # Regression (Review-Fund, siehe web.routen.postfaecher.postfaecher_stand):
+    # ohne INSTANTLY_API_KEY UND ohne app.state.instantly_leser (kein Fake
+    # injiziert - simuliert einen App-Start ganz ohne Schluessel) wirft
+    # web.instantly_leser.geteilten_leser() beim Bauen des Lesers ein
+    # KeyError, VOR jeder eigenen Fehlertoleranz von InstantlyLeser.
+    # postfaecher(). Die Seite muss trotzdem den ehrlichen "Live-Stand
+    # gerade nicht erreichbar"-Zustand zeigen statt mit 500 abzustuerzen.
+    monkeypatch.delenv("INSTANTLY_API_KEY", raising=False)
+    app = angemeldeter_client.app
+    app.state.instantly_leser = None
+    antwort = angemeldeter_client.get("/postfaecher")
+    assert antwort.status_code == 200
+    assert "Live-Stand gerade nicht erreichbar" in antwort.text
+
+
 # Read-only Hinweis -----------------------------------------------------------
 
 def test_zeigt_ehrlichen_hinweis_dass_verbinden_nur_in_instantly_geht(angemeldeter_client):

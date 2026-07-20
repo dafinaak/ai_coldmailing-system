@@ -71,6 +71,32 @@ def _hole_leser(request: Request):
     return geteilten_leser(request.app)
 
 
+def postfaecher_stand(request: Request) -> dict:
+    """Holt den Postfaecher-Stand fehlertolerant - oeffentlich (kein "_"-
+    Praefix), damit web.routen.dashboard._postfach_probleme denselben,
+    sicheren Zugriff nutzt statt _hole_leser()/postfaecher() selbst
+    aufzurufen (Review-Fund/Regression, siehe unten).
+
+    Fehlt INSTANTLY_API_KEY (z.B. ein Aufbau ganz ohne Schluessel) UND ist
+    kein app.state.instantly_leser gesetzt, wirft schon das BAUEN des
+    Lesers (web.instantly_leser.geteilten_leser: ein bloßer
+    os.environ[...]-Zugriff) ein KeyError - VOR jedem HTTP-Aufruf, also
+    bevor InstantlyLeser.postfaecher() seine eigene Fehlertoleranz (siehe
+    dort: faengt nur RequestException/RuntimeError/ValueError/KeyError aus
+    einem tatsaechlichen API-Aufruf ab) ueberhaupt greifen lassen kann.
+    Das ist kein Instantly-AUSFALL, sondern ein fehlendes Konto-Setup -
+    wird hier trotzdem wie ein Ausfall behandelt (degradiert statt
+    abzustuerzen): weder die Postfaecher-Seite noch das Dashboard sollen
+    deswegen einen 500er zeigen, sondern den ehrlichen 'Live-Stand gerade
+    nicht erreichbar'-Zustand (bzw. auf dem Dashboard: die Zeile bleibt
+    einfach abwesend)."""
+    try:
+        leser = _hole_leser(request)
+        return leser.postfaecher()
+    except KeyError:
+        return {"postfaecher": [], "erreichbar": False, "stand": None}
+
+
 def postfach_problem_zeilen(stand: dict) -> list[dict]:
     """Reine Aufbereitung (kein Netzwerk-Zugriff) - baut aus einem bereits
     abgerufenen InstantlyLeser.postfaecher()-Ergebnis die Liste der
@@ -108,15 +134,14 @@ def _zeilen(stand: dict) -> list[dict]:
 
 
 @router.get("/postfaecher")
-# Bewusst KEIN `async def` - IMPORTANT Review-Fund: _hole_leser(request).
-# postfaecher() ist ein synchroner, blockierender HTTP-Aufruf (siehe
-# web.instantly_leser). Als Koroutine wuerde das den Event-Loop fuer ALLE
-# gleichzeitigen Nutzer blockieren (gleicher Grund wie
+# Bewusst KEIN `async def` - IMPORTANT Review-Fund: postfaecher_stand(request)
+# ruft ueber InstantlyLeser.postfaecher() einen synchronen, blockierenden
+# HTTP-Aufruf auf (siehe web.instantly_leser). Als Koroutine wuerde das den
+# Event-Loop fuer ALLE gleichzeitigen Nutzer blockieren (gleicher Grund wie
 # web/routen/kampagnen.py). Als normale `def`-Funktion fuehrt FastAPI die
 # Route stattdessen in einem Threadpool aus.
 def postfaecher_liste(request: Request):
-    leser = _hole_leser(request)
-    stand = leser.postfaecher()
+    stand = postfaecher_stand(request)
     problem_zeilen = postfach_problem_zeilen(stand)
 
     return request.app.state.templates.TemplateResponse(

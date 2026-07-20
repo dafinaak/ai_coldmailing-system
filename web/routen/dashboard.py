@@ -82,14 +82,24 @@ def _postfach_probleme(request: Request) -> list[dict]:
     """Baustein 2: EIN zusaetzlicher Instantly-Abruf (InstantlyLeser.
     postfaecher(), eigener 60s-Cache, siehe web.instantly_leser) fuer die
     laute Dashboard-Zeile bei einem Postfach-Verbindungsfehler - ueber den
-    GETEILTEN InstantlyLeser der App (postfaecher_routen._hole_leser, exakt
-    dasselbe Objekt wie web.routen.postfaecher selbst nutzt), damit der
-    Cache wirklich greift und nicht bei jedem Dashboard-Aufruf neu abgefragt
-    wird. Baut auf postfaecher_routen.postfach_problem_zeilen (reine
-    Aufbereitung, bewusst OEFFENTLICH gemacht genau fuer diese
-    Wiederverwendung, siehe dort) statt die Filterung hier zu duplizieren."""
-    leser = postfaecher_routen._hole_leser(request)
-    stand = leser.postfaecher()
+    GETEILTEN InstantlyLeser der App (postfaecher_routen.postfaecher_stand,
+    exakt derselbe Zugriff wie web.routen.postfaecher selbst nutzt), damit
+    der Cache wirklich greift und nicht bei jedem Dashboard-Aufruf neu
+    abgefragt wird. Baut auf postfaecher_routen.postfach_problem_zeilen
+    (reine Aufbereitung, bewusst OEFFENTLICH gemacht genau fuer diese
+    Wiederverwendung, siehe dort) statt die Filterung hier zu duplizieren.
+
+    Regression/Review-Fund (Baustein 2, behoben): vorher rief diese Funktion
+    postfaecher_routen._hole_leser(request) + .postfaecher() DIREKT auf.
+    Anders als der Kampagnen-Pfad (kampagnen_routen._stand_fuer: ruft den
+    Leser NUR an, wenn es ueberhaupt eine lokale Kampagne gibt) tut das
+    Dashboard das hier IMMER, unabhaengig von lokalen Kampagnen - fehlte
+    dann INSTANTLY_API_KEY (und war kein app.state.instantly_leser gesetzt),
+    warf schon web.instantly_leser.geteilten_leser() beim Bauen des Lesers
+    ein KeyError, VOR jeder eigenen Fehlertoleranz von postfaecher() - das
+    Dashboard stuerzte mit 500 ab statt zu degradieren. postfaecher_stand()
+    faengt genau dieses KeyError jetzt ab (siehe dort)."""
+    stand = postfaecher_routen.postfaecher_stand(request)
     return postfaecher_routen.postfach_problem_zeilen(stand)
 
 

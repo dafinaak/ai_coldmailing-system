@@ -13,11 +13,11 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException, Request
 
 from pipeline.approval import freigabe_info
-from pipeline.config import load_kunde
 from pipeline.run_store import RunStore
 from web import auth
 from web.laufmanager import Laufmanager, wartet_seit_text as _wartet_seit_text
 from web.nav import nav_kontext
+from web.wartende import kunde_fuer as _kunde_fuer
 
 router = APIRouter()
 
@@ -84,14 +84,6 @@ def _lauf_dir_oder_404(daten_dir, slug: str, ts: str) -> Path:
     if laeufe_wurzel not in aufgeloest.parents or not aufgeloest.is_dir():
         raise HTTPException(status_code=404, detail="Kampagne nicht gefunden.")
     return aufgeloest
-
-
-def _kunde_fuer(daten_dir, lauf_dir: Path):
-    store = RunStore.resume(lauf_dir)
-    pfad = Path(store.load_step("kunde_pfad")["pfad"])
-    if not pfad.is_absolute():
-        pfad = Path(daten_dir) / pfad
-    return load_kunde(pfad)
 
 
 def _campaign_id_fuer(store: RunStore) -> str | None:

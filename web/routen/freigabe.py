@@ -21,12 +21,11 @@ from fastapi.responses import RedirectResponse
 
 from pipeline.__main__ import SendenFehler, _versand_ausfuehren
 from pipeline.approval import approve, freigabe_info, is_approved
-from pipeline.config import load_kunde
 from pipeline.run_store import RunStore
 from web import auth
 from web.laufmanager import Laufmanager
 from web.nav import nav_kontext
-from web.wartende import wartende_laeufe
+from web.wartende import kunde_fuer as _kunde_fuer, wartende_laeufe
 
 router = APIRouter()
 
@@ -96,14 +95,6 @@ def _lauf_dir_oder_404(daten_dir, slug: str, ts: str) -> Path:
     if laeufe_wurzel not in aufgeloest.parents or not aufgeloest.is_dir():
         raise HTTPException(status_code=404, detail="Auftrag nicht gefunden.")
     return aufgeloest
-
-
-def _kunde_fuer(daten_dir, lauf_dir: Path):
-    store = RunStore.resume(lauf_dir)
-    pfad = Path(store.load_step("kunde_pfad")["pfad"])
-    if not pfad.is_absolute():
-        pfad = Path(daten_dir) / pfad
-    return load_kunde(pfad)
 
 
 def _dedupe_info_by_email(lauf_dir: Path) -> dict:

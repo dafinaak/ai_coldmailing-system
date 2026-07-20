@@ -173,9 +173,12 @@ def test_kacheln_zeigen_korrekte_zahlen(angemeldeter_client, daten_dir):
     assert "Aktive Kampagnen" in text
     assert "Heute versendet" in text
     assert "Neue Antworten" in text
-    # 1 wartender Lauf, 1 aktive Kampagne (camp-a), 2+0=2 Antworten:
+    # 1 wartender Lauf, 1 aktive Kampagne (camp-a):
     assert ">1<" in text  # wartend
-    assert ">2<" in text  # antworten summiert
+    assert (
+        '<div class="dash-kachel-wert">1</div>\n'
+        '      <div class="dash-kachel-label">Aktive Kampagnen</div>'
+    ) in text
 
 
 def test_kachel_wartende_freigabe_verlinkt_pruefen(angemeldeter_client, daten_dir):
@@ -192,6 +195,30 @@ def test_kachel_heute_versendet_zeigt_platzhalter_ohne_erfundenen_wert(angemelde
     antwort = angemeldeter_client.get("/")
     assert antwort.status_code == 200
     assert "Heute versendet" in antwort.text
+    assert (
+        '<div class="dash-kachel-wert">–</div>\n'
+        '      <div class="dash-kachel-label">Heute versendet</div>'
+    ) in antwort.text
+
+
+def test_kachel_neue_antworten_zeigt_platzhalter_statt_lifetime_zaehler(angemeldeter_client, daten_dir):
+    # Reviewer-Fix 1: InstantlyLeser.kampagnen_stand()["antworten"] ist der
+    # LIFETIME-reply_count der Kampagne, nicht "neu" - selbst wenn die API
+    # einen Wert liefert, darf die Kachel ihn nicht als "neu" ausgeben.
+    app = angemeldeter_client.app
+    app.state.instantly_leser = FakeInstantlyLeser({
+        "camp-a": _stand(status="aktiv", antworten=7),
+    })
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml", ts="20260720-090000",
+                  zustand="uebergeben", campaign_id="camp-a")
+
+    antwort = angemeldeter_client.get("/")
+    assert antwort.status_code == 200
+    text = antwort.text
+    assert (
+        '<div class="dash-kachel-wert">–</div>\n'
+        '      <div class="dash-kachel-label">Neue Antworten</div>'
+    ) in text
 
 
 # WARTET AUF DEINE FREIGABE -----------------------------------------------

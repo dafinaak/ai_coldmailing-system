@@ -6,10 +6,10 @@ web.routen.kampagnen._alle_laeufe/_stand_fuer/_kampagnen_zeilen_aus_stand
 (Task 6). Instantly wird GENAU EINMAL pro Seitenaufruf abgefragt (ueber
 _stand_fuer, das den 60s-Cache von web.instantly_leser.InstantlyLeser
 nutzt) - dieser eine stand_by_id-Datensatz speist Kachel 'Aktive
-Kampagnen', Kachel 'Neue Antworten', die Konto-Problem-Zeilen UND die
-Kampagnen-Kurzliste. Ein zweiter Abruf pro Kachel wuerde bei kaltem Cache +
-ausgefallener API die Seite unnoetig lange blockieren (siehe
-InstantlyLeser._hole_frisch: 3 sequentielle GETs je Kampagne, Timeout 20s)."""
+Kampagnen', die Konto-Problem-Zeilen UND die Kampagnen-Kurzliste. Ein
+zweiter Abruf pro Kachel wuerde bei kaltem Cache + ausgefallener API die
+Seite unnoetig lange blockieren (siehe InstantlyLeser._hole_frisch: 3
+sequentielle GETs je Kampagne, Timeout 20s)."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -29,23 +29,21 @@ DASH_HINWEIS = "Hier siehst du auf einen Blick, was läuft und was auf dich wart
 KEIN_WERT = "–"
 
 
-def _live_kacheln_werte(request: Request, mit_kampagne: list[dict]) -> tuple[dict, int | str, int | str]:
+def _aktive_kampagnen_kachel(request: Request, mit_kampagne: list[dict]) -> tuple[dict, int | str]:
     """Ein einziger Instantly-Abruf (_stand_fuer, siehe Modul-Docstring) fuer
-    'Aktive Kampagnen' und 'Neue Antworten'. Ohne Kampagnen ist beides
-    ehrlich 0 (kein unbekannter Zustand, es gibt schlicht keine); gibt es
-    Kampagnen, aber zu KEINER einzigen je einen erfolgreichen Abruf (auch
-    nicht aus dem Cache), ist der Wert unbekannt statt einer erfundenen 0 -
-    dann zeigen beide Kacheln KEIN_WERT."""
+    die Kachel 'Aktive Kampagnen'. Ohne Kampagnen ist das ehrlich 0 (kein
+    unbekannter Zustand, es gibt schlicht keine); gibt es Kampagnen, aber zu
+    KEINER einzigen je einen erfolgreichen Abruf (auch nicht aus dem
+    Cache), ist der Wert unbekannt statt einer erfundenen 0 - dann zeigt die
+    Kachel KEIN_WERT."""
     stand_by_id = kampagnen_routen._stand_fuer(request, mit_kampagne)
     if not mit_kampagne:
-        return stand_by_id, 0, 0
+        return stand_by_id, 0
     bekannt = any(s.get("status") is not None for s in stand_by_id.values())
     if not bekannt:
-        return stand_by_id, KEIN_WERT, KEIN_WERT
+        return stand_by_id, KEIN_WERT
     aktive = sum(1 for s in stand_by_id.values() if s.get("status") == "aktiv")
-    antworten_werte = [s.get("antworten") for s in stand_by_id.values() if s.get("antworten") is not None]
-    antworten = sum(antworten_werte) if antworten_werte else KEIN_WERT
-    return stand_by_id, aktive, antworten
+    return stand_by_id, aktive
 
 
 def _angehalten_banner(daten_dir, angehaltene: list[dict]) -> dict | None:
@@ -96,7 +94,7 @@ async def dashboard(request: Request):
     wartende = wartende_laeufe(daten_dir)
 
     mit_kampagne = [l for l in laeufe if l["campaign_id"]]
-    stand_by_id, aktive_anzahl, neue_antworten = _live_kacheln_werte(request, mit_kampagne)
+    stand_by_id, aktive_anzahl = _aktive_kampagnen_kachel(request, mit_kampagne)
     live_stand_hinweis = kampagnen_routen._live_stand_hinweis(list(stand_by_id.values()))
 
     dash_kampagnen = kampagnen_routen._kampagnen_zeilen_aus_stand(mit_kampagne[:4], stand_by_id)
@@ -123,8 +121,13 @@ async def dashboard(request: Request):
             "wert": KEIN_WERT, "label": "Heute versendet",
             "sub": "Mails über alle Kampagnen", "link": "/kampagnen",
         },
+        # TODO(Task 9 Postfach): echte Neu-Zaehlung. InstantlyLeser.
+        # kampagnen_stand()["antworten"] (Task 6) ist der LIFETIME-
+        # reply_count der Kampagne, nicht "neu seit dem letzten Besuch" -
+        # das hier auszugeben waere irrefuehrend (Reviewer-Fix 1), deshalb
+        # bis Task 9 der gleiche ehrliche Platzhalter wie 'Heute versendet'.
         {
-            "wert": neue_antworten, "label": "Neue Antworten",
+            "wert": KEIN_WERT, "label": "Neue Antworten",
             "sub": "Im Postfach lesen", "link": "/postfach",
         },
     ]

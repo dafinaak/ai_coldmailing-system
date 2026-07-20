@@ -19,7 +19,11 @@ from pipeline.run_store import RunStore
 from web.laufmanager import Laufmanager, wartet_seit_text
 
 
-def _kunde_fuer(daten_dir, lauf_dir: Path):
+def kunde_fuer(daten_dir, lauf_dir: Path):
+    """Laedt den Kunden zu einem Laufordner (ueber kunde_pfad.json). Fix 3
+    (Reviewer-Review, Task 7): war bis dahin byte-identisch in
+    web.routen.freigabe, web.routen.kampagnen UND hier dupliziert - jetzt
+    hier konsolidiert, beide Routen importieren von hier."""
     store = RunStore.resume(lauf_dir)
     pfad = Path(store.load_step("kunde_pfad")["pfad"])
     if not pfad.is_absolute():
@@ -45,7 +49,7 @@ def wartende_laeufe(daten_dir) -> list[dict]:
             if stand["zustand"] != "wartet_auf_freigabe":
                 continue
             try:
-                kunde_name = _kunde_fuer(daten_dir, lauf_dir).name
+                kunde_name = kunde_fuer(daten_dir, lauf_dir).name
             except (OSError, ValueError, KeyError):
                 kunde_name = kunden_ordner.name
             eintraege.append({
@@ -59,13 +63,33 @@ def wartende_laeufe(daten_dir) -> list[dict]:
     return eintraege
 
 
+def _ist_wartend_reine_dateipruefung(lauf_dir: Path) -> bool:
+    """Reine Datei-Existenz-Pruefung (kein PID-Check, kein JSON-Parsing) fuer
+    den Zustand 'wartet_auf_freigabe' - muss die gleiche Bedeutung wie
+    Laufmanager.status() haben (siehe dort: pruefung_ok UND NICHT abgelehnt
+    UND NICHT versand_komplett UND NICHT freigegeben -> 'wartet_auf_freigabe'),
+    nur OHNE den dortigen Prozess-lebt-Check ('laeuft' gewinnt in
+    Laufmanager.status() vor allem anderen). Reviewer-Fix 2 (Task 7): dieser
+    Zaehler laeuft auf JEDER Seite mit, ein PID-Check/JSON-Parsing pro
+    Laufordner waere hier zu teuer. Bei Drift IMMER Laufmanager.status() als
+    Quelle der Wahrheit behandeln und diese Funktion nachziehen."""
+    return (
+        (lauf_dir / "pruefung_ok.json").exists()
+        and not (lauf_dir / "FREIGABE.txt").exists()
+        and not (lauf_dir / "abgelehnt.json").exists()
+        and not (lauf_dir / "versand_komplett.json").exists()
+    )
+
+
 def wartende_anzahl(daten_dir) -> int:
     """Schlanker Zaehler fuer den Sidebar-Badge (Task 1-Platzhalter, gefuellt
-    in Task 7): bewusst OHNE Kunden-Datei-Lesung (die braucht wartende_laeufe
-    oben nur fuer die Namen) und OHNE jeden Instantly-Aufruf - Dateisystem
-    only, siehe Plan Task 7 ('cheap: filesystem-only count, no Instantly
-    calls from the badge'), weil dieser Zaehler auf JEDER Seite mitlaeuft."""
-    manager = Laufmanager(daten_dir)
+    in Task 7): "truly cheap" (Reviewer-Fix 2) - bewusst OHNE
+    Laufmanager.status() (kein PID-Check via os.kill, kein JSON-Parsing der
+    Schritt-Dateien), ohne Kunden-Datei-Lesung und ohne jeden Instantly-
+    Aufruf - reine Datei-Existenz-Pruefung je Laufordner (siehe
+    _ist_wartend_reine_dateipruefung), weil dieser Zaehler auf JEDER Seite
+    mitlaeuft (Plan Task 7: 'cheap: filesystem-only count, no Instantly
+    calls from the badge')."""
     laeufe_wurzel = Path(daten_dir) / "laeufe"
     if not laeufe_wurzel.is_dir():
         return 0
@@ -74,6 +98,6 @@ def wartende_anzahl(daten_dir) -> int:
         if not kunden_ordner.is_dir():
             continue
         for lauf_dir in kunden_ordner.iterdir():
-            if lauf_dir.is_dir() and manager.status(lauf_dir)["zustand"] == "wartet_auf_freigabe":
+            if lauf_dir.is_dir() and _ist_wartend_reine_dateipruefung(lauf_dir):
                 anzahl += 1
     return anzahl

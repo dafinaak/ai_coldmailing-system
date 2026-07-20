@@ -15,11 +15,13 @@ from __future__ import annotations
 from pathlib import Path
 
 from fastapi import APIRouter, Request
+from fastapi.responses import RedirectResponse
 
 from web import auth
 from web.nav import nav_kontext
 from web.routen import kampagnen as kampagnen_routen
 from web.routen.auftraege import _lade_meta
+from web.routen.intro import INTRO_COOKIE
 from web.wartende import wartende_laeufe
 
 router = APIRouter()
@@ -58,7 +60,7 @@ def _angehalten_banner(daten_dir, angehaltene: list[dict]) -> dict | None:
     lauf_dir = Path(daten_dir) / "laeufe" / erste["slug"] / erste["ts"]
     meta = _lade_meta(lauf_dir)
     fehler = erste["fehler"] or {}
-    titel = f"Angehalten: Anschreiben für {erste['kunde_name']}"
+    titel = f"Angehalten: E-Mail-Runde für {erste['kunde_name']}"
     if meta.get("gestartet_am"):
         titel += f" (gestartet {meta['gestartet_am']})"
     text = f"{fehler.get('was', '')} {fehler.get('nicht', '')}".strip()
@@ -96,6 +98,14 @@ def _kontoproblem_zeilen(mit_kampagne: list[dict], stand_by_id: dict) -> list[di
 # `def`-Funktion fuehrt FastAPI die Route stattdessen in einem Threadpool
 # aus.
 def dashboard(request: Request):
+    # Copy-Rework (20.07.2026, siehe docs/copy-rework-brief.md): erster
+    # Login ohne das Cookie 'intro_gesehen' -> einmalig zur Kurz-Erklaerung
+    # "So funktioniert's" umleiten (web.routen.intro). Kein Server-State
+    # noetig (Plan-Vorgabe) - rein cookie-basiert, jederzeit ueber den
+    # Seitenleisten-Eintrag erneut aufrufbar.
+    if request.cookies.get(INTRO_COOKIE) != "1":
+        return RedirectResponse("/so-funktionierts", status_code=303)
+
     daten_dir = request.app.state.daten_dir
     laeufe = kampagnen_routen._alle_laeufe(daten_dir)
     wartende = wartende_laeufe(daten_dir)

@@ -92,7 +92,38 @@ SCHEMA verifiziert, nicht gegen ein echtes Konto.
   # ueber Instantly ue_type=3 (statt z.B. nur 1 fuer alles Ausgehende), ist
   # nur aus den Enum-Beschreibungen abgeleitet, nicht live bestaetigt -
   # siehe _richtung_und_kontakt unten, das beide defensiv als "gesendet"
-  # behandelt."""
+  # behandelt.
+
+Step-0-Live-Doku-Pruefung fuer Baustein 2 (Postfaecher-Ansicht), PFLICHT vor
+dem Bau: zusaetzlich zur Doku-Pruefung diesmal ein ECHTER GET-only-Abruf
+gegen das Team-Konto (mit dem Key aus .env, keine Aenderung ausgeloest,
+siehe docs/instantly-api-machbarkeit.md Punkt 4 fuer den Kontext) am
+20.07.2026, weil der Machbarkeits-Check zwei Felder nannte, die die Doku
+zwar im Schema fuehrt, die im echten Konto aber gefehlt haben:
+
+- GET /api/v2/accounts (operationId "listAccount"): Antwort
+  {"items": [Account], "next_starting_after": str} - genau wie bei
+  /emails oben bewusst OHNE Cursor-Paginierung (limit=100 reicht: das
+  Team-Konto hatte beim Probe-Abruf 10 Postfaecher).
+- components.schemas.Account, hier genutzte Felder: "email"* (String),
+  "status"* (Zahlen-Enum, x-enumDescriptions: 1=Active, 2=Paused,
+  3=Temporarily paused for maintenance [automatische Wiederaufnahme],
+  -1=Connection Error, -2=Soft Bounce Error, -3=Sending Error),
+  "warmup_status"* (Zahlen-Enum: 0=Paused, 1=Active, -1=Banned,
+  -2=Spam Folder Unknown, -3=Permanent Suspension), "daily_limit"
+  (Zahl|null, Schema-Beispiel 100).
+- LIVE-BEFUND (weicht von der reinen Schema-Lektuere ab): "daily_limit"
+  fehlte bei ALLEN 10 Postfaechern im echten Abruf komplett (kein Schluessel
+  im JSON, nicht einmal null) - vermutlich, weil dort nie ein Wert gesetzt
+  wurde. postfaecher() unten behandelt das defensiv (.get() ohne Default
+  -> None), die Anzeige zeigt dafuer "-" statt eines erfundenen Werts
+  (gleiches Prinzip wie dash.KEIN_WERT).
+- LIVE-BEFUND: eines der 10 Postfaecher hatte status=-1 (Connection Error)
+  UND ein aussagekraeftiges "status_message.e_message" (OAuth-Token
+  abgelaufen) - dieses Feld wird hier bewusst NICHT ausgewertet (nur die
+  Zahl "status"), ein Freitext aus der API roh auf der Seite auszugeben
+  waere weder uebersetzt noch fuer Laien verstaendlich; der Instantly-Link
+  fuehrt fuer die Detailsuche dorthin."""
 from __future__ import annotations
 
 import os
@@ -136,6 +167,36 @@ _STATUS_TEXT = {
 _UE_TYPE_GESENDET = {1, 3}
 _UE_TYPE_EMPFANGEN = {2}
 _UE_TYPE_GEPLANT = {4}
+
+# Account.status -> Anzeige-Text (Baustein 2, siehe Modul-Docstring fuer die
+# Live-verifizierte Quelle). 2 (Paused, absichtlich vom Team angehalten) und
+# 3 (Temporarily paused for maintenance, Instantly nimmt automatisch wieder
+# auf) sind beide ein normaler, nicht-alarmierender Ruhezustand -> "pausiert".
+# Die drei negativen Zustaende sind dagegen ein ECHTES Verbindungsproblem
+# (Login/Zustellung kaputt, siehe status_message im Modul-Docstring) -> der
+# eigene, laute Zustand "verbindungsfehler" (gleiches Prinzip wie
+# "kontoproblem" bei Kampagnen oben: nie still unter "pausiert" verstecken).
+_POSTFACH_STATUS_TEXT = {
+    1: "verbunden",
+    2: "pausiert",
+    3: "pausiert",
+    -1: "verbindungsfehler",
+    -2: "verbindungsfehler",
+    -3: "verbindungsfehler",
+}
+
+# Account.warmup_status -> Anzeige-Text (Baustein 2). 1 (Active) heisst: das
+# automatische Aufwaerm-Programm laeuft gerade -> "an"; 0 (Paused) heisst
+# ausgeschaltet/pausiert -> "aus". -1/-3 sind ein dauerhaftes Sperr-Problem
+# (Banned/Permanent Suspension) -> "gesperrt"; -2 (Spam Folder Unknown) ist
+# kein Totalausfall, aber ein unklarer Zustellbarkeits-Zustand -> "problem".
+_POSTFACH_WARMUP_TEXT = {
+    1: "an",
+    0: "aus",
+    -1: "gesperrt",
+    -2: "problem",
+    -3: "gesperrt",
+}
 
 
 def _parse_zeit(roh: str | None):
@@ -245,6 +306,11 @@ class InstantlyLeser:
         # oben (Kampagnen-Stand): unterschiedliche Daten je campaign_id,
         # ein gemeinsamer Cache wuerde sich gegenseitig ueberschreiben.
         self._email_cache: dict[str, dict] = {}
+        # Cache fuer postfaecher() (Baustein 2) - anders als die beiden Caches
+        # oben NICHT je ID (es gibt keine ID: ein Abruf liefert ALLE
+        # Postfaecher des Konto auf einmal), deshalb ein einzelner Slot statt
+        # eines dict. None, solange noch nie erfolgreich abgerufen wurde.
+        self._postfach_cache: dict | None = None
 
     # Hilfsfunktionen --------------------------------------------------
 
@@ -384,6 +450,56 @@ class InstantlyLeser:
         DIREKT auf (ein Abruf speist dort sowohl die Konversationsliste als
         auch den Live-Stand-Hinweis, siehe emails_stand()-Docstring)."""
         return konversationen_aus_email_stand(self.emails_stand(campaign_ids))
+
+    # Postfaecher-Uebersicht (Baustein 2) ---------------------------------
+
+    def _postfach_aus_account(self, account: dict) -> dict:
+        """Baut aus einem rohen Account (siehe Modul-Docstring/Schema) eine
+        Anzeige-Zeile. "daily_limit" bleibt None, wenn die API das Feld nicht
+        mitschickt (live beobachtet, siehe Modul-Docstring) statt einen Wert
+        zu erfinden - die Seite zeigt dann "-" statt einer Zahl."""
+        return {
+            "email": account.get("email"),
+            "status": _POSTFACH_STATUS_TEXT.get(account.get("status"), "unbekannt"),
+            "warmup": _POSTFACH_WARMUP_TEXT.get(account.get("warmup_status"), "unbekannt"),
+            "daily_limit": account.get("daily_limit"),
+        }
+
+    def _postfaecher_hole_frisch(self) -> list[dict]:
+        """Ein GET auf /accounts, begrenzt auf limit=100 (siehe
+        Modul-Docstring: bewusst OHNE Cursor-Paginierung, das Team-Konto
+        hatte beim Probe-Abruf 10 Postfaecher - reicht bei weitem). Wirft
+        weiter wie _hole_frisch/_emails_hole_frisch oben - postfaecher()
+        faengt das ab."""
+        antwort = self._get("/accounts", params={"limit": 100})
+        items = (antwort or {}).get("items") or []
+        return [self._postfach_aus_account(a) for a in items]
+
+    def postfaecher(self) -> dict:
+        """Liefert "postfaecher" (Liste aller Sende-Postfaecher des Konto,
+        siehe _postfach_aus_account fuer die Feldform), "erreichbar" (bool)
+        und "stand" (Zeitpunkt des letzten ERFOLGREICHEN Abrufs, oder None,
+        wenn noch nie einer gelang). Gleiches Cache-/Fehlertoleranz-Muster
+        wie kampagnen_stand()/emails_stand() oben (60s, eigener Cache-Slot
+        siehe __init__, letzter bekannter Stand bleibt bei einem Ausfall
+        sichtbar mit "erreichbar": False) - Seiten zeigen dann "Live-Stand
+        gerade nicht erreichbar" statt abzustuerzen (web.routen.kampagnen.
+        _live_stand_hinweis erwartet dieselbe Datensatz-Form wie hier, siehe
+        dort - dieses Ergebnis passt direkt ohne Anpassung)."""
+        cache_eintrag = self._postfach_cache
+        if cache_eintrag is not None and self._frisch_genug(cache_eintrag):
+            return {"postfaecher": cache_eintrag["daten"], "erreichbar": True,
+                     "stand": cache_eintrag["abgerufen_um"]}
+        try:
+            daten = self._postfaecher_hole_frisch()
+        except (requests.exceptions.RequestException, RuntimeError, ValueError, KeyError):
+            if cache_eintrag is not None:
+                return {"postfaecher": cache_eintrag["daten"], "erreichbar": False,
+                         "stand": cache_eintrag["abgerufen_um"]}
+            return {"postfaecher": [], "erreichbar": False, "stand": None}
+        jetzt = self._jetzt()
+        self._postfach_cache = {"daten": daten, "abgerufen_um": jetzt}
+        return {"postfaecher": daten, "erreichbar": True, "stand": jetzt}
 
 
 def geteilten_leser(app) -> InstantlyLeser:

@@ -14,7 +14,12 @@ Copy-Rework (20.07.2026): "So funktioniert's" ist ein achter, bewusst
 unauffaelliger Eintrag unten in der Liste (eigene Route in
 web.routen.intro) - die "sieben Bereiche" im Docstring oben bleiben die
 fachlichen Kernbereiche, dieser Eintrag ist nur der jederzeit erreichbare
-Wieder-Einstieg in die Kurz-Erklaerung."""
+Wieder-Einstieg in die Kurz-Erklaerung.
+
+Baustein 2 (20.07.2026): "Postfächer" kommt als neunter Eintrag dazu,
+direkt nach "Kampagnen" (thematisch am naechsten: beide drehen sich um den
+Instantly-Versand) - rein lesende Uebersicht des Verbindungs-/Anwaerm-
+Status aller Sende-Postfaecher, siehe web.routen.postfaecher."""
 from __future__ import annotations
 
 from starlette.requests import Request
@@ -26,6 +31,7 @@ from web.wartende import wartende_anzahl
 NAV_BEREICHE = [
     ("dashboard", "/", "Dashboard"),
     ("kampagnen", "/kampagnen", "Kampagnen"),
+    ("postfaecher", "/postfaecher", "Postfächer"),
     ("pruefen", "/pruefen", "Lesen & Freigeben"),
     ("kontakte", "/kontakte", "Kontakte"),
     ("postfach", "/postfach", "Postfach"),

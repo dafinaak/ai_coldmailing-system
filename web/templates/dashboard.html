@@ -13,12 +13,18 @@
   </div>
   {% endif %}
 
-  {% if kontoproblem %}
+  {% if kontoproblem or postfach_probleme %}
   <div class="dash-konto-liste">
     {% for k in kontoproblem %}
     <div class="dash-konto-zeile">
       <div class="dash-konto-info">Konto-Problem bei <b>{{ k.name }}</b> ({{ k.kunde_name }}) — der Versand ruht.</div>
       <a href="/kampagnen/{{ k.slug }}/{{ k.ts }}" class="knopf-sekundaer knopf-klein">Ansehen</a>
+    </div>
+    {% endfor %}
+    {% for p in postfach_probleme %}
+    <div class="dash-konto-zeile">
+      <div class="dash-konto-info">Postfach-Problem bei <b>{{ p.email }}</b> — bitte in Instantly neu verbinden.</div>
+      <a href="/postfaecher" class="knopf-sekundaer knopf-klein">Ansehen</a>
     </div>
     {% endfor %}
   </div>

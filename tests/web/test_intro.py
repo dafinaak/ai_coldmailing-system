@@ -12,6 +12,21 @@ from web.app import create_app
 PWD_CONTEXT = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
+class _FakeInstantlyLeser:
+    """Gleicher Fake wie tests/web/test_auth.py._FakeInstantlyLeser - noetig,
+    weil das Dashboard seit Baustein 2 IMMER InstantlyLeser.postfaecher()
+    aufruft (siehe web.routen.dashboard._postfach_probleme), auch wenn
+    dieser Test nur die Einstiegsseite/den Redirect dorthin prueft."""
+
+    def kampagnen_stand(self, campaign_ids):
+        return {cid: {"erreichbar": False, "status": None, "name": None,
+                       "versendet": None, "antworten": None, "schritte": [],
+                       "stand": None} for cid in campaign_ids}
+
+    def postfaecher(self):
+        return {"postfaecher": [], "erreichbar": True, "stand": None}
+
+
 @pytest.fixture
 def daten_dir(tmp_path, monkeypatch):
     monkeypatch.setenv("WEB_SECRET", "test-geheimnis-nur-fuer-tests")
@@ -26,6 +41,7 @@ def daten_dir(tmp_path, monkeypatch):
 @pytest.fixture
 def client(daten_dir):
     app = create_app(daten_dir)
+    app.state.instantly_leser = _FakeInstantlyLeser()
     return TestClient(app)
 
 

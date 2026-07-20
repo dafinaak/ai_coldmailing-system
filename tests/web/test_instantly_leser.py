@@ -350,3 +350,146 @@ def test_konversationen_leere_kampagnenliste_ergibt_leere_liste_ohne_aufruf():
     leser = InstantlyLeser("key", session=session)
     assert leser.konversationen([]) == []
     assert session.aufrufe == []
+
+
+# Postfaecher (Baustein 2): postfaecher() ------------------------------------
+#
+# Feldnamen live gegen GET /api/v2/accounts geprueft (siehe
+# docs/instantly-api-machbarkeit.md Punkt 4 und web.instantly_leser
+# Modul-Docstring) - "email", "status", "warmup_status", "daily_limit".
+
+def _account(email="team@firma.de", status=1, warmup_status=1, daily_limit=100):
+    account = {"email": email, "status": status, "warmup_status": warmup_status}
+    if daily_limit is not None:
+        account["daily_limit"] = daily_limit
+    return account
+
+
+def test_postfaecher_parst_verbunden_und_verbindungsfehler():
+    session = FakeSession({
+        "/accounts": FakeResponse(200, {"items": [
+            _account(email="gesund@firma.de", status=1, warmup_status=1, daily_limit=100),
+            _account(email="kaputt@firma.de", status=-1, warmup_status=0, daily_limit=None),
+        ]}),
+    })
+    leser = InstantlyLeser("key", session=session)
+    stand = leser.postfaecher()
+    assert stand["erreichbar"] is True
+    assert stand["stand"] is not None
+    postfaecher = {p["email"]: p for p in stand["postfaecher"]}
+    assert postfaecher["gesund@firma.de"]["status"] == "verbunden"
+    assert postfaecher["gesund@firma.de"]["warmup"] == "an"
+    assert postfaecher["gesund@firma.de"]["daily_limit"] == 100
+    assert postfaecher["kaputt@firma.de"]["status"] == "verbindungsfehler"
+    assert postfaecher["kaputt@firma.de"]["warmup"] == "aus"
+    assert postfaecher["kaputt@firma.de"]["daily_limit"] is None
+
+
+@pytest.mark.parametrize("status_zahl,erwartet", [
+    (1, "verbunden"), (2, "pausiert"), (3, "pausiert"),
+    (-1, "verbindungsfehler"), (-2, "verbindungsfehler"), (-3, "verbindungsfehler"),
+])
+def test_postfach_status_zahlen_werden_korrekt_uebersetzt(status_zahl, erwartet):
+    session = FakeSession({
+        "/accounts": FakeResponse(200, {"items": [_account(status=status_zahl)]}),
+    })
+    leser = InstantlyLeser("key", session=session)
+    stand = leser.postfaecher()
+    assert stand["postfaecher"][0]["status"] == erwartet
+
+
+@pytest.mark.parametrize("warmup_zahl,erwartet", [
+    (1, "an"), (0, "aus"),
+    (-1, "gesperrt"), (-2, "problem"), (-3, "gesperrt"),
+])
+def test_postfach_warmup_zahlen_werden_korrekt_uebersetzt(warmup_zahl, erwartet):
+    session = FakeSession({
+        "/accounts": FakeResponse(200, {"items": [_account(warmup_status=warmup_zahl)]}),
+    })
+    leser = InstantlyLeser("key", session=session)
+    stand = leser.postfaecher()
+    assert stand["postfaecher"][0]["warmup"] == erwartet
+
+
+def test_postfaecher_unbekannter_status_wird_nicht_erraten():
+    session = FakeSession({
+        "/accounts": FakeResponse(200, {"items": [_account(status=99, warmup_status=99)]}),
+    })
+    leser = InstantlyLeser("key", session=session)
+    stand = leser.postfaecher()
+    assert stand["postfaecher"][0]["status"] == "unbekannt"
+    assert stand["postfaecher"][0]["warmup"] == "unbekannt"
+
+
+def test_postfaecher_cache_wird_innerhalb_60_sekunden_nicht_erneut_abgefragt():
+    uhr = {"jetzt": datetime(2026, 7, 20, 10, 0, 0)}
+    session = FakeSession({"/accounts": FakeResponse(200, {"items": [_account()]})})
+    leser = InstantlyLeser("key", session=session, jetzt=lambda: uhr["jetzt"])
+
+    leser.postfaecher()
+    assert len(session.aufrufe) == 1
+
+    uhr["jetzt"] += timedelta(seconds=59)
+    stand = leser.postfaecher()
+    assert len(session.aufrufe) == 1  # kein neuer Aufruf
+    assert stand["erreichbar"] is True
+
+
+def test_postfaecher_cache_wird_nach_60_sekunden_neu_abgefragt():
+    uhr = {"jetzt": datetime(2026, 7, 20, 10, 0, 0)}
+    session = FakeSession({"/accounts": FakeResponse(200, {"items": [_account()]})})
+    leser = InstantlyLeser("key", session=session, jetzt=lambda: uhr["jetzt"])
+
+    leser.postfaecher()
+    uhr["jetzt"] += timedelta(seconds=61)
+    leser.postfaecher()
+    assert len(session.aufrufe) == 2
+
+
+def test_postfaecher_api_fehler_ohne_vorherigen_cache_liefert_marker_statt_absturz():
+    session = FakeSession({"/accounts": FakeResponse(500, {})})
+    leser = InstantlyLeser("key", session=session)
+    stand = leser.postfaecher()
+    assert stand["erreichbar"] is False
+    assert stand["postfaecher"] == []
+    assert stand["stand"] is None
+
+
+def test_postfaecher_timeout_liefert_marker_statt_absturz():
+    import requests
+
+    class KaputteSession:
+        def get(self, *a, **k):
+            raise requests.exceptions.Timeout("zu langsam")
+
+    leser = InstantlyLeser("key", session=KaputteSession())
+    stand = leser.postfaecher()
+    assert stand["erreichbar"] is False
+    assert stand["postfaecher"] == []
+
+
+def test_postfaecher_ausfall_nach_erfolg_behaelt_letzten_bekannten_stand():
+    uhr = {"jetzt": datetime(2026, 7, 20, 9, 0, 0)}
+    session = FakeSession({
+        "/accounts": FakeResponse(200, {"items": [_account(email="gesund@firma.de")]}),
+    })
+    leser = InstantlyLeser("key", session=session, jetzt=lambda: uhr["jetzt"])
+    erster = leser.postfaecher()
+    assert erster["erreichbar"] is True
+    assert len(erster["postfaecher"]) == 1
+
+    uhr["jetzt"] += timedelta(seconds=61)
+    session.antworten["/accounts"] = [FakeResponse(500, {})]
+    zweiter = leser.postfaecher()
+    assert zweiter["erreichbar"] is False
+    assert len(zweiter["postfaecher"]) == 1  # letzter bekannter Stand bleibt sichtbar
+    assert zweiter["stand"] == datetime(2026, 7, 20, 9, 0, 0)
+
+
+def test_postfaecher_uebergibt_limit_als_parameter():
+    session = FakeSession({"/accounts": FakeResponse(200, {"items": []})})
+    leser = InstantlyLeser("key", session=session)
+    leser.postfaecher()
+    pfad, params = session.aufrufe[0]
+    assert pfad == "/accounts"
+    assert params == {"limit": 100}

@@ -3,13 +3,19 @@ NICHTS neu zusammen, was Task 5/6 schon koennen: die wartenden Freigaben
 kommen aus web.wartende.wartende_laeufe (Task 5-Logik, ab Task 7 geteilt),
 die lokale Lauf-Aggregation + der Live-Stand-Abruf aus
 web.routen.kampagnen._alle_laeufe/_stand_fuer/_kampagnen_zeilen_aus_stand
-(Task 6). Instantly wird GENAU EINMAL pro Seitenaufruf abgefragt (ueber
-_stand_fuer, das den 60s-Cache von web.instantly_leser.InstantlyLeser
-nutzt) - dieser eine stand_by_id-Datensatz speist Kachel 'Aktive
-Kampagnen', die Konto-Problem-Zeilen UND die Kampagnen-Kurzliste. Ein
-zweiter Abruf pro Kachel wuerde bei kaltem Cache + ausgefallener API die
-Seite unnoetig lange blockieren (siehe InstantlyLeser._hole_frisch: 3
-sequentielle GETs je Kampagne, Timeout 20s)."""
+(Task 6). Der KAMPAGNEN-Live-Stand wird GENAU EINMAL pro Seitenaufruf
+abgefragt (ueber _stand_fuer, das den 60s-Cache von
+web.instantly_leser.InstantlyLeser nutzt) - dieser eine stand_by_id-
+Datensatz speist Kachel 'Aktive Kampagnen', die Konto-Problem-Zeilen UND
+die Kampagnen-Kurzliste. Ein zweiter Abruf pro Kachel wuerde bei kaltem
+Cache + ausgefallener API die Seite unnoetig lange blockieren (siehe
+InstantlyLeser._hole_frisch: 3 sequentielle GETs je Kampagne, Timeout 20s).
+
+Baustein 2 (20.07.2026): dazu kommt EIN zusaetzlicher, eigener Abruf fuer
+die Postfach-Verbindungsprobleme (_postfach_probleme, ueber
+web.instantly_leser.InstantlyLeser.postfaecher - eigener Endpunkt/eigener
+60s-Cache, laesst sich nicht mit dem Kampagnen-Abruf oben zusammenlegen).
+Genau wie oben: EIN Abruf, kein zweiter je Kachel/Abschnitt."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -20,6 +26,7 @@ from fastapi.responses import RedirectResponse
 from web import auth
 from web.nav import nav_kontext
 from web.routen import kampagnen as kampagnen_routen
+from web.routen import postfaecher as postfaecher_routen
 from web.routen.auftraege import _lade_meta
 from web.routen.intro import INTRO_COOKIE
 from web.wartende import wartende_laeufe
@@ -71,6 +78,31 @@ def _angehalten_banner(daten_dir, angehaltene: list[dict]) -> dict | None:
     }
 
 
+def _postfach_probleme(request: Request) -> list[dict]:
+    """Baustein 2: EIN zusaetzlicher Instantly-Abruf (InstantlyLeser.
+    postfaecher(), eigener 60s-Cache, siehe web.instantly_leser) fuer die
+    laute Dashboard-Zeile bei einem Postfach-Verbindungsfehler - ueber den
+    GETEILTEN InstantlyLeser der App (postfaecher_routen.postfaecher_stand,
+    exakt derselbe Zugriff wie web.routen.postfaecher selbst nutzt), damit
+    der Cache wirklich greift und nicht bei jedem Dashboard-Aufruf neu
+    abgefragt wird. Baut auf postfaecher_routen.postfach_problem_zeilen
+    (reine Aufbereitung, bewusst OEFFENTLICH gemacht genau fuer diese
+    Wiederverwendung, siehe dort) statt die Filterung hier zu duplizieren.
+
+    Regression/Review-Fund (Baustein 2, behoben): vorher rief diese Funktion
+    postfaecher_routen._hole_leser(request) + .postfaecher() DIREKT auf.
+    Anders als der Kampagnen-Pfad (kampagnen_routen._stand_fuer: ruft den
+    Leser NUR an, wenn es ueberhaupt eine lokale Kampagne gibt) tut das
+    Dashboard das hier IMMER, unabhaengig von lokalen Kampagnen - fehlte
+    dann INSTANTLY_API_KEY (und war kein app.state.instantly_leser gesetzt),
+    warf schon web.instantly_leser.geteilten_leser() beim Bauen des Lesers
+    ein KeyError, VOR jeder eigenen Fehlertoleranz von postfaecher() - das
+    Dashboard stuerzte mit 500 ab statt zu degradieren. postfaecher_stand()
+    faengt genau dieses KeyError jetzt ab (siehe dort)."""
+    stand = postfaecher_routen.postfaecher_stand(request)
+    return postfaecher_routen.postfach_problem_zeilen(stand)
+
+
 def _kontoproblem_zeilen(mit_kampagne: list[dict], stand_by_id: dict) -> list[dict]:
     """Konto-Stoerungen (Account Suspended/Unhealthy/Bounce Protect, siehe
     web.instantly_leser) sind KEIN normaler Zustand - eigene, laute Zeile
@@ -116,6 +148,7 @@ def dashboard(request: Request):
 
     dash_kampagnen = kampagnen_routen._kampagnen_zeilen_aus_stand(mit_kampagne[:4], stand_by_id)
     kontoproblem = _kontoproblem_zeilen(mit_kampagne, stand_by_id)
+    postfach_probleme = _postfach_probleme(request)
 
     angehaltene = [l for l in laeufe if l["zustand"] == "angehalten"]
     angehalten_banner = _angehalten_banner(daten_dir, angehaltene)
@@ -161,6 +194,7 @@ def dashboard(request: Request):
             "kacheln": kacheln,
             "angehalten_banner": angehalten_banner,
             "kontoproblem": kontoproblem,
+            "postfach_probleme": postfach_probleme,
             "wartende": wartende,
             "dash_kampagnen": dash_kampagnen,
             "live_stand_hinweis": live_stand_hinweis,

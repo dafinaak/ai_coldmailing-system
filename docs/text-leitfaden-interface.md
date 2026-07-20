@@ -170,6 +170,41 @@ bestätigt ein zweiter, eigener Knopf.
   geantwortet. Es ist nichts verloren gegangen — versuch es in ein paar
   Minuten noch einmal."**
 
+## Postfächer (Baustein 2, 20.07.2026)
+
+Neuer, rein lesender Bereich (Route `/postfaecher`, Nav-Label
+**"Postfächer"**, direkt nach "Kampagnen") — zeigt den Verbindungs- und
+Anwärm-Status aller Instantly-Sende-Postfächer, damit das Team
+Postfach-Probleme im eigenen Werkzeug sieht statt extra in Instantly
+nachschauen zu müssen.
+
+- Kopfsatz: **"Hier siehst du, ob eure Postfächer bei Instantly verbunden
+  sind und wie weit sie aufgewärmt sind."**
+- Ehrlicher Ein-Zeiler (rein lesend, kein Knopf zum Neu-Verbinden — das
+  geht laut Machbarkeits-Check nicht vollständig ohne Instantly/den
+  Login-Schritt bei Google/Microsoft, siehe
+  docs/instantly-api-machbarkeit.md): **"Ein Postfach neu verbinden oder
+  reparieren geht nur in Instantly — hier siehst du nur den Stand."**
+- Laute Warnbox oben, nur wenn mindestens ein Postfach ein
+  Verbindungsproblem hat (gleiches Muster wie die Konto-Problem-Box bei
+  Kampagnen): Titel **"Verbindungsproblem bei einem Postfach"**, Text:
+  **"Ein Postfach hat gerade ein Problem — bitte in Instantly neu
+  verbinden."** Knopf: "In Instantly öffnen ↗".
+- Tabellen-Spalten: **Postfach** (E-Mail-Adresse) · **Verbindung** ·
+  **Aufwärmen** · **Tageslimit**.
+- Verbindungs-Status (Chip, gleiche Farben wie der Kampagnen-Konto-Problem-
+  Chip): **"VERBUNDEN"** (grün) · **"PAUSIERT"** (neutral) ·
+  **"VERBINDUNGSFEHLER"** (rot, laut).
+- Anwärm-Status (Klartext, keine eigene Farbe nötig): **"Aufwärmen
+  läuft"** · **"Aufwärmen aus"** · **"Aufwärmen gesperrt"** ·
+  **"Aufwärmen: Problem"** · **"Aufwärmen unbekannt"**.
+- Tageslimit ohne bekannten Wert: **"–"** (kein erfundener Wert, gleiches
+  Prinzip wie "Heute versendet" auf dem Dashboard).
+- Zeitstempel unten: **"Stand HH:MM"**.
+- Dashboard-Zeile (neben der bestehenden Konto-Problem-Zeile für
+  Kampagnen): **"Postfach-Problem bei [E-Mail] — bitte in Instantly neu
+  verbinden."** mit Knopf "Ansehen" zur Postfächer-Seite.
+
 ## Einstiegsseite "So funktioniert's"
 
 Route `/so-funktionierts`. Wird einem angemeldeten Nutzer beim allerersten

@@ -49,12 +49,18 @@ _TEXT = {"email": "anna@firma.de", "betreff": "Betreff", "mail_1": "Text",
 
 
 class FakeInstantlyLeser:
-    """Gleiches Muster wie tests/web/test_kampagnen.py."""
+    """Gleiches Muster wie tests/web/test_kampagnen.py. Baustein 2:
+    zusaetzlich postfaecher() (das Dashboard ruft es jetzt IMMER ab, siehe
+    web.routen.dashboard._postfach_probleme) - `postfaecher_liste` ist per
+    Default leer (kein Postfach-Problem), Tests fuer die Dashboard-Zeile
+    setzen es explizit."""
 
-    def __init__(self, antworten: dict):
+    def __init__(self, antworten: dict, postfaecher_liste: list[dict] | None = None):
         self.antworten = antworten
         self.angefragt: list[str] = []
         self.aufrufe = 0
+        self.postfaecher_aufrufe = 0
+        self._postfaecher_liste = postfaecher_liste or []
 
     def kampagnen_stand(self, campaign_ids):
         self.aufrufe += 1
@@ -63,6 +69,11 @@ class FakeInstantlyLeser:
             "erreichbar": False, "status": None, "name": None,
             "versendet": None, "antworten": None, "schritte": [], "stand": None,
         }) for cid in campaign_ids}
+
+    def postfaecher(self):
+        self.postfaecher_aufrufe += 1
+        return {"postfaecher": self._postfaecher_liste, "erreichbar": True,
+                "stand": datetime(2026, 7, 20, 9, 30)}
 
 
 def _stand(status="aktiv", name="[TEST] Demo GmbH", versendet=3, antworten=1,
@@ -90,7 +101,13 @@ def daten_dir(tmp_path, monkeypatch):
 
 @pytest.fixture
 def app(daten_dir):
-    return create_app(daten_dir)
+    app = create_app(daten_dir)
+    # Baustein 2: Default-Fake, damit Tests, die app.state.instantly_leser
+    # nicht selbst setzen, trotzdem funktionieren (siehe FakeInstantlyLeser.
+    # postfaecher() oben - das Dashboard ruft es jetzt IMMER ab). Tests, die
+    # ihn brauchen, ueberschreiben ihn wie bisher selbst.
+    app.state.instantly_leser = FakeInstantlyLeser({})
+    return app
 
 
 @pytest.fixture
@@ -297,6 +314,53 @@ def test_ohne_kontoproblem_keine_laute_zeile(angemeldeter_client, daten_dir):
     assert "Konto-Problem" not in antwort.text
 
 
+# Postfach-Problem-Zeile (Baustein 2) -----------------------------------------
+
+def test_postfach_problem_erscheint_als_laute_zeile(angemeldeter_client):
+    app = angemeldeter_client.app
+    app.state.instantly_leser = FakeInstantlyLeser({}, postfaecher_liste=[
+        {"email": "kaputt@firma.de", "status": "verbindungsfehler", "warmup": "aus",
+         "daily_limit": None},
+    ])
+    antwort = angemeldeter_client.get("/")
+    assert antwort.status_code == 200
+    text = antwort.text
+    assert "Postfach-Problem bei" in text
+    assert "kaputt@firma.de" in text
+    assert 'href="/postfaecher"' in text
+
+
+def test_ohne_postfach_problem_keine_laute_zeile(angemeldeter_client):
+    app = angemeldeter_client.app
+    app.state.instantly_leser = FakeInstantlyLeser({}, postfaecher_liste=[
+        {"email": "gesund@firma.de", "status": "verbunden", "warmup": "an", "daily_limit": 100},
+    ])
+    antwort = angemeldeter_client.get("/")
+    assert antwort.status_code == 200
+    assert "Postfach-Problem bei" not in antwort.text
+
+
+def test_dashboard_ohne_instantly_key_und_ohne_kampagnen_stuerzt_nicht_ab(
+        angemeldeter_client, monkeypatch):
+    # Regression (Review-Fund): das Dashboard ruft _postfach_probleme() JETZT
+    # IMMER auf, unabhaengig von lokalen Kampagnen (anders als der
+    # Kampagnen-Pfad, der bei mit_kampagne == [] den Leser gar nicht erst
+    # anfasst). Ohne INSTANTLY_API_KEY UND ohne app.state.instantly_leser
+    # (kein Fake injiziert - simuliert einen App-Start ohne Schluessel)
+    # wirft web.instantly_leser.geteilten_leser() ein KeyError beim Bauen
+    # des Lesers, BEVOR InstantlyLeser.postfaecher() seine eigene
+    # Fehlertoleranz greifen lassen kann - das darf die Seite nicht mit
+    # einem 500er abschiessen, sondern muss genauso degradieren wie ein
+    # erreichbarer, aber fehlgeschlagener Abruf (Zeile einfach abwesend).
+    monkeypatch.delenv("INSTANTLY_API_KEY", raising=False)
+    app = angemeldeter_client.app
+    app.state.instantly_leser = None
+    antwort = angemeldeter_client.get("/")
+    assert antwort.status_code == 200
+    assert "Dashboard" in antwort.text
+    assert "Postfach-Problem bei" not in antwort.text
+
+
 # Kampagnen-Kurzliste --------------------------------------------------------
 
 def test_kampagnen_kurzliste_mit_link_zu_allen_kampagnen(angemeldeter_client, daten_dir):
@@ -334,6 +398,9 @@ def test_api_ausfall_zeigt_platzhalter_ohne_absturz(angemeldeter_client, daten_d
             return {cid: {"erreichbar": False, "status": None, "name": None,
                           "versendet": None, "antworten": None, "schritte": [],
                           "stand": None} for cid in campaign_ids}
+
+        def postfaecher(self):
+            return {"postfaecher": [], "erreichbar": False, "stand": None}
 
     app = angemeldeter_client.app
     leser = KaputterLeser()

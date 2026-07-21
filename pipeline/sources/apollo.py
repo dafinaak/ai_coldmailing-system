@@ -1,3 +1,4 @@
+import re
 import time
 import requests
 from urllib.parse import urlparse
@@ -83,8 +84,26 @@ from pipeline.models import Lead
 # "id", "name", "estimated_num_employees"). Da die Namens-Suche nur ein
 # lockerer Teilstring-Abgleich ist (kein exaktes Matching), waehlt
 # _beste_namenstreffer() unten den Treffer mit EXAKT uebereinstimmendem
-# Namen (case-insensitive), falls vorhanden - sonst den ersten (von Apollo
-# am hoechsten priorisierten) Treffer.
+# Namen (case-insensitive), falls vorhanden - sonst den ersten Treffer, der
+# der Suche wirklich AEHNELT (_aehnelt_sich).
+#
+# BUG-FIX (Review-Fund, geprueft 2026-07-21): _beste_namenstreffer fiel
+# urspruenglich OHNE Aehnlichkeits-Pruefung auf den ersten Treffer zurueck.
+# Weil q_organization_name nur ein Teilstring-Abgleich ist, liefert Apollo
+# bei einem generischen Firmennamen routinemaessig eine voellig FREMDE
+# Firma (Doku-Beispiel oben: die Suche "marketing" findet auch "NY
+# Marketing Unlimited"). Ein blinder erster Treffer haette also fremde
+# Firmennamen und fremde Kontakte in den Lauf gezogen UND die
+# Deckungsquote unehrlich aufgeblaeht (als "mit_kontakt" gezaehlt, obwohl
+# es die falsche Firma war). Fix: _aehnelt_sich() prueft (nach
+# Normalisierung: Kleinschreibung, Rechtsform wie "GmbH"/"AG"/"UG"/"GbR"/
+# "mbH"/"KG"/"e.K." abgestreift, Satzzeichen weg) auf einen von drei
+# Faellen - exakte Uebereinstimmung, einer der Namen steckt vollstaendig
+# im anderen, ODER beide teilen sich mindestens ein unterscheidungs-
+# kraeftiges Token (kein generisches Wort wie "it"/"service"/"gmbh"/ein
+# Staedtename). Findet sich KEIN aehnlicher Treffer, liefert
+# _beste_namenstreffer() None - die Firma wird dann korrekt als
+# "apollo_kein_treffer" gezaehlt, nie als falscher Match.
 BASE_URL = "https://api.apollo.io/api/v1"
 SUCH_URL = f"{BASE_URL}/mixed_people/api_search"
 ANREICHERUNGS_URL = f"{BASE_URL}/people/bulk_match?reveal_personal_emails=true"
@@ -113,20 +132,82 @@ def _saubere_domain(wert: str) -> str:
     return netloc[4:] if netloc.startswith("www.") else netloc
 
 
+# Deutsche/verbreitete Rechtsformen, die vor dem Aehnlichkeits-Vergleich
+# abgestreift werden (Review-Fund) - sonst zaehlt "GmbH" faelschlich als
+# gemeinsames "unterscheidungskraeftiges" Token zwischen zwei voellig
+# verschiedenen Firmen.
+_RECHTSFORM_MUSTER = re.compile(
+    r"\b(gmbh\s*&\s*co\.?\s*kg|gmbh|mbh|ag|ug|gbr|kg|ohg|e\.?\s*k\.?)\b")
+
+# Woerter, die trotz Uebereinstimmung NICHT als "unterscheidungskraeftiges
+# gemeinsames Token" zaehlen (Review-Fund) - sonst waeren z.B. "IT Service
+# Hannover" und "Bau Service Hannover GmbH" (teilen sich nur "service"/
+# "hannover") faelschlich als aehnlich durchgegangen. Bewusst klein und
+# konservativ gehalten (Branchen-Allerweltswoerter + gaengige Grossstaedte);
+# eine Firma, die NUR aus einem dieser Woerter besteht, wird ohnehin schon
+# durch die Teilstring-Pruefung in _aehnelt_sich abgedeckt.
+_GENERISCHE_WOERTER = {
+    "it", "service", "services", "dienstleister", "dienstleistungen",
+    "consulting", "solutions", "systems", "system", "group", "gruppe",
+    "team", "gmbh", "ag", "ug", "gbr", "kg", "mbh", "co", "und", "the",
+    "hannover", "berlin", "hamburg", "muenchen", "münchen", "koeln",
+    "köln", "frankfurt", "stuttgart", "duesseldorf", "düsseldorf",
+    "leipzig", "deutschland", "germany",
+}
+
+
+def _normalisiere_firmenname(name: str) -> str:
+    """Bereinigt einen Firmennamen fuer den Aehnlichkeits-Vergleich in
+    _aehnelt_sich(): Kleinschreibung, Rechtsform (_RECHTSFORM_MUSTER) weg,
+    Satzzeichen weg, doppelte Leerzeichen entfernt."""
+    name = (name or "").strip().lower()
+    name = _RECHTSFORM_MUSTER.sub(" ", name)
+    name = re.sub(r"[^\w\s]", " ", name, flags=re.UNICODE)
+    return " ".join(name.split())
+
+
+def _aehnelt_sich(name_a: str, name_b: str) -> bool:
+    """Bug-Fix (Review-Fund): prueft, ob zwei Firmennamen sich WIRKLICH
+    aehneln - nicht nur, ob Apollos lockerer Teilstring-Abgleich
+    (q_organization_name) sie beide zurueckgeliefert hat. Akzeptiert genau
+    drei Faelle (nach _normalisiere_firmenname): (1) exakte
+    Uebereinstimmung, (2) einer der normalisierten Namen steckt komplett im
+    anderen (z.B. "einsnulleins" in "einsnulleins hannover" - Firma plus
+    Standort-/Filial-Zusatz), oder (3) beide teilen sich mindestens ein
+    Token, das weder Rechtsform noch ein generisches Allerweltswort ist
+    (_GENERISCHE_WOERTER) - z.B. "einsnulleins" in "Einsnulleins IT
+    Service" vs. "Einsnulleins Consulting GmbH". Sonst False - bewusst
+    konservativ, lieber ein Treffer zu wenig als eine fremde Firma."""
+    norm_a, norm_b = _normalisiere_firmenname(name_a), _normalisiere_firmenname(name_b)
+    if not norm_a or not norm_b:
+        return False
+    if norm_a == norm_b or norm_a in norm_b or norm_b in norm_a:
+        return True
+    tokens_a = set(norm_a.split()) - _GENERISCHE_WOERTER
+    tokens_b = set(norm_b.split()) - _GENERISCHE_WOERTER
+    return bool(tokens_a & tokens_b)
+
+
 def _beste_namenstreffer(organisationen: list, gesuchter_name: str):
     """Waehlt aus den Treffern der Namens-Suche (ORGANISATION_SUCH_URL) die
     am besten passende Organisation: Apollo matcht "q_organization_name" nur
     als lockeren Teilstring, daher wird - falls vorhanden - der Treffer mit
-    EXAKT uebereinstimmendem Namen (case-insensitive) bevorzugt, sonst der
-    erste (von Apollo am hoechsten priorisierte) Treffer. Eine leere
-    Trefferliste liefert None - ein echtes "kein Treffer", kein Fehler."""
+    EXAKT uebereinstimmendem Namen (case-insensitive, Rechtsform-unabhaengig)
+    bevorzugt, sonst der erste Treffer, der der Suche wirklich AEHNELT
+    (_aehnelt_sich). Aehnelt KEIN Treffer der Suche (Review-Fund - Apollos
+    Teilstring-Suche liefert bei generischen Namen oft eine voellig fremde
+    Firma), liefert diese Funktion None - ein echtes "kein Treffer", NICHT
+    ein falscher Match. Eine leere Trefferliste liefert ebenfalls None."""
     if not organisationen:
         return None
-    gesucht_norm = (gesuchter_name or "").strip().lower()
+    gesucht_norm = _normalisiere_firmenname(gesuchter_name)
     for organisation in organisationen:
-        if (organisation.get("name") or "").strip().lower() == gesucht_norm:
+        if _normalisiere_firmenname(organisation.get("name") or "") == gesucht_norm:
             return organisation
-    return organisationen[0]
+    for organisation in organisationen:
+        if _aehnelt_sich(organisation.get("name") or "", gesuchter_name):
+            return organisation
+    return None
 
 class ApolloSource:
     def __init__(self, api_key, session=None, wartezeit=5):

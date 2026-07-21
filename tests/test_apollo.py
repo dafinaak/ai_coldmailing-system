@@ -204,13 +204,88 @@ def test_beste_namenstreffer_bevorzugt_exakten_namen_vor_dem_ersten_treffer():
                       {"id": "org-richtig", "name": "Firma GmbH"}]
     assert _beste_namenstreffer(treffer_liste, "Firma GmbH")["id"] == "org-richtig"
 
-def test_beste_namenstreffer_faellt_ohne_exakten_treffer_auf_ersten_zurueck():
+def test_beste_namenstreffer_faellt_ohne_exakten_treffer_auf_erste_aehnliche_zurueck():
+    # Beide Treffer "aehneln" der Suche (teilen das unterscheidungskraeftige
+    # Token "firma"), keiner ist exakt - dann zaehlt die Apollo-Reihenfolge.
     treffer_liste = [{"id": "org-erster", "name": "Firma GmbH Nord"},
                       {"id": "org-zweiter", "name": "Firma GmbH Sued"}]
     assert _beste_namenstreffer(treffer_liste, "Firma GmbH")["id"] == "org-erster"
 
 def test_beste_namenstreffer_ohne_treffer_liefert_none():
     assert _beste_namenstreffer([], "Firma GmbH") is None
+
+
+# --- Review-Fund (MUSS vor dem Live-Re-Run behoben sein): _beste_namenstreffer
+# fiel bisher OHNE Aehnlichkeits-Pruefung auf den ERSTEN Treffer zurueck.
+# Apollos "q_organization_name" ist nur ein lockerer Teilstring-Abgleich -
+# bei einem generischen Firmennamen liefert das routinemaessig eine
+# VOELLIG FREMDE Firma. Deren kanonischer Name haette den Lead-Firmennamen
+# ueberschrieben UND deren Kontakte waeren als "mit_kontakt" gezaehlt worden -
+# eine unehrlich aufgeblasene Deckungsquote UND falsche Kontakte im Lauf.
+# Fix: ein Treffer wird nur akzeptiert, wenn er der Suche wirklich
+# "aehnelt" (siehe _aehnelt_sich) - sonst lieber KEIN Treffer
+# (apollo_kein_treffer) als ein falscher.
+
+def test_beste_namenstreffer_akzeptiert_aehnlichen_namen_mit_rechtsform_unterschied():
+    # "Bindt Systems" (Suche) vs. "Bindt Systems GmbH" (Apollo-Treffer) -
+    # nach Abstreifen der Rechtsform ein EXAKTER Match.
+    treffer_liste = [{"id": "org1", "name": "Bindt Systems GmbH"}]
+    ergebnis = _beste_namenstreffer(treffer_liste, "Bindt Systems")
+    assert ergebnis is not None and ergebnis["id"] == "org1"
+
+def test_beste_namenstreffer_akzeptiert_namen_als_praefix():
+    # "einsnulleins" (Suche) steckt vollstaendig in "einsnulleins Hannover" -
+    # klarer Fall von "eine Firma erweitert um einen Standortzusatz".
+    treffer_liste = [{"id": "org1", "name": "einsnulleins Hannover"}]
+    ergebnis = _beste_namenstreffer(treffer_liste, "einsnulleins")
+    assert ergebnis is not None and ergebnis["id"] == "org1"
+
+def test_beste_namenstreffer_lehnt_voellig_fremde_firma_ab():
+    # Der Kern-Review-Fund: "IT Service" (Suche, sehr generisch) matcht bei
+    # Apollos Teilstring-Suche auch "NY Marketing Unlimited" (Beispiel aus
+    # der Apollo-Doku fuer q_organization_name) - die beiden Namen haben
+    # NICHTS gemeinsam. Das darf NIE als Treffer durchgehen.
+    treffer_liste = [{"id": "org-fremd", "name": "NY Marketing Unlimited"}]
+    assert _beste_namenstreffer(treffer_liste, "IT Service") is None
+
+def test_beste_namenstreffer_case_insensitiv_bei_exaktem_treffer():
+    treffer_liste = [{"id": "org1", "name": "FIRMA GMBH"}]
+    ergebnis = _beste_namenstreffer(treffer_liste, "firma gmbh")
+    assert ergebnis is not None and ergebnis["id"] == "org1"
+
+def test_beste_namenstreffer_lehnt_nur_generische_gemeinsame_woerter_ab():
+    # "IT Service Hannover" und "Bau Service Hannover GmbH" teilen sich nur
+    # generische Woerter (service/hannover) - kein unterscheidungskraeftiges
+    # gemeinsames Token, also kein Treffer.
+    treffer_liste = [{"id": "org-fremd", "name": "Bau Service Hannover GmbH"}]
+    assert _beste_namenstreffer(treffer_liste, "IT Service Hannover") is None
+
+def test_beste_namenstreffer_akzeptiert_gemeinsames_unterscheidungskraeftiges_token():
+    # "Einsnulleins IT Service" und "Einsnulleins Consulting GmbH" teilen
+    # sich das unterscheidungskraeftige Token "einsnulleins" (weder
+    # Rechtsform noch generisches Wort) - das darf als Treffer durchgehen,
+    # obwohl keiner der Namen im anderen als Teilstring steckt.
+    treffer_liste = [{"id": "org1", "name": "Einsnulleins Consulting GmbH"}]
+    ergebnis = _beste_namenstreffer(treffer_liste, "Einsnulleins IT Service")
+    assert ergebnis is not None and ergebnis["id"] == "org1"
+
+def test_organisation_ueber_namen_suchen_liefert_kein_treffer_statt_fremdfirma():
+    # Ende-zu-Ende auf Session-Ebene: ein Apollo-Suchtreffer, der der
+    # gesuchten Firma nicht aehnelt, darf unternehmen_anreichern() NICHT als
+    # gefundene Organisation durchreichen - sonst wird die Firma faelschlich
+    # als "mit_kontakt" gezaehlt und der Lead traegt den falschen Firmennamen.
+    firma_ohne_domain = {"name": "IT Service", "website": "", "domain": "",
+                         "address": "", "categories": []}
+    session = FakeSession([
+        FakeResponse(200, {"organizations": [{"id": "org-fremd",
+                                              "name": "NY Marketing Unlimited"}]}),
+    ])
+    ergebnis = ApolloSource("key", session=session).unternehmen_anreichern(
+        firma_ohne_domain, ["CEO"])
+    assert ergebnis == {"kontakte": [], "mitarbeiterzahl": None,
+                        "organization_id": None, "name": None}
+    # Kein zweiter Aufruf (People-Suche) - es gab ja keine Organisation.
+    assert len(session.aufrufe) == 1
 
 def test_unternehmen_anreichern_nutzt_kontakt_rollen_als_person_titles():
     session = FakeSession([

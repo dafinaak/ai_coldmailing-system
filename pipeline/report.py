@@ -8,7 +8,7 @@ def write_report(store, zahlen: dict):
               f"- Gefunden: {zahlen['gefunden']}",
               f"- Deckungsquote: {zahlen['firmen_mit_kontakt']}/{zahlen['firmen_gesamt']} "
               f"Firmen mit mindestens einem Kontakt ({zahlen['deckungsquote_prozent']}%)",
-              f"- Ohne E-Mail übersprungen: {zahlen['ohne_email']}",
+              f"- Firmen ohne Kontakt: {zahlen['ohne_email']}",
               f"- Verworfen: {zahlen['verworfen']} ({'; '.join(zahlen['gruende_verworfen']) or 'keine'})",
               f"- Personalisiert: {zahlen['personalisiert']}",
               f"- Nacharbeit: {zahlen['nacharbeit']}"]

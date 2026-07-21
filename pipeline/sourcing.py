@@ -22,7 +22,15 @@ Zahl - kein Rate-ins-Blaue) und nur, wenn eine Domain bekannt ist.
 
 Deckungsquote: Anteil der Stufe-1-Firmen, die am Ende mindestens einen
 nutzbaren Kontakt (persoenlich ODER info@) haben - das ist die vom Chef
-geforderte "mindestens 80%"-Zahl (siehe pipeline.report)."""
+geforderte "mindestens 80%"-Zahl (siehe pipeline.report).
+
+Fehlertoleranz pro Firma: Ein Fehler bei der Anreicherung EINER Firma
+(z.B. Apollo antwortet dauerhaft mit 401/422, oder mit 500 auch nach den
+Retries in ApolloSource) bricht NICHT den ganzen Lauf ab - die Firma wird
+uebersprungen (zaehlt zu firmen_gesamt, nicht zu firmen_mit_kontakt), der
+Rest laeuft weiter. Bei ~50 Firmen pro Lauf soll eine einzelne flackernde
+Firma nur die Deckungsquote verschlechtern, nicht alle bereits gefundenen
+Leads und das schon verbrauchte Apify-/Apollo-Kontingent verwerfen."""
 from pipeline.models import Lead
 from pipeline.sources.apify_maps import ApifyMapsSource
 from pipeline.sources.apollo import ApolloSource
@@ -69,7 +77,22 @@ def source_leads(kunde, limit, apify_key, apollo_key,
     firmen = apify.search(kunde.maps_suche, limit)
     leads, firmen_mit_kontakt = [], 0
     for firma in firmen:
-        ergebnis = apollo.unternehmen_anreichern(firma, kunde.kontakt_rollen)
+        try:
+            ergebnis = apollo.unternehmen_anreichern(firma, kunde.kontakt_rollen)
+        except Exception as fehler:
+            # Eine einzelne fehlerhafte Firma (401/422 dauerhaft, oder ein
+            # 500 das auch die Retries in ApolloSource ueberlebt hat) darf
+            # bei ~50 Firmen pro Lauf nicht den kompletten Lauf mitreissen -
+            # sonst sind alle bereits gefundenen Leads UND das bereits
+            # verbrauchte Apify-/Apollo-Kontingent futsch. Diese Firma zaehlt
+            # weiter zu firmen_gesamt (Nenner der Deckungsquote), aber nicht
+            # zu firmen_mit_kontakt - sie verschlechtert nur die Zahl, statt
+            # den Lauf zu sprengen. Die Fehlermeldungen aus ApolloSource
+            # enthalten keine Secrets (Api-Key steht im Header, nicht im
+            # geloggten Text), daher unbedenklich mitzuloggen.
+            print(f"Firma '{firma.get('name') or firma.get('domain') or '?'}' "
+                  f"übersprungen (Fehler bei der Kontakt-Anreicherung): {fehler}")
+            continue
         kontakte = ergebnis["kontakte"] or dritt.finde_kontakte(firma)
         if kontakte:
             for k in kontakte:

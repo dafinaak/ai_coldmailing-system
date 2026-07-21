@@ -95,6 +95,33 @@ def test_deckungsquote_ohne_firmen_ist_null_statt_division_durch_null():
     assert leads == []
     assert deckung == {"firmen_gesamt": 0, "firmen_mit_kontakt": 0, "quote_prozent": 0.0}
 
+def test_fehlerhafte_firma_bricht_den_lauf_nicht_ab():
+    # Review-Fund: bei ~50 Firmen pro Lauf darf eine einzelne, voruebergehend
+    # fehlerhafte Apollo-Anreicherung (401/422/500-nach-Retries als
+    # RuntimeError) nicht den kompletten Lauf abbrechen - sonst gehen alle
+    # bereits gefundenen Leads verloren UND das schon verbrauchte Apify-/
+    # Apollo-Kontingent ist futsch. Firma 2 von 3 fliegt hier, der Lauf muss
+    # trotzdem fertig werden, mit Leads fuer Firma 1 und 3.
+    firmen = [_firma("f1.de"), _firma("f2.de"), _firma("f3.de")]
+
+    class _FlackerndeApollo:
+        def unternehmen_anreichern(self, firma, kontakt_rollen):
+            if firma["domain"] == "f2.de":
+                raise RuntimeError("Apollo antwortet mit 500 auf https://api.apollo.io/...")
+            return {"kontakte": [{"first_name": "A", "last_name": "B",
+                                  "email": f"a@{firma['domain']}", "title": "CEO"}],
+                    "mitarbeiterzahl": 20, "organization_id": "org"}
+
+    leads, deckung = source_leads(_kunde(), 10, "a", "b",
+                                  apify_source=_FakeApify(firmen),
+                                  apollo_source=_FlackerndeApollo())
+
+    assert {l.email for l in leads} == {"a@f1.de", "a@f3.de"}
+    # f2.de zaehlt weiter zu firmen_gesamt (Nenner der Deckungsquote), aber
+    # NICHT zu firmen_mit_kontakt - eine flackernde Firma verschlechtert nur
+    # die Zahl, statt den Lauf zu sprengen.
+    assert deckung == {"firmen_gesamt": 3, "firmen_mit_kontakt": 2, "quote_prozent": 66.7}
+
 def test_drittquelle_wird_genutzt_wenn_apollo_nichts_findet():
     firmen = [_firma("dritt.de")]
     apollo_ergebnisse = {"dritt.de": {"kontakte": [], "mitarbeiterzahl": 20,

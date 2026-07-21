@@ -250,7 +250,7 @@ def test_lauf_personalisiert_end_zu_ende_und_dedupe_greift_erst_im_naechsten_lau
     assert erste_leads["deckung"] == {"firmen_gesamt": 2, "firmen_mit_kontakt": 2,
                                       "quote_prozent": 100.0}
     bericht = (erster_lauf / "bericht.md").read_text(encoding="utf-8")
-    assert "Ohne E-Mail übersprungen: 0" in bericht
+    assert "Firmen ohne Kontakt: 0" in bericht
 
     # Zweiter, frischer Lauf: jetzt muessen beide Leads aus dem ersten Lauf
     # als "bereits in früherem Lauf angeschrieben" verworfen werden - das

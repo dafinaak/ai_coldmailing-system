@@ -4,7 +4,7 @@ from pathlib import Path
 from pipeline.config import load_kunde, lade_globale_sperrliste
 from pipeline.env import lade_dotenv, brauche_env as _brauche_env, brauche_env_eines_von as _brauche_env_eines_von
 from pipeline.run_store import RunStore
-from pipeline.sources.apollo import ApolloSource
+from pipeline.sourcing import source_leads
 from pipeline.dedupe import dedupe as dedupe_leads
 from pipeline.website import fetch_text
 from pipeline.ki import KI
@@ -38,7 +38,12 @@ def _setze_schritte_zurueck(store, ab_schritt: str):
         print("Alte Freigabe verworfen (FREIGABE.txt gelöscht) - dieser Lauf "
              "muss nach --neu-ab erneut geprüft und freigegeben werden.")
 
+_LEERE_DECKUNG = {"firmen_gesamt": 0, "firmen_mit_kontakt": 0, "quote_prozent": 0.0}
+
 def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None = None):
+    # Reihenfolge folgt den 3 Stufen der Lead-Beschaffung (Kern-Umbau):
+    # Apify (Stufe 1) -> Apollo (Stufe 2) -> KI (Personalisierung, danach).
+    _brauche_env("APIFY_API_KEY")
     _brauche_env("APOLLO_API_KEY")
     _brauche_env_eines_von("ANTHROPIC_API_KEY", "OPENROUTER_API_KEY")
     kunde = load_kunde(kunde_pfad)
@@ -49,16 +54,18 @@ def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None
     print(f"Laufordner: {store.run_dir}")
 
     if not store.step_done("leads"):
-        quelle = ApolloSource(os.environ["APOLLO_API_KEY"])
-        gefunden = quelle.search(kunde.zielgruppe, limit)
-        store.save_step("leads", {"leads": [l.__dict__ for l in gefunden],
-                                  "ohne_email": quelle.uebersprungen_ohne_email})
+        gefunden, deckung = source_leads(
+            kunde, limit, os.environ["APIFY_API_KEY"], os.environ["APOLLO_API_KEY"])
+        store.save_step("leads", {"leads": [l.__dict__ for l in gefunden], "deckung": deckung})
     stand_leads = store.load_step("leads")
     if isinstance(stand_leads, list):
-        # Alte Laufordner (vor der "ohne_email"-Zaehlung) speicherten
-        # leads.json als reine Liste statt {"leads": [...], "ohne_email": n}.
-        # --fortsetzen auf so einem Ordner soll trotzdem funktionieren.
-        stand_leads = {"leads": stand_leads, "ohne_email": 0}
+        # Alte Laufordner (vor dem Kern-Umbau) speicherten leads.json als
+        # reine Liste bzw. als {"leads": [...], "ohne_email": n} ohne
+        # "deckung". --fortsetzen auf so einem Ordner soll trotzdem
+        # funktionieren, dann eben ohne echte Deckungsquote im Bericht.
+        stand_leads = {"leads": stand_leads, "deckung": dict(_LEERE_DECKUNG)}
+    if not stand_leads.get("deckung"):
+        stand_leads["deckung"] = dict(_LEERE_DECKUNG)
     leads = [Lead(**{k: d[k] for k in ("first_name", "last_name", "email",
                                         "company", "title", "website", "source")})
              for d in stand_leads["leads"]]
@@ -103,11 +110,18 @@ def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None
     write_preview(store, ergebnis["fertig"], ergebnis["nacharbeit"])
     gruende = [f"{g}: {n}" for g, n in
                Counter(v["grund"] for v in stand["verworfen"]).items()]
+    deckung = stand_leads["deckung"]
     write_report(store, {"gefunden": len(leads), "verworfen": len(stand["verworfen"]),
                          "personalisiert": len(ergebnis["fertig"]),
                          "nacharbeit": len(ergebnis["nacharbeit"]),
                          "gruende_verworfen": gruende,
-                         "ohne_email": stand_leads["ohne_email"]})
+                         # "ohne_email" ist seit dem Kern-Umbau firmen-, nicht
+                         # personenbezogen: die Zahl der Stufe-1-Firmen ganz
+                         # ohne nutzbaren Kontakt (persönlich oder info@).
+                         "ohne_email": deckung["firmen_gesamt"] - deckung["firmen_mit_kontakt"],
+                         "firmen_gesamt": deckung["firmen_gesamt"],
+                         "firmen_mit_kontakt": deckung["firmen_mit_kontakt"],
+                         "deckungsquote_prozent": deckung["quote_prozent"]})
     print(f"Vorschau: {store.run_dir / 'freigabe-vorschau.md'}")
     print("Nächster Schritt: prüfen, dann 'python -m pipeline freigeben <laufordner>'")
 

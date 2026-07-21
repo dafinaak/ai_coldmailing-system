@@ -39,10 +39,35 @@ from pipeline.models import Lead
 #     echten Konto noch nicht verifiziert. Vor produktivem Einsatz mit
 #     echtem Kontingent gegenpruefen, damit ein Lauf nicht ungeplant
 #     Credits verbraucht.
+#
+# Organization Enrichment (docs.apollo.io/reference/organization-enrichment,
+# Kern-Umbau Stufe 2, geprueft 2026-07-21):
+# Zweck: pro Firma aus Stufe 1 (Google Maps) die Apollo-Organisation finden
+# (fuer organization_id + Mitarbeiterzahl, Grundlage der info@-Regel).
+# Passende Felder laut Doku: "domain", "linkedin_url", "name", "website" -
+# mindestens eines noetig, hier "domain" bzw. als Fallback "name" (siehe
+# _organisation_finden). Antwort-Huelle {"organization": {...}} (oder ohne
+# Treffer vermutlich {"organization": null} bei Status 200 - die Doku nennt
+# nur "0 Credits bei keinem Treffer", nicht die genaue Fehler-/Leer-Form).
+# TODO(verifizieren am echten Konto): (c) HTTP-Methode und exakte URL fuer
+# dieses Endpoint ("GET .../organizations/enrich?domain=...", analog zu
+# Apollos uebrigen Enrichment-Endpoints) liessen sich aus der Doku-Seite
+# nicht statisch auslesen (das "Try it"-Beispiel wird dort per JavaScript
+# nachgeladen). GET + Query-Parameter ist die in Apollo-Tutorials und
+# -Community-Beispielen durchgaengig verwendete Form und darum hier
+# umgesetzt - der Live-Smoke-Test mit dem echten Konto ist die eigentliche
+# Verifikation. (d) Ob "organization": null oder ein anderer Status (404/
+# 200 mit leerem Objekt) bei fehlendem Treffer zurueckkommt, ebenfalls am
+# echten Konto pruefen; _organisation_finden behandelt aktuell nur ein
+# fehlendes/"falsy" organization-Feld als "kein Treffer".
+# Kostenhinweis: 1 Apollo-Credit pro TATSAECHLICH gefundener Organisation
+# (0 bei keinem Treffer) - bei "Domain zuerst, dann Name" also im
+# schlechtesten Fall 2 Credits pro Firma ohne Domain-Treffer.
 BASE_URL = "https://api.apollo.io/api/v1"
 SUCH_URL = f"{BASE_URL}/mixed_people/api_search"
 ANREICHERUNGS_URL = f"{BASE_URL}/people/bulk_match?reveal_personal_emails=true"
 ANREICHERUNGS_BATCH_GROESSE = 10
+ORGANISATION_URL = f"{BASE_URL}/organizations/enrich"
 
 class ApolloSource:
     def __init__(self, api_key, session=None, wartezeit=5):
@@ -82,6 +107,58 @@ class ApolloSource:
                 website=org.get("website_url", ""), source="apollo"))
         return leads
 
+    def unternehmen_anreichern(self, firma: dict, kontakt_rollen: list) -> dict:
+        """Stufe 2 der Lead-Beschaffung (Kern-Umbau): zu EINER Firma aus
+        Stufe 1 (dict mit mindestens "domain"/"name") Kontakte in den
+        gewuenschten Rollen suchen - NICHT die alte kriterien-basierte
+        Massensuche in search() oben (die bleibt fuer Rueckwaertskompatibilitaet
+        stehen). Liefert immer dieselbe Form zurueck, auch ohne Treffer:
+        {"kontakte": [...], "mitarbeiterzahl": int|None, "organization_id": str|None}
+        - "kontakte" ist eine Liste aus {"first_name", "last_name", "email",
+        "title"}-Dicts (nur Personen MIT E-Mail nach der bulk_match-Anreicherung).
+        "mitarbeiterzahl" traegt Apollos "estimated_num_employees" der
+        gefundenen Organisation - Grundlage der info@-Regel in
+        pipeline.sourcing, die hier bewusst NICHT entschieden wird (dieses
+        Modul kennt keine info@-Regel, nur Apollo-Rohdaten)."""
+        organisation = self._organisation_finden(firma)
+        if not organisation:
+            return {"kontakte": [], "mitarbeiterzahl": None, "organization_id": None}
+        organization_id = organisation.get("id")
+        kontakte = (self._kontakte_fuer_organisation(organization_id, kontakt_rollen)
+                    if organization_id else [])
+        return {"kontakte": kontakte,
+                "mitarbeiterzahl": organisation.get("estimated_num_employees"),
+                "organization_id": organization_id}
+
+    def _organisation_finden(self, firma: dict):
+        """Sucht die Apollo-Organisation zur Firma: zuerst ueber die Domain
+        (praeziser), bei keinem Treffer als Fallback ueber den Firmennamen -
+        wie im Auftrag vorgegeben ("by domain, fall back to name")."""
+        for feld, wert in (("domain", firma.get("domain")), ("name", firma.get("name"))):
+            if not wert:
+                continue
+            antwort = self._get_mit_wiederholung(ORGANISATION_URL, {feld: wert})
+            organisation = antwort.json().get("organization")
+            if organisation:
+                return organisation
+        return None
+
+    def _kontakte_fuer_organisation(self, organization_id: str, kontakt_rollen: list) -> list:
+        body = {"organization_ids": [organization_id], "person_titles": kontakt_rollen,
+                "per_page": 100, "page": 1}
+        antwort = self._post_mit_wiederholung(SUCH_URL, body)
+        treffer = antwort.json().get("people", [])
+        angereicherte_treffer = self._anreichern(treffer)
+        kontakte = []
+        for p in angereicherte_treffer:
+            if not p.get("email"):
+                continue
+            kontakte.append({
+                "first_name": p.get("first_name", ""),
+                "last_name": p.get("last_name") or p.get("last_name_obfuscated", ""),
+                "email": p["email"], "title": p.get("title", "")})
+        return kontakte
+
     def _anreichern(self, treffer):
         """Reichert Suchtreffer über /people/bulk_match mit E-Mail-Adressen
         (und ggf. vollständigerem Namen/Titel/Website) an. Apollo erlaubt
@@ -104,17 +181,26 @@ class ApolloSource:
         return angereichert
 
     def _post_mit_wiederholung(self, url, body):
+        return self._mit_wiederholung(url, lambda: self.session.post(
+            url, json=body, timeout=30,
+            headers={"X-Api-Key": self.api_key, "Content-Type": "application/json"}))
+
+    def _get_mit_wiederholung(self, url, params):
+        return self._mit_wiederholung(url, lambda: self.session.get(
+            url, params=params, timeout=30, headers={"X-Api-Key": self.api_key}))
+
+    def _mit_wiederholung(self, url, aufruf):
         """Wiederholt nur bei 429 (Rate-Limit) und 5xx (voruebergehende
         Server-Fehler) - beides Faelle, bei denen ein zweiter Versuch
         sinnvoll sein kann. Andere 4xx-Fehler (z.B. 401 falscher Api-Key,
         422 kaputte Anfrage) sind dauerhaft und werden sofort ohne
         Wiederholung als RuntimeError gemeldet. Nach dem letzten
-        fehlgeschlagenen Versuch wird nicht mehr gewartet."""
+        fehlgeschlagenen Versuch wird nicht mehr gewartet. Gemeinsam fuer
+        POST (_post_mit_wiederholung) und GET (_get_mit_wiederholung)
+        genutzt, `aufruf` fuehrt den eigentlichen HTTP-Request aus."""
         letzte_antwort = None
         for versuch in range(3):
-            antwort = self.session.post(
-                url, json=body, timeout=30,
-                headers={"X-Api-Key": self.api_key, "Content-Type": "application/json"})
+            antwort = aufruf()
             if antwort.status_code < 400:
                 return antwort
             if antwort.status_code != 429 and antwort.status_code < 500:

@@ -21,7 +21,7 @@ zurueck - ein stiller Sicherheits-Bypass). Der Beweis ist zweigeteilt:
       ausfuehrt) bei einem cwd, das NICHT der Code-Ordner ist, die globale
       Sperrliste trotzdem anwendet - getrieben in-process (kein echter
       Unterprozess, kein Netzwerk) mit monkeypatch.chdir(daten_dir) +
-      gefakter ApolloSource/KI, exakt wie in tests/test_cli.py. Zusammen
+      gefaktem source_leads/KI, exakt wie in tests/test_cli.py. Zusammen
       beweisen (a) und (b) den End-zu-Ende-Vertrag, ohne dass ein Test einen
       echten Netzwerk-Unterprozess starten muesste.
 """
@@ -129,7 +129,7 @@ def test_pflicht_pipeline_ehrt_globale_sperrliste_bei_cwd_ungleich_code_dir(tmp_
     fuer Task 4 nochmal explizit hinterlegt."""
     import pipeline.__main__ as cli
     import pipeline.run_store as run_store_modul
-    from tests.test_cli import _FakeApolloSource, _FakeDatetime, _FakeKI
+    from tests.test_cli import _fake_source_leads, _FakeDatetime, _FakeKI
 
     daten_dir = tmp_path / "ein-datenverzeichnis-das-nicht-der-code-ordner-ist"
     daten_dir.mkdir()
@@ -138,9 +138,10 @@ def test_pflicht_pipeline_ehrt_globale_sperrliste_bei_cwd_ungleich_code_dir(tmp_
     (daten_dir / "sperrliste-global.yaml").write_text(
         yaml.safe_dump(["firma.de"]), encoding="utf-8")
 
-    monkeypatch.setattr(cli, "ApolloSource", _FakeApolloSource)
+    monkeypatch.setattr(cli, "source_leads", _fake_source_leads)
     monkeypatch.setattr(cli, "KI", _FakeKI)
     monkeypatch.setattr(run_store_modul, "datetime", _FakeDatetime)
+    monkeypatch.setenv("APIFY_API_KEY", "test-key")
     monkeypatch.setenv("APOLLO_API_KEY", "test-key")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
     monkeypatch.setattr(cli, "LAEUFE", Path("laeufe"))

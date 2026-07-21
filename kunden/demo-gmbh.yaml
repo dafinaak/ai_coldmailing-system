@@ -15,3 +15,11 @@ test_empfaenger:
   - leonardluzhnica7@gmail.com
   - l.luzhnica@digitaldiamonds.agency
   - l.luzhnica@polepositionsolutions.de
+
+# Kern-Umbau: 3-stufige Lead-Beschaffung (Google Maps -> Apollo -> info@),
+# siehe pipeline/sourcing.py. "zielgruppe" oben bleibt als Feld stehen,
+# wird vom neuen Ablauf aber nicht mehr gelesen.
+maps_suche: "IT-Dienstleister Hannover"
+kontakt_rollen:
+  - Geschäftsführer
+  - IT-Leiter

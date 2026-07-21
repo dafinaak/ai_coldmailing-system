@@ -25,6 +25,14 @@ class Kunde:
     # weiter einlesen koennen).
     maps_suche: str = ""  # Google-Maps-Suchbegriff, z.B. "IT-Dienstleister Hannover"
     kontakt_rollen: list = field(default_factory=list)  # gewuenschte Jobtitel, z.B. [Geschäftsführer, IT-Leiter]
+    # Lead-Qualitaets-Fix: Apollo liefert pro Firma teils mehrere Kontakte in
+    # derselben/aehnlichen Rolle (im Probe-Lauf: 5x "Managing Director" bei
+    # einer kleinen Firma) - so viele Leute in einer Firma anzuschreiben
+    # verbrennt Budget und wirkt unseriös. Deckelt, wie viele Kontakte
+    # PRO FIRMA maximal zu Leads werden (siehe pipeline.sourcing._kontakte_auswaehlen).
+    # Default 2 ist bewusst niedrig; optional, damit alte Kunden-Dateien ohne
+    # dieses Feld weiter laden.
+    max_kontakte_pro_firma: int = 2
 
 def load_kunde(path) -> Kunde:
     with open(path, encoding="utf-8") as f:
@@ -64,7 +72,8 @@ def load_kunde(path) -> Kunde:
                  sperrliste=daten.get("sperrliste") or [],
                  webseite=daten.get("webseite") or "",
                  maps_suche=daten.get("maps_suche") or "",
-                 kontakt_rollen=daten.get("kontakt_rollen") or [])
+                 kontakt_rollen=daten.get("kontakt_rollen") or [],
+                 max_kontakte_pro_firma=daten.get("max_kontakte_pro_firma") or 2)
 
 def lade_globale_sperrliste(daten_dir) -> list:
     """Liest sperrliste-global.yaml aus daten_dir: eine einfache Liste aus

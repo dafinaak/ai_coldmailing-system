@@ -113,22 +113,28 @@ class ApolloSource:
         gewuenschten Rollen suchen - NICHT die alte kriterien-basierte
         Massensuche in search() oben (die bleibt fuer Rueckwaertskompatibilitaet
         stehen). Liefert immer dieselbe Form zurueck, auch ohne Treffer:
-        {"kontakte": [...], "mitarbeiterzahl": int|None, "organization_id": str|None}
-        - "kontakte" ist eine Liste aus {"first_name", "last_name", "email",
-        "title"}-Dicts (nur Personen MIT E-Mail nach der bulk_match-Anreicherung).
-        "mitarbeiterzahl" traegt Apollos "estimated_num_employees" der
-        gefundenen Organisation - Grundlage der info@-Regel in
-        pipeline.sourcing, die hier bewusst NICHT entschieden wird (dieses
-        Modul kennt keine info@-Regel, nur Apollo-Rohdaten)."""
+        {"kontakte": [...], "mitarbeiterzahl": int|None, "organization_id": str|None,
+        "name": str|None} - "kontakte" ist eine Liste aus {"first_name",
+        "last_name", "email", "title"}-Dicts (nur Personen MIT E-Mail nach der
+        bulk_match-Anreicherung). "mitarbeiterzahl" traegt Apollos
+        "estimated_num_employees" der gefundenen Organisation - Grundlage der
+        info@-Regel in pipeline.sourcing, die hier bewusst NICHT entschieden
+        wird (dieses Modul kennt keine info@-Regel, nur Apollo-Rohdaten).
+        "name" ist Apollos KANONISCHER Organisationsname (Lead-Qualitaets-Fix:
+        Google-Maps-Titel sind teils verunreinigt, z.B. "IT-Dienstleister
+        Hannover - Ihre Helden" statt "Ihre Helden" - Apollos Organisationsname
+        ist die sauberere Quelle und wird von pipeline.sourcing bevorzugt
+        genutzt, wenn vorhanden)."""
         organisation = self._organisation_finden(firma)
         if not organisation:
-            return {"kontakte": [], "mitarbeiterzahl": None, "organization_id": None}
+            return {"kontakte": [], "mitarbeiterzahl": None, "organization_id": None, "name": None}
         organization_id = organisation.get("id")
         kontakte = (self._kontakte_fuer_organisation(organization_id, kontakt_rollen)
                     if organization_id else [])
         return {"kontakte": kontakte,
                 "mitarbeiterzahl": organisation.get("estimated_num_employees"),
-                "organization_id": organization_id}
+                "organization_id": organization_id,
+                "name": organisation.get("name")}
 
     def _organisation_finden(self, firma: dict):
         """Sucht die Apollo-Organisation zur Firma: zuerst ueber die Domain

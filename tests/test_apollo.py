@@ -100,6 +100,10 @@ def test_unternehmen_anreichern_findet_kontakte_ueber_domain():
                                      "email": "anna@firma.de", "title": "CEO"}]
     assert ergebnis["mitarbeiterzahl"] == 25
     assert ergebnis["organization_id"] == "org1"
+    # Lead-Qualitaets-Fix: der kanonische Apollo-Organisationsname wird
+    # mitgeliefert, damit pipeline.sourcing ihn statt eines evtl.
+    # verunreinigten Google-Maps-Titels nutzen kann.
+    assert ergebnis["name"] == "Firma GmbH"
     # Erster Aufruf (GET) fragte ueber die Domain, nicht den Namen, an.
     assert session.aufrufe[0] == {"domain": "firma.de"}
 
@@ -121,7 +125,7 @@ def test_unternehmen_anreichern_ohne_organisation_liefert_leeres_ergebnis():
         FakeResponse(200, {"organization": None}),
     ])
     ergebnis = ApolloSource("key", session=session).unternehmen_anreichern(firma(), ["CEO"])
-    assert ergebnis == {"kontakte": [], "mitarbeiterzahl": None, "organization_id": None}
+    assert ergebnis == {"kontakte": [], "mitarbeiterzahl": None, "organization_id": None, "name": None}
 
 def test_unternehmen_anreichern_nutzt_kontakt_rollen_als_person_titles():
     session = FakeSession([

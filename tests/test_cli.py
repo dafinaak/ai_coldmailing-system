@@ -190,7 +190,9 @@ def _fake_source_leads(kunde, limit, apify_key, apollo_key):
     """Ersetzt pipeline.sourcing.source_leads: liefert 2 feste Leads (statt
     echter Apify-/Apollo-Aufrufe) plus eine dazu passende Deckungsquote
     (2 von 2 Firmen mit Kontakt -> 100%), damit alles danach (Dedupe,
-    Personalisierung, Bericht) unveraendert real durchlaeuft."""
+    Personalisierung, Bericht) unveraendert real durchlaeuft. Die dritte
+    Rueckgabe (Apollo-422-Fix) spiegelt firmen_mit_ausgang aus
+    pipeline.sourcing.source_leads - beide Firmen landeten bei "mit_kontakt"."""
     leads = [
         Lead(first_name="Anna", last_name="Muster", email="anna@firma.de",
              company="Firma GmbH", title="CEO", website="", source="apollo"),
@@ -198,7 +200,13 @@ def _fake_source_leads(kunde, limit, apify_key, apollo_key):
              company="Firma GmbH", title="CTO", website="", source="apollo"),
     ]
     deckung = {"firmen_gesamt": 2, "firmen_mit_kontakt": 2, "quote_prozent": 100.0}
-    return leads, deckung
+    firmen_mit_ausgang = [
+        {"name": "Firma GmbH", "website": "https://firma.de", "domain": "firma.de",
+         "address": "", "categories": [], "ausgang": "mit_kontakt"},
+        {"name": "Firma GmbH", "website": "https://firma.de", "domain": "firma.de",
+         "address": "", "categories": [], "ausgang": "mit_kontakt"},
+    ]
+    return leads, deckung, firmen_mit_ausgang
 
 class _FakeKI:
     """Ersetzt KI: liefert gueltiges JSON fuer personalize() (System-Prompt
@@ -249,8 +257,14 @@ def test_lauf_personalisiert_end_zu_ende_und_dedupe_greift_erst_im_naechsten_lau
     assert len(erste_leads["leads"]) == 2
     assert erste_leads["deckung"] == {"firmen_gesamt": 2, "firmen_mit_kontakt": 2,
                                       "quote_prozent": 100.0}
+    # Apollo-422-Fix: die Stufe-1-Firmenliste (mit Pro-Firma-Ausgang) landet
+    # als firmen.json im Laufordner.
+    firmen = json.loads((erster_lauf / "firmen.json").read_text(encoding="utf-8"))
+    assert len(firmen) == 2
+    assert all(f["ausgang"] == "mit_kontakt" for f in firmen)
     bericht = (erster_lauf / "bericht.md").read_text(encoding="utf-8")
     assert "Firmen ohne Kontakt: 0" in bericht
+    assert "Firmen-Ausgang: 2 mit Kontakt, 0 ohne Webseite, 0 kein Apollo-Treffer, 0 Fehler" in bericht
 
     # Zweiter, frischer Lauf: jetzt muessen beide Leads aus dem ersten Lauf
     # als "bereits in früherem Lauf angeschrieben" verworfen werden - das

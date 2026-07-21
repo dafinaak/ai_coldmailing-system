@@ -54,9 +54,14 @@ def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None
     print(f"Laufordner: {store.run_dir}")
 
     if not store.step_done("leads"):
-        gefunden, deckung = source_leads(
+        gefunden, deckung, firmen_mit_ausgang = source_leads(
             kunde, limit, os.environ["APIFY_API_KEY"], os.environ["APOLLO_API_KEY"])
         store.save_step("leads", {"leads": [l.__dict__ for l in gefunden], "deckung": deckung})
+        # Apollo-422-Fix: Stufe-1-Firmenliste + Pro-Firma-Ausgang separat
+        # persistieren (firmen.json), damit ein spaeterer Blick in den
+        # Laufordner sauber zeigt, WARUM eine Firma ohne Kontakt blieb -
+        # nicht nur DASS sie es tat.
+        store.save_step("firmen", firmen_mit_ausgang)
     stand_leads = store.load_step("leads")
     if isinstance(stand_leads, list):
         # Alte Laufordner (vor dem Kern-Umbau) speicherten leads.json als
@@ -111,6 +116,12 @@ def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None
     gruende = [f"{g}: {n}" for g, n in
                Counter(v["grund"] for v in stand["verworfen"]).items()]
     deckung = stand_leads["deckung"]
+    # Apollo-422-Fix: Ausgang-Aufschluesselung fuer den Bericht aus
+    # firmen.json zaehlen - leere Liste (statt KeyError), wenn dieser
+    # Laufordner noch aus einer Zeit VOR diesem Fix stammt (kein
+    # firmen.json vorhanden, siehe --fortsetzen auf altem Laufordner).
+    firmen_stand = store.load_step("firmen") if store.step_done("firmen") else []
+    ausgang_zaehlung = Counter(f.get("ausgang") for f in firmen_stand)
     write_report(store, {"gefunden": len(leads), "verworfen": len(stand["verworfen"]),
                          "personalisiert": len(ergebnis["fertig"]),
                          "nacharbeit": len(ergebnis["nacharbeit"]),
@@ -119,6 +130,10 @@ def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None
                          # personenbezogen: die Zahl der Stufe-1-Firmen ganz
                          # ohne nutzbaren Kontakt (persönlich oder info@).
                          "ohne_email": deckung["firmen_gesamt"] - deckung["firmen_mit_kontakt"],
+                         "firmen_mit_kontakt_ausgang": ausgang_zaehlung.get("mit_kontakt", 0),
+                         "firmen_keine_webseite": ausgang_zaehlung.get("keine_webseite", 0),
+                         "firmen_apollo_kein_treffer": ausgang_zaehlung.get("apollo_kein_treffer", 0),
+                         "firmen_fehler": ausgang_zaehlung.get("fehler", 0),
                          "firmen_gesamt": deckung["firmen_gesamt"],
                          "firmen_mit_kontakt": deckung["firmen_mit_kontakt"],
                          "deckungsquote_prozent": deckung["quote_prozent"]})

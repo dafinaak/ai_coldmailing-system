@@ -1,5 +1,6 @@
 import pytest
-from pipeline.sources.apollo import ApolloSource
+from pipeline.sources.apollo import (ApolloSource, ORGANISATION_URL, ORGANISATION_SUCH_URL,
+                                      _saubere_domain, _beste_namenstreffer)
 
 class FakeResponse:
     def __init__(self, status_code, payload, text=""):
@@ -9,12 +10,14 @@ class FakeResponse:
 
 class FakeSession:
     def __init__(self, antworten):
-        self.antworten, self.aufrufe = list(antworten), []
+        self.antworten, self.aufrufe, self.urls = list(antworten), [], []
     def post(self, url, json=None, headers=None, timeout=None):
         self.aufrufe.append(json)
+        self.urls.append(url)
         return self.antworten.pop(0)
     def get(self, url, params=None, headers=None, timeout=None):
         self.aufrufe.append(params)
+        self.urls.append(url)
         return self.antworten.pop(0)
 
 def treffer(pid, **overrides):
@@ -104,28 +107,110 @@ def test_unternehmen_anreichern_findet_kontakte_ueber_domain():
     # mitgeliefert, damit pipeline.sourcing ihn statt eines evtl.
     # verunreinigten Google-Maps-Titels nutzen kann.
     assert ergebnis["name"] == "Firma GmbH"
-    # Erster Aufruf (GET) fragte ueber die Domain, nicht den Namen, an.
+    # Erster Aufruf (GET) fragte ueber die Domain an, nicht ueber den Namen.
+    assert session.urls[0] == ORGANISATION_URL
     assert session.aufrufe[0] == {"domain": "firma.de"}
 
-def test_unternehmen_anreichern_faellt_bei_domain_ohne_treffer_auf_namen_zurueck():
+
+# --- Bug-Fix (Apollo-422): Firmen ohne Domain (bzw. Domain ohne Treffer)
+# muessen ueber den SUCH-Endpoint (ORGANISATION_SUCH_URL) gefunden werden,
+# NIEMALS ueber den Enrich-Endpoint mit "name" - der antwortet in der Praxis
+# zuverlaessig mit 422 auf jede namens-basierte Anfrage ohne Domain, siehe
+# apollo.py-Kommentar. Das war der real beobachtete Bug: Firmen ohne
+# Google-Maps-Webseite fielen dadurch faelschlich als "kein Kontakt" durch.
+
+def test_unternehmen_anreichern_firma_ohne_domain_nutzt_namenssuche_statt_enrich_mit_name():
+    firma_ohne_domain = {"name": "Firma GmbH", "website": "", "domain": "",
+                         "address": "", "categories": []}
     session = FakeSession([
-        FakeResponse(200, {"organization": None}),           # GET ueber Domain: kein Treffer
-        FakeResponse(200, {"organization": organisation()}),  # GET ueber Name: Treffer
-        FakeResponse(200, {"people": []}),                    # POST people search: keine Treffer
+        FakeResponse(200, {"organizations": [organisation()]}),  # POST Namens-Suche
+        FakeResponse(200, {"people": [treffer("p1")]}),           # POST people search
+        FakeResponse(200, {"matches": [match("p1")]}),             # POST bulk_match
+    ])
+    ergebnis = ApolloSource("key", session=session).unternehmen_anreichern(
+        firma_ohne_domain, ["CEO"])
+    assert ergebnis["organization_id"] == "org1"
+    assert ergebnis["kontakte"][0]["email"] == "anna@firma.de"
+    # Der einzige Aufruf zur Organisations-Suche ging an den SUCH-Endpoint
+    # (mixed_companies/search), NICHT an ORGANISATION_URL (organizations/
+    # enrich) - der haette bei "name" ohne Domain mit 422 geantwortet.
+    assert session.urls[0] == ORGANISATION_SUCH_URL
+    assert session.aufrufe[0]["q_organization_name"] == "Firma GmbH"
+
+def test_unternehmen_anreichern_faellt_bei_domain_ohne_treffer_auf_namenssuche_zurueck():
+    session = FakeSession([
+        FakeResponse(200, {"organization": None}),               # GET ueber Domain: kein Treffer
+        FakeResponse(200, {"organizations": [organisation()]}),   # POST Namens-Suche: Treffer
+        FakeResponse(200, {"people": []}),                        # POST people search: keine Treffer
     ])
     ergebnis = ApolloSource("key", session=session).unternehmen_anreichern(firma(), ["CEO"])
     assert ergebnis["organization_id"] == "org1"
     assert ergebnis["kontakte"] == []
+    assert session.urls[0] == ORGANISATION_URL
     assert session.aufrufe[0] == {"domain": "firma.de"}
-    assert session.aufrufe[1] == {"name": "Firma GmbH"}
+    assert session.urls[1] == ORGANISATION_SUCH_URL
+    assert session.aufrufe[1]["q_organization_name"] == "Firma GmbH"
 
 def test_unternehmen_anreichern_ohne_organisation_liefert_leeres_ergebnis():
     session = FakeSession([
-        FakeResponse(200, {"organization": None}),
-        FakeResponse(200, {"organization": None}),
+        FakeResponse(200, {"organization": None}),      # GET ueber Domain: kein Treffer
+        FakeResponse(200, {"organizations": []}),        # POST Namens-Suche: kein Treffer (kein 422!)
     ])
     ergebnis = ApolloSource("key", session=session).unternehmen_anreichern(firma(), ["CEO"])
     assert ergebnis == {"kontakte": [], "mitarbeiterzahl": None, "organization_id": None, "name": None}
+
+def test_organisation_finden_ohne_domain_und_ohne_namen_liefert_none_ohne_aufruf():
+    firma_ohne_beides = {"name": "", "website": "", "domain": "", "address": "", "categories": []}
+    session = FakeSession([])  # jeder Aufruf wuerde IndexError werfen
+    ergebnis = ApolloSource("key", session=session).unternehmen_anreichern(
+        firma_ohne_beides, ["CEO"])
+    assert ergebnis == {"kontakte": [], "mitarbeiterzahl": None, "organization_id": None, "name": None}
+    assert session.aufrufe == []
+
+
+# --- Bug-Fix (Apollo-422): messy Domain-Werte muessen VOR dem Apollo-Aufruf
+# auf eine reine Domain bereinigt werden - eine kaputt formatierte Domain
+# (volle URL, "www.", Pfad, Port, Query) darf nie selbst der Grund fuer
+# einen 422 sein.
+
+def test_saubere_domain_entfernt_schema_www_pfad_port_und_query():
+    faelle = {
+        "https://www.Firma.de/impressum/": "firma.de",
+        "WWW.FIRMA.DE": "firma.de",
+        "firma.de:8080/pfad": "firma.de",
+        "firma.de?ref=xyz": "firma.de",
+        "  https://firma.de  ".strip(): "firma.de",
+        "": "",
+    }
+    for messy, sauber in faelle.items():
+        assert _saubere_domain(messy) == sauber, messy
+
+def test_unternehmen_anreichern_bereinigt_messy_domain_vor_dem_apollo_aufruf():
+    firma_messy = firma(domain="https://www.Firma.de/impressum/")
+    session = FakeSession([
+        FakeResponse(200, {"organization": organisation()}),
+        FakeResponse(200, {"people": []}),
+    ])
+    ApolloSource("key", session=session).unternehmen_anreichern(firma_messy, ["CEO"])
+    assert session.aufrufe[0] == {"domain": "firma.de"}
+
+
+# --- Bug-Fix (Apollo-422): Namens-Suche liefert oft mehrere Teilstring-
+# Treffer - der EXAKTE Namens-Treffer (case-insensitive) muss bevorzugt
+# werden, nicht einfach blind der erste.
+
+def test_beste_namenstreffer_bevorzugt_exakten_namen_vor_dem_ersten_treffer():
+    treffer_liste = [{"id": "org-falsch", "name": "Firma GmbH Nord"},
+                      {"id": "org-richtig", "name": "Firma GmbH"}]
+    assert _beste_namenstreffer(treffer_liste, "Firma GmbH")["id"] == "org-richtig"
+
+def test_beste_namenstreffer_faellt_ohne_exakten_treffer_auf_ersten_zurueck():
+    treffer_liste = [{"id": "org-erster", "name": "Firma GmbH Nord"},
+                      {"id": "org-zweiter", "name": "Firma GmbH Sued"}]
+    assert _beste_namenstreffer(treffer_liste, "Firma GmbH")["id"] == "org-erster"
+
+def test_beste_namenstreffer_ohne_treffer_liefert_none():
+    assert _beste_namenstreffer([], "Firma GmbH") is None
 
 def test_unternehmen_anreichern_nutzt_kontakt_rollen_als_person_titles():
     session = FakeSession([

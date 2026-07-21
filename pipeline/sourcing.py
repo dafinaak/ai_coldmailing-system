@@ -215,11 +215,21 @@ def _pruefe_kunde(kunde):
 
 def source_leads(kunde, limit, apify_key, apollo_key,
                   apify_source=None, apollo_source=None, drittquelle=None) -> tuple:
-    """Fuehrt alle 3 Stufen aus und liefert (leads, deckung):
+    """Fuehrt alle 3 Stufen aus und liefert (leads, deckung, firmen_mit_ausgang):
     - leads: Liste von pipeline.models.Lead (bestehende Form, downstream
       unveraendert nutzbar).
     - deckung: {"firmen_gesamt": int, "firmen_mit_kontakt": int,
       "quote_prozent": float} - die Deckungsquote fuer den Bericht.
+    - firmen_mit_ausgang: die Stufe-1-Firmenliste aus Apify, JEDE Firma
+      zusaetzlich um ein "ausgang"-Feld ergaenzt (Apollo-422-Fix): einer von
+      "mit_kontakt" / "keine_webseite" / "apollo_kein_treffer" / "fehler".
+      Zweck: kuenftige Laeufe sollen sauber unterscheiden koennen, WARUM eine
+      Firma ohne Kontakt blieb (fehlende Webseite vs. Apollo hat wirklich
+      nichts gefunden vs. ein technischer Fehler bei der Anreicherung) -
+      vorher landete das alles ungetrennt in einer einzigen "kein Kontakt"-
+      Zahl, was den echten Bug (422 bei Firmen ohne Webseite) verschleiert
+      hat. __main__.lauf() persistiert diese Liste als firmen.json und
+      zaehlt daraus die Aufschluesselung fuer den Bericht.
 
     `apify_source`/`apollo_source`/`drittquelle` sind fuer Tests injizierbar;
     im echten Betrieb baut diese Funktion die echten Klassen selbst mit den
@@ -230,7 +240,7 @@ def source_leads(kunde, limit, apify_key, apollo_key,
     dritt = drittquelle or NoOpDrittquelle()
 
     firmen = apify.search(kunde.maps_suche, limit)
-    leads, firmen_mit_kontakt = [], 0
+    leads, firmen_mit_kontakt, firmen_mit_ausgang = [], 0, []
     for firma in firmen:
         try:
             ergebnis = apollo.unternehmen_anreichern(firma, kunde.kontakt_rollen)
@@ -247,6 +257,7 @@ def source_leads(kunde, limit, apify_key, apollo_key,
             # geloggten Text), daher unbedenklich mitzuloggen.
             print(f"Firma '{firma.get('name') or firma.get('domain') or '?'}' "
                   f"übersprungen (Fehler bei der Kontakt-Anreicherung): {fehler}")
+            firmen_mit_ausgang.append({**firma, "ausgang": "fehler"})
             continue
 
         kontakte_roh = ergebnis["kontakte"]
@@ -284,6 +295,7 @@ def source_leads(kunde, limit, apify_key, apollo_key,
         firmenname = ergebnis.get("name") or _firmenname_saeubern(
             firma.get("name", ""), kunde.maps_suche)
 
+        hat_kontakt = False
         if kontakte:
             for k in kontakte:
                 leads.append(Lead(
@@ -291,14 +303,30 @@ def source_leads(kunde, limit, apify_key, apollo_key,
                     email=k["email"], company=firmenname, title=k.get("title", ""),
                     website=firma["website"], source="apollo"))
             firmen_mit_kontakt += 1
+            hat_kontakt = True
         elif ist_kleinfirma and firma.get("domain"):
             leads.append(Lead(
                 first_name="", last_name="", email=f"info@{firma['domain']}",
                 company=firmenname, title="", website=firma["website"], source="info@"))
             firmen_mit_kontakt += 1
+            hat_kontakt = True
+
+        # Ausgang-Aufschluesselung (Apollo-422-Fix): "keine_webseite" trennt
+        # Firmen, die schon in Stufe 1 (Google Maps) ohne Webseite/Domain
+        # ankamen, von "apollo_kein_treffer" (Domain/Webseite vorhanden,
+        # aber weder Enrich noch Namens-Suche fanden eine Organisation bzw.
+        # keiner der gefundenen Kontakte passte) - genau die Unterscheidung,
+        # die vor dem Fix fehlte.
+        if hat_kontakt:
+            ausgang = "mit_kontakt"
+        elif not firma.get("website"):
+            ausgang = "keine_webseite"
+        else:
+            ausgang = "apollo_kein_treffer"
+        firmen_mit_ausgang.append({**firma, "ausgang": ausgang})
 
     anzahl_firmen = len(firmen)
     quote = (firmen_mit_kontakt / anzahl_firmen * 100) if anzahl_firmen else 0.0
     deckung = {"firmen_gesamt": anzahl_firmen, "firmen_mit_kontakt": firmen_mit_kontakt,
                "quote_prozent": round(quote, 1)}
-    return leads, deckung
+    return leads, deckung, firmen_mit_ausgang

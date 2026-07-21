@@ -32,7 +32,7 @@ def test_leads_werden_aus_stufe_2_kontakten_gebaut():
         "kontakte": [{"first_name": "Anna", "last_name": "M",
                       "email": "anna@firma-a.de", "title": "CEO"}],
         "mitarbeiterzahl": 30, "organization_id": "org1"}}
-    leads, deckung = source_leads(_kunde(), 10, "apify-key", "apollo-key",
+    leads, deckung, _ausgang = source_leads(_kunde(), 10, "apify-key", "apollo-key",
                                   apify_source=_FakeApify(firmen),
                                   apollo_source=_FakeApollo(apollo_ergebnisse))
     assert len(leads) == 1
@@ -46,7 +46,7 @@ def test_info_at_regel_fuer_kleinfirma_ohne_persoenlichen_kontakt():
     firmen = [_firma("klein.de")]
     apollo_ergebnisse = {"klein.de": {"kontakte": [], "mitarbeiterzahl": 3,
                                       "organization_id": "org2"}}
-    leads, deckung = source_leads(_kunde(), 10, "a", "b",
+    leads, deckung, _ausgang = source_leads(_kunde(), 10, "a", "b",
                                   apify_source=_FakeApify(firmen),
                                   apollo_source=_FakeApollo(apollo_ergebnisse))
     assert len(leads) == 1
@@ -58,7 +58,7 @@ def test_keine_info_at_regel_ueber_der_kleinfirmen_grenze():
     firmen = [_firma("gross.de")]
     apollo_ergebnisse = {"gross.de": {"kontakte": [], "mitarbeiterzahl": 4,
                                       "organization_id": "org3"}}
-    leads, deckung = source_leads(_kunde(), 10, "a", "b",
+    leads, deckung, _ausgang = source_leads(_kunde(), 10, "a", "b",
                                   apify_source=_FakeApify(firmen),
                                   apollo_source=_FakeApollo(apollo_ergebnisse))
     assert leads == []
@@ -71,7 +71,7 @@ def test_keine_info_at_regel_ohne_bekannte_mitarbeiterzahl():
     firmen = [_firma("unbekannt.de")]
     apollo_ergebnisse = {"unbekannt.de": {"kontakte": [], "mitarbeiterzahl": None,
                                           "organization_id": None}}
-    leads, deckung = source_leads(_kunde(), 10, "a", "b",
+    leads, deckung, _ausgang = source_leads(_kunde(), 10, "a", "b",
                                   apify_source=_FakeApify(firmen),
                                   apollo_source=_FakeApollo(apollo_ergebnisse))
     assert leads == []
@@ -85,13 +85,13 @@ def test_deckungsquote_beispiel_aus_dem_auftrag_5_firmen_4_mit_kontakt():
                      "mitarbeiterzahl": 20, "organization_id": f"org{i}"}
         for i in range(4)}
     apollo_ergebnisse["f4.de"] = {"kontakte": [], "mitarbeiterzahl": 50, "organization_id": "org4"}
-    leads, deckung = source_leads(_kunde(), 10, "a", "b",
+    leads, deckung, _ausgang = source_leads(_kunde(), 10, "a", "b",
                                   apify_source=_FakeApify(firmen),
                                   apollo_source=_FakeApollo(apollo_ergebnisse))
     assert deckung == {"firmen_gesamt": 5, "firmen_mit_kontakt": 4, "quote_prozent": 80.0}
 
 def test_deckungsquote_ohne_firmen_ist_null_statt_division_durch_null():
-    leads, deckung = source_leads(_kunde(), 10, "a", "b",
+    leads, deckung, _ausgang = source_leads(_kunde(), 10, "a", "b",
                                   apify_source=_FakeApify([]), apollo_source=_FakeApollo({}))
     assert leads == []
     assert deckung == {"firmen_gesamt": 0, "firmen_mit_kontakt": 0, "quote_prozent": 0.0}
@@ -113,7 +113,7 @@ def test_fehlerhafte_firma_bricht_den_lauf_nicht_ab():
                                   "email": f"a@{firma['domain']}", "title": "CEO"}],
                     "mitarbeiterzahl": 20, "organization_id": "org"}
 
-    leads, deckung = source_leads(_kunde(), 10, "a", "b",
+    leads, deckung, ausgang = source_leads(_kunde(), 10, "a", "b",
                                   apify_source=_FakeApify(firmen),
                                   apollo_source=_FlackerndeApollo())
 
@@ -122,6 +122,62 @@ def test_fehlerhafte_firma_bricht_den_lauf_nicht_ab():
     # NICHT zu firmen_mit_kontakt - eine flackernde Firma verschlechtert nur
     # die Zahl, statt den Lauf zu sprengen.
     assert deckung == {"firmen_gesamt": 3, "firmen_mit_kontakt": 2, "quote_prozent": 66.7}
+    # Outcome-Aufschluesselung (Apollo-422-Fix): f2.de trug einen echten
+    # technischen Fehler (RuntimeError), nicht "kein Treffer" oder "keine
+    # Webseite" - das muss in firmen_mit_ausgang als "fehler" sichtbar sein.
+    ausgang_je_domain = {f["domain"]: f["ausgang"] for f in ausgang}
+    assert ausgang_je_domain == {"f1.de": "mit_kontakt", "f2.de": "fehler", "f3.de": "mit_kontakt"}
+
+
+# --- Apollo-422-Fix: Outcome-Aufschluesselung pro Firma (firmen_mit_ausgang) -
+
+def test_ausgang_keine_webseite_fuer_firma_ohne_webseite_und_ohne_kontakt():
+    # Genau der Fall aus dem echten Bug: Google Maps liefert keine Webseite
+    # (also keine Domain), Apollo findet (in diesem Test bewusst) auch ueber
+    # den Fake keinen Kontakt - der Ausgang muss "keine_webseite" sein, NICHT
+    # "apollo_kein_treffer", damit klar bleibt, dass hier schon Stufe 1 ohne
+    # Webseite ankam.
+    firmen = [{"name": "Ohne Webseite GmbH", "website": "", "domain": "",
+               "address": "", "categories": []}]
+
+    class _ApolloOhneTreffer:
+        def unternehmen_anreichern(self, firma, kontakt_rollen):
+            return {"kontakte": [], "mitarbeiterzahl": None, "organization_id": None, "name": None}
+
+    leads, deckung, ausgang = source_leads(_kunde(), 10, "a", "b",
+                                           apify_source=_FakeApify(firmen),
+                                           apollo_source=_ApolloOhneTreffer())
+    assert leads == []
+    assert ausgang == [{"name": "Ohne Webseite GmbH", "website": "", "domain": "",
+                        "address": "", "categories": [], "ausgang": "keine_webseite"}]
+
+def test_ausgang_apollo_kein_treffer_fuer_firma_mit_webseite_aber_ohne_kontakt():
+    # Firma hat eine Webseite/Domain (Stufe 1 hat also geliefert), aber
+    # weder Enrich noch Namens-Suche fanden bei Apollo eine passende
+    # Organisation/einen passenden Kontakt - das ist ein echtes "kein
+    # Treffer bei Apollo", unterscheidbar von "keine_webseite".
+    firmen = [_firma("mit-webseite.de")]
+
+    class _ApolloOhneTreffer:
+        def unternehmen_anreichern(self, firma, kontakt_rollen):
+            return {"kontakte": [], "mitarbeiterzahl": None, "organization_id": None, "name": None}
+
+    leads, deckung, ausgang = source_leads(_kunde(), 10, "a", "b",
+                                           apify_source=_FakeApify(firmen),
+                                           apollo_source=_ApolloOhneTreffer())
+    assert leads == []
+    assert [f["ausgang"] for f in ausgang] == ["apollo_kein_treffer"]
+
+def test_ausgang_mit_kontakt_fuer_firma_mit_gefundenem_kontakt():
+    firmen = [_firma("firma-a.de")]
+    apollo_ergebnisse = {"firma-a.de": {
+        "kontakte": [{"first_name": "Anna", "last_name": "M",
+                      "email": "anna@firma-a.de", "title": "CEO"}],
+        "mitarbeiterzahl": 30, "organization_id": "org1"}}
+    leads, deckung, ausgang = source_leads(_kunde(), 10, "apify-key", "apollo-key",
+                                           apify_source=_FakeApify(firmen),
+                                           apollo_source=_FakeApollo(apollo_ergebnisse))
+    assert [f["ausgang"] for f in ausgang] == ["mit_kontakt"]
 
 def test_drittquelle_wird_genutzt_wenn_apollo_nichts_findet():
     firmen = [_firma("dritt.de")]
@@ -130,7 +186,7 @@ def test_drittquelle_wird_genutzt_wenn_apollo_nichts_findet():
     class _FakeDrittquelle:
         def finde_kontakte(self, firma):
             return [{"first_name": "X", "last_name": "Y", "email": "x@dritt.de", "title": "CTO"}]
-    leads, deckung = source_leads(_kunde(), 10, "a", "b",
+    leads, deckung, _ausgang = source_leads(_kunde(), 10, "a", "b",
                                   apify_source=_FakeApify(firmen),
                                   apollo_source=_FakeApollo(apollo_ergebnisse),
                                   drittquelle=_FakeDrittquelle())
@@ -176,7 +232,7 @@ def test_ohne_injizierte_quellen_werden_die_echten_klassen_mit_den_keys_gebaut()
     original_apify, original_apollo = sourcing_modul.ApifyMapsSource, sourcing_modul.ApolloSource
     sourcing_modul.ApifyMapsSource, sourcing_modul.ApolloSource = _SpionApify, _SpionApollo
     try:
-        leads, deckung = source_leads(_kunde(), 10, "mein-apify-key", "mein-apollo-key")
+        leads, deckung, _ausgang = source_leads(_kunde(), 10, "mein-apify-key", "mein-apollo-key")
     finally:
         sourcing_modul.ApifyMapsSource, sourcing_modul.ApolloSource = original_apify, original_apollo
 
@@ -264,7 +320,7 @@ def test_source_leads_kein_rollentreffer_kleinfirma_nutzt_info_at():
         "kontakte": [{"first_name": "B", "last_name": "H", "email": "b@klein.de",
                       "title": "Buchhalter"}],
         "mitarbeiterzahl": 3, "organization_id": "org1", "name": None}}
-    leads, deckung = source_leads(_kunde(), 10, "a", "b",
+    leads, deckung, _ausgang = source_leads(_kunde(), 10, "a", "b",
                                   apify_source=_FakeApify(firmen),
                                   apollo_source=_FakeApollo(apollo_ergebnisse))
     assert len(leads) == 1
@@ -279,7 +335,7 @@ def test_source_leads_kein_rollentreffer_grossfirma_nutzt_einen_best_effort_kont
             {"first_name": "C", "last_name": "D", "email": "c@gross.de", "title": "Sekretär"},
         ],
         "mitarbeiterzahl": 40, "organization_id": "org2", "name": None}}
-    leads, deckung = source_leads(_kunde(), 10, "a", "b",
+    leads, deckung, _ausgang = source_leads(_kunde(), 10, "a", "b",
                                   apify_source=_FakeApify(firmen),
                                   apollo_source=_FakeApollo(apollo_ergebnisse))
     # Bewusst genau EIN Kontakt (der erste von Apollo gelieferte), damit die
@@ -322,7 +378,7 @@ def test_source_leads_bevorzugt_apollos_kanonischen_namen():
         "kontakte": [{"first_name": "Anna", "last_name": "M", "email": "anna@ihrehelden.de",
                       "title": "Geschäftsführerin"}],
         "mitarbeiterzahl": 8, "organization_id": "org3", "name": "Ihre Helden"}}
-    leads, _ = source_leads(_kunde(), 10, "a", "b",
+    leads, _, _ausgang = source_leads(_kunde(), 10, "a", "b",
                             apify_source=_FakeApify(firmen),
                             apollo_source=_FakeApollo(apollo_ergebnisse))
     assert leads[0].company == "Ihre Helden"
@@ -335,7 +391,7 @@ def test_source_leads_faellt_ohne_apollo_organisation_auf_bereinigten_maps_namen
                "address": "", "categories": []}]
     apollo_ergebnisse = {"ihrehelden.de": {
         "kontakte": [], "mitarbeiterzahl": 2, "organization_id": None, "name": None}}
-    leads, _ = source_leads(_kunde(), 10, "a", "b",
+    leads, _, _ausgang = source_leads(_kunde(), 10, "a", "b",
                             apify_source=_FakeApify(firmen),
                             apollo_source=_FakeApollo(apollo_ergebnisse))
     assert leads[0].company == "Ihre Helden"
@@ -357,7 +413,7 @@ def test_ende_zu_ende_realistische_firma_liefert_gezielte_leads_mit_sauberem_nam
         "kontakte": kontakte, "mitarbeiterzahl": 8, "organization_id": "org4",
         "name": "Ihre Helden"}}
     kunde = _kunde(kontakt_rollen=["Geschäftsführer", "IT-Leiter"])
-    leads, deckung = source_leads(kunde, 10, "a", "b",
+    leads, deckung, _ausgang = source_leads(kunde, 10, "a", "b",
                                   apify_source=_FakeApify(firmen),
                                   apollo_source=_FakeApollo(apollo_ergebnisse))
     assert len(leads) <= 2

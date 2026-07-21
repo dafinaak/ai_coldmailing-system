@@ -205,6 +205,36 @@ def test_rolle_ausserhalb_der_synonymtabelle_faellt_auf_teilstring_ab():
     assert _rolle_passt("Buchhalter", "Head of Sales") is False
 
 
+# --- Bug-Fix (Review-Fund): Wortgrenzen statt rohem Teilstring -------------
+# "cto" steckt als roher Teilstring in "director" (di-REC-TO-r) und
+# "contractor" (con-TRA-CTO-r) - ein reiner `in`-Abgleich matcht also
+# faelschlich JEDEN "Director"/"Contractor"-Titel auf IT-Leiter. Das
+# unterlaeuft die gesamte gezielte Auswahl aus dem urspruenglichen Fix.
+
+def test_cto_matcht_nicht_raw_substring_in_director_titeln():
+    for titel in ("Sales Director", "Finance Director", "HR Director",
+                  "Marketing Director", "General Contractor", "Contractor"):
+        assert _rolle_passt(titel, "IT-Leiter") is False, titel
+
+def test_ceo_matcht_nicht_raw_substring_titel():
+    # "ceo" ist zwar kein Teilstring von "director", aber die gleiche
+    # Absicherung gilt fuer alle kurzen Akronyme - hier zur Sicherheit
+    # gegen einen erfundenen, aehnlich gelagerten Titel geprueft.
+    assert _rolle_passt("Licensee Officer", "Geschäftsführer") is False
+
+def test_kurze_akronyme_matchen_weiterhin_als_eigenes_wort():
+    assert _rolle_passt("CTO", "IT-Leiter") is True
+    assert _rolle_passt("Head of IT", "IT-Leiter") is True
+    assert _rolle_passt("IT Manager", "IT-Leiter") is True
+    assert _rolle_passt("Chief Technology Officer (CTO)", "IT-Leiter") is True
+    assert _rolle_passt("CEO", "Geschäftsführer") is True
+
+def test_managing_director_matcht_weiterhin_als_phrase():
+    assert _rolle_passt("Managing Director", "Geschäftsführer") is True
+    assert _rolle_passt("Buchhalter", "Geschäftsführer") is False
+    assert _rolle_passt("Buchhalter", "IT-Leiter") is False
+
+
 # --- Lead-Qualitaets-Fix: Deckelung + Prioritaet (_kontakte_auswaehlen) ---
 
 def test_fuenf_passende_kontakte_werden_auf_zwei_gedeckelt():
@@ -274,6 +304,13 @@ def test_firmenname_saeubern_laesst_echten_bindestrich_namen_unangetastet():
     # konservativ NICHT abschneiden, sonst geht ein echter Firmenname kaputt.
     assert (_firmenname_saeubern("Müller - Schmidt GbR", "IT-Dienstleister Hannover")
             == "Müller - Schmidt GbR")
+
+def test_firmenname_saeubern_entfernt_verwaisten_abschluss_trenner():
+    # MINOR-Fix: Name ist exakt der Suchbegriff plus einem "nackten"
+    # Trennzeichen ohne Rest dahinter - der verwaiste Trenner soll nicht im
+    # bereinigten Namen haengen bleiben.
+    assert (_firmenname_saeubern("IT-Dienstleister Hannover -", "IT-Dienstleister Hannover")
+            == "IT-Dienstleister Hannover")
 
 def test_source_leads_bevorzugt_apollos_kanonischen_namen():
     # Apollo hat die Organisation gefunden und liefert den echten Namen -

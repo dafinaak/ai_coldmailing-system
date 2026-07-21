@@ -85,21 +85,41 @@ def _gruppe_fuer_rolle(rolle_norm: str):
     return None
 
 
+def _enthaelt_als_wort(haystack: str, needle: str) -> bool:
+    """Prueft, ob `needle` als EIGENSTAENDIGES Wort bzw. eigenstaendige
+    Wortfolge in `haystack` vorkommt - Wortgrenzen-genau (\\b...\\b), KEIN
+    roher Teilstring-Abgleich. Bug-Fix (Review-Fund): ein roher `in`-Abgleich
+    matcht faelschlich "cto" als Teilstring in "director" (di-REC-TO-r) und
+    "contractor" (con-TRA-CTO-r) - jeder "Director"/"Contractor"-Titel waere
+    damit faelschlich als IT-Leiter erkannt worden. Mit Wortgrenzen matcht
+    "cto" nur, wenn es tatsaechlich als eigenes Wort auftaucht (z.B. in
+    "CTO" oder "Chief Technology Officer (CTO)"), nicht mitten in einem
+    anderen Wort. Beide Strings muessen bereits ueber _normalisieren() -
+    d.h. kleingeschrieben, Bindestriche zu Leerzeichen - laufen."""
+    if not needle:
+        return False
+    return re.search(rf"\b{re.escape(needle)}\b", haystack) is not None
+
+
 def _rolle_passt(kontakt_titel: str, gewuenschte_rolle: str) -> bool:
     """Prueft, ob ein von Apollo gelieferter Jobtitel zu einer gewuenschten
     Rolle aus kontakt_rollen passt - case-insensitive, Synonym-bewusst
     (z.B. "Managing Director" passt zu "Geschäftsführer", "Head of IT" zu
-    "IT-Leiter"). Rollen ausserhalb der Synonym-Tabelle degradieren zu einem
-    schlichten, case-insensitiven Teilstring-Abgleich (in beide Richtungen,
+    "IT-Leiter"), aber immer WORTGRENZEN-genau (_enthaelt_als_wort) statt
+    als roher Teilstring - sonst matchen kurze Akronyme wie "cto"/"ceo"
+    versehentlich mitten in unverwandten Woertern (siehe _enthaelt_als_wort).
+    Rollen ausserhalb der Synonym-Tabelle degradieren zu einem schlichten,
+    aber weiterhin wortgrenzen-genauen Abgleich (in beide Richtungen,
     toleriert also sowohl kuerzere als auch laengere Formulierungen)."""
     titel_norm, rolle_norm = _normalisieren(kontakt_titel), _normalisieren(gewuenschte_rolle)
     if not titel_norm or not rolle_norm:
         return False
     gruppe = _gruppe_fuer_rolle(rolle_norm)
     if gruppe is not None:
-        return any(_normalisieren(s) in titel_norm or titel_norm in _normalisieren(s)
+        return any(_enthaelt_als_wort(titel_norm, _normalisieren(s))
+                    or _enthaelt_als_wort(_normalisieren(s), titel_norm)
                     for s in gruppe)
-    return rolle_norm in titel_norm or titel_norm in rolle_norm
+    return _enthaelt_als_wort(titel_norm, rolle_norm) or _enthaelt_als_wort(rolle_norm, titel_norm)
 
 
 def _kontakte_auswaehlen(kontakte: list, kontakt_rollen: list, max_pro_firma: int) -> list:
@@ -148,6 +168,14 @@ def _firmenname_saeubern(maps_name: str, maps_suche: str) -> str:
         rest = re.sub(rf"^{_TRENNER_MUSTER}", "", name[len(suche):])
         if rest.strip():
             return rest.strip(" -–—")
+        # MINOR-Fix: Name ist (nach Bereinigen) EXAKT der Suchbegriff plus
+        # einem verwaisten Trennzeichen ohne echten Rest dahinter (z.B.
+        # "IT-Dienstleister Hannover -"). Bewusst HIER direkt zurueckgeben
+        # (nicht nach Fall 2 weiterfallen lassen) - Fall 2 wuerde sonst am
+        # ERSTEN Bindestrich INNERHALB des Suchbegriffs selbst (z.B.
+        # "IT-Dienstleister") trennen und faelschlich den Namensanfang
+        # abschneiden.
+        return name.strip(" -–—:|")
 
     # Fall 2: allgemeineres "<Praefix> - <Rest>"-Muster, bei dem der
     # Praefix-Teil zum Suchbegriff passt (Teilstring in beide Richtungen) -
@@ -159,7 +187,10 @@ def _firmenname_saeubern(maps_name: str, maps_suche: str) -> str:
         if praefix_norm and (praefix_norm in suche_norm or suche_norm in praefix_norm) and rest:
             return rest
 
-    return name
+    # MINOR-Fix: verwaiste fuehrende/abschliessende Trennzeichen entfernen
+    # (z.B. falls ein Name zufaellig mit " -" endet), ohne echte Namen
+    # anzutasten - strip() greift nur an den Raendern, nie in der Mitte.
+    return name.strip(" -–—:|")
 
 
 class NoOpDrittquelle:

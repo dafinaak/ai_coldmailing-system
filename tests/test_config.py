@@ -47,6 +47,26 @@ def test_webseite_wird_geladen_wenn_vorhanden(tmp_path):
 def test_demo_gmbh_laedt_weiterhin():
     assert load_kunde("kunden/demo-gmbh.yaml").name == "Demo GmbH"
 
+def test_maps_suche_und_kontakt_rollen_sind_optional_und_leer_per_default(tmp_path):
+    p = tmp_path / "kunde.yaml"
+    p.write_text(GUELTIG, encoding="utf-8")
+    kunde = load_kunde(p)
+    assert kunde.maps_suche == ""
+    assert kunde.kontakt_rollen == []
+
+def test_maps_suche_und_kontakt_rollen_werden_geladen_wenn_vorhanden(tmp_path):
+    p = tmp_path / "kunde.yaml"
+    p.write_text(GUELTIG + "\nmaps_suche: IT-Dienstleister Hannover\n"
+                          "kontakt_rollen: [Geschäftsführer, IT-Leiter]\n", encoding="utf-8")
+    kunde = load_kunde(p)
+    assert kunde.maps_suche == "IT-Dienstleister Hannover"
+    assert kunde.kontakt_rollen == ["Geschäftsführer", "IT-Leiter"]
+
+def test_demo_gmbh_hat_maps_suche_und_kontakt_rollen():
+    kunde = load_kunde("kunden/demo-gmbh.yaml")
+    assert kunde.maps_suche == "IT-Dienstleister Hannover"
+    assert kunde.kontakt_rollen == ["Geschäftsführer", "IT-Leiter"]
+
 def test_follow_up_tage_muss_liste_mit_mindestens_zwei_zahlen_sein(tmp_path):
     p = tmp_path / "kunde.yaml"
     p.write_text(GUELTIG.replace("follow_up_tage: [3, 7]", "follow_up_tage: [3]"),

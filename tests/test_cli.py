@@ -86,13 +86,22 @@ def test_lade_dotenv_entfernt_umschliessende_anfuehrungszeichen(monkeypatch, tmp
 def test_lade_dotenv_ohne_datei_tut_nichts(tmp_path):
     cli.lade_dotenv(tmp_path / "gibts-nicht.env")  # darf nicht werfen
 
+def test_lauf_bricht_ohne_apify_key_ab(monkeypatch):
+    monkeypatch.delenv("APIFY_API_KEY", raising=False)
+    monkeypatch.setenv("APOLLO_API_KEY", "x")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
+    with pytest.raises(SystemExit, match="APIFY_API_KEY"):
+        cli.lauf("kunden/demo-gmbh.yaml", 10, None)
+
 def test_lauf_bricht_ohne_apollo_key_ab(monkeypatch):
+    monkeypatch.setenv("APIFY_API_KEY", "x")
     monkeypatch.delenv("APOLLO_API_KEY", raising=False)
     monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
     with pytest.raises(SystemExit, match="APOLLO_API_KEY"):
         cli.lauf("kunden/demo-gmbh.yaml", 10, None)
 
 def test_lauf_bricht_ohne_anthropic_key_ab(monkeypatch):
+    monkeypatch.setenv("APIFY_API_KEY", "x")
     monkeypatch.setenv("APOLLO_API_KEY", "x")
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     with pytest.raises(SystemExit, match="ANTHROPIC_API_KEY"):
@@ -177,17 +186,19 @@ def test_senden_wiederholt_nach_fehlgeschlagenem_lead_import_ohne_neue_kampagne(
     versand_komplett = store.load_step("versand_komplett")
     assert versand_komplett["campaign_id"] == "camp-1"
 
-class _FakeApolloSource:
-    """Ersetzt ApolloSource: liefert 2 feste Leads statt echter API-Aufrufe."""
-    def __init__(self, api_key):
-        self.uebersprungen_ohne_email = 0
-    def search(self, zielgruppe, limit):
-        return [
-            Lead(first_name="Anna", last_name="Muster", email="anna@firma.de",
-                 company="Firma GmbH", title="CEO", website="", source="apollo"),
-            Lead(first_name="Bob", last_name="Beispiel", email="bob@firma.de",
-                 company="Firma GmbH", title="CTO", website="", source="apollo"),
-        ]
+def _fake_source_leads(kunde, limit, apify_key, apollo_key):
+    """Ersetzt pipeline.sourcing.source_leads: liefert 2 feste Leads (statt
+    echter Apify-/Apollo-Aufrufe) plus eine dazu passende Deckungsquote
+    (2 von 2 Firmen mit Kontakt -> 100%), damit alles danach (Dedupe,
+    Personalisierung, Bericht) unveraendert real durchlaeuft."""
+    leads = [
+        Lead(first_name="Anna", last_name="Muster", email="anna@firma.de",
+             company="Firma GmbH", title="CEO", website="", source="apollo"),
+        Lead(first_name="Bob", last_name="Beispiel", email="bob@firma.de",
+             company="Firma GmbH", title="CTO", website="", source="apollo"),
+    ]
+    deckung = {"firmen_gesamt": 2, "firmen_mit_kontakt": 2, "quote_prozent": 100.0}
+    return leads, deckung
 
 class _FakeKI:
     """Ersetzt KI: liefert gueltiges JSON fuer personalize() (System-Prompt
@@ -215,10 +226,11 @@ class _FakeDatetime:
 
 def test_lauf_personalisiert_end_zu_ende_und_dedupe_greift_erst_im_naechsten_lauf(
         tmp_path, monkeypatch):
-    monkeypatch.setattr(cli, "ApolloSource", _FakeApolloSource)
+    monkeypatch.setattr(cli, "source_leads", _fake_source_leads)
     monkeypatch.setattr(cli, "KI", _FakeKI)
     monkeypatch.setattr(cli, "LAEUFE", tmp_path)
     monkeypatch.setattr(run_store_modul, "datetime", _FakeDatetime)
+    monkeypatch.setenv("APIFY_API_KEY", "test-key")
     monkeypatch.setenv("APOLLO_API_KEY", "test-key")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
 
@@ -234,9 +246,11 @@ def test_lauf_personalisiert_end_zu_ende_und_dedupe_greift_erst_im_naechsten_lau
     assert erster_dedupe["verworfen"] == []
     assert (erster_lauf / "freigabe-vorschau.md").exists()
     erste_leads = json.loads((erster_lauf / "leads.json").read_text(encoding="utf-8"))
-    assert len(erste_leads["leads"]) == 2 and erste_leads["ohne_email"] == 0
+    assert len(erste_leads["leads"]) == 2
+    assert erste_leads["deckung"] == {"firmen_gesamt": 2, "firmen_mit_kontakt": 2,
+                                      "quote_prozent": 100.0}
     bericht = (erster_lauf / "bericht.md").read_text(encoding="utf-8")
-    assert "Ohne E-Mail übersprungen: 0" in bericht
+    assert "Firmen ohne Kontakt: 0" in bericht
 
     # Zweiter, frischer Lauf: jetzt muessen beide Leads aus dem ersten Lauf
     # als "bereits in früherem Lauf angeschrieben" verworfen werden - das
@@ -255,9 +269,10 @@ def test_lauf_globale_sperrliste_blockt_lead_auch_ohne_eigene_kunden_sperrliste(
     # Task 2: die globale Sperrliste (sperrliste-global.yaml im
     # Projekt-Wurzelordner) muss in 'lauf' greifen, auch wenn der Kunde
     # selbst gar keine eigene sperrliste hat (_TEST_KUNDE_YAML hat keine).
-    monkeypatch.setattr(cli, "ApolloSource", _FakeApolloSource)
+    monkeypatch.setattr(cli, "source_leads", _fake_source_leads)
     monkeypatch.setattr(cli, "KI", _FakeKI)
     monkeypatch.setattr(run_store_modul, "datetime", _FakeDatetime)
+    monkeypatch.setenv("APIFY_API_KEY", "test-key")
     monkeypatch.setenv("APOLLO_API_KEY", "test-key")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
 
@@ -285,10 +300,11 @@ def test_neu_ab_dedupe_verwendet_von_hand_bearbeitete_leads(tmp_path, monkeypatc
     # Task 11: --fortsetzen zusammen mit --neu-ab soll den angegebenen
     # Schritt und alle nachgelagerten neu berechnen, damit eine
     # Handbearbeitung von leads.json auch tatsaechlich wirkt.
-    monkeypatch.setattr(cli, "ApolloSource", _FakeApolloSource)
+    monkeypatch.setattr(cli, "source_leads", _fake_source_leads)
     monkeypatch.setattr(cli, "KI", _FakeKI)
     monkeypatch.setattr(cli, "LAEUFE", tmp_path)
     monkeypatch.setattr(run_store_modul, "datetime", _FakeDatetime)
+    monkeypatch.setenv("APIFY_API_KEY", "test-key")
     monkeypatch.setenv("APOLLO_API_KEY", "test-key")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
 
@@ -318,10 +334,11 @@ def test_neu_ab_widerruft_alte_freigabe(tmp_path, monkeypatch):
     # --fortsetzen --neu-ab personalisierung -> senden wuerde sonst neu
     # generierte Texte unter der alten Freigabe verschicken.
     from pipeline.approval import is_approved
-    monkeypatch.setattr(cli, "ApolloSource", _FakeApolloSource)
+    monkeypatch.setattr(cli, "source_leads", _fake_source_leads)
     monkeypatch.setattr(cli, "KI", _FakeKI)
     monkeypatch.setattr(cli, "LAEUFE", tmp_path)
     monkeypatch.setattr(run_store_modul, "datetime", _FakeDatetime)
+    monkeypatch.setenv("APIFY_API_KEY", "test-key")
     monkeypatch.setenv("APOLLO_API_KEY", "test-key")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
 
@@ -357,10 +374,11 @@ def test_lauf_speichert_abgelehnten_text_in_nacharbeit(tmp_path, monkeypatch):
     # wenn einer erzeugt wurde (hier: personalize() gelingt, nur check()
     # lehnt ab). nacharbeit-Eintraege muessen deshalb betreff/mail_1/
     # follow_up_1/follow_up_2 zusaetzlich zu email+grund tragen.
-    monkeypatch.setattr(cli, "ApolloSource", _FakeApolloSource)
+    monkeypatch.setattr(cli, "source_leads", _fake_source_leads)
     monkeypatch.setattr(cli, "KI", _FakeKIEinerLehntAb)
     monkeypatch.setattr(cli, "LAEUFE", tmp_path)
     monkeypatch.setattr(run_store_modul, "datetime", _FakeDatetime)
+    monkeypatch.setenv("APIFY_API_KEY", "test-key")
     monkeypatch.setenv("APOLLO_API_KEY", "test-key")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
 
@@ -382,6 +400,7 @@ def test_lauf_fortsetzen_akzeptiert_altes_leads_listenformat(tmp_path, monkeypat
     # {"leads": [...], "ohne_email": n}. --fortsetzen auf so einem alten
     # Laufordner darf nicht mit TypeError scheitern.
     monkeypatch.setattr(cli, "KI", _FakeKI)
+    monkeypatch.setenv("APIFY_API_KEY", "test-key")
     monkeypatch.setenv("APOLLO_API_KEY", "test-key")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
     store = RunStore(tmp_path, "Demo")

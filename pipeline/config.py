@@ -16,6 +16,15 @@ class Kunde:
     test_empfaenger: list
     sperrliste: list = field(default_factory=list)  # Domains, nie anschreiben
     webseite: str = ""  # Firmen-Webseite, Basis fuer die Angebots-Ableitung im Web-Interface
+    # Kern-Umbau (3-stufige Lead-Beschaffung, siehe pipeline.sourcing): beide
+    # Felder sind hier bewusst OPTIONAL, damit alte Kunden-Dateien weiter
+    # laden - "zielgruppe" bleibt als Feld erhalten, wird vom neuen Ablauf
+    # aber nicht mehr genutzt. Fehlen sie, wenn der neue Ablauf tatsaechlich
+    # laeuft, wirft pipeline.sourcing.source_leads() den klaren deutschen
+    # Fehler (nicht hier - load_kunde() muss alte Dateien ohne diese Felder
+    # weiter einlesen koennen).
+    maps_suche: str = ""  # Google-Maps-Suchbegriff, z.B. "IT-Dienstleister Hannover"
+    kontakt_rollen: list = field(default_factory=list)  # gewuenschte Jobtitel, z.B. [Geschäftsführer, IT-Leiter]
 
 def load_kunde(path) -> Kunde:
     with open(path, encoding="utf-8") as f:
@@ -53,7 +62,9 @@ def load_kunde(path) -> Kunde:
 
     return Kunde(**{k: daten[k] for k in PFLICHTFELDER},
                  sperrliste=daten.get("sperrliste") or [],
-                 webseite=daten.get("webseite") or "")
+                 webseite=daten.get("webseite") or "",
+                 maps_suche=daten.get("maps_suche") or "",
+                 kontakt_rollen=daten.get("kontakt_rollen") or [])
 
 def lade_globale_sperrliste(daten_dir) -> list:
     """Liest sperrliste-global.yaml aus daten_dir: eine einfache Liste aus

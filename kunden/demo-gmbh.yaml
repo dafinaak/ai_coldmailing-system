@@ -23,3 +23,7 @@ maps_suche: "IT-Dienstleister Hannover"
 kontakt_rollen:
   - Geschäftsführer
   - IT-Leiter
+# Deckelt, wie viele Kontakte Apollo pro Firma maximal zu Leads werden laesst
+# (Rollen-Prioritaet oben zaehlt bei der Auswahl) - verhindert, dass an einer
+# einzigen kleinen Firma zu viele Personen angeschrieben werden.
+max_kontakte_pro_firma: 2

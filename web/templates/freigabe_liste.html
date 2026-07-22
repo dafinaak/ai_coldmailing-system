@@ -1,49 +1,81 @@
 {% extends "layout.html" %}
-{% block titel %}Lesen & Freigeben{% endblock %}
+{% block titel %}E-Mail-Freigabe{% endblock %}
 {% block inhalt %}
-<div class="seite">
-  <h1>Lesen &amp; Freigeben</h1>
-  <p class="seiten-hilfstext">Hier liest du fertige E-Mails und gibst sie frei — oder lehnst sie ab. Ohne deine Freigabe wird nichts versendet.</p>
-
-  {% if not gruppen.offen and not gruppen.uebergeben %}
-  <div class="leer-kasten">
-    <div class="leer-kasten-titel">Nichts wartet auf dich</div>
-    <div>Sobald neue E-Mails fertig sind, erscheinen sie hier zum Lesen und Freigeben.</div>
-  </div>
-  {% else %}
-  <h2>Offen</h2>
-  {% if gruppen.offen %}
-  <div class="kunden-liste">
-    {% for lauf in gruppen.offen %}
-    <div class="kunden-karte">
-      <div class="kunden-name">E-Mail-Runde für {{ lauf.kunde_name }} · {{ lauf.empfaenger }} Empfänger</div>
-      <div class="kunden-info">{{ lauf.bestaetigt }} vollständig geprüft · {{ lauf.offen }} offen · {{ lauf.nacharbeit }} Nacharbeit</div>
-      <div class="kunden-info">{{ lauf.geaendert_text }}</div>
-      {% if lauf.warnung %}<div class="formular-fehler">{{ lauf.warnung }}</div>{% endif %}
-      <a href="/pruefen/{{ lauf.slug }}/{{ lauf.ts }}" class="knopf-primaer knopf-klein">Jetzt lesen</a>
+<div class="seite freigabe-liste-seite">
+  <header class="freigabe-listenkopf">
+    <div>
+      <span class="freigabe-bereich">E-Mail-Sequenzen</span>
+      <h1>Prüfen und freigeben</h1>
+      <p>Jede Karte ist eine eigene E-Mail-Runde. Empfänger aus verschiedenen Zielgruppen werden nicht vermischt.</p>
     </div>
-    {% endfor %}
-  </div>
-  {% else %}
-  <div class="leer-kasten">Keine offene E-Mail-Runde.</div>
-  {% endif %}
+  </header>
 
-  <h2>Übergeben</h2>
-  {% if gruppen.uebergeben %}
-  <div class="kunden-liste">
-    {% for lauf in gruppen.uebergeben %}
-    <div class="kunden-karte">
-      <div class="kunden-name">E-Mail-Runde für {{ lauf.kunde_name }} · {{ lauf.empfaenger }} Empfänger</div>
-      <div class="kunden-info">Vollständig bestätigt und an Instantly übergeben</div>
-      <div class="kunden-info">{{ lauf.geaendert_text }}</div>
-      {% if lauf.warnung %}<div class="formular-fehler">{{ lauf.warnung }}</div>{% endif %}
-      <a href="/pruefen/{{ lauf.slug }}/{{ lauf.ts }}" class="knopf-sekundaer knopf-klein">Stand ansehen</a>
+  <section class="freigabe-rundengruppe">
+    <div class="freigabe-gruppenkopf">
+      <h2>Offen</h2>
+      <span>{{ gruppen.offen|length }}</span>
     </div>
-    {% endfor %}
-  </div>
-  {% else %}
-  <div class="leer-kasten">Noch keine E-Mail-Runde wurde übergeben.</div>
-  {% endif %}
-  {% endif %}
+    {% if gruppen.offen %}
+    <div class="freigabe-rundenkarten">
+      {% for lauf in gruppen.offen %}
+      <article class="freigabe-rundenkarte">
+        <div class="freigabe-rundenkarte-kopf">
+          <div>
+            <span class="freigabe-status freigabe-status--offen">Prüfung offen</span>
+            <h3>{{ lauf.kunde_name }}</h3>
+          </div>
+          <span class="freigabe-rundenzeit">{{ lauf.geaendert_text }}</span>
+        </div>
+        <div class="freigabe-rundenwerte">
+          <div><strong>{{ lauf.empfaenger }}</strong><span>Empfänger</span></div>
+          <div><strong>{{ lauf.bestaetigt }}</strong><span>geprüft</span></div>
+          <div><strong>{{ lauf.offen }}</strong><span>offen</span></div>
+          <div class="{% if lauf.nacharbeit %}freigabe-rundenwert--warnung{% endif %}">
+            <strong>{{ lauf.nacharbeit }}</strong><span>Nacharbeit</span>
+          </div>
+        </div>
+        {% if lauf.warnung %}<div class="freigabe-kartenwarnung">{{ lauf.warnung }}</div>{% endif %}
+        <a href="/pruefen/{{ lauf.slug }}/{{ lauf.ts }}" class="freigabe-kartenlink">Runde öffnen <span>→</span></a>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="freigabe-leer">
+      <strong>Nichts wartet auf dich</strong>
+      <span>Sobald neue E-Mails fertig sind, erscheinen sie hier zum Lesen und Freigeben.</span>
+    </div>
+    {% endif %}
+  </section>
+
+  <section class="freigabe-rundengruppe">
+    <div class="freigabe-gruppenkopf">
+      <h2>Übergeben</h2>
+      <span>{{ gruppen.uebergeben|length }}</span>
+    </div>
+    {% if gruppen.uebergeben %}
+    <div class="freigabe-rundenkarten">
+      {% for lauf in gruppen.uebergeben %}
+      <article class="freigabe-rundenkarte freigabe-rundenkarte--uebergeben">
+        <div class="freigabe-rundenkarte-kopf">
+          <div>
+            <span class="freigabe-status freigabe-status--fertig">Übergeben</span>
+            <h3>{{ lauf.kunde_name }}</h3>
+          </div>
+          <span class="freigabe-rundenzeit">{{ lauf.geaendert_text }}</span>
+        </div>
+        <div class="freigabe-rundenwerte">
+          <div><strong>{{ lauf.empfaenger }}</strong><span>Empfänger</span></div>
+          <div><strong>{{ lauf.bestaetigt }}</strong><span>bestätigt</span></div>
+          <div><strong>3</strong><span>E-Mail-Schritte</span></div>
+        </div>
+        {% if lauf.warnung %}<div class="freigabe-kartenwarnung">{{ lauf.warnung }}</div>{% endif %}
+        <a href="/pruefen/{{ lauf.slug }}/{{ lauf.ts }}" class="freigabe-kartenlink">Stand ansehen <span>→</span></a>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="freigabe-leer freigabe-leer--klein">Noch keine E-Mail-Runde wurde übergeben.</div>
+    {% endif %}
+  </section>
 </div>
 {% endblock %}

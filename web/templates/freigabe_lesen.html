@@ -1,29 +1,23 @@
 {% extends "layout.html" %}
-{% block titel %}Lesen & Freigeben — {{ kunde_name }}{% endblock %}
+{% block titel %}E-Mail-Freigabe — {{ kunde_name }}{% endblock %}
 {% block inhalt %}
-<div class="seite seite--breit">
-  <div class="formular-zurueck"><a href="/pruefen">‹ Alle wartenden E-Mail-Runden</a></div>
-  <h1>Lesen &amp; Freigeben</h1>
+<div class="seite seite--breit freigabe-seite">
+  <header class="freigabe-kopf">
+    <div>
+      <a href="/pruefen" class="freigabe-zurueck">‹ E-Mail-Runden</a>
+      <div class="freigabe-titelzeile">
+        <h1>{{ kunde_name }}</h1>
+        {% if schreibgeschuetzt %}<span class="freigabe-lesemodus">Schreibgeschützt</span>{% endif %}
+      </div>
+      <p>Die E-Mails werden im Namen von {{ absender }} versendet. Schritt 2 folgt nach {{ tag_1 }} Tagen, Schritt 3 nach {{ tag_2 }} Tagen.</p>
+    </div>
+    {% if campaign_id %}
+    <a href="https://app.instantly.ai/app/campaign/{{ campaign_id }}" target="_blank"
+       rel="noopener" class="freigabe-instantly-link">In Instantly öffnen ↗</a>
+    {% endif %}
+  </header>
 
-  <div class="hinweis-kasten">
-    <b>Was heißt freigeben?</b> Dein grünes Licht, dass diese E-Mails
-    verschickt werden dürfen. Sie gehen dann — noch pausiert — an
-    Instantly; scharf geschaltet werden sie dort von Hand. Ohne deine
-    Freigabe passiert nichts.
-  </div>
-
-  {% if zustand in ("wartet_auf_freigabe", "freigegeben") %}
-  <p class="seiten-hilfstext">Lies die Texte, die gleich im Namen von {{ absender }} verschickt werden. Erst wenn du freigibst, geht etwas raus.</p>
-  {% elif zustand == "uebergeben" %}
-  <p class="seiten-hilfstext">Diese Texte sind freigegeben und als Kampagne (in Instantly) übergeben.</p>
-  {% elif zustand == "abgelehnt" %}
-  <p class="seiten-hilfstext">Diese E-Mail-Runde wurde abgelehnt. Nichts wurde versendet.</p>
-  {% endif %}
-
-  {% if fehler %}
-  <div class="formular-fehler">{{ fehler }}</div>
-  {% endif %}
-
+  {% if fehler %}<div class="formular-fehler">{{ fehler }}</div>{% endif %}
   {% if versand_fehler %}
   <div class="fehler-box">
     <div class="fehler-box-titel">{{ versand_fehler.was }}</div>
@@ -31,152 +25,220 @@
   </div>
   {% endif %}
 
-  {% if live_warnung %}
-  <div class="hinweis-kasten" data-live-warning>{{ live_warnung }}</div>
-  {% endif %}
-
   {% if zustand == "uebergeben" %}
-  <div class="handover-kasten">
-    <div class="handover-label">FREIGEGEBEN &amp; ÜBERGEBEN</div>
-    <div class="handover-titel">Die Kampagne »{{ kunde_name }}« liegt jetzt pausiert in Instantly.</div>
-    <div class="handover-text">Freigegeben von {{ freigabe.von }} am {{ freigabe.am }}. Versendet wird noch nichts: Gestartet wird die Kampagne von Hand in Instantly. Werden die Texte neu erstellt, verfällt die Freigabe automatisch.</div>
-    {% if campaign_id %}
-    <a href="https://app.instantly.ai/app/campaign/{{ campaign_id }}" target="_blank" rel="noopener" class="knopf-sekundaer">In Instantly öffnen ↗</a>
-    {% endif %}
+  <div class="freigabe-uebergeben">
+    <div><strong>Freigegeben und übergeben</strong><br>
+      <span>Freigegeben von {{ freigabe.von }} am {{ freigabe.am }}. Die Kampagne liegt pausiert in Instantly.</span>
+    </div>
+    <span class="freigabe-status freigabe-status--fertig">Übergeben</span>
   </div>
-  {% endif %}
-
-  {% if zustand == "abgelehnt" and abgelehnt %}
-  <div class="abgelehnt-kasten">
-    <div class="abgelehnt-titel">Abgelehnt von {{ abgelehnt.von }} am {{ abgelehnt.am }}</div>
-    <div class="abgelehnt-text">Begründung: {{ abgelehnt.begruendung }}. Nichts wurde versendet. Lass neue E-Mails schreiben, um frische Texte zu bekommen.</div>
-  </div>
-  {% endif %}
-
-  {% if zustand == "freigegeben" %}
-  <div class="gate-kasten">
-    <div class="gate-titel">Freigegeben — noch nicht an Instantly übergeben.</div>
-    <div class="gate-text">Freigegeben von {{ freigabe.von }} am {{ freigabe.am }}.</div>
+  {% elif zustand == "freigegeben" %}
+  <div class="freigabe-uebergeben freigabe-uebergeben--wartet">
+    <div><strong>Freigegeben, aber noch nicht übergeben</strong><br>
+      <span>Die Bestätigung bleibt bestehen. Der nächste Versuch legt die pausierte Kampagne in Instantly an.</span>
+    </div>
     <form method="post" action="/pruefen/{{ slug }}/{{ ts }}/senden-erneut">
-      <button type="submit" class="knopf-primaer">Erneut senden</button>
+      <button type="submit" class="knopf-primaer">Erneut übergeben</button>
     </form>
   </div>
   {% endif %}
 
-  <div class="pruef-zahlen">
-    <div><span class="pruef-zahl">{{ empf_anzahl }}</span> E-Mails fertig</div>
-    <div><span class="pruef-zahl">{{ nacharbeit_anzahl }}</span> durchgefallen – geht nicht raus</div>
-  </div>
+  <section class="freigabe-kennzahlen" aria-label="Stand der Prüfung">
+    <div><span>Empfänger</span><strong>{{ empf_anzahl }}</strong></div>
+    <div><span>Vollständig geprüft</span><strong>{{ voll_bestaetigt }}</strong></div>
+    <div><span>Offen</span><strong>{{ offen_anzahl }}</strong></div>
+    <div class="{% if nacharbeit_anzahl %}freigabe-kennzahl--warnung{% endif %}">
+      <span>Nacharbeit nötig</span><strong>{{ nacharbeit_anzahl }}</strong>
+    </div>
+  </section>
 
-  {% if nacharbeit %}
-  <details class="nacharbeit-kasten">
-    <summary>{{ nacharbeit_anzahl }} durchgefallen – geht nicht raus. Du kannst die Texte lesen und den Grund sehen.</summary>
-    {% for n in nacharbeit %}
-    <div class="nacharbeit-eintrag">
-      <div class="nacharbeit-kopf"><b>{{ n.name }}</b> · {{ n.firma }} · {{ n.email }}</div>
-      <div class="nacharbeit-grund">{{ n.grund }}</div>
-      {% if n.hat_text %}
-      <details class="nacharbeit-text">
-        <summary>Text lesen</summary>
-        <div><b>Betreff:</b> {{ n.betreff }}</div>
-        <div class="lese-text">{{ n.mail_1 }}</div>
-      </details>
+  <section class="freigabe-werkzeuge" aria-label="Tabelle durchsuchen und filtern">
+    <label class="freigabe-suche">
+      <span class="nur-screenreader">Empfänger suchen</span>
+      <input id="freigabe-suche" type="search" placeholder="Empfänger, Firma oder E-Mail suchen …">
+    </label>
+    <label class="freigabe-filter">
+      <span>Status</span>
+      <select id="freigabe-filter">
+        <option value="all">Alle</option>
+        <option value="offen">Offen</option>
+        <option value="fertig">Vollständig geprüft</option>
+        <option value="nacharbeit">Nacharbeit nötig</option>
+      </select>
+    </label>
+    {% if not schreibgeschuetzt %}
+    <label class="freigabe-alle">
+      <input id="alle-sichtbaren" type="checkbox">
+      <span>Alle sichtbaren auswählen</span>
+    </label>
+    {% endif %}
+    <div class="freigabe-live">
+      {% if live_warnung %}{{ live_warnung }}
+      {% elif live_erreichbar is sameas false and live_stand %}Live-Stand gerade nicht erreichbar — letzter bekannter Stand
+      {% elif live_erreichbar is sameas false %}Noch kein Live-Stand verfügbar
+      {% elif live_stand %}Live-Stand geladen
       {% endif %}
     </div>
-    {% endfor %}
-  </details>
+  </section>
+
+  {% if empfaenger %}
+  <div class="freigabe-tabelle-scroll">
+    <table class="freigabe-tabelle">
+      <thead>
+        <tr>
+          {% if not schreibgeschuetzt %}<th scope="col" rowspan="2" class="freigabe-auswahl-spalte">Auswahl</th>{% endif %}
+          <th scope="col" rowspan="2" class="freigabe-empfaenger-spalte">Empfänger</th>
+          <th scope="col" rowspan="2">Gesamt</th>
+          <th scope="colgroup" colspan="5">Schritt 1 · sofort</th>
+          <th scope="colgroup" colspan="5">Schritt 2 · nach {{ tag_1 }} Tagen</th>
+          <th scope="colgroup" colspan="5">Schritt 3 · nach {{ tag_2 }} Tagen</th>
+        </tr>
+        <tr>
+          {% for nummer in (1, 2, 3) %}
+          <th scope="col">E-Mail</th>
+          <th scope="col">Freigabe</th>
+          <th scope="col">Versand</th>
+          <th scope="col">Versendet am</th>
+          <th scope="col">Antwort</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in empfaenger %}
+        <tr data-approval-row data-recipient-id="{{ e.id }}" data-status="{{ e.status }}"
+            data-search="{{ (e.name ~ ' ' ~ e.firma ~ ' ' ~ e.email)|lower }}"
+            data-recipient-email="{{ e.email }}" data-live-known="{{ 'true' if e.live_known else 'false' }}">
+          {% if not schreibgeschuetzt %}
+          <td class="freigabe-auswahl-spalte">
+            <input type="checkbox" name="recipient_ids" value="{{ e.id }}" form="mehrfach-form"
+                   aria-label="{{ e.name }} auswählen">
+          </td>
+          {% endif %}
+          <th scope="row" class="freigabe-empfaenger-spalte">
+            <span class="freigabe-empfaenger-name">{{ e.name }}</span>
+            <span>{{ e.firma }}{% if e.rolle %} · {{ e.rolle }}{% endif %}</span>
+            <span class="freigabe-empfaenger-email">{{ e.email }}</span>
+            {% if e.live_overall.replied is sameas true %}<span class="freigabe-antwort-gesamt">Antwort erhalten</span>{% endif %}
+            {% if e.qa_reason %}<span class="freigabe-qa-grund">{{ e.qa_reason }}</span>{% endif %}
+          </th>
+          <td><span class="freigabe-status freigabe-status--{{ e.status }}">
+            {% if e.status == "fertig" %}Geprüft{% elif e.status == "nacharbeit" %}Nacharbeit{% else %}Offen{% endif %}
+          </span></td>
+
+          {% for step in e.steps %}
+          <td data-step="{{ step.key }}" data-approved="{{ 'true' if step.approved else 'false' }}"
+              data-sent-at="{{ step.sent_at or '' }}"
+              data-replied="{{ 'true' if step.replied is sameas true else ('false' if step.replied is sameas false else '') }}">
+            {% if step.betreff %}<strong class="freigabe-betreff">{{ step.betreff }}</strong>{% endif %}
+            <span class="freigabe-vorschau">{{ step.text }}</span>
+            <button type="button" class="freigabe-lesen" data-dialog-open="dialog-{{ e.id }}-{{ step.key }}">Lesen</button>
+            <dialog class="freigabe-dialog" id="dialog-{{ e.id }}-{{ step.key }}">
+              <div class="freigabe-dialog-kopf">
+                <div><span>{{ step.label }}</span><strong>{{ e.name }}</strong></div>
+                <button type="button" data-dialog-close aria-label="Ansicht schließen">×</button>
+              </div>
+              <div class="freigabe-dialog-inhalt">
+                <div class="freigabe-dialog-an">An: {{ e.email }}</div>
+                {% if step.betreff %}<h2>{{ step.betreff }}</h2>{% endif %}
+                <div class="freigabe-volltext">{{ step.text }}</div>
+                {% if not schreibgeschuetzt %}
+                <div class="freigabe-dialog-aktionen">
+                  <form method="post" action="/pruefen/{{ slug }}/{{ ts }}/bestaetigen">
+                    <input type="hidden" name="revision" value="{{ revision }}">
+                    <input type="hidden" name="recipient_id" value="{{ e.id }}">
+                    <input type="hidden" name="step" value="{{ step.key }}">
+                    <input type="hidden" name="approved" value="{{ '0' if step.approved else '1' }}">
+                    <button type="submit" class="{% if step.approved %}knopf-sekundaer{% else %}knopf-primaer{% endif %}">
+                      {% if step.approved %}Bestätigung aufheben{% else %}E-Mail bestätigen{% endif %}
+                    </button>
+                  </form>
+                  <form method="post" action="/pruefen/{{ slug }}/{{ ts }}/neu-erzeugen">
+                    <input type="hidden" name="revision" value="{{ revision }}">
+                    <input type="hidden" name="recipient_id" value="{{ e.id }}">
+                    <input type="hidden" name="step" value="{{ step.key }}">
+                    <button type="submit" class="knopf-sekundaer">Neu erzeugen lassen</button>
+                  </form>
+                </div>
+                {% endif %}
+              </div>
+            </dialog>
+          </td>
+          <td><span class="freigabe-status {% if step.approved %}freigabe-status--fertig{% else %}freigabe-status--offen{% endif %}">
+            {% if step.approved %}Bestätigt{% else %}Offen{% endif %}
+          </span></td>
+          <td>
+            {% if step.sent_at %}<span class="freigabe-status freigabe-status--versendet">Versendet</span>
+            {% elif e.live_overall.status %}<span class="freigabe-status freigabe-status--nacharbeit">Fehler</span>
+            {% else %}—{% endif %}
+          </td>
+          <td>{{ step.sent_at or "—" }}</td>
+          <td>{% if step.replied is sameas true %}Ja{% elif step.replied is sameas false %}Nein{% else %}—{% endif %}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="leer-kasten">Keine E-Mails zum Prüfen vorhanden.</div>
   {% endif %}
 
-  <div class="pruef-lese-grid" id="pruef-lese-grid">
-    <div class="empf-liste" id="empf-liste">
-      <div class="empf-liste-kopf">EMPFÄNGER · {{ empf_anzahl }}</div>
-      {% for e in empfaenger %}
-      <div class="empf-zeile" data-empf-index="{{ loop.index0 }}"
-           data-recipient-id="{{ e.id }}" data-status="{{ e.status }}">
-        <span class="empf-gelesen-haken" data-gelesen-haken>&nbsp;</span>
-        <div>
-          <div class="empf-zeile-name">{{ e.firma }}</div>
-          <div class="empf-zeile-info">{{ e.name }} · {{ e.rolle }}</div>
-          <div class="empf-zeile-mail">{{ e.email }}</div>
-          {% if e.qa_reason %}<div class="nacharbeit-grund">{{ e.qa_reason }}</div>{% endif %}
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-    <div class="lese-liste">
-      {% for e in empfaenger %}
-      <div class="lese-karte" data-recipient-id="{{ e.id }}" data-status="{{ e.status }}"
-           data-recipient-email="{{ e.email }}"
-           data-live-known="{{ 'true' if e.live_known else 'false' }}">
-        <div class="lese-kopf">
-          <div class="lese-an-label">AN</div>
-          <div class="lese-name">{{ e.name }} · {{ e.rolle }}</div>
-          <div class="lese-firma">{{ e.firma }}</div>
-          <div class="lese-mail">{{ e.email }}</div>
-        </div>
-        <div data-step="mail_1" data-approved="{{ 'true' if e.steps[0].approved else 'false' }}"
-             data-sent-at="{{ e.steps[0].sent_at or '' }}"
-             data-replied="{{ 'true' if e.steps[0].replied is sameas true else ('false' if e.steps[0].replied is sameas false else '') }}">
-          <div class="lese-textteil-label">Erste E-Mail (geht sofort raus)</div>
-          <div class="lese-betreff">{{ e.betreff }}</div>
-          <div class="lese-text">{{ e.mail_1 }}</div>
-        </div>
-        <div data-step="follow_up_1" data-approved="{{ 'true' if e.steps[1].approved else 'false' }}"
-             data-sent-at="{{ e.steps[1].sent_at or '' }}"
-             data-replied="{{ 'true' if e.steps[1].replied is sameas true else ('false' if e.steps[1].replied is sameas false else '') }}">
-          <div class="lese-textteil-label">Nachfass-Mail 1 (nach {{ tag_1 }} Tagen)</div>
-          <div class="lese-text">{{ e.follow_up_1 }}</div>
-        </div>
-        <div data-step="follow_up_2" data-approved="{{ 'true' if e.steps[2].approved else 'false' }}"
-             data-sent-at="{{ e.steps[2].sent_at or '' }}"
-             data-replied="{{ 'true' if e.steps[2].replied is sameas true else ('false' if e.steps[2].replied is sameas false else '') }}">
-          <div class="lese-textteil-label">Nachfass-Mail 2 (nach {{ tag_2 }} Tagen)</div>
-          <div class="lese-text">{{ e.follow_up_2 }}</div>
-        </div>
-      </div>
-      {% else %}
-      <p class="kunden-leer">Keine Texte zum Lesen.</p>
-      {% endfor %}
-    </div>
-  </div>
-
-  {% if zustand == "wartet_auf_freigabe" %}
-  <div class="gate-kasten">
-    <div class="gate-titel">Ohne deine Freigabe wird nichts versendet.</div>
-    <div class="gate-text">Freigeben heißt: Die Texte gehen als Kampagne — noch pausiert — an Instantly. Verschickt wird erst, wenn du die Kampagne mit »Jetzt verschicken« startest (auf der Kampagnen-Seite). Ohne deine Freigabe passiert nichts. Festgehalten wird: freigegeben von {{ nutzer }} am {{ heute }}.</div>
-
-    <form method="post" action="/pruefen/{{ slug }}/{{ ts }}/freigeben" id="freigeben-form">
+  {% if not schreibgeschuetzt and zustand == "wartet_auf_freigabe" %}
+  <div class="freigabe-aktionsleiste">
+    <form method="post" action="/pruefen/{{ slug }}/{{ ts }}/mehrfach" id="mehrfach-form" class="freigabe-mehrfach-form">
       <input type="hidden" name="revision" value="{{ revision }}">
-      <div class="gate-knopf-zeile">
-        <button type="submit" class="knopf-primaer" id="freigeben-knopf"{% if not uebergabe_bereit %} disabled{% endif %}>Runde übergeben</button>
-        {% if uebergabe_bereit %}
-        <div class="auftrag-hinweis">Alle vorgesehenen E-Mails sind bestätigt.</div>
-        {% else %}
-        <div class="auftrag-hinweis">Geht erst, wenn alle E-Mails bestätigt sind und keine Nacharbeit offen ist.</div>
-        {% endif %}
-      </div>
+      <span><strong id="auswahl-anzahl">0</strong> ausgewählt</span>
+      <button type="submit" name="action" value="approve" class="knopf-primaer">Ausgewählte bestätigen</button>
+      <button type="submit" name="action" value="clear" class="knopf-sekundaer">Bestätigungen aufheben</button>
     </form>
-
-    <details class="ablehnen-kasten">
-      <summary>Ablehnen …</summary>
-      <div class="gate-text">Ablehnen heißt: Nichts wird versendet. Schreib kurz dazu, was nicht gepasst hat — das hilft bei der nächsten E-Mail-Runde.</div>
-      <form method="post" action="/pruefen/{{ slug }}/{{ ts }}/ablehnen" class="ablehnen-form">
-        <textarea name="begruendung" class="formular-textarea" placeholder="Was hat nicht gepasst?"></textarea>
-        <button type="submit" class="knopf-sekundaer">Ablehnen</button>
-      </form>
-    </details>
+    <form method="post" action="/pruefen/{{ slug }}/{{ ts }}/freigeben">
+      <button type="submit" class="knopf-primaer" id="freigeben-knopf"{% if not uebergabe_bereit %} disabled{% endif %}>Runde übergeben</button>
+    </form>
   </div>
+  <details class="freigabe-ablehnen">
+    <summary>Runde ablehnen</summary>
+    <form method="post" action="/pruefen/{{ slug }}/{{ ts }}/ablehnen">
+      <textarea name="begruendung" class="formular-textarea" placeholder="Was hat nicht gepasst?"></textarea>
+      <button type="submit" class="knopf-sekundaer">Runde ablehnen</button>
+    </form>
+  </details>
   {% endif %}
 </div>
 
 <script>
 (function () {
-  document.querySelectorAll('#empf-liste .empf-zeile').forEach(function (zeile) {
-    zeile.addEventListener('click', function () {
-      zeile.classList.toggle('empf-zeile--gelesen');
-      var haken = zeile.querySelector('[data-gelesen-haken]');
-      if (haken) { haken.textContent = zeile.classList.contains('empf-zeile--gelesen') ? '✓' : ' '; }
+  const rows = [...document.querySelectorAll('[data-approval-row]')];
+  const search = document.querySelector('#freigabe-suche');
+  const filter = document.querySelector('#freigabe-filter');
+  const selectVisible = document.querySelector('#alle-sichtbaren');
+  const count = document.querySelector('#auswahl-anzahl');
+
+  function updateCount() {
+    if (count) count.textContent = document.querySelectorAll('[name="recipient_ids"]:checked').length;
+  }
+  function applyFilters() {
+    const q = search ? search.value.trim().toLocaleLowerCase('de') : '';
+    rows.forEach((row) => {
+      const matchesText = row.dataset.search.includes(q);
+      const matchesState = !filter || filter.value === 'all' || row.dataset.status === filter.value;
+      row.hidden = !(matchesText && matchesState);
     });
+  }
+  if (search) search.addEventListener('input', applyFilters);
+  if (filter) filter.addEventListener('change', applyFilters);
+  if (selectVisible) selectVisible.addEventListener('change', () => {
+    rows.filter((row) => !row.hidden).forEach((row) => {
+      const checkbox = row.querySelector('[name="recipient_ids"]');
+      if (checkbox) checkbox.checked = selectVisible.checked;
+    });
+    updateCount();
+  });
+  document.querySelectorAll('[name="recipient_ids"]').forEach((box) => box.addEventListener('change', updateCount));
+  document.querySelectorAll('[data-dialog-open]').forEach((button) => {
+    button.addEventListener('click', () => document.getElementById(button.dataset.dialogOpen).showModal());
+  });
+  document.querySelectorAll('[data-dialog-close]').forEach((button) => {
+    button.addEventListener('click', () => button.closest('dialog').close());
   });
 })();
 </script>

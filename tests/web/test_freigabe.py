@@ -360,6 +360,43 @@ def test_lese_ansicht_zeigt_drei_schritte_und_stabile_empfaenger_id(
     assert erste_id == zweite_id
 
 
+def test_prueftabelle_hat_suche_filter_auswahl_und_drei_schrittgruppen(
+        angemeldeter_client, daten_dir):
+    _lauf_anlegen(daten_dir, dedupe_behalten=_DEDUPE_BEHALTEN)
+
+    antwort = angemeldeter_client.get(
+        f"/pruefen/{KUNDE_SLUG}/20260717-090000"
+    )
+
+    assert 'id="freigabe-suche"' in antwort.text
+    assert 'id="freigabe-filter"' in antwort.text
+    assert 'id="alle-sichtbaren"' in antwort.text
+    assert antwort.text.count('scope="colgroup"') == 3
+    assert "Ausgewählte bestätigen" in antwort.text
+    assert "Bestätigungen aufheben" in antwort.text
+    assert 'class="freigabe-tabelle-scroll"' in antwort.text
+
+
+def test_uebergebene_runde_ist_schreibgeschuetzt(
+        angemeldeter_client, daten_dir, app):
+    _lauf_anlegen(
+        daten_dir, dedupe_behalten=_DEDUPE_BEHALTEN,
+        versand_komplett={"campaign_id": "camp-1"},
+    )
+    app.state.instantly_leser = FakeInstantlyLeser({
+        "erreichbar": True, "stand": datetime(2026, 7, 22, 11, 0, 0),
+        "recipients": {},
+    })
+
+    antwort = angemeldeter_client.get(
+        f"/pruefen/{KUNDE_SLUG}/20260717-090000"
+    )
+
+    assert "Schreibgeschützt" in antwort.text
+    assert "/mehrfach" not in antwort.text
+    assert "/neu-erzeugen" not in antwort.text
+
+
 def test_nacharbeit_steht_als_blockierte_zeile_in_derselben_runde(
         angemeldeter_client, daten_dir):
     _lauf_anlegen(daten_dir, dedupe_behalten=_DEDUPE_BEHALTEN, nacharbeit=_NACHARBEIT)

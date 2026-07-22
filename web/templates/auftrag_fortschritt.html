@@ -34,9 +34,18 @@
     {% endfor %}
   </div>
 
+  {% if firmen_gesamt %}
+  <p class="auftrag-hinweis-zeile" id="deckung-zeile">
+    Deckung: <span id="zahl-mit-kontakt">{{ firmen_mit_kontakt }}</span> von
+    <span id="zahl-firmen-gesamt">{{ firmen_gesamt }}</span> Firmen erreicht
+    (<span id="zahl-deckung">{{ deckungsquote }}</span>%)
+  </p>
+  {% endif %}
+
   <div class="auftrag-zahlen" id="auftrag-zahlen">
-    <div><span id="zahl-gefunden">{{ gefunden }}</span> gefunden</div>
-    <div><span id="zahl-ohne-email">{{ ohne_email }}</span> ohne E-Mail übersprungen</div>
+    <div><span id="zahl-gefunden">{{ gefunden }}</span> Kontakte gefunden</div>
+    <div><span id="zahl-mit-entscheider">{{ mit_entscheider }}</span> mit persönlichem Entscheider</div>
+    <div><span id="zahl-info-fallback">{{ info_fallback }}</span> nur über info@</div>
     <div><span id="zahl-verworfen">{{ verworfen }}</span> doppelt/gesperrt aussortiert</div>
     <div><span id="zahl-fertig">{{ fertig }}</span> fertig personalisiert</div>
     <div><span id="zahl-nacharbeit">{{ nacharbeit }}</span> durchgefallen</div>
@@ -57,7 +66,10 @@
         return;
       }
       var felder = {
-        "zahl-gefunden": stand.gefunden, "zahl-ohne-email": stand.ohne_email,
+        "zahl-gefunden": stand.gefunden,
+        "zahl-mit-entscheider": stand.mit_entscheider, "zahl-info-fallback": stand.info_fallback,
+        "zahl-mit-kontakt": stand.firmen_mit_kontakt, "zahl-firmen-gesamt": stand.firmen_gesamt,
+        "zahl-deckung": stand.deckungsquote,
         "zahl-verworfen": stand.verworfen, "zahl-fertig": stand.fertig,
         "zahl-nacharbeit": stand.nacharbeit
       };

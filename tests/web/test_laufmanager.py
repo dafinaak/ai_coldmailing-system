@@ -67,7 +67,7 @@ def _fabriziere_laufordner(daten_dir: Path, *, slug: str = "test-gmbh",
                             ts: str = "20260101-000000", pid=None,
                             leads=None, dedupe=None, personalisierung=None,
                             pruefung_ok=None, freigabe=False, versand_komplett=None,
-                            abgelehnt=None,
+                            abgelehnt=None, firmen=None,
                             log: str | None = None, meta: dict | None = None) -> Path:
     lauf_dir = daten_dir / "laeufe" / slug / ts
     lauf_dir.mkdir(parents=True)
@@ -75,6 +75,8 @@ def _fabriziere_laufordner(daten_dir: Path, *, slug: str = "test-gmbh",
         (lauf_dir / "pid").write_text(str(pid), encoding="utf-8")
     if leads is not None:
         (lauf_dir / "leads.json").write_text(json.dumps(leads), encoding="utf-8")
+    if firmen is not None:
+        (lauf_dir / "firmen.json").write_text(json.dumps(firmen), encoding="utf-8")
     if dedupe is not None:
         (lauf_dir / "dedupe.json").write_text(json.dumps(dedupe), encoding="utf-8")
     if personalisierung is not None:
@@ -615,8 +617,44 @@ def test_status_json_shape(angemeldeter_client, daten_dir, monkeypatch):
     erwartete_felder = {
         "zustand", "schritt", "schritt_label", "gefunden", "ohne_email",
         "verworfen", "fertig", "nacharbeit", "fehler",
+        "deckungsquote", "firmen_gesamt", "firmen_mit_kontakt",
+        "mit_entscheider", "info_fallback",
     }
     assert erwartete_felder <= set(daten.keys())
+
+
+def _lauf_mit_deckung(daten_dir):
+    # Ein durchgelaufener Auftrag: 3 Firmen, 2 erreicht (1 persoenlich, 1 info@),
+    # eine ohne Webseite. Deckung steckt in leads.json, Ausgaenge in firmen.json.
+    return _fabriziere_laufordner(
+        daten_dir, pid=999,
+        leads={"leads": [{"email": "a@f1.de"}, {"email": "info@f2.de"}],
+               "deckung": {"firmen_gesamt": 3, "firmen_mit_kontakt": 2, "quote_prozent": 66.7}},
+        dedupe={"behalten": [], "verworfen": []},
+        personalisierung={"fertig": [{"email": "a@f1.de"}], "nacharbeit": []},
+        pruefung_ok=[{"email": "a@f1.de"}],
+        firmen=[{"domain": "f1.de", "ausgang": "mit_entscheider"},
+                {"domain": "f2.de", "ausgang": "info_fallback"},
+                {"domain": "", "ausgang": "keine_webseite"}])
+
+
+def test_status_liefert_deckung_und_persoenlich_vs_info(daten_dir, monkeypatch):
+    lauf_dir = _lauf_mit_deckung(daten_dir)
+    monkeypatch.setattr(laufmanager, "_pid_lebt", lambda pid: False)
+    stand = Laufmanager(daten_dir).status(lauf_dir)
+    assert stand["deckungsquote"] == 66.7
+    assert stand["firmen_mit_kontakt"] == 2 and stand["firmen_gesamt"] == 3
+    assert stand["mit_entscheider"] == 1 and stand["info_fallback"] == 1
+
+
+def test_fortschrittsseite_zeigt_persoenlich_vs_info(angemeldeter_client, daten_dir, monkeypatch):
+    _lauf_mit_deckung(daten_dir)
+    monkeypatch.setattr(laufmanager, "_pid_lebt", lambda pid: False)
+    antwort = angemeldeter_client.get("/auftraege/test-gmbh/20260101-000000")
+    assert antwort.status_code == 200
+    assert "mit persönlichem Entscheider" in antwort.text
+    assert "nur über info@" in antwort.text
+    assert "von" in antwort.text and "Firmen erreicht" in antwort.text
 
 
 def test_fortsetzen_route_startet_unterprozess_und_leitet_zurueck(

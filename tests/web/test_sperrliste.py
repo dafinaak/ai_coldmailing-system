@@ -83,6 +83,27 @@ def test_seite_zeigt_vorhandene_domains(angemeldeter_client, daten_dir):
     assert "konkurrent-ki.de" in antwort.text
 
 
+def test_sperrliste_zeigt_wholix_spalten_und_strukturierte_werte(
+        angemeldeter_client, daten_dir):
+    (daten_dir / "sperrliste-global.yaml").write_text(
+        '- domain: "*.bund.de"\n  reason: "Kunde"\n  comment: "Rahmenvertrag"\n',
+        encoding="utf-8",
+    )
+
+    antwort = angemeldeter_client.get("/domains")
+
+    assert antwort.status_code == 200
+    for text in (
+        "Domain", "Grund", "Kommentar", "Aktionen", "*.bund.de",
+        "Kunde", "Rahmenvertrag",
+    ):
+        assert text in antwort.text
+    assert 'id="sperrliste-suche"' in antwort.text
+    assert "<table" in antwort.text
+    assert "/domains/bearbeiten" in antwort.text
+    assert "/domains/entfernen" in antwort.text
+
+
 def test_domain_hinzufuegen_leer_gibt_deutschen_fehler(angemeldeter_client, daten_dir):
     antwort = angemeldeter_client.post(
         "/domains/hinzufuegen",

@@ -123,8 +123,7 @@ def _seite(request: Request, fehler: str | None = None, status_code: int = 200):
         {
             "nutzer": auth.aktueller_nutzer(request),
             "nav": nav_kontext(request),
-            # Bis zur Wholix-Tabelle bleibt die alte Vorlage kompatibel.
-            "domains": [e["domain"] for e in eintraege],
+            "domains": eintraege,
             "eintraege": eintraege,
             "gruende": GRUENDE,
             "fehler": fehler,

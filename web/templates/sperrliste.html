@@ -1,36 +1,131 @@
 {% extends "layout.html" %}
 {% block titel %}Gesperrte Domains{% endblock %}
 {% block inhalt %}
-<div class="seite seite--schmal">
-  <h1>Gesperrte Domains</h1>
-  <p class="seiten-hilfstext">An Firmen mit diesen Internet-Adressen wird nie geschrieben — egal für welches Angebot. Platzhalter wie *.bund.de sind erlaubt.</p>
-
-  {% if fehler %}
-  <div class="formular-fehler">{{ fehler }}</div>
-  {% endif %}
-
-  <div class="karte">
-    <div class="chip-liste">
-      {% for domain in domains %}
-      <span class="chip">
-        <span class="chip-text">{{ domain }}</span>
-        <form method="post" action="/domains/entfernen" class="chip-entfernen-form">
-          <input type="hidden" name="domain" value="{{ domain }}">
-          <button type="submit" class="chip-entfernen-knopf" aria-label="{{ domain }} entfernen">×</button>
-        </form>
-      </span>
-      {% else %}
-      <span class="chip-leer">Noch keine gesperrten Domains.</span>
-      {% endfor %}
+<div class="seite sperrliste-seite">
+  <header class="sperrliste-kopf">
+    <div>
+      <span class="sperrliste-bereich">Schutzliste</span>
+      <h1>Gesperrte Domains</h1>
+      <p>An Firmen mit diesen Internet-Adressen wird nie geschrieben — egal für welches Angebot. Platzhalter wie <code>*.bund.de</code> sind erlaubt.</p>
     </div>
-    <form method="post" action="/domains/hinzufuegen" class="chip-hinzufuegen-form">
-      <input type="text" name="domain" placeholder="Domain eintippen, mit Eingabetaste hinzufügen — z. B. *.bund.de" class="chip-eingabe">
-      <button type="submit" class="chip-hinzufuegen-knopf">Hinzufügen</button>
-    </form>
-  </div>
+    <span class="sperrliste-anzahl">{{ domains|length }} gesperrt</span>
+  </header>
 
-  <div class="hinweis-kasten">
+  {% if fehler %}<div class="formular-fehler">{{ fehler }}</div>{% endif %}
+
+  <section class="sperrliste-hinzufuegen" aria-labelledby="neue-sperre-titel">
+    <div>
+      <h2 id="neue-sperre-titel">Domain sperren</h2>
+      <p>Die Sperre gilt sofort für alle künftigen E-Mail-Runden.</p>
+    </div>
+    <form method="post" action="/domains/hinzufuegen" class="sperrliste-formular">
+      <label>
+        <span>Domain oder Platzhalter</span>
+        <input type="text" name="domain" placeholder="zum-beispiel.de oder *.bund.de" required>
+      </label>
+      <label>
+        <span>Grund</span>
+        <select name="grund" required>
+          {% for grund in gruende %}<option value="{{ grund }}">{{ grund }}</option>{% endfor %}
+        </select>
+      </label>
+      <label class="sperrliste-kommentar-feld">
+        <span>Kommentar <small>freiwillig</small></span>
+        <input type="text" name="kommentar" maxlength="1000" placeholder="Zum Beispiel: Rahmenvertrag bis Ende 2027">
+      </label>
+      <button type="submit" class="sperrliste-hinzufuegen-knopf">+ Hinzufügen</button>
+    </form>
+  </section>
+
+  <section class="sperrliste-liste" aria-labelledby="sperren-titel">
+    <div class="sperrliste-werkzeuge">
+      <div>
+        <h2 id="sperren-titel">Alle Sperren</h2>
+        <span>{{ domains|length }} Einträge</span>
+      </div>
+      <label>
+        <span class="nur-screenreader">Sperrliste durchsuchen</span>
+        <input id="sperrliste-suche" type="search" placeholder="Domain, Grund oder Kommentar suchen …">
+      </label>
+    </div>
+
+    <div class="sperrliste-tabelle-scroll">
+      <table class="sperrliste-tabelle">
+        <thead>
+          <tr>
+            <th scope="col">Domain</th>
+            <th scope="col">Webseite</th>
+            <th scope="col">Grund</th>
+            <th scope="col">Kommentar</th>
+            <th scope="col">Aktionen</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for eintrag in domains %}
+          <tr data-blacklist-row data-search="{{ (eintrag.domain ~ ' ' ~ eintrag.reason ~ ' ' ~ eintrag.comment)|lower }}">
+            <th scope="row"><code>{{ eintrag.domain }}</code></th>
+            <td><a href="https://{{ eintrag.domain[2:] if eintrag.domain.startswith('*.') else eintrag.domain }}"
+                   target="_blank" rel="noopener">Öffnen ↗</a></td>
+            <td>{{ eintrag.reason or "—" }}</td>
+            <td>{% if eintrag.legacy %}<span class="sperrliste-alt">Alter Eintrag</span>{% else %}{{ eintrag.comment or "—" }}{% endif %}</td>
+            <td class="sperrliste-aktionen">
+              <button type="button" data-blacklist-edit="sperr-dialog-{{ loop.index }}">Bearbeiten</button>
+              <form method="post" action="/domains/entfernen">
+                <input type="hidden" name="domain" value="{{ eintrag.domain }}">
+                <button type="submit" aria-label="{{ eintrag.domain }} aus der Sperrliste entfernen">Entfernen</button>
+              </form>
+
+              <dialog class="sperrliste-dialog" id="sperr-dialog-{{ loop.index }}">
+                <form method="post" action="/domains/bearbeiten">
+                  <div class="sperrliste-dialog-kopf">
+                    <div><span>Sperre bearbeiten</span><strong>{{ eintrag.domain }}</strong></div>
+                    <button type="button" data-blacklist-close aria-label="Fenster schließen">×</button>
+                  </div>
+                  <div class="sperrliste-dialog-inhalt">
+                    <input type="hidden" name="urspruengliche_domain" value="{{ eintrag.domain }}">
+                    <label><span>Domain oder Platzhalter</span><input type="text" name="domain" value="{{ eintrag.domain }}" required></label>
+                    <label><span>Grund</span>
+                      <select name="grund" required>
+                        {% for grund in gruende %}<option value="{{ grund }}"{% if eintrag.reason == grund or (eintrag.legacy and grund == "Sonstiges") %} selected{% endif %}>{{ grund }}</option>{% endfor %}
+                      </select>
+                    </label>
+                    <label><span>Kommentar <small>freiwillig</small></span>
+                      <textarea name="kommentar" maxlength="1000">{{ eintrag.comment }}</textarea>
+                    </label>
+                    {% if eintrag.legacy %}<p>Dieser alte Eintrag hat noch keinen Grund. Beim Speichern wird er in das neue Format übernommen.</p>{% endif %}
+                    <button type="submit" class="sperrliste-hinzufuegen-knopf">Änderungen speichern</button>
+                  </div>
+                </form>
+              </dialog>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="sperrliste-leer">Noch keine gesperrten Domains.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="sperrliste-hinweis">
     Zusätzlich hat jedes Angebot eine eigene Liste gesperrter Domains — die pflegst du im <a href="/kunden">Angebot-Formular</a>. Beide Listen gelten zusammen.
   </div>
 </div>
+
+<script>
+(function () {
+  const search = document.querySelector('#sperrliste-suche');
+  const rows = [...document.querySelectorAll('[data-blacklist-row]')];
+  if (search) search.addEventListener('input', () => {
+    const query = search.value.trim().toLocaleLowerCase('de');
+    rows.forEach((row) => { row.hidden = !row.dataset.search.includes(query); });
+  });
+  document.querySelectorAll('[data-blacklist-edit]').forEach((button) => {
+    button.addEventListener('click', () => document.getElementById(button.dataset.blacklistEdit).showModal());
+  });
+  document.querySelectorAll('[data-blacklist-close]').forEach((button) => {
+    button.addEventListener('click', () => button.closest('dialog').close());
+  });
+})();
+</script>
 {% endblock %}

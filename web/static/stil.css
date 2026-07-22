@@ -1876,3 +1876,159 @@ h1 { margin: 0; font-size: 24px; }
   .freigabe-seite *,
   .freigabe-liste-seite * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* Wholix-Sperrliste (Phase 2) -------------------------------------------- */
+
+.sperrliste-seite {
+  --sperre-orange: #F5A000;
+  --sperre-orange-hell: #FFF5DF;
+  --sperre-tinte: #262A35;
+  --sperre-grau: #7D8495;
+  --sperre-linie: #E7E9F0;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  color: var(--sperre-tinte);
+}
+.sperrliste-kopf {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+.sperrliste-kopf h1 { margin-top: 4px; font-size: 26px; }
+.sperrliste-kopf p { max-width: 720px; margin: 5px 0 0; color: var(--sperre-grau); }
+.sperrliste-kopf code { color: #A96800; }
+.sperrliste-bereich { color: var(--sperre-grau); font-size: 11px; font-weight: 750; letter-spacing: .09em; text-transform: uppercase; }
+.sperrliste-anzahl { border: 1px solid var(--sperre-linie); border-radius: 999px; padding: 5px 10px; background: #FFF; color: var(--sperre-grau); font-size: 10.5px; font-weight: 700; white-space: nowrap; }
+
+.sperrliste-hinzufuegen {
+  display: grid;
+  grid-template-columns: 190px 1fr;
+  gap: 24px;
+  align-items: end;
+  border: 1px solid #F0D49A;
+  border-radius: 11px;
+  padding: 18px;
+  background: #FFFAEF;
+}
+.sperrliste-hinzufuegen h2,
+.sperrliste-werkzeuge h2 { margin: 0; font-size: 15px; }
+.sperrliste-hinzufuegen p { margin: 4px 0 0; color: var(--sperre-grau); font-size: 11px; }
+.sperrliste-formular { display: grid; grid-template-columns: minmax(180px, 1fr) 150px minmax(220px, 1.2fr) auto; gap: 9px; align-items: end; }
+.sperrliste-formular label,
+.sperrliste-dialog-inhalt label { display: flex; flex-direction: column; gap: 5px; color: #626978; font-size: 10.5px; font-weight: 700; }
+.sperrliste-formular small,
+.sperrliste-dialog-inhalt small { color: var(--sperre-grau); font-weight: 500; }
+.sperrliste-formular input,
+.sperrliste-formular select,
+.sperrliste-dialog-inhalt input,
+.sperrliste-dialog-inhalt select,
+.sperrliste-dialog-inhalt textarea {
+  width: 100%;
+  height: 38px;
+  border: 1px solid #DDE1E9;
+  border-radius: 7px;
+  background: #FFF;
+  padding: 0 11px;
+  color: var(--sperre-tinte);
+  font-size: 12px;
+}
+.sperrliste-hinzufuegen-knopf {
+  min-height: 38px;
+  border: 1px solid #E59500;
+  border-radius: 7px;
+  background: var(--sperre-orange);
+  color: #FFF;
+  padding: 0 15px;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sperrliste-liste { margin-top: 16px; }
+.sperrliste-werkzeuge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border: 1px solid var(--sperre-linie);
+  border-bottom: 0;
+  border-radius: 10px 10px 0 0;
+  padding: 12px 14px;
+  background: #FFF;
+}
+.sperrliste-werkzeuge > div { display: flex; align-items: center; gap: 8px; }
+.sperrliste-werkzeuge > div span { color: var(--sperre-grau); font-size: 10.5px; }
+.sperrliste-werkzeuge input { width: min(360px, 50vw); height: 36px; border: 1px solid #DDE1E9; border-radius: 7px; padding: 0 11px; }
+.sperrliste-tabelle-scroll { width: 100%; max-width: 100%; overflow-x: auto; border: 1px solid var(--sperre-linie); border-radius: 0 0 10px 10px; background: #FFF; }
+.sperrliste-tabelle { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 12px; }
+.sperrliste-tabelle th,
+.sperrliste-tabelle td { padding: 12px 14px; border-bottom: 1px solid var(--sperre-linie); text-align: left; vertical-align: middle; }
+.sperrliste-tabelle thead th { background: #F8F9FB; color: #858B9A; font-size: 9.5px; font-weight: 750; letter-spacing: .055em; text-transform: uppercase; }
+.sperrliste-tabelle tbody tr:last-child th,
+.sperrliste-tabelle tbody tr:last-child td { border-bottom: 0; }
+.sperrliste-tabelle tbody tr:hover { background: #FFFCF6; }
+.sperrliste-tabelle code { color: var(--sperre-tinte); font-size: 12px; font-weight: 700; }
+.sperrliste-tabelle a { color: #A96800; font-size: 11px; font-weight: 650; }
+.sperrliste-alt { display: inline-flex; border-radius: 999px; padding: 3px 7px; background: #F0F1F4; color: var(--sperre-grau); font-size: 10px; }
+.sperrliste-aktionen { display: flex; align-items: center; gap: 5px; }
+.sperrliste-aktionen form { margin: 0; }
+.sperrliste-aktionen > button,
+.sperrliste-aktionen > form button {
+  border: 1px solid #DDE1E9;
+  border-radius: 6px;
+  background: #FFF;
+  color: #636B7B;
+  padding: 6px 8px;
+  font-size: 10.5px;
+  cursor: pointer;
+}
+.sperrliste-aktionen > form button { color: #A63C28; }
+.sperrliste-leer { padding: 34px !important; text-align: center !important; color: var(--sperre-grau); }
+.sperrliste-hinweis { margin-top: 14px; border-left: 3px solid var(--sperre-orange); padding: 10px 13px; background: #FFFAEF; color: #6E6655; font-size: 11.5px; }
+
+.sperrliste-dialog { width: min(460px, 100%); max-width: 100%; border: 0; border-radius: 11px; padding: 0; color: var(--sperre-tinte); box-shadow: 0 22px 70px rgba(31, 36, 48, .22); }
+.sperrliste-dialog::backdrop { background: rgba(34, 39, 51, .28); }
+.sperrliste-dialog-kopf { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 16px 18px; border-bottom: 1px solid var(--sperre-linie); }
+.sperrliste-dialog-kopf span,
+.sperrliste-dialog-kopf strong { display: block; }
+.sperrliste-dialog-kopf span { color: #A96800; font-size: 10px; font-weight: 750; text-transform: uppercase; }
+.sperrliste-dialog-kopf strong { margin-top: 2px; font-size: 13px; }
+.sperrliste-dialog-kopf button { border: 0; background: none; color: var(--sperre-grau); font-size: 26px; cursor: pointer; }
+.sperrliste-dialog-inhalt { display: grid; gap: 13px; padding: 20px; }
+.sperrliste-dialog-inhalt textarea { min-height: 100px; padding: 9px 11px; resize: vertical; }
+.sperrliste-dialog-inhalt p { margin: 0; color: var(--sperre-grau); font-size: 11px; }
+.sperrliste-seite :focus-visible { outline: 2px solid #A96800; outline-offset: 2px; }
+
+@media (max-width: 900px) {
+  .sperrliste-hinzufuegen { grid-template-columns: 1fr; align-items: stretch; }
+  .sperrliste-formular { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sperrliste-kommentar-feld { grid-column: 1 / -1; }
+}
+
+@media (max-width: 820px) {
+  .rahmen:has(.sperrliste-seite) { flex-direction: column; }
+  .rahmen:has(.sperrliste-seite) .seitenleiste { width: 100%; min-height: auto; flex-direction: row; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--farbe-rand); }
+  .rahmen:has(.sperrliste-seite) .marke { order: 1; flex: 1; padding: 12px 14px; border-bottom: 0; }
+  .rahmen:has(.sperrliste-seite) .nutzer-fuss { order: 2; gap: 12px; padding: 10px 14px; border-top: 0; }
+  .rahmen:has(.sperrliste-seite) .nav { order: 3; width: 100%; flex: none; flex-direction: row; overflow-x: auto; padding: 7px 8px; border-top: 1px solid var(--farbe-rand); }
+  .rahmen:has(.sperrliste-seite) .nav-eintrag { flex: 0 0 auto; }
+  .rahmen:has(.sperrliste-seite) .inhalt { width: 100%; min-width: 0; overflow-x: hidden; }
+  .sperrliste-seite { width: 100%; min-width: 0; padding: 22px 14px 44px; }
+}
+
+@media (max-width: 700px) {
+  .sperrliste-kopf,
+  .sperrliste-werkzeuge { align-items: stretch; flex-direction: column; }
+  .sperrliste-formular { grid-template-columns: 1fr; }
+  .sperrliste-kommentar-feld { grid-column: auto; }
+  .sperrliste-werkzeuge input { width: 100%; }
+  .sperrliste-dialog { width: calc(100% - 20px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sperrliste-seite * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}

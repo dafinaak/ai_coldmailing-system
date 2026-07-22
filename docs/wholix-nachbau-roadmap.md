@@ -1,6 +1,6 @@
 # Wholix-Nachbau: Feature-Inventur und Fahrplan
 
-Stand: 21.07.2026 (Scope-Entscheidungen ergänzt 22.07.2026)
+Stand: 22.07.2026 (Phase 1 gebaut und lokal geprüft; siehe Abschnitt 3)
 
 ## Scope-Entscheidungen (22.07.2026)
 
@@ -126,15 +126,15 @@ Jede Zeile ist eine Funktion von Wholix. Drei mögliche Stände:
 
 | Nr. | Funktion | Stand | Anmerkung |
 |---|---|---|---|
-| 29 | Kampagnen-Übersicht mit Zahlen-Kacheln (gesamt, aktiv, Leads, geöffnet, versendet, Antworten) | TEILWEISE | Liste und Dashboard-Kacheln haben wir; „geöffnet" fehlt |
+| 29 | Kampagnen-Übersicht mit Zahlen-Kacheln (gesamt, aktiv, Leads, geöffnet, versendet, Antworten) | HABEN WIR | Übersicht mit Kampagnen, aktiv, Empfänger, geöffnet, versendet, Antworten und unzustellbar; „fehlgeschlagen" bleibt ehrlich „—", weil Instantly keinen verlässlichen Zähler liefert |
 | 30 | Kampagne im Tool anlegen | HABEN WIR | Bei uns: „Anschreiben erstellen lassen" (Kunde wählen, Anzahl, los) |
 | 31 | Kampagne scharf schalten / pausieren | HABEN WIR | Baustein 1 |
-| 32 | Kampagnen-Detail mit Kacheln: Leads, Mails gesamt, versendet, geöffnet, Antworten, fehlgeschlagen, unzustellbar | TEILWEISE | Fortschritt je Schritt haben wir; geöffnet / fehlgeschlagen / unzustellbar fehlen |
+| 32 | Kampagnen-Detail mit Kacheln: Leads, Mails gesamt, versendet, geöffnet, Antworten, fehlgeschlagen, unzustellbar | TEILWEISE | Alle belegten Zahlen sind sichtbar; „fehlgeschlagen" bleibt „—", weil Instantly dafür keinen verlässlichen Zähler liefert |
 | 33 | Erstellungs-Fortschritt (Balken: wie viele Anschreiben fertig erzeugt) | HABEN WIR | Unsere Auftrags-Fortschrittsseite |
-| 34 | Warteschlangen-Status (Kreis-Diagramm: versendet, wartend, geplant, fehlgeschlagen, unzustellbar, abgebrochen, übersprungen, pausiert) | FEHLT | |
+| 34 | Warteschlangen-Status (Kreis-Diagramm: versendet, wartend, geplant, fehlgeschlagen, unzustellbar, abgebrochen, übersprungen, pausiert) | TEILWEISE | Ring zeigt nur die belegten Gruppen „versendet" und „unzustellbar"; alles andere wird ehrlich als nicht getrennt verfügbar zusammengefasst |
 | 35 | Aufschlüsselung je Schritt (Schritt 1–3: x von y versendet) | HABEN WIR | |
-| 36 | Tages-Limit und Sendefenster anzeigen („heute 7 von 20", Wochentage, Uhrzeit, Zeitzone, „gerade im Sendefenster") | FEHLT | Liegt bei uns in Instantly, wird im Tool nicht gezeigt |
-| 37 | Kampagnen-Einstellungen im Tool ändern (Mails pro Tag, Signatur, BCC, automatisches Weiterlaufen, automatische Antworten, Start-Zeitplan) | FEHLT | Wird bei uns in Instantly eingestellt |
+| 36 | Tages-Limit und Sendefenster anzeigen („heute 7 von 20", Wochentage, Uhrzeit, Zeitzone, „gerade im Sendefenster") | HABEN WIR | Verbrauch der verwendeten Absender, bekannte Limits und Instantly-Sendefenster werden angezeigt |
+| 37 | Kampagnen-Einstellungen im Tool ändern (Mails pro Tag, Signatur, BCC, automatisches Weiterlaufen, automatische Antworten, Start-Zeitplan) | NICHT IM SCOPE | Einstellungen bleiben beim Link nach Instantly; dies ist die Scope-Entscheidung vom 22.07.2026 |
 
 ### Email Sequence (Freigabe-Tabelle je Empfänger)
 
@@ -156,9 +156,10 @@ Jede Zeile ist eine Funktion von Wholix. Drei mögliche Stände:
 
 | Stand | Anzahl |
 |---|---|
-| HABEN WIR | 8 |
+| HABEN WIR | 10 |
 | TEILWEISE | 8 |
-| FEHLT | 27 |
+| FEHLT | 24 |
+| NICHT IM SCOPE | 1 |
 | **Gesamt** | **43** |
 
 Kurz gesagt: Kampagnen, Freigabe und Sperrliste — also der Kern, mit dem das
@@ -226,14 +227,23 @@ oder sollen wir auch den Versand selbst bauen und Instantly ganz ablösen
 Die fehlenden und halben Punkte, in sinnvoller Baureihenfolge. Größen:
 **S** = wenige Tage, **M** = etwa eine Woche, **L** = mehrere Wochen.
 
-### Phase 1 — Kampagnen-Ansicht auf Wholix-Stand (geht sofort, alles aus Instantly-Daten)
+### Phase 1 — Kampagnen-Ansicht auf Wholix-Stand
+
+**Stand 22.07.2026:** Der Funktionsumfang dieser Phase ist gebaut und mit
+rein lokalen Testdaten geprüft. Der frische volle Testlauf ergab 444 grüne
+Tests und eine bekannte Abkündigungswarnung aus Starlette/TestClient.
+Die Desktop- und 390-px-Ansichten von Übersicht und Detail sind sichtbar
+geprüft. Bei 390 px liegt die Navigation oben, der Inhalt nutzt die volle
+Breite, der Dokumentkörper hat keinen horizontalen Überlauf und nur die
+Kampagnentabelle scrollt intern. Keine echte Kampagne, kein Postfach und
+keine Instantly-Schreibschnittstelle wurden für die Prüfung benutzt.
 
 | Baustein | Größe | Was es heißt |
 |---|---|---|
-| Kacheln „geöffnet / fehlgeschlagen / unzustellbar" in Übersicht und Detail (Nr. 29, 32) | S | Zahlen aus der Instantly-Statistik holen und anzeigen |
-| Tages-Limit + Sendefenster anzeigen (Nr. 36) | S | „Heute x von y versendet", Wochentage, Uhrzeit, „im Sendefenster" |
-| Warteschlangen-Status als Diagramm (Nr. 34) | M | Versendet/wartend/geplant je Kampagne aufschlüsseln; nicht jeden Wholix-Zustand liefert Instantly genauso — ehrlich das zeigen, was da ist |
-| Kampagnen-Einstellungen im Tool ändern (Nr. 37) | M | Mails pro Tag, Sendefenster, Signatur usw. aus dem Tool heraus in Instantly setzen |
+| Kacheln „geöffnet / fehlgeschlagen / unzustellbar" in Übersicht und Detail (Nr. 29, 32) | S | **Gebaut.** Belegte Instantly-Zahlen werden angezeigt; „fehlgeschlagen" bleibt bei fehlender verlässlicher Quelle „—" |
+| Tages-Limit + Sendefenster anzeigen (Nr. 36) | S | **Gebaut.** Zeigt „Heute x von y", Wochentage, Uhrzeit, Zeitzone und ob das Fenster gerade offen ist |
+| Warteschlangen-Status als Diagramm (Nr. 34) | M | **Gebaut im belegbaren Umfang.** Ring für versendet/unzustellbar; nicht getrennte Zustände werden nicht erfunden |
+| Kampagnen-Einstellungen im Tool ändern (Nr. 37) | — | **Nicht bauen.** Einstellungen bleiben beim Link nach Instantly (Scope-Entscheidung vom 22.07.2026) |
 
 ### Phase 2 — Freigabe-Tabelle auf Wholix-Stand
 

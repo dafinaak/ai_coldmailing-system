@@ -353,6 +353,48 @@ def test_kampagnenzeilen_fokus_liegt_innerhalb_der_abgeschnittenen_tabelle():
     assert "outline-offset: -2px" in zeilen_fokus.group(1)
 
 
+def test_mobile_kampagnenuebersicht_nutzt_volle_breite_und_lokalen_tabellenscroll():
+    basis = Path(__file__).parents[2]
+    css = (basis / "web" / "static" / "stil.css").read_text(encoding="utf-8")
+    vorlage = (basis / "web" / "templates" / "kampagnen_liste.html").read_text(
+        encoding="utf-8",
+    )
+    mobile_start = css.index("@media (max-width: 820px)")
+    mobile_ende = css.index("@media (max-width: 760px)", mobile_start)
+    mobile_css = css[mobile_start:mobile_ende]
+
+    def regel(selector: str) -> str:
+        treffer = re.search(
+            rf"^\s*{re.escape(selector)}\s*\{{([^}}]*)\}}",
+            mobile_css, re.M | re.S,
+        )
+        assert treffer is not None, selector
+        return treffer.group(1)
+
+    assert "flex-direction: column" in regel(
+        ".rahmen:has(.kamp-uebersicht-seite)",
+    )
+    seitenleiste = regel(
+        ".rahmen:has(.kamp-uebersicht-seite) .seitenleiste",
+    )
+    assert "width: 100%" in seitenleiste
+    assert "flex-direction: row" in seitenleiste
+    navigation = regel(".rahmen:has(.kamp-uebersicht-seite) .nav")
+    assert "flex-direction: row" in navigation
+    assert "overflow-x: auto" in navigation
+    inhalt = regel(".rahmen:has(.kamp-uebersicht-seite) .inhalt")
+    assert "width: 100%" in inhalt
+    assert "min-width: 0" in inhalt
+    assert "overflow-x: hidden" in inhalt
+    seite = regel(".kamp-uebersicht-seite")
+    assert "width: 100%" in seite
+    assert "min-width: 0" in seite
+    tabellenrahmen = regel(".kamp-uebersicht-seite .kamp-tabellenrahmen")
+    assert "width: 100%" in tabellenrahmen
+    assert "max-width: 100%" in tabellenrahmen
+    assert 'class="seite seite--breit kamp-uebersicht-seite"' in vorlage
+
+
 def test_liste_zeigt_vorbereitung_fuer_wartende_und_angehaltene_auftraege(angemeldeter_client, daten_dir):
     app = angemeldeter_client.app
     app.state.instantly_leser = FakeInstantlyLeser({})

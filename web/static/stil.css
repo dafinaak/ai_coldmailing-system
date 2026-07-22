@@ -1163,6 +1163,56 @@ h1 { margin: 0; font-size: 24px; }
   .kamp-instantly-link { justify-self: start; }
 }
 
+@media (max-width: 820px) {
+  .rahmen:has(.kamp-uebersicht-seite) {
+    flex-direction: column;
+  }
+  .rahmen:has(.kamp-uebersicht-seite) .seitenleiste {
+    width: 100%;
+    min-height: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-right: 0;
+    border-bottom: 1px solid var(--farbe-rand);
+  }
+  .rahmen:has(.kamp-uebersicht-seite) .marke {
+    order: 1;
+    flex: 1;
+    padding: 12px 14px;
+    border-bottom: 0;
+  }
+  .rahmen:has(.kamp-uebersicht-seite) .nutzer-fuss {
+    order: 2;
+    gap: 12px;
+    padding: 10px 14px;
+    border-top: 0;
+  }
+  .rahmen:has(.kamp-uebersicht-seite) .nav {
+    order: 3;
+    width: 100%;
+    flex: none;
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 7px 8px;
+    border-top: 1px solid var(--farbe-rand);
+  }
+  .rahmen:has(.kamp-uebersicht-seite) .nav-eintrag { flex: 0 0 auto; }
+  .rahmen:has(.kamp-uebersicht-seite) .inhalt {
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+  .kamp-uebersicht-seite {
+    width: 100%;
+    min-width: 0;
+    padding: 24px 16px 48px;
+  }
+  .kamp-uebersicht-seite .kamp-tabellenrahmen {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
 @media (max-width: 760px) {
   .kamp-uebersicht-kopf,
   .kamp-filter { align-items: stretch; flex-direction: column; }

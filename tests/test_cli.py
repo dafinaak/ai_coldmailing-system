@@ -110,11 +110,12 @@ def test_lauf_bricht_ohne_dropcontact_key_ab(monkeypatch):
     with pytest.raises(SystemExit, match="DROPCONTACT_API_KEY"):
         cli.lauf("kunden/demo-gmbh.yaml", 10, None)
 
-def test_lauf_bricht_ohne_anthropic_key_ab(monkeypatch):
+def test_lauf_bricht_ohne_ki_key_ab(monkeypatch):
     monkeypatch.setenv("APIFY_API_KEY", "x")
     monkeypatch.setenv("HUNTER_API_KEY", "x")
     monkeypatch.setenv("DROPCONTACT_API_KEY", "x")
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     with pytest.raises(SystemExit, match="ANTHROPIC_API_KEY"):
         cli.lauf("kunden/demo-gmbh.yaml", 10, None)
 

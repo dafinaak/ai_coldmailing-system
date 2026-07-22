@@ -9,8 +9,9 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import datetime
+from datetime import datetime, time
 from pathlib import Path
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import requests
 from fastapi import APIRouter, Form, HTTPException, Request
@@ -261,11 +262,137 @@ def _kampagnen_zeilen_aus_stand(mit_kampagne: list[dict], stand_by_id: dict[str,
             "slug": eintrag["slug"], "ts": eintrag["ts"],
             "name": name, "kunde": eintrag["kunde_name"],
             "chip_text": chip["text"], "chip_bg": chip["bg"], "chip_fg": chip["fg"],
+            "status": stand.get("status"),
             "gesamt": eintrag["empf_anzahl"],
+            "versendet": versendet,
             "verschickt": versendet if versendet is not None else "—",
+            "geoeffnet": stand.get("geoeffnet"),
+            "antworten": stand.get("antworten"),
+            "unzustellbar": stand.get("unzustellbar"),
             "freigegeben_am": format_deutsches_datum(eintrag["freigabe"]["am"]) or "—",
         })
     return zeilen
+
+
+def _summe_oder_unbekannt(zeilen: list[dict], feld: str):
+    """Addiert nur vollstaendig bekannte Werte.
+
+    Ein fehlender Instantly-Wert ist keine Null. Damit keine scheinbar
+    genauen Kennzahlen entstehen, bleibt die ganze Summe unbekannt, sobald
+    ein Summand fehlt.
+    """
+    werte = [zeile.get(feld) for zeile in zeilen]
+    if not werte or any(wert is None for wert in werte):
+        return None
+    return sum(werte)
+
+
+def _warteschlange(gesamt_empfaenger: int, schritt_anzahl: int, stand: dict) -> dict:
+    """Bereitet nur die von Instantly belegten Gruppen der Warteschlange vor."""
+    moeglich = gesamt_empfaenger * schritt_anzahl
+    versendet = stand.get("versendet")
+    unzustellbar = stand.get("unzustellbar")
+    if versendet is None or unzustellbar is None:
+        return {"gesamt": moeglich, "versendet": versendet,
+                "unzustellbar": unzustellbar, "ungetrennt": None}
+    gesamt = max(moeglich, versendet + unzustellbar)
+    return {"gesamt": gesamt, "versendet": versendet,
+            "unzustellbar": unzustellbar,
+            "ungetrennt": max(gesamt - versendet - unzustellbar, 0)}
+
+
+_WOCHENTAGE = ("So", "Mo", "Di", "Mi", "Do", "Fr", "Sa")
+
+
+def _tage_text(tage: dict) -> str:
+    aktive_tage = [nummer for nummer, name in enumerate(_WOCHENTAGE)
+                   if tage.get(str(nummer), tage.get(nummer, False))]
+    bereiche = []
+    start = ende = None
+    for nummer in aktive_tage:
+        if start is None:
+            start = ende = nummer
+        elif nummer == ende + 1:
+            ende = nummer
+        else:
+            bereiche.append(_tage_bereich_text(start, ende))
+            start = ende = nummer
+    if start is not None:
+        bereiche.append(_tage_bereich_text(start, ende))
+    return ", ".join(bereiche) or "—"
+
+
+def _tage_bereich_text(start: int, ende: int) -> str:
+    return _WOCHENTAGE[start] if start == ende else f"{_WOCHENTAGE[start]}–{_WOCHENTAGE[ende]}"
+
+
+def _sendefenster_anzeigen(sendefenster: list[dict]) -> list[dict]:
+    """Formatiert Instantly-Sendefenster, ohne fehlende Angaben zu erfinden."""
+    ergebnis = []
+    for fenster in sendefenster or []:
+        tage = fenster.get("tage") if isinstance(fenster.get("tage"), dict) else {}
+        tage_text = _tage_text(tage)
+        von, bis, zeitzone = fenster.get("von"), fenster.get("bis"), fenster.get("zeitzone")
+        if not all(isinstance(wert, str) and wert for wert in (von, bis, zeitzone)):
+            ergebnis.append({
+                "tage_text": tage_text,
+                "zeit_text": "Sendefenster nicht vollständig hinterlegt",
+                "zeitzone": zeitzone or "—",
+                "ist_jetzt": None,
+            })
+            continue
+        try:
+            von_zeit, bis_zeit = time.fromisoformat(von), time.fromisoformat(bis)
+            jetzt = datetime.now(ZoneInfo(zeitzone))
+        except (TypeError, ValueError, ZoneInfoNotFoundError):
+            ergebnis.append({
+                "tage_text": tage_text,
+                "zeit_text": "Sendefenster nicht vollständig hinterlegt",
+                "zeitzone": zeitzone,
+                "ist_jetzt": None,
+            })
+            continue
+        heute_aktiv = jetzt.weekday() + 1 if jetzt.weekday() < 6 else 0
+        ist_im_zeitraum = (von_zeit <= jetzt.time() <= bis_zeit if von_zeit <= bis_zeit
+                           else jetzt.time() >= von_zeit or jetzt.time() <= bis_zeit)
+        ergebnis.append({
+            "tage_text": tage_text,
+            "zeit_text": f"{von}–{bis}",
+            "zeitzone": zeitzone,
+            "ist_jetzt": heute_aktiv in [nummer for nummer in range(7)
+                                         if tage.get(str(nummer), tage.get(nummer, False))]
+                          and ist_im_zeitraum,
+        })
+    return ergebnis
+
+
+def _tageslimit(stand: dict, postfach_antwort: dict) -> dict:
+    """Ermittelt das Limit ausschliesslich aus den Absender-Postfaechern."""
+    heute = stand.get("heute_versendet")
+    if not postfach_antwort.get("erreichbar"):
+        return {"heute": heute, "limit": None}
+    postfaecher = postfach_antwort.get("postfaecher")
+    absender = stand.get("absender")
+    if not isinstance(postfaecher, list) or not isinstance(absender, list) or not absender:
+        return {"heute": heute, "limit": None}
+    nach_email = {
+        postfach.get("email", "").strip().casefold(): postfach
+        for postfach in postfaecher if isinstance(postfach, dict)
+    }
+    limits = []
+    bekannte_absender = set()
+    for absender_email in absender:
+        if not isinstance(absender_email, str):
+            limits.append(None)
+            continue
+        email = absender_email.strip().casefold()
+        if email in bekannte_absender:
+            continue
+        bekannte_absender.add(email)
+        postfach = nach_email.get(email)
+        limits.append(postfach.get("daily_limit") if postfach is not None else None)
+    return {"heute": heute, "limit": _summe_oder_unbekannt(
+        [{"limit": limit} for limit in limits], "limit")}
 
 
 # Routen ------------------------------------------------------------------
@@ -277,7 +404,7 @@ def _kampagnen_zeilen_aus_stand(mit_kampagne: list[dict], stand_by_id: dict[str,
 # Event-Loop fuer ALLE gleichzeitigen Nutzer blockieren (gleicher Grund wie
 # web/routen/auftraege.py). Als normale `def`-Funktion fuehrt FastAPI die
 # Route stattdessen in einem Threadpool aus.
-def kampagnen_liste(request: Request):
+def kampagnen_liste(request: Request, suche: str = "", status: str = "alle"):
     daten_dir = request.app.state.daten_dir
     laeufe = _alle_laeufe(daten_dir)
 
@@ -290,6 +417,22 @@ def kampagnen_liste(request: Request):
     stand_by_id = _stand_fuer(request, mit_kampagne)
     kampagnen_zeilen = _kampagnen_zeilen_aus_stand(mit_kampagne, stand_by_id)
     live_stand_hinweis = _live_stand_hinweis(list(stand_by_id.values()))
+    kennzahlen = {
+        "kampagnen": len(kampagnen_zeilen),
+        "aktiv": sum(zeile["status"] == "aktiv" for zeile in kampagnen_zeilen),
+        "empfaenger": sum(zeile["gesamt"] for zeile in kampagnen_zeilen),
+        "geoeffnet": _summe_oder_unbekannt(kampagnen_zeilen, "geoeffnet"),
+        "versendet": _summe_oder_unbekannt(kampagnen_zeilen, "versendet"),
+        "antworten": _summe_oder_unbekannt(kampagnen_zeilen, "antworten"),
+        "fehlgeschlagen": None,
+        "unzustellbar": _summe_oder_unbekannt(kampagnen_zeilen, "unzustellbar"),
+    }
+    suchtext = suche.strip().casefold()
+    if suchtext:
+        kampagnen_zeilen = [zeile for zeile in kampagnen_zeilen if suchtext in
+                            f"{zeile['name']} {zeile['kunde']}".casefold()]
+    if status != "alle":
+        kampagnen_zeilen = [zeile for zeile in kampagnen_zeilen if zeile["status"] == status]
 
     return request.app.state.templates.TemplateResponse(
         request, "kampagnen_liste.html",
@@ -298,6 +441,9 @@ def kampagnen_liste(request: Request):
             "nav": nav_kontext(request),
             "vorbereitung": vorbereitung,
             "kampagnen": kampagnen_zeilen,
+            "kennzahlen": kennzahlen,
+            "suche": suche,
+            "status_filter": status,
             "live_stand_hinweis": live_stand_hinweis,
         },
     )
@@ -339,13 +485,17 @@ def _detail_kontext(request: Request, slug: str, ts: str, *, aktion_fehler: str 
         f"Nachfass-Mail 1 (nach {tag_1} Tagen)",
         f"Nachfass-Mail 2 (nach {tag_2} Tagen)",
     ]
-    schritte_by_nr = {s["schritt"]: s["versendet"] for s in stand.get("schritte", [])}
+    schritte_by_nr = {s["schritt"]: s for s in stand.get("schritte", [])}
     kd_schritte = []
     for i, label in enumerate(schritt_labels, start=1):
-        versendet = schritte_by_nr.get(i)
+        schritt = schritte_by_nr.get(i, {})
+        versendet = schritt.get("versendet")
         text = f"{versendet} von {gesamt} versendet" if versendet is not None else "—"
         balken = round(100 * versendet / gesamt) if versendet is not None and gesamt else 0
-        kd_schritte.append({"label": label, "text": text, "balken": f"{balken}%"})
+        kd_schritte.append({
+            "label": label, "text": text, "balken": f"{balken}%",
+            "geoeffnet": schritt.get("geoeffnet"),
+        })
 
     freigabe = freigabe_info(store)
     ist_pausiert = stand.get("erreichbar") and stand.get("status") == "pausiert"
@@ -368,6 +518,9 @@ def _detail_kontext(request: Request, slug: str, ts: str, *, aktion_fehler: str 
     aktiviert = _aktiviert_info(lauf_dir)
 
     live_stand_hinweis = _live_stand_hinweis([stand])
+    postfach_antwort = (leser.postfaecher() if hasattr(leser, "postfaecher") else
+                         {"erreichbar": False, "postfaecher": []})
+    kd_warteschlange = _warteschlange(gesamt, len(schritt_labels), stand)
 
     return {
         "nutzer": auth.aktueller_nutzer(request),
@@ -381,7 +534,19 @@ def _detail_kontext(request: Request, slug: str, ts: str, *, aktion_fehler: str 
         "kd_von": freigabe["von"] or "unbekannt",
         "kd_am": format_deutsches_datum(freigabe["am"]) or "—",
         "kd_gesamt": gesamt,
+        "kd_kennzahlen": {
+            "empfaenger": stand.get("empfaenger"),
+            "moeglich": gesamt * len(schritt_labels),
+            "versendet": stand.get("versendet"),
+            "geoeffnet": stand.get("geoeffnet"),
+            "antworten": stand.get("antworten"),
+            "fehlgeschlagen": None,
+            "unzustellbar": stand.get("unzustellbar"),
+        },
+        "kd_warteschlange": kd_warteschlange,
         "kd_schritte": kd_schritte,
+        "kd_sendefenster": _sendefenster_anzeigen(stand.get("sendefenster") or []),
+        "kd_tageslimit": _tageslimit(stand, postfach_antwort),
         "kd_antworten": stand.get("antworten") if stand.get("antworten") is not None else "—",
         "campaign_id": campaign_id,
         "live_stand_hinweis": live_stand_hinweis,

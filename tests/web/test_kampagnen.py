@@ -88,12 +88,31 @@ class FakeInstantlyLeser:
             "versendet": None, "antworten": None, "schritte": [], "stand": None,
         }) for cid in campaign_ids}
 
+    def postfaecher(self):
+        return {
+            "erreichbar": True,
+            "stand": datetime(2026, 7, 22, 10, 30),
+            "postfaecher": [{
+                "email": "sender@firma.de", "status": "verbunden",
+                "warmup": "an", "daily_limit": 20,
+            }],
+        }
+
 
 def _stand(status="pausiert", name="[TEST] Demo GmbH", versendet=3, antworten=1,
            schritte=None, erreichbar=True, stand=None):
     return {
         "erreichbar": erreichbar, "status": status, "name": name,
         "versendet": versendet, "antworten": antworten,
+        "empfaenger": 12, "geoeffnet": 4, "unzustellbar": 1,
+        "abgeschlossen": 3, "heute_versendet": 7,
+        "absender": ["sender@firma.de"],
+        "sendefenster": [{
+            "name": "Werktage", "von": "08:00", "bis": "19:00",
+            "tage": {"0": False, "1": True, "2": True, "3": True,
+                     "4": True, "5": True, "6": False},
+            "zeitzone": "Europe/Berlin",
+        }],
         "schritte": schritte if schritte is not None else [
             {"schritt": 1, "versendet": versendet}],
         "stand": stand if stand is not None else datetime(2026, 7, 20, 9, 30),
@@ -220,6 +239,31 @@ def test_liste_aggregiert_ueber_zwei_kunden_mit_korrekten_spalten(angemeldeter_c
     assert "/kampagnen/moveo/20260720-091500" in text
 
 
+def test_liste_zeigt_wholix_kennzahlen_und_filtert_nach_status(angemeldeter_client, daten_dir):
+    angemeldeter_client.app.state.instantly_leser = FakeInstantlyLeser({
+        "camp-a": _stand(status="aktiv", name="Aktive Runde"),
+        "camp-b": _stand(status="abgeschlossen", name="Fertige Runde"),
+    })
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml",
+                  ts="20260720-090000", campaign_id="camp-a")
+    _lauf_anlegen(daten_dir, "moveo", "moveo.yaml",
+                  ts="20260720-091500", campaign_id="camp-b")
+
+    antwort = angemeldeter_client.get("/kampagnen?status=aktiv")
+    assert antwort.context["kennzahlen"] == {
+        "kampagnen": 2,
+        "aktiv": 1,
+        "empfaenger": 2,
+        "geoeffnet": 8,
+        "versendet": 6,
+        "antworten": 2,
+        "fehlgeschlagen": None,
+        "unzustellbar": 2,
+    }
+    assert [zeile["name"] for zeile in antwort.context["kampagnen"]] == ["Aktive Runde"]
+    assert antwort.context["status_filter"] == "aktiv"
+
+
 def test_liste_zeigt_vorbereitung_fuer_wartende_und_angehaltene_auftraege(angemeldeter_client, daten_dir):
     app = angemeldeter_client.app
     app.state.instantly_leser = FakeInstantlyLeser({})
@@ -342,6 +386,24 @@ def test_detail_zeigt_schritte_mit_echten_tagen_und_wer_wann(angemeldeter_client
     assert "Freigegeben von Lena Hartmann am" in text
     assert "3 von 1 versendet" in text or "3 von" in text
     assert "app.instantly.ai/app/campaign/camp-a" in text
+
+
+def test_detail_zeigt_warteschlange_sendefenster_und_tageslimit(angemeldeter_client, daten_dir):
+    angemeldeter_client.app.state.instantly_leser = FakeInstantlyLeser({
+        "camp-1": _stand(status="aktiv"),
+    })
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml",
+                  ts="20260720-093000", campaign_id="camp-1")
+
+    antwort = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-093000")
+    assert antwort.context["kd_warteschlange"] == {
+        "gesamt": 4, "versendet": 3, "unzustellbar": 1, "ungetrennt": 0,
+    }
+    assert antwort.context["kd_tageslimit"] == {"heute": 7, "limit": 20}
+    assert antwort.context["kd_sendefenster"] == [{
+        "tage_text": "Mo–Fr", "zeit_text": "08:00–19:00",
+        "zeitzone": "Europe/Berlin", "ist_jetzt": True,
+    }]
 
 
 def test_detail_zeigt_pausiert_hinweis_nur_wenn_pausiert(angemeldeter_client, daten_dir):

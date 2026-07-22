@@ -115,6 +115,41 @@ def test_kampagnen_stand_liefert_wholix_kennzahlen_und_betriebsdaten():
     }) in session.aufrufe
 
 
+def test_kampagnen_stand_raet_fehlende_summenwerte_nicht_als_null():
+    antworten = _standard_antworten()
+    antworten["/campaigns/analytics/steps"] = FakeResponse(200, [
+        {"step": "1", "variant": "A", "sent": 5},
+        {"step": "2", "variant": "A", "opened": 1},
+    ])
+    antworten["/campaigns/analytics/daily"] = FakeResponse(200, [
+        {"date": "2026-07-22", "sent": 3},
+        {"date": "2026-07-22"},
+    ])
+
+    eintrag = InstantlyLeser("key", session=FakeSession(antworten)).kampagnen_stand(["camp-1"])["camp-1"]
+
+    assert eintrag["schritte"] == [
+        {"schritt": 1, "versendet": 5, "geoeffnet": None},
+        {"schritt": 2, "versendet": None, "geoeffnet": 1},
+    ]
+    assert eintrag["heute_versendet"] is None
+
+
+def test_kampagnen_stand_behaelt_vorhandene_nullwerte_in_summen():
+    antworten = _standard_antworten()
+    antworten["/campaigns/analytics/steps"] = FakeResponse(200, [
+        {"step": "1", "variant": "A", "sent": 0, "opened": 0},
+    ])
+    antworten["/campaigns/analytics/daily"] = FakeResponse(200, [
+        {"date": "2026-07-22", "sent": 0},
+    ])
+
+    eintrag = InstantlyLeser("key", session=FakeSession(antworten)).kampagnen_stand(["camp-1"])["camp-1"]
+
+    assert eintrag["schritte"] == [{"schritt": 1, "versendet": 0, "geoeffnet": 0}]
+    assert eintrag["heute_versendet"] == 0
+
+
 @pytest.mark.parametrize("status_zahl,erwartet", [
     (0, "pausiert"), (1, "aktiv"), (2, "pausiert"), (3, "abgeschlossen"),
     (4, "aktiv"),

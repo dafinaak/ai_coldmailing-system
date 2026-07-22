@@ -366,14 +366,18 @@ class InstantlyLeser:
         # einfach keine Fortschrittsbalken statt abzustuerzen.
         schritte_roh = self._get("/campaigns/analytics/steps",
                                   params={"campaign_id": campaign_id}) or []
-        summen: dict[str, dict[str, int]] = {}
+        summen: dict[str, dict[str, int | None]] = {}
         for eintrag in schritte_roh:
             schritt = eintrag.get("step")
             if schritt is None:
                 continue
             summe = summen.setdefault(schritt, {"versendet": 0, "geoeffnet": 0})
-            summe["versendet"] += eintrag.get("sent") or 0
-            summe["geoeffnet"] += eintrag.get("opened") or 0
+            for ausgabe_feld, api_feld in (("versendet", "sent"), ("geoeffnet", "opened")):
+                wert = eintrag.get(api_feld)
+                if wert is None:
+                    summe[ausgabe_feld] = None
+                elif summe[ausgabe_feld] is not None:
+                    summe[ausgabe_feld] += wert
         schritte = [
             {"schritt": int(schritt) if str(schritt).isdigit() else schritt,
              "versendet": summen[schritt]["versendet"],
@@ -390,7 +394,10 @@ class InstantlyLeser:
             "antworten": analytics_eintrag.get("reply_count"),
             "unzustellbar": analytics_eintrag.get("bounced_count"),
             "abgeschlossen": analytics_eintrag.get("completed_count"),
-            "heute_versendet": sum((zeile.get("sent") or 0) for zeile in tageswerte),
+            "heute_versendet": (
+                None if any(zeile.get("sent") is None for zeile in tageswerte)
+                else sum(zeile["sent"] for zeile in tageswerte)
+            ),
             "absender": campaign.get("email_list") or [],
             "sendefenster": _sendefenster_aus_campaign(campaign),
             "schritte": schritte,

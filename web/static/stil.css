@@ -808,10 +808,13 @@ h1 { margin: 0; font-size: 24px; }
 .kamp-filter input:focus-visible,
 .kamp-filter select:focus-visible,
 .kamp-filter-knopf:focus-visible,
-.kamp-tabellenrahmen:focus-visible,
-.kamp-zeile:focus-visible {
+.kamp-tabellenrahmen:focus-visible {
   outline: 2px solid #F5A000;
   outline-offset: 2px;
+}
+.kamp-zeile:focus-visible {
+  outline: 2px solid #F5A000;
+  outline-offset: -2px;
 }
 
 .kamp-abschnitt-titel {

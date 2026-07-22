@@ -342,6 +342,17 @@ def test_kampagnen_mindestbreite_ist_auf_wholix_rahmen_begrenzt():
     assert "min-width: 1180px" in wholix_tabelle.group(1)
 
 
+def test_kampagnenzeilen_fokus_liegt_innerhalb_der_abgeschnittenen_tabelle():
+    css_pfad = Path(__file__).parents[2] / "web" / "static" / "stil.css"
+    css = css_pfad.read_text(encoding="utf-8")
+    zeilen_fokus = re.search(
+        r"^\.kamp-zeile:focus-visible\s*\{([^}]*)\}", css, re.M | re.S,
+    )
+
+    assert zeilen_fokus is not None
+    assert "outline-offset: -2px" in zeilen_fokus.group(1)
+
+
 def test_liste_zeigt_vorbereitung_fuer_wartende_und_angehaltene_auftraege(angemeldeter_client, daten_dir):
     app = angemeldeter_client.app
     app.state.instantly_leser = FakeInstantlyLeser({})

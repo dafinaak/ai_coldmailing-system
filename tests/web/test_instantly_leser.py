@@ -47,6 +47,7 @@ def _standard_antworten(campaign_id="camp-1", status=0, name="[TEST] Demo GmbH",
             "id": campaign_id,
             "name": name,
             "status": status,
+            "timestamp_created": "2026-07-18T14:05:00+00:00",
             "email_list": ["sender@firma.de"],
             "campaign_schedule": {"schedules": [{
                 "name": "Werktage",
@@ -67,8 +68,9 @@ def _standard_antworten(campaign_id="camp-1", status=0, name="[TEST] Demo GmbH",
             {"step": "1", "variant": "A", "sent": 5, "opened": 4},
             {"step": "2", "variant": "A", "sent": 2, "opened": 1},
         ]),
-        "/campaigns/analytics/daily": FakeResponse(200, [
-            {"date": "2026-07-22", "sent": 3},
+        "/accounts/analytics/daily": FakeResponse(200, [
+            {"date": "2026-07-22", "email_account": "sender@firma.de", "sent": 3},
+            {"date": "2026-07-22", "email_account": "anderes@firma.de", "sent": 90},
         ]),
     }
 
@@ -99,6 +101,7 @@ def test_kampagnen_stand_liefert_wholix_kennzahlen_und_betriebsdaten():
     assert eintrag["antworten"] == 2
     assert eintrag["unzustellbar"] == 1
     assert eintrag["heute_versendet"] == 3
+    assert eintrag["erstellt_am"] == "2026-07-18T14:05:00+00:00"
     assert eintrag["absender"] == ["sender@firma.de"]
     assert eintrag["sendefenster"] == [{
         "name": "Werktage", "von": "08:00", "bis": "19:00",
@@ -110,8 +113,8 @@ def test_kampagnen_stand_liefert_wholix_kennzahlen_und_betriebsdaten():
         {"schritt": 1, "versendet": 5, "geoeffnet": 4},
         {"schritt": 2, "versendet": 2, "geoeffnet": 1},
     ]
-    assert ("/campaigns/analytics/daily", {
-        "campaign_id": "camp-1", "start_date": "2026-07-22", "end_date": "2026-07-22",
+    assert ("/accounts/analytics/daily", {
+        "start_date": "2026-07-22", "end_date": "2026-07-22",
     }) in session.aufrufe
 
 
@@ -121,9 +124,8 @@ def test_kampagnen_stand_raet_fehlende_summenwerte_nicht_als_null():
         {"step": "1", "variant": "A", "sent": 5},
         {"step": "2", "variant": "A", "opened": 1},
     ])
-    antworten["/campaigns/analytics/daily"] = FakeResponse(200, [
-        {"date": "2026-07-22", "sent": 3},
-        {"date": "2026-07-22"},
+    antworten["/accounts/analytics/daily"] = FakeResponse(200, [
+        {"date": "2026-07-22", "email_account": "sender@firma.de"},
     ])
 
     eintrag = InstantlyLeser("key", session=FakeSession(antworten)).kampagnen_stand(["camp-1"])["camp-1"]
@@ -140,14 +142,70 @@ def test_kampagnen_stand_behaelt_vorhandene_nullwerte_in_summen():
     antworten["/campaigns/analytics/steps"] = FakeResponse(200, [
         {"step": "1", "variant": "A", "sent": 0, "opened": 0},
     ])
-    antworten["/campaigns/analytics/daily"] = FakeResponse(200, [
-        {"date": "2026-07-22", "sent": 0},
+    antworten["/accounts/analytics/daily"] = FakeResponse(200, [
+        {"date": "2026-07-22", "email_account": "sender@firma.de", "sent": 0},
     ])
 
     eintrag = InstantlyLeser("key", session=FakeSession(antworten)).kampagnen_stand(["camp-1"])["camp-1"]
 
     assert eintrag["schritte"] == [{"schritt": 1, "versendet": 0, "geoeffnet": 0}]
     assert eintrag["heute_versendet"] == 0
+
+
+def test_tagesversand_summiert_nur_verwendete_absenderpostfaecher():
+    antworten = _standard_antworten()
+    antworten["/campaigns/camp-1"]._payload["email_list"] = [
+        " Sender@Firma.de ", "zweiter@firma.de", "sender@firma.de",
+    ]
+    antworten["/accounts/analytics/daily"] = FakeResponse(200, [
+        {"date": "2026-07-22", "email_account": "sender@firma.de", "sent": 3},
+        {"date": "2026-07-22", "email_account": "zweiter@firma.de", "sent": 5},
+        {"date": "2026-07-22", "email_account": "fremd@firma.de", "sent": 90},
+    ])
+
+    eintrag = InstantlyLeser(
+        "key", session=FakeSession(antworten),
+        jetzt=lambda: datetime(2026, 7, 22, 10, 30),
+    ).kampagnen_stand(["camp-1"])["camp-1"]
+
+    assert eintrag["heute_versendet"] == 8
+
+
+def test_ausfall_der_tagesstatistik_laesst_kampagnenstand_erreichbar():
+    antworten = _standard_antworten()
+    antworten["/accounts/analytics/daily"] = FakeResponse(500, {})
+
+    eintrag = InstantlyLeser(
+        "key", session=FakeSession(antworten),
+        jetzt=lambda: datetime(2026, 7, 22, 10, 30),
+    ).kampagnen_stand(["camp-1"])["camp-1"]
+
+    assert eintrag["erreichbar"] is True
+    assert eintrag["versendet"] == 5
+    assert eintrag["schritte"][0]["versendet"] == 5
+    assert eintrag["heute_versendet"] is None
+
+
+def test_kampagnen_stand_laesst_fehlende_erstellzeit_unbekannt():
+    antworten = _standard_antworten()
+    del antworten["/campaigns/camp-1"]._payload["timestamp_created"]
+
+    eintrag = InstantlyLeser(
+        "key", session=FakeSession(antworten),
+    ).kampagnen_stand(["camp-1"])["camp-1"]
+
+    assert eintrag["erstellt_am"] is None
+
+
+def test_kampagnen_stand_laesst_unlesbare_erstellzeit_unbekannt():
+    antworten = _standard_antworten()
+    antworten["/campaigns/camp-1"]._payload["timestamp_created"] = 123
+
+    eintrag = InstantlyLeser(
+        "key", session=FakeSession(antworten),
+    ).kampagnen_stand(["camp-1"])["camp-1"]
+
+    assert eintrag["erstellt_am"] is None
 
 
 @pytest.mark.parametrize("status_zahl,erwartet", [

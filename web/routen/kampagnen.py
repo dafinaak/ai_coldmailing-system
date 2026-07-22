@@ -263,7 +263,8 @@ def _kampagnen_zeilen_aus_stand(mit_kampagne: list[dict], stand_by_id: dict[str,
             "name": name, "kunde": eintrag["kunde_name"],
             "chip_text": chip["text"], "chip_bg": chip["bg"], "chip_fg": chip["fg"],
             "status": stand.get("status"),
-            "gesamt": eintrag["empf_anzahl"],
+            "empfaenger": stand.get("empfaenger"),
+            "empfaenger_im_lauf": eintrag["empf_anzahl"],
             "versendet": versendet,
             "verschickt": versendet if versendet is not None else "—",
             "geoeffnet": stand.get("geoeffnet"),
@@ -287,18 +288,23 @@ def _summe_oder_unbekannt(zeilen: list[dict], feld: str):
     return sum(werte)
 
 
-def _warteschlange(gesamt_empfaenger: int, schritt_anzahl: int, stand: dict) -> dict:
+def _warteschlange(gesamt_empfaenger: int | None, schritt_anzahl: int, stand: dict) -> dict:
     """Bereitet nur die von Instantly belegten Gruppen der Warteschlange vor."""
-    moeglich = gesamt_empfaenger * schritt_anzahl
     versendet = stand.get("versendet")
     unzustellbar = stand.get("unzustellbar")
+    if gesamt_empfaenger is None:
+        return {"gesamt": None, "versendet": versendet,
+                "unzustellbar": unzustellbar, "ungetrennt": None}
+    moeglich = gesamt_empfaenger * schritt_anzahl
     if versendet is None or unzustellbar is None:
         return {"gesamt": moeglich, "versendet": versendet,
                 "unzustellbar": unzustellbar, "ungetrennt": None}
-    gesamt = max(moeglich, versendet + unzustellbar)
-    return {"gesamt": gesamt, "versendet": versendet,
+    if versendet + unzustellbar > moeglich:
+        return {"gesamt": moeglich, "versendet": versendet,
+                "unzustellbar": unzustellbar, "ungetrennt": None}
+    return {"gesamt": moeglich, "versendet": versendet,
             "unzustellbar": unzustellbar,
-            "ungetrennt": max(gesamt - versendet - unzustellbar, 0)}
+            "ungetrennt": moeglich - versendet - unzustellbar}
 
 
 _WOCHENTAGE = ("So", "Mo", "Di", "Mi", "Do", "Fr", "Sa")
@@ -354,16 +360,25 @@ def _sendefenster_anzeigen(sendefenster: list[dict], jetzt: datetime) -> list[di
                 "ist_jetzt": None,
             })
             continue
-        heute_aktiv = lokale_zeit.weekday() + 1 if lokale_zeit.weekday() < 6 else 0
-        ist_im_zeitraum = (von_zeit <= lokale_zeit.time() <= bis_zeit if von_zeit <= bis_zeit
-                           else lokale_zeit.time() >= von_zeit or lokale_zeit.time() <= bis_zeit)
+        heute = lokale_zeit.weekday() + 1 if lokale_zeit.weekday() < 6 else 0
+        aktive_tage = {nummer for nummer in range(7)
+                       if tage.get(str(nummer), tage.get(nummer, False))}
+        lokale_uhrzeit = lokale_zeit.time()
+        if von_zeit <= bis_zeit:
+            ist_jetzt = heute in aktive_tage and von_zeit <= lokale_uhrzeit <= bis_zeit
+        elif lokale_uhrzeit >= von_zeit:
+            ist_jetzt = heute in aktive_tage
+        elif lokale_uhrzeit <= bis_zeit:
+            # Der Teil nach Mitternacht gehoert zum am Vortag gestarteten
+            # Fenster, z.B. Dienstag 01:00 zu Montag 22:00–02:00.
+            ist_jetzt = (heute - 1) % 7 in aktive_tage
+        else:
+            ist_jetzt = False
         ergebnis.append({
             "tage_text": tage_text,
             "zeit_text": f"{von}–{bis}",
             "zeitzone": zeitzone,
-            "ist_jetzt": heute_aktiv in [nummer for nummer in range(7)
-                                         if tage.get(str(nummer), tage.get(nummer, False))]
-                          and ist_im_zeitraum,
+            "ist_jetzt": ist_jetzt,
         })
     return ergebnis
 
@@ -371,8 +386,6 @@ def _sendefenster_anzeigen(sendefenster: list[dict], jetzt: datetime) -> list[di
 def _tageslimit(stand: dict, postfach_antwort: dict) -> dict:
     """Ermittelt das Limit ausschliesslich aus den Absender-Postfaechern."""
     heute = stand.get("heute_versendet")
-    if not postfach_antwort.get("erreichbar"):
-        return {"heute": heute, "limit": None}
     postfaecher = postfach_antwort.get("postfaecher")
     absender = stand.get("absender")
     if not isinstance(postfaecher, list) or not isinstance(absender, list) or not absender:
@@ -428,7 +441,8 @@ def kampagnen_liste(request: Request, suche: str = "", status: str = "alle"):
     kennzahlen = {
         "kampagnen": len(kampagnen_zeilen),
         "aktiv": sum(zeile["status"] == "aktiv" for zeile in kampagnen_zeilen),
-        "empfaenger": sum(zeile["gesamt"] for zeile in kampagnen_zeilen),
+        "empfaenger": (0 if not kampagnen_zeilen
+                       else _summe_oder_unbekannt(kampagnen_zeilen, "empfaenger")),
         "geoeffnet": _summe_oder_unbekannt(kampagnen_zeilen, "geoeffnet"),
         "versendet": _summe_oder_unbekannt(kampagnen_zeilen, "versendet"),
         "antworten": _summe_oder_unbekannt(kampagnen_zeilen, "antworten"),
@@ -485,6 +499,7 @@ def _detail_kontext(request: Request, slug: str, ts: str, *, aktion_fehler: str 
 
     leser = _hole_leser(request)
     stand = leser.kampagnen_stand([campaign_id])[campaign_id]
+    live_empfaenger = stand.get("empfaenger")
     chip = _chip_fuer(stand.get("status"))
     name = stand.get("name") or f"[TEST] {kunde_name}"
 
@@ -498,11 +513,15 @@ def _detail_kontext(request: Request, slug: str, ts: str, *, aktion_fehler: str 
     for i, label in enumerate(schritt_labels, start=1):
         schritt = schritte_by_nr.get(i, {})
         versendet = schritt.get("versendet")
-        text = f"{versendet} von {gesamt} versendet" if versendet is not None else "—"
-        balken = round(100 * versendet / gesamt) if versendet is not None and gesamt else 0
+        geoeffnet = schritt.get("geoeffnet")
+        versendet_text = versendet if versendet is not None else "—"
+        geoeffnet_text = geoeffnet if geoeffnet is not None else "—"
+        text = f"{versendet_text} versendet · {geoeffnet_text} geöffnet"
+        balken = (round(100 * versendet / live_empfaenger)
+                  if versendet is not None and live_empfaenger else 0)
         kd_schritte.append({
             "label": label, "text": text, "balken": f"{balken}%",
-            "geoeffnet": schritt.get("geoeffnet"),
+            "geoeffnet": geoeffnet, "unbekannt": versendet is None,
         })
 
     freigabe = freigabe_info(store)
@@ -525,10 +544,10 @@ def _detail_kontext(request: Request, slug: str, ts: str, *, aktion_fehler: str 
 
     aktiviert = _aktiviert_info(lauf_dir)
 
-    live_stand_hinweis = _live_stand_hinweis([stand])
     postfach_antwort = (leser.postfaecher() if hasattr(leser, "postfaecher") else
-                         {"erreichbar": False, "postfaecher": []})
-    kd_warteschlange = _warteschlange(gesamt, len(schritt_labels), stand)
+                         {"erreichbar": False, "postfaecher": [], "stand": None})
+    live_stand_hinweis = _live_stand_hinweis([stand, postfach_antwort])
+    kd_warteschlange = _warteschlange(live_empfaenger, len(schritt_labels), stand)
     anzeige_zeitpunkt = _anzeige_zeitpunkt(request)
 
     return {
@@ -542,11 +561,13 @@ def _detail_kontext(request: Request, slug: str, ts: str, *, aktion_fehler: str 
         "kd_kontoproblem_hinweis": KONTOPROBLEM_HINWEIS if ist_kontoproblem else "",
         "kd_von": freigabe["von"] or "unbekannt",
         "kd_am": format_deutsches_datum(freigabe["am"]) or "—",
+        "kd_erstellt_am": format_deutsches_datum(stand.get("erstellt_am")) or "—",
         "kd_gesamt": gesamt,
         "kd_absender": stand.get("absender"),
         "kd_kennzahlen": {
             "empfaenger": stand.get("empfaenger"),
-            "moeglich": gesamt * len(schritt_labels),
+            "moeglich": (live_empfaenger * len(schritt_labels)
+                         if live_empfaenger is not None else None),
             "versendet": stand.get("versendet"),
             "geoeffnet": stand.get("geoeffnet"),
             "antworten": stand.get("antworten"),

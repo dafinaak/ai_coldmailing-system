@@ -21,13 +21,22 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
   nicht erfunden, und der Link führt zu den Kampagnen-Einstellungen in
   Instantly.
 - Frischer voller Testlauf am 22.07.2026:
-  `444 passed, 1 warning in 77.38s`. Die eine Warnung ist die bekannte
+  `458 passed, 1 warning in 87.95s`. Die eine Warnung ist die bekannte
   Starlette-Abkündigung für `httpx` im TestClient.
 - Die Sichtprüfung lief nur lokal mit festen Testdaten und ohne
   Instantly-Schlüssel. Desktop und 390-px-Ansichten von Übersicht und Detail
   sind festgehalten. Bei 390 px liegt die Navigation oben; die Übersicht hat
   volle Inhaltsbreite, keinen Dokument-Überlauf und nur die Tabelle scrollt
   intern.
+- Die Kampagnenansicht nutzt die Empfängerzahl von Instantly. Die Zahl des
+  zuletzt freigegebenen Laufs wird im Detail getrennt gezeigt. Der heutige
+  Versand wird aus der täglichen Konten-Auswertung nur für die verwendeten
+  Absenderpostfächer summiert; ein Ausfall dieser einzelnen Auswertung macht
+  die übrigen Live-Werte nicht unbekannt.
+- Ein zuletzt bekannter Postfachstand bleibt bei einem späteren Lesefehler
+  sichtbar und wird mit der Fehlerzeit gekennzeichnet. Kampagnentabelle,
+  Fehlermeldungen und Zahlenfarben sind auch für Tastatur und Lesesoftware
+  verständlich geprüft.
 
 ## Entscheidungen
 
@@ -40,6 +49,9 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
 - Verlässliche Instantly-Felder werden gezeigt. Für „fehlgeschlagen" und
   nicht getrennt gelieferte Warteschlangen-Zustände zeigt die Oberfläche
   keinen geschätzten Wert.
+- Instantly und der freigegebene Lauf bleiben getrennte Datenquellen: Live-
+  Kennzahlen und Warteschlange beruhen auf Instantly; der lokale Lauf wird
+  nur als eigener Vergleichswert gezeigt.
 - Die neun am 22.07.2026 gestrichenen Wholix-Funktionen bleiben gestrichen;
   insbesondere keine Benutzerverwaltung, Calls, Notizen oder AI-Chat.
 

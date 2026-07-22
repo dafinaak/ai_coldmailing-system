@@ -51,6 +51,13 @@ markierte TODOs bleiben offen.
   # analytics-Antwort exakt dieselbe Zahlen-Codierung wie Campaign.status
   # verwendet (Schema legt es nahe, exakt gleiche x-enumDescriptions), ist
   # hier nicht live geprueft.
+- GET /api/v2/accounts/analytics/daily (Query-Parameter "start_date" und
+  "end_date"): liefert eine LISTE je Datum und Absenderpostfach mit
+  "date", "email_account" und "sent". Der Endpunkt ist konto- statt
+  kampagnenbezogen; deshalb werden unten ausschliesslich Zeilen der
+  tatsaechlich in Campaign.email_list verwendeten Absender summiert. Ein
+  Ausfall dieses Zusatzabrufs macht nur "heute_versendet" unbekannt und
+  verwirft nicht die weiterhin erreichbaren Kampagnen-/Schrittwerte.
 
 GET /api/v2/emails (fuer Task 9, Postfach) ist ebenfalls in der Spec
 verifiziert (operationId "listEmail", Antwort {"items": [Email], ...}) -
@@ -341,6 +348,47 @@ class InstantlyLeser:
     def _frisch_genug(self, eintrag: dict) -> bool:
         return (self._jetzt() - eintrag["abgerufen_um"]).total_seconds() < CACHE_TTL_SEKUNDEN
 
+    def _tagesversand_fuer_absender(self, absender: list, heute: str) -> int | None:
+        """Liest den konto-weiten Tagesversand und summiert nur die in der
+        Kampagne verwendeten Absender. Fehlende Absenderzeilen oder Werte
+        bleiben unbekannt; ein Fehler dieses Zusatz-Endpunkts darf den
+        uebrigen Kampagnenstand nicht unbrauchbar machen."""
+        if not isinstance(absender, list):
+            return None
+        verwendete_absender = {
+            email.strip().casefold()
+            for email in absender
+            if isinstance(email, str) and email.strip()
+        }
+        if not verwendete_absender:
+            return None
+        try:
+            tageswerte = self._get("/accounts/analytics/daily", params={
+                "start_date": heute, "end_date": heute,
+            })
+        except (requests.exceptions.RequestException, RuntimeError, ValueError, KeyError):
+            return None
+        if not isinstance(tageswerte, list):
+            return None
+
+        gefunden = set()
+        summe = 0
+        for zeile in tageswerte:
+            if not isinstance(zeile, dict) or zeile.get("date") != heute:
+                continue
+            email = zeile.get("email_account")
+            if not isinstance(email, str):
+                continue
+            normalisiert = email.strip().casefold()
+            if normalisiert not in verwendete_absender:
+                continue
+            wert = zeile.get("sent")
+            if not isinstance(wert, int) or isinstance(wert, bool):
+                return None
+            gefunden.add(normalisiert)
+            summe += wert
+        return summe if gefunden == verwendete_absender else None
+
     def _hole_frisch(self, campaign_id: str) -> dict:
         """Ruft die vier GET-Endpunkte fuer genau eine Kampagne ab und baut
         daraus den Anzeige-Datensatz. Wirft weiter (RuntimeError bei
@@ -349,6 +397,7 @@ class InstantlyLeser:
         campaign = self._get(f"/campaigns/{campaign_id}", params={})
         status = _STATUS_TEXT.get(campaign.get("status"), "pausiert")
         name = campaign.get("name")
+        absender = campaign.get("email_list") or []
 
         analytics_eintrag = {}
         analytics = self._get("/campaigns/analytics", params={"id": campaign_id})
@@ -356,9 +405,7 @@ class InstantlyLeser:
             analytics_eintrag = analytics[0]
 
         heute = self._jetzt().date().isoformat()
-        tageswerte = self._get("/campaigns/analytics/daily", params={
-            "campaign_id": campaign_id, "start_date": heute, "end_date": heute,
-        }) or []
+        heute_versendet = self._tagesversand_fuer_absender(absender, heute)
 
         # je-Schritt-Zaehler nur, wenn die API sie liefert (siehe
         # Modul-Docstring) - eine leere/fehlende Antwort ergibt bewusst eine
@@ -385,20 +432,22 @@ class InstantlyLeser:
             for schritt in sorted(summen, key=lambda s: (len(str(s)), str(s)))
         ]
 
+        erstellt_am = campaign.get("timestamp_created")
+        if _parse_zeit(erstellt_am) is None:
+            erstellt_am = None
+
         return {
             "status": status,
             "name": name,
+            "erstellt_am": erstellt_am,
             "empfaenger": analytics_eintrag.get("leads_count"),
             "versendet": analytics_eintrag.get("emails_sent_count"),
             "geoeffnet": analytics_eintrag.get("open_count"),
             "antworten": analytics_eintrag.get("reply_count"),
             "unzustellbar": analytics_eintrag.get("bounced_count"),
             "abgeschlossen": analytics_eintrag.get("completed_count"),
-            "heute_versendet": (
-                None if any(zeile.get("sent") is None for zeile in tageswerte)
-                else sum(zeile["sent"] for zeile in tageswerte)
-            ),
-            "absender": campaign.get("email_list") or [],
+            "heute_versendet": heute_versendet,
+            "absender": absender,
             "sendefenster": _sendefenster_aus_campaign(campaign),
             "schritte": schritte,
         }
@@ -408,6 +457,7 @@ class InstantlyLeser:
     def kampagnen_stand(self, campaign_ids: list[str]) -> dict[str, dict]:
         """Liefert je Kampagnen-ID einen Datensatz mit "erreichbar" (bool),
         "status" ("aktiv"/"pausiert"/"abgeschlossen"/None), "name",
+        "erstellt_am" (roher ISO-Zeitstempel oder None),
         "empfaenger", "versendet", "geoeffnet", "antworten",
         "unzustellbar", "abgeschlossen" und "heute_versendet" (jeweils
         Zahl oder None), "absender" und "sendefenster" (Listen, ggf. leer),
@@ -435,6 +485,7 @@ class InstantlyLeser:
                 else:
                     ergebnis[campaign_id] = {
                         "erreichbar": False, "status": None, "name": None,
+                        "erstellt_am": None,
                         "empfaenger": None, "versendet": None, "geoeffnet": None,
                         "antworten": None, "unzustellbar": None, "abgeschlossen": None,
                         "heute_versendet": None, "absender": [], "sendefenster": [],

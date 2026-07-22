@@ -78,9 +78,10 @@ class FakeInstantlyLeser:
     Antworten statt echter HTTP-Aufrufe. `antworten` bildet campaign_id auf
     einen fertigen Stand-Datensatz ab (wie kampagnen_stand() ihn liefert)."""
 
-    def __init__(self, antworten: dict):
+    def __init__(self, antworten: dict, postfach_antwort: dict | None = None):
         self.antworten = antworten
         self.angefragt: list[str] = []
+        self.postfach_antwort = postfach_antwort
 
     def kampagnen_stand(self, campaign_ids):
         self.angefragt = list(campaign_ids)
@@ -90,7 +91,7 @@ class FakeInstantlyLeser:
         }) for cid in campaign_ids}
 
     def postfaecher(self):
-        return {
+        return self.postfach_antwort or {
             "erreichbar": True,
             "stand": datetime(2026, 7, 22, 10, 30),
             "postfaecher": [{
@@ -101,12 +102,13 @@ class FakeInstantlyLeser:
 
 
 def _stand(status="pausiert", name="[TEST] Demo GmbH", versendet=3, antworten=1,
-           schritte=None, erreichbar=True, stand=None):
+           schritte=None, erreichbar=True, stand=None, empfaenger=12):
     return {
         "erreichbar": erreichbar, "status": status, "name": name,
         "versendet": versendet, "antworten": antworten,
-        "empfaenger": 12, "geoeffnet": 4, "unzustellbar": 1,
+        "empfaenger": empfaenger, "geoeffnet": 4, "unzustellbar": 1,
         "abgeschlossen": 3, "heute_versendet": 7,
+        "erstellt_am": "2026-07-18T14:05:00+00:00",
         "absender": ["sender@firma.de"],
         "sendefenster": [{
             "name": "Werktage", "von": "08:00", "bis": "19:00",
@@ -115,7 +117,7 @@ def _stand(status="pausiert", name="[TEST] Demo GmbH", versendet=3, antworten=1,
             "zeitzone": "Europe/Berlin",
         }],
         "schritte": schritte if schritte is not None else [
-            {"schritt": 1, "versendet": versendet}],
+            {"schritt": 1, "versendet": versendet, "geoeffnet": 2}],
         "stand": stand if stand is not None else datetime(2026, 7, 20, 9, 30),
     }
 
@@ -175,8 +177,12 @@ def _lauf_anlegen(daten_dir: Path, slug: str, kunde_datei: str, *, ts: str,
         (lauf_dir / "lauf.log").write_text("Irgendein Fehler ist aufgetreten.", encoding="utf-8")
         return lauf_dir
 
-    store.save_step("personalisierung", {"fertig": [_TEXT], "nacharbeit": []})
-    store.save_step("pruefung_ok", [_TEXT])
+    texte = [
+        {**_TEXT, "email": f"test-{nummer:02d}@example.test"}
+        for nummer in range(1, 13)
+    ]
+    store.save_step("personalisierung", {"fertig": texte, "nacharbeit": []})
+    store.save_step("pruefung_ok", texte)
     if zustand == "wartet_auf_freigabe":
         return lauf_dir
 
@@ -254,7 +260,7 @@ def test_liste_zeigt_wholix_kennzahlen_und_filtert_nach_status(angemeldeter_clie
     assert antwort.context["kennzahlen"] == {
         "kampagnen": 2,
         "aktiv": 1,
-        "empfaenger": 2,
+        "empfaenger": 24,
         "geoeffnet": 8,
         "versendet": 6,
         "antworten": 2,
@@ -314,13 +320,34 @@ def test_liste_behaelt_kampagnenzeile_als_nativen_link(
 
     antwort = angemeldeter_client.get("/kampagnen")
 
-    link = re.search(r'<a href="/kampagnen/[^\"]+" class="kamp-zeile"[^>]*>',
+    link = re.search(r'<a href="/kampagnen/[^\"]+" class="kamp-detail-link"[^>]*>',
                      antwort.text)
     assert link is not None
     assert "role=" not in link.group(0)
-    assert 'role="row"' not in antwort.text
-    assert 'role="cell"' not in antwort.text
-    assert 'role="columnheader"' not in antwort.text
+
+
+def test_liste_rendert_eine_semantische_tabelle_mit_spaltenkoepfen(
+        angemeldeter_client, daten_dir):
+    angemeldeter_client.app.state.instantly_leser = FakeInstantlyLeser({
+        "camp-a": _stand(status="aktiv", name="Demo Kampagne"),
+    })
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml",
+                  ts="20260720-090000", campaign_id="camp-a")
+
+    antwort = angemeldeter_client.get("/kampagnen")
+    tabelle = re.search(r'<table class="kamp-tabelle[^"]*">(.*?)</table>',
+                        antwort.text, re.S)
+
+    assert tabelle is not None
+    assert "<thead>" in tabelle.group(1)
+    assert "<tbody>" in tabelle.group(1)
+    assert tabelle.group(1).count('scope="col"') == 9
+    assert "<th " in tabelle.group(1)
+    assert "<td " in tabelle.group(1)
+    assert re.search(
+        r'<td class="kamp-name">\s*<a href="/kampagnen/demo-gmbh/20260720-090000"',
+        tabelle.group(1), re.S,
+    )
 
 
 def test_kampagnen_mindestbreite_ist_auf_wholix_rahmen_begrenzt():
@@ -346,11 +373,50 @@ def test_kampagnenzeilen_fokus_liegt_innerhalb_der_abgeschnittenen_tabelle():
     css_pfad = Path(__file__).parents[2] / "web" / "static" / "stil.css"
     css = css_pfad.read_text(encoding="utf-8")
     zeilen_fokus = re.search(
-        r"^\.kamp-zeile:focus-visible\s*\{([^}]*)\}", css, re.M | re.S,
+        r"^\.kamp-detail-link:focus-visible\s*\{([^}]*)\}", css, re.M | re.S,
     )
 
     assert zeilen_fokus is not None
     assert "outline-offset: -2px" in zeilen_fokus.group(1)
+
+
+def test_kennzahlenfarben_haben_auf_weiss_mindestens_drei_zu_eins_kontrast():
+    css = (Path(__file__).parents[2] / "web" / "static" / "stil.css").read_text(
+        encoding="utf-8",
+    )
+
+    def helligkeit(hex_farbe: str) -> float:
+        werte = [int(hex_farbe[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+        linear = [wert / 12.92 if wert <= .04045 else ((wert + .055) / 1.055) ** 2.4
+                  for wert in werte]
+        return .2126 * linear[0] + .7152 * linear[1] + .0722 * linear[2]
+
+    def kontrast_zu_weiss(selector: str) -> float:
+        regel = re.search(rf"^{re.escape(selector)}\s*\{{([^}}]*)\}}", css, re.M | re.S)
+        assert regel is not None, selector
+        farbe = re.search(r"color:\s*(#[0-9A-Fa-f]{6})", regel.group(1))
+        assert farbe is not None, selector
+        return 1.05 / (helligkeit(farbe.group(1)) + .05)
+
+    for selector in (
+        ".wholix-karte--gruen strong",
+        ".wholix-karte--mint strong",
+        ".wholix-karte--orange strong",
+        ".kamp-metrik--gruen strong",
+        ".kamp-metrik--orange strong",
+        ".kamp-metrik--gelb strong",
+    ):
+        assert kontrast_zu_weiss(selector) >= 3, selector
+
+
+def test_fehlgeschlagen_erklaerung_ist_ohne_maus_sichtbar_und_verknuepft(
+        angemeldeter_client):
+    antwort = angemeldeter_client.get("/kampagnen")
+
+    assert 'aria-describedby="kamp-fehlgeschlagen-erklaerung"' in antwort.text
+    assert ('id="kamp-fehlgeschlagen-erklaerung">'
+            'Instantly liefert keinen verlässlichen Zähler</small>') in antwort.text
+    assert 'title="Instantly liefert keinen verlässlichen Zähler"' not in antwort.text
 
 
 def test_mobile_kampagnenuebersicht_nutzt_volle_breite_und_lokalen_tabellenscroll():
@@ -515,7 +581,7 @@ def test_detail_zeigt_schritte_mit_echten_tagen_und_wer_wann(angemeldeter_client
     assert "nach 9 Tagen" in text
     assert "Erste E-Mail (geht sofort raus)" in text
     assert "Freigegeben von Lena Hartmann am" in text
-    assert "3 von 1 versendet" in text or "3 von" in text
+    assert "3 versendet · — geöffnet" in text
     assert "app.instantly.ai/app/campaign/camp-a" in text
 
 
@@ -530,8 +596,9 @@ def test_detail_zeigt_warteschlange_sendefenster_und_tageslimit(angemeldeter_cli
 
     antwort = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-093000")
     assert antwort.context["kd_warteschlange"] == {
-        "gesamt": 4, "versendet": 3, "unzustellbar": 1, "ungetrennt": 0,
+        "gesamt": 36, "versendet": 3, "unzustellbar": 1, "ungetrennt": 32,
     }
+    assert antwort.context["kd_kennzahlen"]["moeglich"] == 36
     assert antwort.context["kd_tageslimit"] == {"heute": 7, "limit": 20}
     assert antwort.context["kd_sendefenster"] == [{
         "tage_text": "Mo–Fr", "zeit_text": "08:00–19:00",
@@ -543,6 +610,142 @@ def test_detail_zeigt_warteschlange_sendefenster_und_tageslimit(angemeldeter_cli
     app.state.jetzt = lambda: datetime(2026, 7, 26, 10, 30, tzinfo=ZoneInfo("Europe/Berlin"))
     sonntag = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-093000")
     assert sonntag.context["kd_sendefenster"][0]["ist_jetzt"] is False
+
+
+def test_liste_und_detail_nutzen_live_empfaenger_und_zeigen_lokalen_wert_getrennt(
+        angemeldeter_client, daten_dir):
+    angemeldeter_client.app.state.instantly_leser = FakeInstantlyLeser({
+        "camp-a": _stand(status="aktiv", empfaenger=7, versendet=3),
+    })
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml",
+                  ts="20260720-090000", campaign_id="camp-a")
+
+    liste = angemeldeter_client.get("/kampagnen")
+    detail = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-090000")
+
+    assert liste.context["kennzahlen"]["empfaenger"] == 7
+    assert liste.context["kampagnen"][0]["empfaenger"] == 7
+    assert detail.context["kd_kennzahlen"]["empfaenger"] == 7
+    assert detail.context["kd_kennzahlen"]["moeglich"] == 21
+    assert detail.context["kd_warteschlange"]["gesamt"] == 21
+    assert detail.context["kd_gesamt"] == 12
+    assert re.search(
+        r"<dt>Empfänger im freigegebenen Lauf</dt>\s*<dd>12</dd>",
+        detail.text,
+    )
+
+
+def test_unbekannte_live_empfaenger_machen_abhaengige_werte_unbekannt(
+        angemeldeter_client, daten_dir):
+    stand = _stand(status="aktiv", empfaenger=None)
+    angemeldeter_client.app.state.instantly_leser = FakeInstantlyLeser({"camp-a": stand})
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml",
+                  ts="20260720-090000", campaign_id="camp-a")
+
+    liste = angemeldeter_client.get("/kampagnen")
+    detail = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-090000")
+
+    assert liste.context["kennzahlen"]["empfaenger"] is None
+    assert detail.context["kd_kennzahlen"]["moeglich"] is None
+    assert detail.context["kd_warteschlange"]["gesamt"] is None
+    assert detail.context["kd_warteschlange"]["ungetrennt"] is None
+
+
+def test_detail_nutzt_letzten_postfachstand_und_zeigt_dessen_ausfallzeit(
+        angemeldeter_client, daten_dir):
+    postfach_antwort = {
+        "erreichbar": False,
+        "stand": datetime(2026, 7, 22, 8, 15),
+        "postfaecher": [{
+            "email": "sender@firma.de", "status": "verbunden",
+            "warmup": "an", "daily_limit": 20,
+        }],
+    }
+    angemeldeter_client.app.state.instantly_leser = FakeInstantlyLeser(
+        {"camp-a": _stand(status="aktiv")}, postfach_antwort=postfach_antwort,
+    )
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml",
+                  ts="20260720-090000", campaign_id="camp-a")
+
+    antwort = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-090000")
+
+    assert antwort.context["kd_tageslimit"] == {"heute": 7, "limit": 20}
+    assert "Live-Stand gerade nicht erreichbar" in antwort.text
+    assert "08:15" in antwort.text
+
+
+def test_detail_zeigt_oeffnungen_je_mail_schritt_auch_bei_unbekannten_werten(
+        angemeldeter_client, daten_dir):
+    stand = _stand(status="aktiv", schritte=[
+        {"schritt": 1, "versendet": 3, "geoeffnet": 2},
+        {"schritt": 2, "versendet": 1, "geoeffnet": None},
+        {"schritt": 3, "versendet": None, "geoeffnet": None},
+    ])
+    angemeldeter_client.app.state.instantly_leser = FakeInstantlyLeser({"camp-a": stand})
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml",
+                  ts="20260720-090000", campaign_id="camp-a")
+
+    antwort = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-090000")
+
+    assert "3 versendet · 2 geöffnet" in antwort.text
+    assert "1 versendet · — geöffnet" in antwort.text
+    assert "— versendet · — geöffnet" in antwort.text
+
+
+def test_detail_benennt_warteschlangenrest_nicht_als_noch_offen(
+        angemeldeter_client, daten_dir):
+    angemeldeter_client.app.state.instantly_leser = FakeInstantlyLeser({
+        "camp-a": _stand(status="aktiv"),
+    })
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml",
+                  ts="20260720-090000", campaign_id="camp-a")
+
+    antwort = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-090000")
+
+    assert "Nicht getrennt verfügbar: 32" in antwort.text
+    assert "32 nicht getrennt verfügbar" in antwort.text
+    assert "Noch offen" not in antwort.text
+
+
+def test_detail_zeigt_instantly_erstellzeit_deutsch_oder_als_strich(
+        angemeldeter_client, daten_dir):
+    angemeldeter_client.app.state.instantly_leser = FakeInstantlyLeser({
+        "camp-a": _stand(status="aktiv"),
+    })
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml",
+                  ts="20260720-090000", campaign_id="camp-a")
+
+    bekannt = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-090000")
+    assert re.search(r"<dt>Erstellt</dt>\s*<dd>18\.07\.2026, 14:05 Uhr</dd>", bekannt.text)
+
+    stand_ohne_zeit = _stand(status="aktiv")
+    stand_ohne_zeit["erstellt_am"] = None
+    angemeldeter_client.app.state.instantly_leser = FakeInstantlyLeser({
+        "camp-a": stand_ohne_zeit,
+    })
+    unbekannt = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-090000")
+    assert re.search(r"<dt>Erstellt</dt>\s*<dd>—</dd>", unbekannt.text)
+
+
+def test_sendefenster_ueber_mitternacht_zaehlt_am_folgetag_zum_vortag(
+        angemeldeter_client, daten_dir):
+    stand = _stand(status="aktiv")
+    stand["sendefenster"] = [{
+        "name": "Montagnacht", "von": "22:00", "bis": "02:00",
+        "tage": {"0": False, "1": True, "2": False, "3": False,
+                 "4": False, "5": False, "6": False},
+        "zeitzone": "Europe/Berlin",
+    }]
+    angemeldeter_client.app.state.instantly_leser = FakeInstantlyLeser({"camp-a": stand})
+    angemeldeter_client.app.state.jetzt = lambda: datetime(
+        2026, 7, 21, 1, 0, tzinfo=ZoneInfo("Europe/Berlin"),
+    )
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml",
+                  ts="20260720-090000", campaign_id="camp-a")
+
+    antwort = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-090000")
+
+    assert antwort.context["kd_sendefenster"][0]["ist_jetzt"] is True
 
 
 def test_detail_zeigt_unbekannte_live_werte_ohne_scheinbare_nullen(
@@ -675,7 +878,8 @@ def test_detail_behaelt_bekannte_nullwerte_auch_im_warteschlangenring(
     antwort = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-090000")
 
     assert antwort.status_code == 200
-    assert 'aria-label="0 versendet, 0 unzustellbar, 0 noch offen"' in antwort.text
+    assert ('aria-label="0 versendet, 0 unzustellbar, '
+            '0 nicht getrennt verfügbar"' in antwort.text)
     assert 'class="kamp-ring kamp-ring--unbekannt"' not in antwort.text
 
 

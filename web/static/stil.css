@@ -763,11 +763,18 @@ h1 { margin: 0; font-size: 24px; }
   line-height: 1.1;
 }
 .wholix-karte span { font-size: 12px; line-height: 1.25; }
+.wholix-karte small {
+  max-width: 128px;
+  margin-top: 2px;
+  color: var(--farbe-gedaempft);
+  font-size: 9px;
+  line-height: 1.25;
+}
 .wholix-karte--violett strong { color: #7C3AED; }
-.wholix-karte--gruen strong { color: #16B84E; }
+.wholix-karte--gruen strong { color: #137A3A; }
 .wholix-karte--blau strong { color: #1479F8; }
-.wholix-karte--mint strong { color: #43C981; }
-.wholix-karte--orange strong { color: #F5A000; }
+.wholix-karte--mint strong { color: #1B7F56; }
+.wholix-karte--orange strong { color: #A65F00; }
 .wholix-karte--rot strong { color: #E83F5B; }
 
 .kamp-filter {
@@ -812,7 +819,7 @@ h1 { margin: 0; font-size: 24px; }
   outline: 2px solid #8A4D00;
   outline-offset: 2px;
 }
-.kamp-zeile:focus-visible {
+.kamp-detail-link:focus-visible {
   outline: 2px solid #8A4D00;
   outline-offset: -2px;
 }
@@ -843,31 +850,41 @@ h1 { margin: 0; font-size: 24px; }
   border-radius: 0;
 }
 .kamp-kopf {
-  display: grid;
-  grid-template-columns: minmax(220px, 2fr) minmax(150px, 1fr) 128px repeat(5, minmax(92px, .7fr)) 138px;
-  gap: 12px;
-  padding: 13px 18px;
-  border-bottom: 1px solid #E7E9F0;
   font-size: 10.5px;
   color: #555B69;
   font-weight: 700;
   letter-spacing: 0.025em;
   white-space: nowrap;
 }
+.kamp-kampagnen-tabelle {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.kamp-spalte-name { width: 220px; }
+.kamp-spalte-angebot { width: 150px; }
+.kamp-spalte-status { width: 128px; }
+.kamp-spalte-zahl { width: 104px; }
+.kamp-spalte-datum { width: 162px; }
+.kamp-kopf th {
+  padding: 13px 12px;
+  border-bottom: 1px solid #E7E9F0;
+  text-align: left;
+}
+.kamp-kopf th:first-child,
+.kamp-zeile td:first-child { padding-left: 18px; }
+.kamp-kopf th:last-child,
+.kamp-zeile td:last-child { padding-right: 18px; }
 .kamp-zeile {
-  display: grid;
-  grid-template-columns: minmax(220px, 2fr) minmax(150px, 1fr) 128px repeat(5, minmax(92px, .7fr)) 138px;
-  gap: 12px;
-  align-items: center;
-  padding: 14px 18px;
-  border-bottom: 1px solid #EEF0F5;
   font-size: 13px;
   color: var(--farbe-text);
-  text-decoration: none;
 }
-.kamp-zeile:last-child { border-bottom: none; }
+.kamp-zeile td { padding: 14px 12px; border-bottom: 1px solid #EEF0F5; }
+.kamp-zeile:last-child td { border-bottom: none; }
 .kamp-zeile:hover { background: #FAFAFC; color: var(--farbe-text); }
 .kamp-name { font-family: var(--schrift-mono); font-weight: 600; font-size: 12.5px; }
+.kamp-detail-link { color: inherit; text-underline-offset: 3px; }
 .kamp-gedaempft { color: var(--farbe-gedaempft); font-size: 12.5px; }
 .kamp-zahl { font-family: var(--schrift-mono); }
 
@@ -948,9 +965,9 @@ h1 { margin: 0; font-size: 24px; }
   line-height: 1.25;
 }
 .kamp-metrik--blau strong { color: #1479F8; }
-.kamp-metrik--orange strong { color: #F5A000; }
-.kamp-metrik--gruen strong { color: #16B84E; }
-.kamp-metrik--gelb strong { color: #E9B500; }
+.kamp-metrik--orange strong { color: #A65F00; }
+.kamp-metrik--gruen strong { color: #137A3A; }
+.kamp-metrik--gelb strong { color: #806A00; }
 .kamp-metrik--violett strong { color: #7138E8; }
 .kamp-metrik--rot strong { color: #E83F5B; }
 

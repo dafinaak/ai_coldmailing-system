@@ -21,7 +21,10 @@
     <div class="wholix-karte wholix-karte--mint"><strong>{{ kennzahlen.geoeffnet if kennzahlen.geoeffnet is not none else '—' }}</strong><span>Geöffnet</span></div>
     <div class="wholix-karte wholix-karte--orange"><strong>{{ kennzahlen.versendet if kennzahlen.versendet is not none else '—' }}</strong><span>Versendet</span></div>
     <div class="wholix-karte wholix-karte--violett"><strong>{{ kennzahlen.antworten if kennzahlen.antworten is not none else '—' }}</strong><span>Antworten</span></div>
-    <div class="wholix-karte wholix-karte--rot" title="Instantly liefert keinen verlässlichen Zähler"><strong>—</strong><span>Fehlgeschlagen</span></div>
+    <div class="wholix-karte wholix-karte--rot" aria-describedby="kamp-fehlgeschlagen-erklaerung">
+      <strong>—</strong><span>Fehlgeschlagen</span>
+      <small id="kamp-fehlgeschlagen-erklaerung">Instantly liefert keinen verlässlichen Zähler</small>
+    </div>
     <div class="wholix-karte wholix-karte--orange"><strong>{{ kennzahlen.unzustellbar if kennzahlen.unzustellbar is not none else '—' }}</strong><span>Unzustellbar</span></div>
   </section>
 
@@ -60,24 +63,33 @@
   </div>
   {% else %}
   <div class="kamp-tabellenrahmen" tabindex="0" aria-label="Kampagnentabelle, horizontal scrollbar">
-    <div class="kamp-tabelle">
-      <div class="kamp-kopf">
-        <div>KAMPAGNE</div><div>ANGEBOT</div><div>STATUS</div><div>EMPFÄNGER</div><div>GEÖFFNET</div><div>VERSENDET</div><div>ANTWORTEN</div><div>UNZUSTELLBAR</div><div>FREIGEGEBEN AM</div>
-      </div>
+    <table class="kamp-tabelle kamp-kampagnen-tabelle">
+      <colgroup>
+        <col class="kamp-spalte-name"><col class="kamp-spalte-angebot"><col class="kamp-spalte-status">
+        <col class="kamp-spalte-zahl"><col class="kamp-spalte-zahl"><col class="kamp-spalte-zahl">
+        <col class="kamp-spalte-zahl"><col class="kamp-spalte-zahl"><col class="kamp-spalte-datum">
+      </colgroup>
+      <thead>
+        <tr class="kamp-kopf">
+          <th scope="col">KAMPAGNE</th><th scope="col">ANGEBOT</th><th scope="col">STATUS</th><th scope="col">EMPFÄNGER</th><th scope="col">GEÖFFNET</th><th scope="col">VERSENDET</th><th scope="col">ANTWORTEN</th><th scope="col">UNZUSTELLBAR</th><th scope="col">FREIGEGEBEN AM</th>
+        </tr>
+      </thead>
+      <tbody>
       {% for c in kampagnen %}
-      <a href="/kampagnen/{{ c.slug }}/{{ c.ts }}" class="kamp-zeile">
-        <div class="kamp-name">{{ c.name }}</div>
-        <div class="kamp-gedaempft">{{ c.kunde }}</div>
-        <div><span class="kamp-status" style="background: {{ c.chip_bg }}; color: {{ c.chip_fg }};">{{ c.chip_text }}</span></div>
-        <div class="kamp-zahl">{{ c.gesamt }}</div>
-        <div class="kamp-zahl">{{ c.geoeffnet if c.geoeffnet is not none else '—' }}</div>
-        <div class="kamp-zahl">{{ c.versendet if c.versendet is not none else '—' }}</div>
-        <div class="kamp-zahl">{{ c.antworten if c.antworten is not none else '—' }}</div>
-        <div class="kamp-zahl">{{ c.unzustellbar if c.unzustellbar is not none else '—' }}</div>
-        <div class="kamp-gedaempft">{{ c.freigegeben_am }}</div>
-      </a>
+        <tr class="kamp-zeile">
+          <td class="kamp-name"><a href="/kampagnen/{{ c.slug }}/{{ c.ts }}" class="kamp-detail-link">{{ c.name }}</a></td>
+          <td class="kamp-gedaempft">{{ c.kunde }}</td>
+          <td><span class="kamp-status" style="background: {{ c.chip_bg }}; color: {{ c.chip_fg }};">{{ c.chip_text }}</span></td>
+          <td class="kamp-zahl">{{ c.empfaenger if c.empfaenger is not none else '—' }}</td>
+          <td class="kamp-zahl">{{ c.geoeffnet if c.geoeffnet is not none else '—' }}</td>
+          <td class="kamp-zahl">{{ c.versendet if c.versendet is not none else '—' }}</td>
+          <td class="kamp-zahl">{{ c.antworten if c.antworten is not none else '—' }}</td>
+          <td class="kamp-zahl">{{ c.unzustellbar if c.unzustellbar is not none else '—' }}</td>
+          <td class="kamp-gedaempft">{{ c.freigegeben_am }}</td>
+        </tr>
       {% endfor %}
-    </div>
+      </tbody>
+    </table>
   </div>
   {% endif %}
 </div>

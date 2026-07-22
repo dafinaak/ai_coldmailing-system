@@ -68,10 +68,10 @@
       <strong>{{ kd_kennzahlen.antworten if kd_kennzahlen.antworten is not none else "—" }}</strong>
       <span>Antworten</span>
     </div>
-    <div class="kamp-metrik kamp-metrik--rot">
+    <div class="kamp-metrik kamp-metrik--rot" aria-describedby="kamp-detail-fehlgeschlagen-erklaerung">
       <strong>—</strong>
       <span>Fehlgeschlagen</span>
-      <small>Instantly liefert keinen verlässlichen Zähler</small>
+      <small id="kamp-detail-fehlgeschlagen-erklaerung">Instantly liefert keinen verlässlichen Zähler</small>
     </div>
     <div class="kamp-metrik kamp-metrik--orange">
       <strong>{{ kd_kennzahlen.unzustellbar if kd_kennzahlen.unzustellbar is not none else "—" }}</strong>
@@ -91,6 +91,10 @@
       <div>
         <dt>Kampagnen-ID</dt>
         <dd class="kamp-wert-mono">{{ campaign_id }}</dd>
+      </div>
+      <div>
+        <dt>Erstellt</dt>
+        <dd>{{ kd_erstellt_am }}</dd>
       </div>
       <div>
         <dt>Absender</dt>
@@ -128,7 +132,7 @@
         {% set unzustellbar_anteil = 0 %}
         {% endif %}
         <div class="kamp-ring" role="img"
-             aria-label="{{ kd_warteschlange.versendet }} versendet, {{ kd_warteschlange.unzustellbar }} unzustellbar, {{ kd_warteschlange.ungetrennt }} noch offen"
+             aria-label="{{ kd_warteschlange.versendet }} versendet, {{ kd_warteschlange.unzustellbar }} unzustellbar, {{ kd_warteschlange.ungetrennt }} nicht getrennt verfügbar"
              style="--kamp-versendet: {{ versendet_anteil }}%; --kamp-unzustellbar: {{ unzustellbar_anteil }}%;">
           <div class="kamp-ring-inhalt"><span>Gesamt</span><strong>{{ kd_warteschlange.gesamt }}</strong></div>
         </div>
@@ -139,7 +143,7 @@
         {% endif %}
         <div class="kamp-ring-legende" aria-label="Aufteilung der Warteschlange">
           <span><i class="kamp-punkt kamp-punkt--gruen"></i>Versendet: {{ kd_warteschlange.versendet if kd_warteschlange.versendet is not none else "—" }}</span>
-          <span><i class="kamp-punkt kamp-punkt--grau"></i>Noch offen: {{ kd_warteschlange.ungetrennt if kd_warteschlange.ungetrennt is not none else "—" }}</span>
+          <span><i class="kamp-punkt kamp-punkt--grau"></i>Nicht getrennt verfügbar: {{ kd_warteschlange.ungetrennt if kd_warteschlange.ungetrennt is not none else "—" }}</span>
           <span><i class="kamp-punkt kamp-punkt--orange"></i>Unzustellbar: {{ kd_warteschlange.unzustellbar if kd_warteschlange.unzustellbar is not none else "—" }}</span>
         </div>
       </div>
@@ -151,7 +155,7 @@
           <div class="kamp-schritt">
             <div class="kamp-schritt-kopf"><span>{{ s.label }}</span><span>{{ s.text }}</span></div>
             <div class="kamp-balken" role="img" aria-label="{{ s.label }}: {{ s.text }}">
-              <div class="kamp-balken-fuellung{% if s.text == "—" %} kamp-balken-fuellung--unbekannt{% endif %}" style="width: {{ s.balken }};"></div>
+              <div class="kamp-balken-fuellung{% if s.unbekannt %} kamp-balken-fuellung--unbekannt{% endif %}" style="width: {{ s.balken }};"></div>
             </div>
           </div>
           {% endfor %}

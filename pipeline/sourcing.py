@@ -37,10 +37,10 @@ Lead-Qualitaets-Fix (Probe-Lauf-Funde, siehe Auftrag):
    "Managing Director" - 5 Personen einer Firma anzuschreiben verbrennt
    Budget und wirkt unseriös, zumal die gewuenschten Rollen (kontakt_rollen,
    z.B. "Geschäftsführer"/"IT-Leiter") nur locker mit Apollos englischen
-   Jobtiteln abgeglichen wurden. Fix: _rolle_passt()/_kontakte_auswaehlen()
-   unten matchen ueber eine Synonym-Tabelle (deutsch<->englisch) und
-   deckeln auf kunde.max_kontakte_pro_firma (Default 2), sortiert nach
-   Rollen-Prioritaet aus kontakt_rollen (erste Rolle zuerst).
+   Jobtiteln abgeglichen wurden. Fix: _rolle_passt() unten matcht ueber eine
+   Synonym-Tabelle (deutsch<->englisch); _entscheider_kontakte() deckelt auf
+   kunde.max_kontakte_pro_firma (Default 1), sortiert nach Rollen-Prioritaet
+   aus kontakt_rollen (erste Rolle zuerst).
 2) Ein Google-Maps-Titel enthielt den Suchbegriff als Praefix
    ("IT-Dienstleister Hannover - Ihre Helden" statt "Ihre Helden"). Fix:
    _firmenname_saeubern() unten - genutzt wird der Name aber nur als
@@ -49,10 +49,10 @@ Lead-Qualitaets-Fix (Probe-Lauf-Funde, siehe Auftrag):
 import re
 from pipeline.models import Lead
 from pipeline.sources.apify_maps import ApifyMapsSource
-from pipeline.sources.apollo import ApolloSource
+from pipeline.sources.hunter import HunterSource
+from pipeline.sources.dropcontact import DropcontactSource
 
-MITARBEITERZAHL_KLEINFIRMA = 3
-MAX_KONTAKTE_PRO_FIRMA_STANDARD = 2  # siehe Kunde.max_kontakte_pro_firma (pipeline.config)
+MAX_KONTAKTE_PRO_FIRMA_STANDARD = 1  # siehe Kunde.max_kontakte_pro_firma (pipeline.config)
 
 # Rollen-Synonym-Tabelle (Lead-Qualitaets-Fix): jede Gruppe fasst eine
 # gewuenschte Rolle mit ihren deutschen UND englischen Entsprechungen
@@ -98,7 +98,10 @@ def _enthaelt_als_wort(haystack: str, needle: str) -> bool:
     d.h. kleingeschrieben, Bindestriche zu Leerzeichen - laufen."""
     if not needle:
         return False
-    return re.search(rf"\b{re.escape(needle)}\b", haystack) is not None
+    # Optionale deutsche weibliche Endung "in"/"innen" direkt hinter dem Wort
+    # (z.B. "Geschaeftsfuehrerin" -> "Geschaeftsfuehrer", "Leiterin" -> "Leiter"),
+    # bleibt wortgrenzen-genau - "cto" matcht weiter NICHT in "director".
+    return re.search(rf"\b{re.escape(needle)}(in|innen)?\b", haystack) is not None
 
 
 def _rolle_passt(kontakt_titel: str, gewuenschte_rolle: str) -> bool:
@@ -122,23 +125,6 @@ def _rolle_passt(kontakt_titel: str, gewuenschte_rolle: str) -> bool:
     return _enthaelt_als_wort(titel_norm, rolle_norm) or _enthaelt_als_wort(rolle_norm, titel_norm)
 
 
-def _kontakte_auswaehlen(kontakte: list, kontakt_rollen: list, max_pro_firma: int) -> list:
-    """Waehlt aus Apollos Rohkontakten einer Firma nur die aus, die zu einer
-    gewuenschten Rolle passen (_rolle_passt), sortiert nach Rollen-Prioritaet
-    (erste Rolle aus kontakt_rollen zuerst) und gedeckelt auf max_pro_firma.
-    Ein Kontakt, der zu mehreren Rollen passt, wird nur einmal gezaehlt (bei
-    der zuerst gefundenen, hoechst-priorisierten Rolle). Liefert eine LEERE
-    Liste, wenn kein Kontakt zu irgendeiner gewuenschten Rolle passt - das
-    Fallback-Verhalten dafuer (info@-Regel bzw. Best-Effort-1) entscheidet
-    source_leads() unten, nicht diese Funktion."""
-    passende = []
-    for rolle in kontakt_rollen:
-        for kontakt in kontakte:
-            if kontakt in passende:
-                continue
-            if _rolle_passt(kontakt.get("title", ""), rolle):
-                passende.append(kontakt)
-    return passende[:max_pro_firma]
 
 
 # "<Suchbegriff/Kategorie> - "-Praefix wie ihn Google-Maps-Titel manchmal
@@ -193,13 +179,75 @@ def _firmenname_saeubern(maps_name: str, maps_suche: str) -> str:
     return name.strip(" -–—:|")
 
 
-class NoOpDrittquelle:
-    """Stufe-3-Steckplatz: liefert nie Kontakte. Sobald ein drittes Tool
-    (Hunter/Lusha/Clay - noch nicht entschieden) feststeht, ersetzt eine
-    echte Implementierung mit derselben Schnittstelle
-    (finde_kontakte(firma) -> Liste von Kontakt-Dicts) diese Klasse."""
-    def finde_kontakte(self, firma: dict) -> list:
+def _qualifiziert(person: dict, kontakt_rollen: list) -> bool:
+    """Ein von Hunter gefundener Kontakt kommt nur als Entscheider infrage,
+    wenn Hunter ihn selbst als Entscheider markiert hat (decision_maker) ODER
+    sein Titel zu einer gewuenschten Rolle (kontakt_rollen) passt. So wird
+    kein zufaelliger Junior-Mitarbeiter angeschrieben - passt keiner, faellt
+    die Firma bewusst in die info@-Regel (Zuverlaessigkeit/Qualitaet zuerst)."""
+    if person.get("decision_maker"):
+        return True
+    return any(_rolle_passt(person.get("title", ""), rolle) for rolle in kontakt_rollen)
+
+
+def _nach_rollen_sortieren(personen: list, kontakt_rollen: list) -> list:
+    """Stabile Sortierung: Personen, deren Titel zu einer gewuenschten Rolle
+    (kontakt_rollen, z.B. Geschaeftsfuehrer/IT-Leiter) passt, kommen nach vorn -
+    in der Reihenfolge der kontakt_rollen. Der Rest behaelt Hunters
+    Reihenfolge nach Entscheider-Wahrscheinlichkeit. So wird zuerst der
+    gewuenschte Entscheider verifiziert, nicht irgendein Mitarbeiter."""
+    def rang(person):
+        for i, rolle in enumerate(kontakt_rollen):
+            if _rolle_passt(person.get("title", ""), rolle):
+                return i
+        return len(kontakt_rollen)
+    return sorted(personen, key=rang)
+
+
+def _verifizierte_email(person: dict, firma: dict, dropcontact) -> dict | None:
+    """Holt die persoenliche Mail eines von Hunter gefundenen Entscheiders:
+    zuerst ueber Dropcontact (baut + verifiziert aus Name + Webseite), sonst
+    ueber Hunters eigene Mail - aber NUR, wenn Hunter sie selbst als 'valid'
+    verifiziert hat. Findet keine der beiden Quellen eine gepruefte Adresse,
+    kommt None zurueck (lieber keine Mail als eine ungepruefte - Ruecklaeufer
+    schaedigen den Ruf der Absender-Postfaecher, siehe AGENTS.md).
+    Gibt {"wert", "quelle"} zurueck."""
+    ergebnis = dropcontact.email_bauen(
+        person.get("first_name", ""), person.get("last_name", ""),
+        firma.get("website", ""), company=firma.get("name", ""))
+    if ergebnis:
+        return {"wert": ergebnis["email"], "quelle": "dropcontact"}
+    if person.get("email") and person.get("verification_status") == "valid":
+        return {"wert": person["email"], "quelle": "hunter"}
+    return None
+
+
+def _entscheider_kontakte(firma: dict, kontakt_rollen: list, max_pro_firma: int,
+                          hunter, dropcontact) -> list:
+    """Stufe 2 (Weg A, siehe AGENTS.md): Hunter findet die Entscheider einer
+    Firma aus ihrer Domain, Dropcontact baut/prueft deren persoenliche Mail.
+    Gibt bis zu max_pro_firma Kontakte als {"first_name","last_name","email",
+    "title","source"}-Dicts zurueck - nur mit einer verifizierten Mail. Leere
+    Liste, wenn die Firma keine Domain hat, Hunter niemanden findet oder fuer
+    keinen Gefundenen eine Mail verifiziert werden kann (dann greift in
+    source_leads() die info@-Regel)."""
+    domain = firma.get("domain")
+    if not domain:
         return []
+    personen = [p for p in hunter.entscheider_finden(domain)
+                if _qualifiziert(p, kontakt_rollen)]
+    kontakte = []
+    for person in _nach_rollen_sortieren(personen, kontakt_rollen):
+        if len(kontakte) >= max_pro_firma:
+            break
+        email = _verifizierte_email(person, firma, dropcontact)
+        if email:
+            kontakte.append({
+                "first_name": person.get("first_name", ""),
+                "last_name": person.get("last_name", ""),
+                "email": email["wert"], "title": person.get("title", ""),
+                "source": email["quelle"]})
+    return kontakte
 
 
 def _pruefe_kunde(kunde):
@@ -213,116 +261,81 @@ def _pruefe_kunde(kunde):
             f"Konfigurationsdatei ergänzen.")
 
 
-def source_leads(kunde, limit, apify_key, apollo_key,
-                  apify_source=None, apollo_source=None, drittquelle=None) -> tuple:
-    """Fuehrt alle 3 Stufen aus und liefert (leads, deckung, firmen_mit_ausgang):
+def source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
+                  apify_source=None, hunter_source=None, dropcontact_source=None) -> tuple:
+    """Fuehrt alle Stufen aus und liefert (leads, deckung, firmen_mit_ausgang):
     - leads: Liste von pipeline.models.Lead (bestehende Form, downstream
       unveraendert nutzbar).
     - deckung: {"firmen_gesamt": int, "firmen_mit_kontakt": int,
-      "quote_prozent": float} - die Deckungsquote fuer den Bericht.
+      "quote_prozent": float} - die Deckungsquote fuer den Bericht. "mit
+      Kontakt" zaehlt eine persoenliche Entscheider-Mail ODER die info@-
+      Rueckfallebene.
     - firmen_mit_ausgang: die Stufe-1-Firmenliste aus Apify, JEDE Firma
-      zusaetzlich um ein "ausgang"-Feld ergaenzt (Apollo-422-Fix): einer von
-      "mit_kontakt" / "keine_webseite" / "apollo_kein_treffer" / "fehler".
-      Zweck: kuenftige Laeufe sollen sauber unterscheiden koennen, WARUM eine
-      Firma ohne Kontakt blieb (fehlende Webseite vs. Apollo hat wirklich
-      nichts gefunden vs. ein technischer Fehler bei der Anreicherung) -
-      vorher landete das alles ungetrennt in einer einzigen "kein Kontakt"-
-      Zahl, was den echten Bug (422 bei Firmen ohne Webseite) verschleiert
-      hat. __main__.lauf() persistiert diese Liste als firmen.json und
-      zaehlt daraus die Aufschluesselung fuer den Bericht.
+      zusaetzlich um ein "ausgang"-Feld ergaenzt: einer von
+      "mit_entscheider" (persoenliche, gepruefte Mail) / "info_fallback"
+      (kein persoenlicher Treffer, aber info@ als Rueckfall) / "keine_webseite"
+      / "kein_entscheider" (Webseite da, aber weder Hunter noch Dropcontact
+      lieferten eine gepruefte Person) / "fehler". Zweck: sauber unterscheiden,
+      WARUM eine Firma so endete - vor allem persoenlich vs. nur info@, denn
+      der eigentliche Ziel-Wert sind persoenliche Adressen. __main__.lauf()
+      persistiert diese Liste als firmen.json und zaehlt daraus die
+      Aufschluesselung fuer den Bericht.
 
-    `apify_source`/`apollo_source`/`drittquelle` sind fuer Tests injizierbar;
-    im echten Betrieb baut diese Funktion die echten Klassen selbst mit den
-    uebergebenen API-Keys."""
+    Ablauf (Weg A, siehe AGENTS.md): Google Maps (Firmen) -> Hunter
+    (Entscheider finden) -> Dropcontact (persoenliche Mail bauen/pruefen) ->
+    info@-Regel als Rueckfall. `apify_source`/`hunter_source`/
+    `dropcontact_source` sind fuer Tests injizierbar; im echten Betrieb baut
+    diese Funktion die echten Klassen selbst mit den uebergebenen API-Keys."""
     _pruefe_kunde(kunde)
     apify = apify_source or ApifyMapsSource(apify_key)
-    apollo = apollo_source or ApolloSource(apollo_key)
-    dritt = drittquelle or NoOpDrittquelle()
+    hunter = hunter_source or HunterSource(hunter_key)
+    dropcontact = dropcontact_source or DropcontactSource(dropcontact_key)
+    max_pro_firma = getattr(kunde, "max_kontakte_pro_firma", None) or MAX_KONTAKTE_PRO_FIRMA_STANDARD
 
     firmen = apify.search(kunde.maps_suche, limit)
     leads, firmen_mit_kontakt, firmen_mit_ausgang = [], 0, []
     for firma in firmen:
         try:
-            ergebnis = apollo.unternehmen_anreichern(firma, kunde.kontakt_rollen)
+            kontakte = _entscheider_kontakte(
+                firma, kunde.kontakt_rollen, max_pro_firma, hunter, dropcontact)
         except Exception as fehler:
-            # Eine einzelne fehlerhafte Firma (401/422 dauerhaft, oder ein
-            # 500 das auch die Retries in ApolloSource ueberlebt hat) darf
-            # bei ~50 Firmen pro Lauf nicht den kompletten Lauf mitreissen -
-            # sonst sind alle bereits gefundenen Leads UND das bereits
-            # verbrauchte Apify-/Apollo-Kontingent futsch. Diese Firma zaehlt
-            # weiter zu firmen_gesamt (Nenner der Deckungsquote), aber nicht
-            # zu firmen_mit_kontakt - sie verschlechtert nur die Zahl, statt
-            # den Lauf zu sprengen. Die Fehlermeldungen aus ApolloSource
-            # enthalten keine Secrets (Api-Key steht im Header, nicht im
-            # geloggten Text), daher unbedenklich mitzuloggen.
+            # Eine einzelne fehlerhafte Firma (Hunter/Dropcontact dauerhaft
+            # 4xx/5xx, oder Dropcontact lehnt den Batch ab - z.B. leere
+            # Credits) darf bei ~50 Firmen pro Lauf nicht den ganzen Lauf
+            # mitreissen: sonst sind alle bereits gefundenen Leads UND das
+            # verbrauchte Kontingent futsch. Diese Firma zaehlt weiter zu
+            # firmen_gesamt (Nenner der Deckungsquote), aber nicht zu
+            # firmen_mit_kontakt. Die Fehlermeldungen enthalten keine Secrets
+            # (Api-Key steht im Header, nicht im geloggten Text).
             print(f"Firma '{firma.get('name') or firma.get('domain') or '?'}' "
-                  f"übersprungen (Fehler bei der Kontakt-Anreicherung): {fehler}")
+                  f"übersprungen (Fehler bei der Entscheider-Suche): {fehler}")
             firmen_mit_ausgang.append({**firma, "ausgang": "fehler"})
             continue
 
-        kontakte_roh = ergebnis["kontakte"]
-        mitarbeiterzahl = ergebnis["mitarbeiterzahl"]
-        ist_kleinfirma = (mitarbeiterzahl is not None
-                           and mitarbeiterzahl <= MITARBEITERZAHL_KLEINFIRMA)
-        max_pro_firma = getattr(kunde, "max_kontakte_pro_firma", None) or MAX_KONTAKTE_PRO_FIRMA_STANDARD
+        firmenname = _firmenname_saeubern(firma.get("name", ""), kunde.maps_suche)
 
-        if kontakte_roh:
-            # Apollo hat Kontakte geliefert - erst rollenbewusst filtern +
-            # deckeln (Lead-Qualitaets-Fix), NICHT einfach alle uebernehmen.
-            kontakte = _kontakte_auswaehlen(kontakte_roh, kunde.kontakt_rollen, max_pro_firma)
-            if not kontakte and not ist_kleinfirma:
-                # Kein einziger gelieferter Kontakt passt zu einer
-                # gewuenschten Rolle, UND die Firma ist nicht klein genug
-                # fuer die info@-Regel unten: statt die Firma komplett zu
-                # verlieren, wird bewusst EIN Best-Effort-Kontakt behalten -
-                # der erste von Apollo gelieferte (keine weitere Wertung,
-                # da ohnehin keiner der Rollen entspricht).
-                kontakte = kontakte_roh[:1]
-            # Ist die Firma klein UND kein Kontakt passt zu einer Rolle,
-            # bleibt `kontakte` bewusst leer: die Firma faellt unten in die
-            # info@-Regel (nicht in die Drittquelle - Apollo hat ja
-            # tatsaechlich geantwortet, nur eben ohne passenden Kontakt).
-        else:
-            # Apollo hat ueberhaupt keine Kontakte gefunden - hier (und nur
-            # hier) kommt Stufe 3 (Drittquelle) zum Zug.
-            kontakte = dritt.finde_kontakte(firma)
-
-        # Firmenname: Apollos kanonischer Organisationsname wird bevorzugt
-        # (Lead-Qualitaets-Fix - Apollo kennt den echten Namen, nicht nur
-        # einen evtl. verunreinigten Google-Maps-Titel); nur wenn Apollo
-        # keine Organisation gefunden hat (ergebnis["name"] ist None/leer),
-        # wird der Maps-Titel als Rueckfallebene bereinigt.
-        firmenname = ergebnis.get("name") or _firmenname_saeubern(
-            firma.get("name", ""), kunde.maps_suche)
-
-        hat_kontakt = False
+        ausgang = "kein_entscheider" if firma.get("website") else "keine_webseite"
         if kontakte:
             for k in kontakte:
                 leads.append(Lead(
-                    first_name=k.get("first_name", ""), last_name=k.get("last_name", ""),
-                    email=k["email"], company=firmenname, title=k.get("title", ""),
-                    website=firma["website"], source="apollo"))
+                    first_name=k["first_name"], last_name=k["last_name"],
+                    email=k["email"], company=firmenname, title=k["title"],
+                    website=firma["website"], source=k["source"]))
             firmen_mit_kontakt += 1
-            hat_kontakt = True
-        elif ist_kleinfirma and firma.get("domain"):
+            ausgang = "mit_entscheider"
+        elif firma.get("domain"):
+            # info@-Regel: kein persoenlicher Entscheider geprueft, aber Domain
+            # vorhanden -> info@ als letzter Ausweg. Unsere Zielgruppe sind
+            # kleine Firmen, bei denen info@ oft direkt beim Inhaber landet.
+            # Bewusst als eigener Ausgang ("info_fallback") getrennt, damit im
+            # Bericht sichtbar bleibt, wie viele Firmen NUR ueber info@ statt
+            # ueber eine persoenliche Adresse erreicht werden.
             leads.append(Lead(
                 first_name="", last_name="", email=f"info@{firma['domain']}",
                 company=firmenname, title="", website=firma["website"], source="info@"))
             firmen_mit_kontakt += 1
-            hat_kontakt = True
+            ausgang = "info_fallback"
 
-        # Ausgang-Aufschluesselung (Apollo-422-Fix): "keine_webseite" trennt
-        # Firmen, die schon in Stufe 1 (Google Maps) ohne Webseite/Domain
-        # ankamen, von "apollo_kein_treffer" (Domain/Webseite vorhanden,
-        # aber weder Enrich noch Namens-Suche fanden eine Organisation bzw.
-        # keiner der gefundenen Kontakte passte) - genau die Unterscheidung,
-        # die vor dem Fix fehlte.
-        if hat_kontakt:
-            ausgang = "mit_kontakt"
-        elif not firma.get("website"):
-            ausgang = "keine_webseite"
-        else:
-            ausgang = "apollo_kein_treffer"
         firmen_mit_ausgang.append({**firma, "ausgang": ausgang})
 
     anzahl_firmen = len(firmen)

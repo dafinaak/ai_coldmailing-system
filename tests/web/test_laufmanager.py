@@ -142,7 +142,8 @@ def test_pflicht_pipeline_ehrt_globale_sperrliste_bei_cwd_ungleich_code_dir(tmp_
     monkeypatch.setattr(cli, "KI", _FakeKI)
     monkeypatch.setattr(run_store_modul, "datetime", _FakeDatetime)
     monkeypatch.setenv("APIFY_API_KEY", "test-key")
-    monkeypatch.setenv("APOLLO_API_KEY", "test-key")
+    monkeypatch.setenv("HUNTER_API_KEY", "test-key")
+    monkeypatch.setenv("DROPCONTACT_API_KEY", "test-key")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
     monkeypatch.setattr(cli, "LAEUFE", Path("laeufe"))
     monkeypatch.chdir(daten_dir)  # simuliert das cwd, mit dem der Unterprozess laeuft
@@ -219,7 +220,7 @@ def test_starte_ohne_bekannten_kunden_wirft_kundenichtgefunden(tmp_path):
         Laufmanager(tmp_path).starte("kunden/gibts-nicht.yaml", 10)
 
 
-def test_starte_ohne_neuen_laufordner_wirft_fehler_mit_apollo_hinweis(tmp_path, monkeypatch):
+def test_starte_ohne_neuen_laufordner_wirft_fehler_mit_hunter_hinweis(tmp_path, monkeypatch):
     daten_dir = tmp_path
     kunde_datei = _kunde_datei(daten_dir)
 
@@ -227,13 +228,13 @@ def test_starte_ohne_neuen_laufordner_wirft_fehler_mit_apollo_hinweis(tmp_path, 
         # Simuliert einen Unterprozess, der SOFORT abbricht (z.B. fehlende
         # Umgebungsvariable) - RunStore legt den Laufordner erst NACH den
         # Env-Pruefungen an, hier entsteht also gar kein Ordner.
-        stdout.write(b"Fehlende Umgebungsvariable: APOLLO_API_KEY. "
+        stdout.write(b"Fehlende Umgebungsvariable: HUNTER_API_KEY. "
                      b"Bitte in .env eintragen (siehe .env.example).\n")
         return FakeProzess(pid=1, laeuft=False)
 
     monkeypatch.setattr(laufmanager.subprocess, "Popen", fake_popen)
 
-    with pytest.raises(LaufmanagerFehler, match="Firmen-Datenbank"):
+    with pytest.raises(LaufmanagerFehler, match="Entscheider-Suche"):
         Laufmanager(daten_dir).starte(kunde_datei, 10)
 
     # Keine verwaiste temporaere Log-Datei zurueckgelassen.
@@ -309,11 +310,11 @@ def test_status_laeuft_wenn_pid_lebt(tmp_path, monkeypatch):
 
 def test_status_angehalten_wenn_pid_tot_und_keine_pruefung(tmp_path, monkeypatch):
     lauf_dir = _fabriziere_laufordner(
-        tmp_path, pid=123, log="Start\nRuntimeError: Apollo antwortet mit 500 auf https://x\n")
+        tmp_path, pid=123, log="Start\nRuntimeError: Hunter antwortet mit 500 auf https://x\n")
     monkeypatch.setattr(laufmanager, "_pid_lebt", lambda pid: False)
     stand = Laufmanager(tmp_path).status(lauf_dir)
     assert stand["zustand"] == "angehalten"
-    assert stand["fehler"]["was"] == "Die Firmen-Datenbank hat gerade nicht geantwortet."
+    assert stand["fehler"]["was"] == "Die Entscheider-Suche hat gerade nicht geantwortet."
 
 
 def test_status_loescht_sperre_wenn_pid_tot(tmp_path, monkeypatch):
@@ -571,14 +572,14 @@ def test_fortschrittsseite_zeigt_fehlerbox_und_fortsetzen_knopf_bei_angehalten(
         angemeldeter_client, daten_dir, monkeypatch):
     _kunde_datei(daten_dir)
     _fabriziere_laufordner(
-        daten_dir, pid=999, log="RuntimeError: Apollo antwortet mit 500 auf https://x\n",
+        daten_dir, pid=999, log="RuntimeError: Hunter antwortet mit 500 auf https://x\n",
         meta={"kunde_datei": "kunden/test-kunde.yaml", "limit": 25, "gestartet_am": "17.07.2026, 10:00"})
     monkeypatch.setattr(laufmanager, "_pid_lebt", lambda pid: False)
 
     antwort = angemeldeter_client.get("/auftraege/test-gmbh/20260101-000000")
     assert antwort.status_code == 200
     assert "Angehalten: E-Mail-Runde für Test GmbH" in antwort.text
-    assert "Die Firmen-Datenbank hat gerade nicht geantwortet." in antwort.text
+    assert "Die Entscheider-Suche hat gerade nicht geantwortet." in antwort.text
     assert "Fortsetzen" in antwort.text
     assert 'action="/auftraege/test-gmbh/20260101-000000/fortsetzen"' in antwort.text
 

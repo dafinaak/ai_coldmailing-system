@@ -10,6 +10,8 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
+from pipeline.run_store import RunStore
+
 
 SCHRITTE = ("mail_1", "follow_up_1", "follow_up_2")
 DATEINAME = "freigabe-status.json"
@@ -20,6 +22,59 @@ _LOCKS_GUARD = threading.Lock()
 
 class VeralteterStand(ValueError):
     """Die angezeigte Revision entspricht nicht mehr dem gespeicherten Stand."""
+
+
+def grundtexte_fuer_lauf(lauf_dir: Path, *, nacharbeit_einschliessen: bool = True) -> list[dict]:
+    """Liefert alle für die Freigabe relevanten Empfänger genau einmal.
+
+    Bereits bestandene Texte gewinnen gegenüber einem alten Nacharbeits-
+    Eintrag derselben Adresse. Das ist nach einer erfolgreichen Korrektur
+    wichtig: Beim finalen Übergabeversuch wird die korrigierte Sequenz in
+    ``pruefung_ok.json`` materialisiert, während der historische Prüfgrund
+    in ``personalisierung.json`` erhalten bleibt.
+    """
+    store = RunStore.resume(lauf_dir)
+    bestanden = store.load_step("pruefung_ok") if store.step_done("pruefung_ok") else []
+    if not isinstance(bestanden, list):
+        raise ValueError("Die geprüften E-Mail-Texte sind falsch aufgebaut.")
+
+    ergebnis: list[dict] = []
+    bekannte_adressen: set[str] = set()
+    for text in bestanden:
+        if not isinstance(text, dict):
+            raise ValueError("Ein geprüfter E-Mail-Text ist falsch aufgebaut.")
+        email = str(text.get("email") or "").strip().lower()
+        if not email or email in bekannte_adressen:
+            raise ValueError("Die Empfängerliste ist unvollständig oder enthält Dopplungen.")
+        bekannte_adressen.add(email)
+        ergebnis.append(dict(text))
+
+    if not nacharbeit_einschliessen:
+        return ergebnis
+
+    personalisierung = (
+        store.load_step("personalisierung")
+        if store.step_done("personalisierung")
+        else {"nacharbeit": []}
+    )
+    nacharbeit = personalisierung.get("nacharbeit", [])
+    if not isinstance(nacharbeit, list):
+        raise ValueError("Die Nacharbeitsliste ist falsch aufgebaut.")
+    for text in nacharbeit:
+        if not isinstance(text, dict):
+            raise ValueError("Ein Nacharbeits-Eintrag ist falsch aufgebaut.")
+        email = str(text.get("email") or "").strip().lower()
+        if not email:
+            raise ValueError("Ein Nacharbeits-Empfänger hat keine E-Mail-Adresse.")
+        if email in bekannte_adressen:
+            continue
+        bekannte_adressen.add(email)
+        ergebnis.append({
+            **text,
+            "_qa_blocked": True,
+            "_qa_reason": text.get("grund") or "Qualitätsprüfung nicht bestanden",
+        })
+    return ergebnis
 
 
 def _lock_fuer(lauf_dir: Path) -> threading.RLock:

@@ -25,9 +25,10 @@ from pipeline.__main__ import SendenFehler, _versand_ausfuehren
 from pipeline.approval import approve, freigabe_info, is_approved
 from pipeline.run_store import RunStore
 from web import auth
+from web.freigabe_status import FreigabeStatusStore, grundtexte_fuer_lauf
 from web.laufmanager import Laufmanager, _lade_json_sicher
 from web.nav import nav_kontext
-from web.wartende import kunde_fuer as _kunde_fuer, wartende_laeufe
+from web.wartende import kunde_fuer as _kunde_fuer, pruefbare_laeufe
 
 router = APIRouter()
 
@@ -136,20 +137,43 @@ def _dedupe_info_by_email(lauf_dir: Path) -> dict:
     return {d["email"].strip().lower(): d for d in behalten if d.get("email")}
 
 
-def _empfaenger_liste(texte: list, info_by_email: dict) -> list[dict]:
+def _empfaenger_liste(texte: list, info_by_email: dict, status_ansicht: dict) -> list[dict]:
+    status_by_email = {
+        e["email"].strip().lower(): e for e in status_ansicht["recipients"]
+    }
     ergebnis = []
     for t in texte:
-        info = info_by_email.get(t["email"].strip().lower(), {})
+        email_key = t["email"].strip().lower()
+        info = info_by_email.get(email_key, {})
+        status = status_by_email[email_key]
         name = " ".join(filter(None, [info.get("first_name"), info.get("last_name")])).strip()
+        alle_bestaetigt = all(s["approved"] for s in status["steps"].values())
+        zeilen_status = (
+            "nacharbeit" if status["qa_blocked"]
+            else "fertig" if alle_bestaetigt
+            else "offen"
+        )
         ergebnis.append({
+            "id": status["id"],
             "email": t["email"],
             "name": name or t["email"],
             "firma": info.get("company", ""),
             "rolle": info.get("title", ""),
+            "status": zeilen_status,
+            "qa_blocked": status["qa_blocked"],
+            "qa_reason": status["qa_reason"],
             "betreff": t.get("betreff", ""),
             "mail_1": t.get("mail_1", ""),
             "follow_up_1": t.get("follow_up_1", ""),
             "follow_up_2": t.get("follow_up_2", ""),
+            "steps": [
+                {"key": "mail_1", "label": "E-Mail 1", "betreff": t.get("betreff", ""),
+                 "text": t.get("mail_1", ""), **status["steps"]["mail_1"]},
+                {"key": "follow_up_1", "label": "Follow-up 1", "betreff": "",
+                 "text": t.get("follow_up_1", ""), **status["steps"]["follow_up_1"]},
+                {"key": "follow_up_2", "label": "Follow-up 2", "betreff": "",
+                 "text": t.get("follow_up_2", ""), **status["steps"]["follow_up_2"]},
+            ],
         })
     return ergebnis
 
@@ -173,14 +197,6 @@ def _nacharbeit_liste(nacharbeit: list, info_by_email: dict) -> list[dict]:
     return ergebnis
 
 
-def _wartende_laeufe(request: Request) -> list[dict]:
-    # Task 7: die Aggregation selbst lebt jetzt in web.wartende (geteilt mit
-    # dem Dashboard und dem Sidebar-Badge) - hier nur noch ein duenner
-    # Wrapper, damit der Rest dieser Datei (freigabe_liste) unveraendert
-    # bleibt.
-    return wartende_laeufe(request.app.state.daten_dir)
-
-
 def _lese_kontext(request: Request, slug: str, ts: str, *,
                    fehler: str | None = None, versand_fehler: dict | None = None) -> dict:
     daten_dir = request.app.state.daten_dir
@@ -201,8 +217,33 @@ def _lese_kontext(request: Request, slug: str, ts: str, *,
 
     personalisierung = (store.load_step("personalisierung")
                          if store.step_done("personalisierung") else {"fertig": [], "nacharbeit": []})
-    pruefung_ok = store.load_step("pruefung_ok") if store.step_done("pruefung_ok") else []
     info_by_email = _dedupe_info_by_email(lauf_dir)
+    try:
+        grundtexte = grundtexte_fuer_lauf(
+            lauf_dir,
+            nacharbeit_einschliessen=stand["zustand"] != "uebergeben",
+        )
+        status_store = FreigabeStatusStore(lauf_dir)
+        status_ansicht = status_store.ansicht(
+            grundtexte,
+            freigabe_info(store) if is_approved(store) else None,
+        )
+        wirksame_texte = status_store.materialisieren(grundtexte)
+        empfaenger = _empfaenger_liste(wirksame_texte, info_by_email, status_ansicht)
+    except (OSError, ValueError, KeyError) as status_fehler:
+        grundtexte = []
+        status_ansicht = {"revision": "", "recipients": [], "all_approved": False}
+        empfaenger = []
+        fehler = fehler or str(status_fehler)
+
+    voll_bestaetigt = sum(e["status"] == "fertig" for e in empfaenger)
+    nacharbeit_anzahl = sum(e["status"] == "nacharbeit" for e in empfaenger)
+    offen_anzahl = len(empfaenger) - voll_bestaetigt - nacharbeit_anzahl
+    pflichttexte_vollstaendig = bool(empfaenger) and all(
+        e["email"] and e["betreff"] and e["mail_1"]
+        and e["follow_up_1"] and e["follow_up_2"]
+        for e in empfaenger
+    )
 
     # E-Fix 4: sicheres JSON-Lade-Muster (web.laufmanager._lade_json_sicher)
     # statt direktem json.loads - eine kaputte/nicht mehr gueltige
@@ -222,10 +263,15 @@ def _lese_kontext(request: Request, slug: str, ts: str, *,
         "absender": absender,
         "tag_1": tage[0], "tag_2": tage[1] if len(tage) > 1 else tage[0],
         "zustand": stand["zustand"],
-        "empfaenger": _empfaenger_liste(pruefung_ok, info_by_email),
-        "empf_anzahl": len(pruefung_ok),
+        "empfaenger": empfaenger,
+        "empf_anzahl": len(empfaenger),
+        "voll_bestaetigt": voll_bestaetigt,
+        "offen_anzahl": offen_anzahl,
         "nacharbeit": _nacharbeit_liste(personalisierung.get("nacharbeit", []), info_by_email),
-        "nacharbeit_anzahl": len(personalisierung.get("nacharbeit", [])),
+        "nacharbeit_anzahl": nacharbeit_anzahl,
+        "revision": status_ansicht["revision"],
+        "uebergabe_bereit": status_ansicht["all_approved"] and pflichttexte_vollstaendig,
+        "schreibgeschuetzt": stand["zustand"] == "uebergeben",
         "checkliste_texte": CHECKLISTE_TEXTE,
         "fehler": fehler,
         "versand_fehler": versand_fehler,
@@ -299,7 +345,7 @@ async def freigabe_liste(request: Request):
         {
             "nutzer": auth.aktueller_nutzer(request),
             "nav": nav_kontext(request),
-            "laeufe": _wartende_laeufe(request),
+            "gruppen": pruefbare_laeufe(request.app.state.daten_dir),
         },
     )
 

@@ -152,20 +152,26 @@ def test_liste_leer_zeigt_hinweis(angemeldeter_client):
     assert "Sobald neue E-Mails fertig sind, erscheinen sie hier zum Lesen und Freigeben." in antwort.text
 
 
-def test_liste_zeigt_nur_wartende_laeufe(angemeldeter_client, daten_dir):
-    wartend = _lauf_anlegen(daten_dir, ts="20260717-090000",
-                             dedupe_behalten=_DEDUPE_BEHALTEN)
+def test_liste_trennt_offene_und_uebergebene_runden(angemeldeter_client, daten_dir):
+    _lauf_anlegen(daten_dir, ts="20260717-090000",
+                  dedupe_behalten=_DEDUPE_BEHALTEN)
     _lauf_anlegen(daten_dir, ts="20260717-100000",
                   dedupe_behalten=_DEDUPE_BEHALTEN, freigegeben=True)
+    _lauf_anlegen(daten_dir, ts="20260717-103000",
+                  dedupe_behalten=_DEDUPE_BEHALTEN, freigegeben=True,
+                  versand_komplett={"campaign_id": "camp-1"})
     _lauf_anlegen(daten_dir, ts="20260717-110000",
                   dedupe_behalten=_DEDUPE_BEHALTEN,
                   abgelehnt={"von": "Lena", "am": "17.07.2026", "begruendung": "x"})
 
     antwort = angemeldeter_client.get("/pruefen")
     assert antwort.status_code == 200
+    assert "Offen" in antwort.text
+    assert "Übergeben" in antwort.text
     assert KUNDE_NAME in antwort.text
     assert f"/pruefen/{KUNDE_SLUG}/20260717-090000" in antwort.text
-    assert f"/pruefen/{KUNDE_SLUG}/20260717-100000" not in antwort.text
+    assert f"/pruefen/{KUNDE_SLUG}/20260717-100000" in antwort.text
+    assert f"/pruefen/{KUNDE_SLUG}/20260717-103000" in antwort.text
     assert f"/pruefen/{KUNDE_SLUG}/20260717-110000" not in antwort.text
     assert "Nichts wartet auf dich" not in antwort.text
 
@@ -192,6 +198,35 @@ def test_lese_ansicht_zeigt_texte_email_und_echte_tage(angemeldeter_client, date
     # dedupe-Info (Name/Firma) fuer die Empfaengerliste
     assert "Anna Muster" in text or "Anna" in text
     assert "Firma GmbH" in text
+
+
+def test_lese_ansicht_zeigt_drei_schritte_und_stabile_empfaenger_id(
+        angemeldeter_client, daten_dir):
+    _lauf_anlegen(daten_dir, dedupe_behalten=_DEDUPE_BEHALTEN)
+
+    erste = angemeldeter_client.get(f"/pruefen/{KUNDE_SLUG}/20260717-090000")
+    zweite = angemeldeter_client.get(f"/pruefen/{KUNDE_SLUG}/20260717-090000")
+
+    assert erste.status_code == 200
+    assert 'data-recipient-id="' in erste.text
+    assert 'data-step="mail_1"' in erste.text
+    assert 'data-step="follow_up_1"' in erste.text
+    assert 'data-step="follow_up_2"' in erste.text
+    erste_id = erste.text.split('data-recipient-id="', 1)[1].split('"', 1)[0]
+    zweite_id = zweite.text.split('data-recipient-id="', 1)[1].split('"', 1)[0]
+    assert erste_id == zweite_id
+
+
+def test_nacharbeit_steht_als_blockierte_zeile_in_derselben_runde(
+        angemeldeter_client, daten_dir):
+    _lauf_anlegen(daten_dir, dedupe_behalten=_DEDUPE_BEHALTEN, nacharbeit=_NACHARBEIT)
+
+    antwort = angemeldeter_client.get(f"/pruefen/{KUNDE_SLUG}/20260717-090000")
+
+    assert antwort.status_code == 200
+    assert 'data-status="nacharbeit"' in antwort.text
+    assert "carla@firma.de" in antwort.text
+    assert "Betreff länger als 60 Zeichen" in antwort.text
 
 
 def test_lese_ansicht_zeigt_aussortierte_texte_aufklappbar(angemeldeter_client, daten_dir):

@@ -87,32 +87,40 @@
     <div class="empf-liste" id="empf-liste">
       <div class="empf-liste-kopf">EMPFÄNGER · {{ empf_anzahl }}</div>
       {% for e in empfaenger %}
-      <div class="empf-zeile" data-empf-index="{{ loop.index0 }}">
+      <div class="empf-zeile" data-empf-index="{{ loop.index0 }}"
+           data-recipient-id="{{ e.id }}" data-status="{{ e.status }}">
         <span class="empf-gelesen-haken" data-gelesen-haken>&nbsp;</span>
         <div>
           <div class="empf-zeile-name">{{ e.firma }}</div>
           <div class="empf-zeile-info">{{ e.name }} · {{ e.rolle }}</div>
           <div class="empf-zeile-mail">{{ e.email }}</div>
+          {% if e.qa_reason %}<div class="nacharbeit-grund">{{ e.qa_reason }}</div>{% endif %}
         </div>
       </div>
       {% endfor %}
     </div>
     <div class="lese-liste">
       {% for e in empfaenger %}
-      <div class="lese-karte">
+      <div class="lese-karte" data-recipient-id="{{ e.id }}" data-status="{{ e.status }}">
         <div class="lese-kopf">
           <div class="lese-an-label">AN</div>
           <div class="lese-name">{{ e.name }} · {{ e.rolle }}</div>
           <div class="lese-firma">{{ e.firma }}</div>
           <div class="lese-mail">{{ e.email }}</div>
         </div>
-        <div class="lese-textteil-label">Erste E-Mail (geht sofort raus)</div>
-        <div class="lese-betreff">{{ e.betreff }}</div>
-        <div class="lese-text">{{ e.mail_1 }}</div>
-        <div class="lese-textteil-label">Nachfass-Mail 1 (nach {{ tag_1 }} Tagen)</div>
-        <div class="lese-text">{{ e.follow_up_1 }}</div>
-        <div class="lese-textteil-label">Nachfass-Mail 2 (nach {{ tag_2 }} Tagen)</div>
-        <div class="lese-text">{{ e.follow_up_2 }}</div>
+        <div data-step="mail_1">
+          <div class="lese-textteil-label">Erste E-Mail (geht sofort raus)</div>
+          <div class="lese-betreff">{{ e.betreff }}</div>
+          <div class="lese-text">{{ e.mail_1 }}</div>
+        </div>
+        <div data-step="follow_up_1">
+          <div class="lese-textteil-label">Nachfass-Mail 1 (nach {{ tag_1 }} Tagen)</div>
+          <div class="lese-text">{{ e.follow_up_1 }}</div>
+        </div>
+        <div data-step="follow_up_2">
+          <div class="lese-textteil-label">Nachfass-Mail 2 (nach {{ tag_2 }} Tagen)</div>
+          <div class="lese-text">{{ e.follow_up_2 }}</div>
+        </div>
       </div>
       {% else %}
       <p class="kunden-leer">Keine Texte zum Lesen.</p>
@@ -126,6 +134,7 @@
     <div class="gate-text">Freigeben heißt: Die Texte gehen als Kampagne — noch pausiert — an Instantly. Verschickt wird erst, wenn du die Kampagne mit »Jetzt verschicken« startest (auf der Kampagnen-Seite). Ohne deine Freigabe passiert nichts. Festgehalten wird: freigegeben von {{ nutzer }} am {{ heute }}.</div>
 
     <form method="post" action="/pruefen/{{ slug }}/{{ ts }}/freigeben" id="freigeben-form">
+      <input type="hidden" name="revision" value="{{ revision }}">
       <div class="checkliste" id="checkliste">
         {% for text in checkliste_texte %}
         <label class="checkliste-zeile">

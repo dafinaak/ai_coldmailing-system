@@ -35,6 +35,7 @@ from web.freigabe_status import (
     grundtexte_fuer_lauf,
 )
 from web.laufmanager import Laufmanager, _lade_json_sicher
+from web.instantly_leser import geteilten_leser
 from web.nav import nav_kontext
 from web.wartende import kunde_fuer as _kunde_fuer, pruefbare_laeufe
 
@@ -214,6 +215,26 @@ def _nacharbeit_liste(nacharbeit: list, info_by_email: dict) -> list[dict]:
     return ergebnis
 
 
+def _live_status_anreichern(empfaenger: list[dict], recipients: dict) -> int:
+    """Verbindet belegte Instantly-Werte ueber die normalisierte E-Mail."""
+    fehlend = 0
+    for eintrag in empfaenger:
+        live = recipients.get(eintrag["email"].strip().lower())
+        eintrag["live_known"] = live is not None
+        if live is None:
+            fehlend += 1
+            live = {"steps": {}, "overall": {}}
+        live_schritte = live.get("steps") or {}
+        for schritt in eintrag["steps"]:
+            schritt_live = live_schritte.get(schritt["key"]) or {}
+            schritt["sent_at"] = schritt_live.get("sent_at")
+            schritt["replied"] = schritt_live.get("replied")
+        eintrag["live_overall"] = live.get("overall") or {
+            "replied": None, "status": None,
+        }
+    return fehlend
+
+
 def _lese_kontext(request: Request, slug: str, ts: str, *,
                    fehler: str | None = None, versand_fehler: dict | None = None) -> dict:
     daten_dir = request.app.state.daten_dir
@@ -262,6 +283,38 @@ def _lese_kontext(request: Request, slug: str, ts: str, *,
         for e in empfaenger
     )
 
+    campaign_id = (store.load_step("versand_komplett")["campaign_id"]
+                   if store.step_done("versand_komplett") else None)
+    live_erreichbar = None
+    live_stand = None
+    live_warnung = None
+    if campaign_id:
+        try:
+            live = geteilten_leser(request.app).freigabe_stand(campaign_id)
+        except (KeyError, OSError, RuntimeError, requests.exceptions.RequestException):
+            live = {"recipients": {}, "erreichbar": False, "stand": None}
+        live_erreichbar = live.get("erreichbar", False)
+        live_stand = live.get("stand")
+        fehlend = _live_status_anreichern(empfaenger, live.get("recipients") or {})
+        if not live_erreichbar:
+            if live_stand is None:
+                live_warnung = (
+                    "Instantly ist gerade nicht erreichbar. Versand und Antworten "
+                    "sind deshalb unbekannt."
+                )
+            else:
+                live_warnung = (
+                    "Instantly ist gerade nicht erreichbar. Gezeigt wird der zuletzt "
+                    "bekannte Stand."
+                )
+        elif fehlend:
+            live_warnung = (
+                "Instantly hat nicht für alle Empfänger einen belegbaren Stand geliefert. "
+                "Fehlende Werte bleiben unbekannt."
+            )
+    else:
+        _live_status_anreichern(empfaenger, {})
+
     # E-Fix 4: sicheres JSON-Lade-Muster (web.laufmanager._lade_json_sicher)
     # statt direktem json.loads - eine kaputte/nicht mehr gueltige
     # abgelehnt.json (z.B. Unterprozess mitten im Schreiben abgebrochen)
@@ -291,11 +344,13 @@ def _lese_kontext(request: Request, slug: str, ts: str, *,
         "schreibgeschuetzt": stand["zustand"] == "uebergeben",
         "fehler": fehler,
         "versand_fehler": versand_fehler,
+        "live_erreichbar": live_erreichbar,
+        "live_stand": live_stand,
+        "live_warnung": live_warnung,
         "freigabe": freigabe_info(store),
         "abgelehnt": abgelehnt,
         "heute": datetime.now().strftime("%d.%m.%Y, %H:%M"),
-        "campaign_id": (store.load_step("versand_komplett")["campaign_id"]
-                        if store.step_done("versand_komplett") else None),
+        "campaign_id": campaign_id,
     }
 
 

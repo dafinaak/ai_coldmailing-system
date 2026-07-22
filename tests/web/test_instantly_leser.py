@@ -30,10 +30,19 @@ class FakeSession:
     def __init__(self, antworten: dict):
         self.antworten = {k: (v if isinstance(v, list) else [v]) for k, v in antworten.items()}
         self.aufrufe = []
+        self.post_aufrufe = []
 
     def get(self, url, headers=None, params=None, timeout=None):
         pfad = url.split("/api/v2", 1)[1]
         self.aufrufe.append((pfad, params))
+        warteschlange = self.antworten.get(pfad)
+        if not warteschlange:
+            raise AssertionError(f"Kein Fake fuer Pfad {pfad} hinterlegt.")
+        return warteschlange.pop(0) if len(warteschlange) > 1 else warteschlange[0]
+
+    def post(self, url, headers=None, json=None, timeout=None):
+        pfad = url.split("/api/v2", 1)[1]
+        self.post_aufrufe.append((pfad, json))
         warteschlange = self.antworten.get(pfad)
         if not warteschlange:
             raise AssertionError(f"Kein Fake fuer Pfad {pfad} hinterlegt.")
@@ -497,6 +506,112 @@ def test_konversationen_leere_kampagnenliste_ergibt_leere_liste_ohne_aufruf():
     leser = InstantlyLeser("key", session=session)
     assert leser.konversationen([]) == []
     assert session.aufrufe == []
+
+
+# Freigabe-Live-Stand -------------------------------------------------------
+
+def _freigabe_lead(email="anna@firma.de", lead_id="lead-1"):
+    return {"id": lead_id, "email": email, "status": 1}
+
+
+def _freigabe_mail(email="anna@firma.de", lead_id="lead-1", mail_id="mail-1",
+                    schritt=1, zeit="2026-07-22T08:00:00Z"):
+    return {
+        "id": mail_id, "lead": email, "lead_id": lead_id,
+        "thread_id": "thread-1", "ue_type": 1, "step": schritt,
+        "timestamp_email": zeit,
+    }
+
+
+def test_freigabe_stand_nutzt_lesende_lead_liste_und_email_liste():
+    session = FakeSession({
+        "/leads/list": FakeResponse(200, {"items": [_freigabe_lead()]}),
+        "/emails": FakeResponse(200, {"items": [_freigabe_mail()]}),
+    })
+
+    stand = InstantlyLeser("key", session=session).freigabe_stand("camp-1")
+
+    assert stand["erreichbar"] is True
+    assert stand["recipients"]["anna@firma.de"]["steps"]["mail_1"]["sent_at"] == \
+        "2026-07-22T08:00:00Z"
+    assert session.post_aufrufe == [
+        ("/leads/list", {"campaign_id": "camp-1", "limit": 100}),
+    ]
+    assert session.aufrufe == [
+        ("/emails", {"campaign_id": "camp-1", "limit": 100}),
+    ]
+
+
+def test_freigabe_stand_laesst_leads_und_emails_vollstaendig_durch_paginierung():
+    session = FakeSession({
+        "/leads/list": [
+            FakeResponse(200, {"items": [_freigabe_lead()],
+                               "next_starting_after": "lead-seite-2"}),
+            FakeResponse(200, {"items": [_freigabe_lead("bob@firma.de", "lead-2")]}),
+        ],
+        "/emails": [
+            FakeResponse(200, {"items": [_freigabe_mail()],
+                               "next_starting_after": "mail-seite-2"}),
+            FakeResponse(200, {"items": [
+                _freigabe_mail("bob@firma.de", "lead-2", "mail-2", 2)
+            ]}),
+        ],
+    })
+
+    stand = InstantlyLeser("key", session=session).freigabe_stand("camp-1")
+
+    assert set(stand["recipients"]) == {"anna@firma.de", "bob@firma.de"}
+    assert session.post_aufrufe[-1] == (
+        "/leads/list",
+        {"campaign_id": "camp-1", "limit": 100, "starting_after": "lead-seite-2"},
+    )
+    assert session.aufrufe[-1] == (
+        "/emails",
+        {"campaign_id": "camp-1", "limit": 100, "starting_after": "mail-seite-2"},
+    )
+
+
+def test_freigabe_stand_cache_60_sekunden():
+    uhr = {"jetzt": datetime(2026, 7, 22, 10, 0, 0)}
+    session = FakeSession({
+        "/leads/list": FakeResponse(200, {"items": [_freigabe_lead()]}),
+        "/emails": FakeResponse(200, {"items": [_freigabe_mail()]}),
+    })
+    leser = InstantlyLeser("key", session=session, jetzt=lambda: uhr["jetzt"])
+
+    leser.freigabe_stand("camp-1")
+    uhr["jetzt"] += timedelta(seconds=59)
+    stand = leser.freigabe_stand("camp-1")
+
+    assert len(session.post_aufrufe) == 1
+    assert len(session.aufrufe) == 1
+    assert stand["erreichbar"] is True
+
+
+def test_freigabe_stand_ausfall_nach_erfolg_behaelt_letzten_stand():
+    uhr = {"jetzt": datetime(2026, 7, 22, 10, 0, 0)}
+    session = FakeSession({
+        "/leads/list": FakeResponse(200, {"items": [_freigabe_lead()]}),
+        "/emails": FakeResponse(200, {"items": [_freigabe_mail()]}),
+    })
+    leser = InstantlyLeser("key", session=session, jetzt=lambda: uhr["jetzt"])
+    erster = leser.freigabe_stand("camp-1")
+    uhr["jetzt"] += timedelta(seconds=61)
+    session.antworten["/leads/list"] = [FakeResponse(500, {})]
+
+    zweiter = leser.freigabe_stand("camp-1")
+
+    assert zweiter["erreichbar"] is False
+    assert zweiter["recipients"] == erster["recipients"]
+    assert zweiter["stand"] == datetime(2026, 7, 22, 10, 0, 0)
+
+
+def test_freigabe_stand_ausfall_ohne_cache_bleibt_ehrlich_unbekannt():
+    session = FakeSession({"/leads/list": FakeResponse(500, {})})
+
+    stand = InstantlyLeser("key", session=session).freigabe_stand("camp-1")
+
+    assert stand == {"recipients": {}, "erreichbar": False, "stand": None}
 
 
 # Postfaecher (Baustein 2): postfaecher() ------------------------------------

@@ -141,6 +141,8 @@ from datetime import datetime, timedelta
 
 import requests
 
+from web.instantly_freigabe import freigabe_anzeige, hole_alle_seiten
+
 BASIS = "https://api.instantly.ai/api/v2"
 
 # 60 Sekunden Cache je Kampagnen-ID (siehe Modul-Docstring/Plan) - verhindert,
@@ -332,6 +334,10 @@ class InstantlyLeser:
         # oben (Kampagnen-Stand): unterschiedliche Daten je campaign_id,
         # ein gemeinsamer Cache wuerde sich gegenseitig ueberschreiben.
         self._email_cache: dict[str, dict] = {}
+        # Vollstaendiger, cursor-paginierter Lead-/E-Mail-Stand fuer genau
+        # die Freigabetabelle. Getrennt vom bewusst begrenzten Postfach-
+        # Cache, damit dessen Verhalten unveraendert bleibt.
+        self._freigabe_cache: dict[str, dict] = {}
         # Cache fuer postfaecher() (Baustein 2) - anders als die beiden Caches
         # oben NICHT je ID (es gibt keine ID: ein Abruf liefert ALLE
         # Postfaecher des Konto auf einmal), deshalb ein einzelner Slot statt
@@ -343,6 +349,15 @@ class InstantlyLeser:
     def _get(self, pfad: str, params: dict):
         antwort = self.session.get(f"{BASIS}{pfad}", headers=self.headers,
                                     params=params, timeout=20)
+        if antwort.status_code >= 400:
+            raise RuntimeError(
+                f"Instantly antwortet mit {antwort.status_code} auf {pfad}")
+        return antwort.json()
+
+    def _post(self, pfad: str, json_daten: dict):
+        """POST fuer den lesenden Instantly-Endpunkt /leads/list."""
+        antwort = self.session.post(f"{BASIS}{pfad}", headers=self.headers,
+                                     json=json_daten, timeout=20)
         if antwort.status_code >= 400:
             raise RuntimeError(
                 f"Instantly antwortet mit {antwort.status_code} auf {pfad}")
@@ -553,6 +568,54 @@ class InstantlyLeser:
         DIREKT auf (ein Abruf speist dort sowohl die Konversationsliste als
         auch den Live-Stand-Hinweis, siehe emails_stand()-Docstring)."""
         return konversationen_aus_email_stand(self.emails_stand(campaign_ids))
+
+    # Empfaenger-/Schritt-Stand fuer die Freigabe -------------------------
+
+    def _freigabe_hole_frisch(self, campaign_id: str) -> dict[str, dict]:
+        def leads_abrufen(cursor):
+            daten = {"campaign_id": campaign_id, "limit": 100}
+            if cursor is not None:
+                daten["starting_after"] = cursor
+            return self._post("/leads/list", daten)
+
+        def emails_abrufen(cursor):
+            params = {"campaign_id": campaign_id, "limit": 100}
+            if cursor is not None:
+                params["starting_after"] = cursor
+            return self._get("/emails", params=params)
+
+        leads = hole_alle_seiten(leads_abrufen)
+        emails = hole_alle_seiten(emails_abrufen)
+        return freigabe_anzeige(leads, emails)
+
+    def freigabe_stand(self, campaign_id: str) -> dict:
+        """Liefert belegte Versand-/Antwortwerte je Empfaenger und Schritt.
+
+        Der Cache ist 60 Sekunden gueltig. Bei einem spaeteren Ausfall bleibt
+        der letzte erfolgreiche Stand sichtbar, aber ehrlich als nicht
+        erreichbar markiert. Ohne erfolgreichen Abruf werden keine Werte
+        geraten.
+        """
+        cache_eintrag = self._freigabe_cache.get(campaign_id)
+        if cache_eintrag is not None and self._frisch_genug(cache_eintrag):
+            return {
+                "recipients": cache_eintrag["daten"], "erreichbar": True,
+                "stand": cache_eintrag["abgerufen_um"],
+            }
+        try:
+            daten = self._freigabe_hole_frisch(campaign_id)
+        except (requests.exceptions.RequestException, RuntimeError, ValueError, KeyError):
+            if cache_eintrag is not None:
+                return {
+                    "recipients": cache_eintrag["daten"], "erreichbar": False,
+                    "stand": cache_eintrag["abgerufen_um"],
+                }
+            return {"recipients": {}, "erreichbar": False, "stand": None}
+        jetzt = self._jetzt()
+        self._freigabe_cache[campaign_id] = {
+            "daten": daten, "abgerufen_um": jetzt,
+        }
+        return {"recipients": daten, "erreichbar": True, "stand": jetzt}
 
     # Postfaecher-Uebersicht (Baustein 2) ---------------------------------
 

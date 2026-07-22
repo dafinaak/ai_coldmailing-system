@@ -31,6 +31,10 @@
   </div>
   {% endif %}
 
+  {% if live_warnung %}
+  <div class="hinweis-kasten" data-live-warning>{{ live_warnung }}</div>
+  {% endif %}
+
   {% if zustand == "uebergeben" %}
   <div class="handover-kasten">
     <div class="handover-label">FREIGEGEBEN &amp; ÜBERGEBEN</div>
@@ -101,23 +105,31 @@
     </div>
     <div class="lese-liste">
       {% for e in empfaenger %}
-      <div class="lese-karte" data-recipient-id="{{ e.id }}" data-status="{{ e.status }}">
+      <div class="lese-karte" data-recipient-id="{{ e.id }}" data-status="{{ e.status }}"
+           data-recipient-email="{{ e.email }}"
+           data-live-known="{{ 'true' if e.live_known else 'false' }}">
         <div class="lese-kopf">
           <div class="lese-an-label">AN</div>
           <div class="lese-name">{{ e.name }} · {{ e.rolle }}</div>
           <div class="lese-firma">{{ e.firma }}</div>
           <div class="lese-mail">{{ e.email }}</div>
         </div>
-        <div data-step="mail_1" data-approved="{{ 'true' if e.steps[0].approved else 'false' }}">
+        <div data-step="mail_1" data-approved="{{ 'true' if e.steps[0].approved else 'false' }}"
+             data-sent-at="{{ e.steps[0].sent_at or '' }}"
+             data-replied="{{ 'true' if e.steps[0].replied is sameas true else ('false' if e.steps[0].replied is sameas false else '') }}">
           <div class="lese-textteil-label">Erste E-Mail (geht sofort raus)</div>
           <div class="lese-betreff">{{ e.betreff }}</div>
           <div class="lese-text">{{ e.mail_1 }}</div>
         </div>
-        <div data-step="follow_up_1" data-approved="{{ 'true' if e.steps[1].approved else 'false' }}">
+        <div data-step="follow_up_1" data-approved="{{ 'true' if e.steps[1].approved else 'false' }}"
+             data-sent-at="{{ e.steps[1].sent_at or '' }}"
+             data-replied="{{ 'true' if e.steps[1].replied is sameas true else ('false' if e.steps[1].replied is sameas false else '') }}">
           <div class="lese-textteil-label">Nachfass-Mail 1 (nach {{ tag_1 }} Tagen)</div>
           <div class="lese-text">{{ e.follow_up_1 }}</div>
         </div>
-        <div data-step="follow_up_2" data-approved="{{ 'true' if e.steps[2].approved else 'false' }}">
+        <div data-step="follow_up_2" data-approved="{{ 'true' if e.steps[2].approved else 'false' }}"
+             data-sent-at="{{ e.steps[2].sent_at or '' }}"
+             data-replied="{{ 'true' if e.steps[2].replied is sameas true else ('false' if e.steps[2].replied is sameas false else '') }}">
           <div class="lese-textteil-label">Nachfass-Mail 2 (nach {{ tag_2 }} Tagen)</div>
           <div class="lese-text">{{ e.follow_up_2 }}</div>
         </div>

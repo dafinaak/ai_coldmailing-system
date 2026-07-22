@@ -11,6 +11,7 @@ import json
 import re
 import threading
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -100,6 +101,16 @@ class FakeKI:
         if isinstance(antwort, Exception):
             raise antwort
         return antwort
+
+
+class FakeInstantlyLeser:
+    def __init__(self, stand):
+        self.stand = stand
+        self.aufrufe = []
+
+    def freigabe_stand(self, campaign_id):
+        self.aufrufe.append(campaign_id)
+        return self.stand
 
 
 @pytest.fixture
@@ -237,6 +248,99 @@ def test_lese_ansicht_zeigt_texte_email_und_echte_tage(angemeldeter_client, date
     # dedupe-Info (Name/Firma) fuer die Empfaengerliste
     assert "Anna Muster" in text or "Anna" in text
     assert "Firma GmbH" in text
+
+
+def test_uebergebene_runde_zeigt_belegten_versand_und_antwort_je_schritt(
+    angemeldeter_client, daten_dir, app
+):
+    _lauf_anlegen(
+        daten_dir, dedupe_behalten=_DEDUPE_BEHALTEN,
+        versand_komplett={"campaign_id": "camp-1"},
+    )
+    leser = FakeInstantlyLeser({
+        "erreichbar": True,
+        "stand": datetime(2026, 7, 22, 11, 0, 0),
+        "recipients": {
+            "anna@firma.de": {
+                "lead_present": True,
+                "steps": {
+                    "mail_1": {"sent_at": "2026-07-22T08:00:00Z", "replied": True},
+                    "follow_up_1": {"sent_at": None, "replied": None},
+                    "follow_up_2": {"sent_at": None, "replied": None},
+                },
+                "overall": {"replied": True, "status": None},
+            },
+            "bob@firma.de": {
+                "lead_present": True,
+                "steps": {
+                    "mail_1": {"sent_at": None, "replied": None},
+                    "follow_up_1": {"sent_at": None, "replied": None},
+                    "follow_up_2": {"sent_at": None, "replied": None},
+                },
+                "overall": {"replied": False, "status": None},
+            },
+        },
+    })
+    app.state.instantly_leser = leser
+
+    antwort = angemeldeter_client.get(
+        f"/pruefen/{KUNDE_SLUG}/20260717-090000"
+    )
+
+    assert antwort.status_code == 200
+    assert leser.aufrufe == ["camp-1"]
+    assert 'data-sent-at="2026-07-22T08:00:00Z"' in antwort.text
+    assert 'data-replied="true"' in antwort.text
+    assert 'data-live-known="true"' in antwort.text
+
+
+def test_fehlender_empfaenger_im_live_stand_bleibt_unbekannt_mit_hinweis(
+    angemeldeter_client, daten_dir, app
+):
+    _lauf_anlegen(
+        daten_dir, dedupe_behalten=_DEDUPE_BEHALTEN,
+        versand_komplett={"campaign_id": "camp-1"},
+    )
+    app.state.instantly_leser = FakeInstantlyLeser({
+        "erreichbar": True, "stand": datetime(2026, 7, 22, 11, 0, 0),
+        "recipients": {"anna@firma.de": {
+            "lead_present": True,
+            "steps": {s: {"sent_at": None, "replied": None}
+                      for s in ("mail_1", "follow_up_1", "follow_up_2")},
+            "overall": {"replied": None, "status": None},
+        }},
+    })
+
+    antwort = angemeldeter_client.get(
+        f"/pruefen/{KUNDE_SLUG}/20260717-090000"
+    )
+
+    assert "nicht für alle Empfänger einen belegbaren Stand" in antwort.text
+    bob_karte = re.search(
+        r'data-recipient-email="bob@firma\.de".*?</div>\s*</div>',
+        antwort.text, re.DOTALL,
+    )
+    assert bob_karte is not None
+    assert 'data-live-known="false"' in bob_karte.group(0)
+
+
+def test_instantly_ausfall_ohne_cache_zeigt_unbekannt_statt_falschen_status(
+    angemeldeter_client, daten_dir, app
+):
+    _lauf_anlegen(
+        daten_dir, dedupe_behalten=_DEDUPE_BEHALTEN,
+        versand_komplett={"campaign_id": "camp-1"},
+    )
+    app.state.instantly_leser = FakeInstantlyLeser({
+        "erreichbar": False, "stand": None, "recipients": {},
+    })
+
+    antwort = angemeldeter_client.get(
+        f"/pruefen/{KUNDE_SLUG}/20260717-090000"
+    )
+
+    assert "Versand und Antworten sind deshalb unbekannt" in antwort.text
+    assert antwort.text.count('data-live-known="false"') >= 2
 
 
 def test_lese_ansicht_zeigt_drei_schritte_und_stabile_empfaenger_id(

@@ -879,28 +879,235 @@ h1 { margin: 0; font-size: 24px; }
   white-space: nowrap;
 }
 
-.kamp-detail-kopf { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.kamp-detail-kopf h1 { font-family: var(--schrift-mono); font-size: 22px; }
-.kamp-detail-info { font-size: 12.5px; color: var(--farbe-gedaempft); margin-top: 2px; }
-
-.kamp-schritt-liste { display: flex; flex-direction: column; gap: 16px; margin-top: 16px; }
-.kamp-schritt-kopf { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; }
-.kamp-schritt-kopf span:first-child { font-weight: 600; }
-.kamp-schritt-kopf span:last-child { font-family: var(--schrift-mono); }
-.kamp-balken { height: 8px; border-radius: 999px; background: #ECEAE1; overflow: hidden; }
-.kamp-balken-fuellung { height: 100%; background: #1F7A46; }
-
-.kamp-detail-fuss {
-  display: flex;
-  gap: 26px;
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid var(--farbe-rand);
-  flex-wrap: wrap;
-  align-items: center;
+.kamp-detail-seite { width: 100%; max-width: 1180px; }
+.kamp-detail-zurueck {
+  display: inline-block;
+  margin-bottom: 14px;
+  font-size: 12.5px;
+  color: var(--farbe-gedaempft);
 }
-.kamp-antworten-zahl { font-family: var(--schrift-mono); font-weight: 700; font-size: 20px; }
-.kamp-antworten-label { font-size: 11.5px; color: var(--farbe-gedaempft); }
+.kamp-detail-kopf {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.kamp-detail-ueberzeile {
+  margin-bottom: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--farbe-gedaempft);
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+.kamp-detail-titelzeile { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.kamp-detail-kopf h1 { font-family: var(--schrift-mono); font-size: 22px; }
+.kamp-detail-kopf .seiten-hilfstext { margin: 5px 0 0; }
+.kamp-detail-aktion {
+  padding: 13px 16px;
+  background: var(--farbe-weiss);
+  border: 1px solid #E7E9F0;
+  border-radius: 10px;
+}
+.kamp-detail-aktion form { margin-top: 12px; }
+
+.kamp-detail-kennzahlen {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 9px;
+  margin: 18px 0 16px;
+}
+.kamp-metrik {
+  min-height: 116px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 14px 8px;
+  background: var(--farbe-weiss);
+  border: 1px solid #E7E9F0;
+  border-radius: 14px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(27, 34, 48, .035);
+}
+.kamp-metrik strong {
+  font-family: var(--schrift-mono);
+  font-size: clamp(22px, 2.35vw, 29px);
+  font-weight: 600;
+  line-height: 1;
+}
+.kamp-metrik > span { font-size: 11.5px; line-height: 1.25; }
+.kamp-metrik small {
+  max-width: 128px;
+  margin-top: 2px;
+  color: var(--farbe-gedaempft);
+  font-size: 9px;
+  line-height: 1.25;
+}
+.kamp-metrik--blau strong { color: #1479F8; }
+.kamp-metrik--orange strong { color: #F5A000; }
+.kamp-metrik--gruen strong { color: #16B84E; }
+.kamp-metrik--gelb strong { color: #E9B500; }
+.kamp-metrik--violett strong { color: #7138E8; }
+.kamp-metrik--rot strong { color: #E83F5B; }
+
+.kamp-detail-karte {
+  overflow: hidden;
+  margin-top: 16px;
+  background: var(--farbe-weiss);
+  border: 1px solid #E7E9F0;
+  border-radius: 14px;
+  box-shadow: 0 2px 7px rgba(27, 34, 48, .025);
+}
+.kamp-detail-abschnittskopf {
+  padding: 10px 17px;
+  background: #F3F3F4;
+  border-bottom: 1px solid #E7E9F0;
+}
+.kamp-detail-abschnittskopf--warm { background: #FFF6D9; }
+.kamp-detail-abschnittskopf h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.kamp-angaben-raster {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 46px;
+  margin: 0;
+  padding: 24px 28px;
+}
+.kamp-angaben-raster div { min-width: 0; }
+.kamp-angaben-raster dt,
+.kamp-limit-label {
+  margin: 0 0 2px;
+  color: #18223B;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.kamp-angaben-raster dd { margin: 0; color: #30384B; font-size: 12.5px; }
+.kamp-wert-mono {
+  overflow: hidden;
+  font-family: var(--schrift-mono);
+  font-size: 11px !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kamp-warteschlange-raster {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: 42px;
+  align-items: center;
+  padding: 28px;
+}
+.kamp-ring-spalte { display: flex; flex-direction: column; align-items: center; }
+.kamp-ring {
+  --kamp-versendet: 0%;
+  --kamp-unzustellbar: 0%;
+  position: relative;
+  width: 160px;
+  height: 160px;
+  flex: 0 0 160px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: conic-gradient(
+    #43C981 0 var(--kamp-versendet),
+    #F5A000 var(--kamp-versendet) calc(var(--kamp-versendet) + var(--kamp-unzustellbar)),
+    #A8ADBE calc(var(--kamp-versendet) + var(--kamp-unzustellbar)) 100%
+  );
+}
+.kamp-ring::after {
+  content: "";
+  position: absolute;
+  inset: 35px;
+  border-radius: 50%;
+  background: var(--farbe-weiss);
+}
+.kamp-ring--unbekannt { background: #D9DCE4; }
+.kamp-ring-inhalt {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #3B4254;
+}
+.kamp-ring-inhalt span { font-size: 12px; }
+.kamp-ring-inhalt strong { font-family: var(--schrift-mono); font-size: 21px; font-weight: 500; }
+.kamp-ring-legende {
+  display: flex;
+  justify-content: center;
+  gap: 8px 13px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+  color: #3D4556;
+  font-size: 10.5px;
+}
+.kamp-ring-legende span { white-space: nowrap; }
+.kamp-punkt { display: inline-block; width: 8px; height: 8px; margin-right: 4px; border-radius: 50%; }
+.kamp-punkt--gruen { background: #43C981; }
+.kamp-punkt--grau { background: #A8ADBE; }
+.kamp-punkt--orange { background: #F5A000; }
+
+.kamp-schritt-spalte h3 {
+  margin: 0;
+  color: #30384B;
+  font-size: 13px;
+  font-weight: 600;
+}
+.kamp-schritt-liste { display: flex; flex-direction: column; gap: 14px; margin-top: 12px; }
+.kamp-schritt-kopf { display: flex; justify-content: space-between; gap: 12px; font-size: 11.5px; margin-bottom: 5px; }
+.kamp-schritt-kopf span:first-child { font-weight: 600; }
+.kamp-schritt-kopf span:last-child { flex-shrink: 0; font-family: var(--schrift-mono); font-size: 10.5px; }
+.kamp-balken { height: 9px; border-radius: 999px; background: #E5E7ED; overflow: hidden; }
+.kamp-balken-fuellung { height: 100%; border-radius: inherit; background: #43C981; }
+.kamp-balken-fuellung--unbekannt { background: #C7CAD3; }
+
+.kamp-limit-raster {
+  display: grid;
+  grid-template-columns: minmax(150px, .7fr) minmax(300px, 1.6fr) auto;
+  gap: 30px;
+  align-items: center;
+  padding: 24px 28px;
+}
+.kamp-limit-block,
+.kamp-sendefenster,
+.kamp-sendefenster-leer { display: flex; flex-direction: column; }
+.kamp-sendefenster > div { display: flex; flex-direction: column; }
+.kamp-limit-block strong,
+.kamp-sendefenster strong,
+.kamp-sendefenster-leer strong {
+  color: #30384B;
+  font-size: 13px;
+  font-weight: 500;
+}
+.kamp-limit-block strong { font-family: var(--schrift-mono); font-size: 17px; }
+.kamp-limit-block strong span { font-family: var(--schrift-sans); font-size: 11.5px; font-weight: 400; }
+.kamp-limit-block small,
+.kamp-sendefenster small,
+.kamp-sendefenster-leer small { color: var(--farbe-gedaempft); font-size: 10.5px; }
+.kamp-sendefenster { flex-direction: row; justify-content: space-between; align-items: center; gap: 18px; }
+.kamp-sendefenster + .kamp-sendefenster { margin-top: 12px; padding-top: 12px; border-top: 1px solid #EEF0F4; }
+.kamp-fenster-status { flex-shrink: 0; color: var(--farbe-gedaempft); font-size: 10.5px; white-space: nowrap; }
+.kamp-fenster-status i { display: inline-block; width: 8px; height: 8px; margin-right: 5px; border-radius: 50%; background: #A8ADBE; }
+.kamp-fenster-status--offen { color: #1F7A46; }
+.kamp-fenster-status--offen i { background: #43C981; }
+.kamp-fenster-status--zu { color: #8A5D00; }
+.kamp-fenster-status--zu i { background: #F5A000; }
+.kamp-instantly-link { white-space: nowrap; }
+
+.kamp-detail-zurueck:focus-visible,
+.kamp-detail-aktion > summary:focus-visible,
+.kamp-detail-aktion button:focus-visible,
+.kamp-instantly-link:focus-visible {
+  outline: 2px solid #F5A000;
+  outline-offset: 2px;
+}
 
 .kamp-pausiert-hinweis {
   border: 1.5px solid #2E5A82;
@@ -912,7 +1119,42 @@ h1 { margin: 0; font-size: 24px; }
   color: #2E5A82;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 820px) {
+  .rahmen:has(.kamp-detail-seite) {
+    flex-direction: column;
+  }
+  .rahmen:has(.kamp-detail-seite) .seitenleiste {
+    width: 100%;
+    min-height: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-right: 0;
+    border-bottom: 1px solid var(--farbe-rand);
+  }
+  .rahmen:has(.kamp-detail-seite) .marke {
+    order: 1;
+    flex: 1;
+    padding: 12px 14px;
+    border-bottom: 0;
+  }
+  .rahmen:has(.kamp-detail-seite) .nutzer-fuss {
+    order: 2;
+    gap: 12px;
+    padding: 10px 14px;
+    border-top: 0;
+  }
+  .rahmen:has(.kamp-detail-seite) .nav {
+    order: 3;
+    width: 100%;
+    flex: none;
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 7px 8px;
+    border-top: 1px solid var(--farbe-rand);
+  }
+  .rahmen:has(.kamp-detail-seite) .nav-eintrag { flex: 0 0 auto; }
+  .rahmen:has(.kamp-detail-seite) .inhalt { width: 100%; }
+  .kamp-detail-seite { padding: 24px 16px 48px; }
   .kamp-uebersicht-kopf,
   .kamp-filter { align-items: stretch; flex-direction: column; }
   .kamp-hauptaktion { justify-content: center; }
@@ -920,6 +1162,23 @@ h1 { margin: 0; font-size: 24px; }
   .kamp-filter input { width: 100%; }
   .kamp-filter-status { width: 100%; }
   .kamp-filter select { flex: 1; min-width: 0; }
+  .kamp-detail-kennzahlen { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kamp-metrik { min-height: 100px; }
+  .kamp-angaben-raster { grid-template-columns: 1fr; }
+  .kamp-warteschlange-raster { grid-template-columns: 1fr; }
+  .kamp-limit-raster { grid-template-columns: 1fr; align-items: start; }
+  .kamp-instantly-link { justify-self: start; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kamp-detail-seite *,
+  .kamp-detail-seite *::before,
+  .kamp-detail-seite *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
 }
 
 /* Dashboard (Task 7) ------------------------------------------------------ */

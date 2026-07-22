@@ -1,16 +1,21 @@
 {% extends "layout.html" %}
 {% block titel %}{{ kd_name }}{% endblock %}
 {% block inhalt %}
-<div class="seite seite--schmal">
-  <div class="formular-zurueck"><a href="/kampagnen">‹ Alle Kampagnen</a></div>
-  <div class="kamp-detail-kopf">
-    <h1>{{ kd_name }}</h1>
-    <span class="kamp-status" style="background: {{ chip_bg }}; color: {{ chip_fg }};">{{ chip_text }}</span>
-  </div>
-  {% if kd_satz %}
-  <p class="seiten-hilfstext">{{ kd_satz }}</p>
-  {% endif %}
-  <p class="kamp-detail-info">Angebot: <b>{{ kd_kunde }}</b> · Freigegeben von {{ kd_von }} am {{ kd_am }} · {{ kd_gesamt }} Empfänger{% if kd_gestartet_von %} · Gestartet von {{ kd_gestartet_von }} am {{ kd_gestartet_am }}{% endif %}</p>
+<div class="seite kamp-detail-seite">
+  <a class="formular-zurueck kamp-detail-zurueck" href="/kampagnen">‹ Alle Kampagnen</a>
+
+  <header class="kamp-detail-kopf">
+    <div>
+      <div class="kamp-detail-ueberzeile">Kampagnendetails</div>
+      <div class="kamp-detail-titelzeile">
+        <h1>{{ kd_name }}</h1>
+        <span class="kamp-status" style="background: {{ chip_bg }}; color: {{ chip_fg }};">{{ chip_text }}</span>
+      </div>
+      {% if kd_satz %}
+      <p class="seiten-hilfstext">{{ kd_satz }}</p>
+      {% endif %}
+    </div>
+  </header>
 
   {% if live_stand_hinweis %}
   <div class="hinweis-kasten">{{ live_stand_hinweis }}</div>
@@ -21,7 +26,7 @@
   {% endif %}
 
   {% if kd_kann_aktivieren %}
-  <details class="ablehnen-kasten">
+  <details class="ablehnen-kasten kamp-detail-aktion">
     <summary>Jetzt verschicken …</summary>
     <div class="gate-text">{{ kd_aktivieren_bestaetigung }}</div>
     <form method="post" action="/kampagnen/{{ slug }}/{{ ts }}/aktivieren">
@@ -32,7 +37,7 @@
   {% endif %}
 
   {% if kd_kann_pausieren %}
-  <details class="ablehnen-kasten">
+  <details class="ablehnen-kasten kamp-detail-aktion">
     <summary>Versand pausieren …</summary>
     <div class="gate-text">{{ kd_pausieren_bestaetigung }}</div>
     <form method="post" action="/kampagnen/{{ slug }}/{{ ts }}/pausieren">
@@ -42,25 +47,158 @@
   </details>
   {% endif %}
 
-  <div class="karte" style="margin-top: 20px;">
-    <div class="kamp-abschnitt-titel">FORTSCHRITT JE SCHRITT DER MAIL-FOLGE</div>
-    <div class="kamp-schritt-liste">
-      {% for s in kd_schritte %}
-      <div class="kamp-schritt">
-        <div class="kamp-schritt-kopf"><span>{{ s.label }}</span><span>{{ s.text }}</span></div>
-        <div class="kamp-balken"><div class="kamp-balken-fuellung" style="width: {{ s.balken }};"></div></div>
-      </div>
-      {% endfor %}
+  <section class="kamp-detail-kennzahlen" aria-label="Kennzahlen der Kampagne">
+    <div class="kamp-metrik kamp-metrik--blau">
+      <strong>{{ kd_kennzahlen.empfaenger if kd_kennzahlen.empfaenger is not none else "—" }}</strong>
+      <span>Empfänger</span>
     </div>
-    <div class="kamp-detail-fuss">
+    <div class="kamp-metrik kamp-metrik--orange">
+      <strong>{{ kd_kennzahlen.moeglich if kd_kennzahlen.moeglich is not none else "—" }}</strong>
+      <span>Mögliche E-Mails</span>
+    </div>
+    <div class="kamp-metrik kamp-metrik--gruen">
+      <strong>{{ kd_kennzahlen.versendet if kd_kennzahlen.versendet is not none else "—" }}</strong>
+      <span>Versendet</span>
+    </div>
+    <div class="kamp-metrik kamp-metrik--gelb">
+      <strong>{{ kd_kennzahlen.geoeffnet if kd_kennzahlen.geoeffnet is not none else "—" }}</strong>
+      <span>Geöffnet</span>
+    </div>
+    <div class="kamp-metrik kamp-metrik--violett">
+      <strong>{{ kd_kennzahlen.antworten if kd_kennzahlen.antworten is not none else "—" }}</strong>
+      <span>Antworten</span>
+    </div>
+    <div class="kamp-metrik kamp-metrik--rot">
+      <strong>—</strong>
+      <span>Fehlgeschlagen</span>
+      <small>Instantly liefert keinen verlässlichen Zähler</small>
+    </div>
+    <div class="kamp-metrik kamp-metrik--orange">
+      <strong>{{ kd_kennzahlen.unzustellbar if kd_kennzahlen.unzustellbar is not none else "—" }}</strong>
+      <span>Unzustellbar</span>
+    </div>
+  </section>
+
+  <section class="kamp-detail-karte" aria-labelledby="kamp-angaben-titel">
+    <div class="kamp-detail-abschnittskopf">
+      <h2 id="kamp-angaben-titel">Kampagnenangaben</h2>
+    </div>
+    <dl class="kamp-angaben-raster">
       <div>
-        <div class="kamp-antworten-zahl">{{ kd_antworten }}</div>
-        <div class="kamp-antworten-label">Antworten — im Postfach lesen</div>
+        <dt>Angebot</dt>
+        <dd>{{ kd_kunde }}</dd>
       </div>
-      <div style="flex:1;"></div>
-      <a href="https://app.instantly.ai/app/campaign/{{ campaign_id }}" target="_blank" rel="noopener" class="knopf-sekundaer">Kampagne in Instantly öffnen ↗</a>
+      <div>
+        <dt>Kampagnen-ID</dt>
+        <dd class="kamp-wert-mono">{{ campaign_id }}</dd>
+      </div>
+      <div>
+        <dt>Freigabe</dt>
+        <dd>Freigegeben von {{ kd_von }} am {{ kd_am }}</dd>
+      </div>
+      <div>
+        <dt>Empfänger im freigegebenen Lauf</dt>
+        <dd>{{ kd_gesamt }}</dd>
+      </div>
+      {% if kd_gestartet_von %}
+      <div>
+        <dt>Start</dt>
+        <dd>Gestartet von {{ kd_gestartet_von }} am {{ kd_gestartet_am }}</dd>
+      </div>
+      {% endif %}
+    </dl>
+  </section>
+
+  <section class="kamp-detail-karte kamp-warteschlange" aria-labelledby="kamp-warteschlange-titel">
+    <div class="kamp-detail-abschnittskopf kamp-detail-abschnittskopf--warm">
+      <h2 id="kamp-warteschlange-titel">Warteschlange</h2>
     </div>
-  </div>
+    <div class="kamp-warteschlange-raster">
+      <div class="kamp-ring-spalte">
+        {% if kd_warteschlange.ungetrennt is not none %}
+        {% if kd_warteschlange.gesamt %}
+        {% set versendet_anteil = (100 * kd_warteschlange.versendet / kd_warteschlange.gesamt)|round %}
+        {% set unzustellbar_anteil = (100 * kd_warteschlange.unzustellbar / kd_warteschlange.gesamt)|round %}
+        {% else %}
+        {% set versendet_anteil = 0 %}
+        {% set unzustellbar_anteil = 0 %}
+        {% endif %}
+        <div class="kamp-ring" role="img"
+             aria-label="{{ kd_warteschlange.versendet }} versendet, {{ kd_warteschlange.unzustellbar }} unzustellbar, {{ kd_warteschlange.ungetrennt }} noch offen"
+             style="--kamp-versendet: {{ versendet_anteil }}%; --kamp-unzustellbar: {{ unzustellbar_anteil }}%;">
+          <div class="kamp-ring-inhalt"><span>Gesamt</span><strong>{{ kd_warteschlange.gesamt }}</strong></div>
+        </div>
+        {% else %}
+        <div class="kamp-ring kamp-ring--unbekannt" role="img" aria-label="Warteschlangenstand unbekannt">
+          <div class="kamp-ring-inhalt"><span>Gesamt</span><strong>—</strong></div>
+        </div>
+        {% endif %}
+        <div class="kamp-ring-legende" aria-label="Aufteilung der Warteschlange">
+          <span><i class="kamp-punkt kamp-punkt--gruen"></i>Versendet: {{ kd_warteschlange.versendet if kd_warteschlange.versendet is not none else "—" }}</span>
+          <span><i class="kamp-punkt kamp-punkt--grau"></i>Noch offen: {{ kd_warteschlange.ungetrennt if kd_warteschlange.ungetrennt is not none else "—" }}</span>
+          <span><i class="kamp-punkt kamp-punkt--orange"></i>Unzustellbar: {{ kd_warteschlange.unzustellbar if kd_warteschlange.unzustellbar is not none else "—" }}</span>
+        </div>
+      </div>
+
+      <div class="kamp-schritt-spalte">
+        <h3>Fortschritt je Schritt der Mail-Folge</h3>
+        <div class="kamp-schritt-liste">
+          {% for s in kd_schritte %}
+          <div class="kamp-schritt">
+            <div class="kamp-schritt-kopf"><span>{{ s.label }}</span><span>{{ s.text }}</span></div>
+            <div class="kamp-balken" role="img" aria-label="{{ s.label }}: {{ s.text }}">
+              <div class="kamp-balken-fuellung{% if s.text == "—" %} kamp-balken-fuellung--unbekannt{% endif %}" style="width: {{ s.balken }};"></div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="kamp-detail-karte" aria-labelledby="kamp-limit-titel">
+    <div class="kamp-detail-abschnittskopf">
+      <h2 id="kamp-limit-titel">Tageslimit und Sendefenster</h2>
+    </div>
+    <div class="kamp-limit-raster">
+      <div class="kamp-limit-block">
+        <span class="kamp-limit-label">Heute</span>
+        <strong>
+          {{ kd_tageslimit.heute if kd_tageslimit.heute is not none else "—" }}
+          <span>von {{ kd_tageslimit.limit if kd_tageslimit.limit is not none else "—" }} versendet</span>
+        </strong>
+        {% if kd_tageslimit.heute is not none and kd_tageslimit.limit is not none %}
+        <small>{{ [kd_tageslimit.limit - kd_tageslimit.heute, 0]|max }} heute noch möglich</small>
+        {% endif %}
+      </div>
+
+      <div class="kamp-sendefenster-liste">
+        {% if kd_sendefenster %}
+        {% for fenster in kd_sendefenster %}
+        <div class="kamp-sendefenster">
+          <div>
+            <span class="kamp-limit-label">Sendefenster</span>
+            <strong>{{ fenster.tage_text }} · {{ fenster.zeit_text }}</strong>
+            <small>{{ fenster.zeitzone }}</small>
+          </div>
+          <span class="kamp-fenster-status{% if fenster.ist_jetzt is true %} kamp-fenster-status--offen{% elif fenster.ist_jetzt is false %} kamp-fenster-status--zu{% endif %}">
+            <i></i>
+            {% if fenster.ist_jetzt is true %}Im Sendefenster{% elif fenster.ist_jetzt is false %}Außerhalb des Sendefensters{% else %}Status unbekannt{% endif %}
+          </span>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="kamp-sendefenster-leer">
+          <span class="kamp-limit-label">Sendefenster</span>
+          <strong>Nicht in Instantly hinterlegt</strong>
+          <small>Zeiten und Wochentage können hier deshalb nicht gezeigt werden.</small>
+        </div>
+        {% endif %}
+      </div>
+
+      <a href="https://app.instantly.ai/app/campaign/{{ campaign_id }}" target="_blank" rel="noopener" class="knopf-sekundaer kamp-instantly-link">Kampagne in Instantly öffnen ↗</a>
+    </div>
+  </section>
 
   {% if kd_pausiert_hinweis %}
   <div class="kamp-pausiert-hinweis">{{ kd_pausiert_hinweis }}</div>

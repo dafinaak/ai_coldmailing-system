@@ -501,6 +501,101 @@ def test_detail_zeigt_warteschlange_sendefenster_und_tageslimit(angemeldeter_cli
     assert sonntag.context["kd_sendefenster"][0]["ist_jetzt"] is False
 
 
+def test_detail_zeigt_unbekannte_live_werte_ohne_scheinbare_nullen(
+        angemeldeter_client, daten_dir):
+    stand = _stand(status="pausiert", schritte=[])
+    stand.update({
+        "empfaenger": None,
+        "versendet": None,
+        "geoeffnet": None,
+        "antworten": None,
+        "unzustellbar": None,
+        "heute_versendet": None,
+        "absender": None,
+        "sendefenster": None,
+    })
+    angemeldeter_client.app.state.instantly_leser = FakeInstantlyLeser({
+        "camp-a": stand,
+    })
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml",
+                  ts="20260720-090000", campaign_id="camp-a")
+
+    antwort = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-090000")
+
+    assert antwort.status_code == 200
+    text = antwort.text
+    for bezeichnung in (
+        "Empfänger", "Mögliche E-Mails", "Versendet", "Geöffnet",
+        "Antworten", "Fehlgeschlagen", "Unzustellbar",
+    ):
+        assert bezeichnung in text
+    assert text.count("—") >= 9
+    assert "Instantly liefert keinen verlässlichen Zähler" in text
+    assert "Nicht in Instantly hinterlegt" in text
+    assert 'class="kamp-ring kamp-ring--unbekannt"' in text
+    assert "aria-valuenow" not in text
+
+
+def test_detail_behaelt_aktivieren_formular_und_bestaetigung(
+        angemeldeter_client, daten_dir):
+    angemeldeter_client.app.state.instantly_leser = FakeInstantlyLeser({
+        "camp-a": _stand(status="pausiert"),
+    })
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml",
+                  ts="20260720-090000", campaign_id="camp-a")
+
+    antwort = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-090000")
+
+    assert antwort.status_code == 200
+    assert ('action="/kampagnen/demo-gmbh/20260720-090000/aktivieren"'
+            in antwort.text)
+    assert "Wenn du jetzt startest, verschickt Instantly die E-Mails dieser Kampagne" in antwort.text
+    assert 'name="bestaetigt" value="ja"' in antwort.text
+
+
+def test_detail_gibt_dem_inhalt_auf_schmalen_bildschirmen_die_volle_breite():
+    css_pfad = Path(__file__).parents[2] / "web" / "static" / "stil.css"
+    css = css_pfad.read_text(encoding="utf-8")
+    rahmen = re.search(
+        r"^  \.rahmen:has\(\.kamp-detail-seite\)\s*\{([^}]*)\}",
+        css, re.M | re.S,
+    )
+    seitenleiste = re.search(
+        r"^  \.rahmen:has\(\.kamp-detail-seite\) \.seitenleiste\s*\{([^}]*)\}",
+        css, re.M | re.S,
+    )
+
+    assert rahmen is not None
+    assert "flex-direction: column" in rahmen.group(1)
+    assert seitenleiste is not None
+    assert "width: 100%" in seitenleiste.group(1)
+
+
+def test_detail_behaelt_bekannte_nullwerte_auch_im_warteschlangenring(
+        angemeldeter_client, daten_dir):
+    stand = _stand(status="aktiv", versendet=0, antworten=0, schritte=[])
+    stand.update({
+        "empfaenger": 0,
+        "geoeffnet": 0,
+        "unzustellbar": 0,
+        "heute_versendet": 0,
+    })
+    angemeldeter_client.app.state.instantly_leser = FakeInstantlyLeser({
+        "camp-a": stand,
+    })
+    lauf_dir = _lauf_anlegen(
+        daten_dir, "demo-gmbh", "demo-gmbh.yaml",
+        ts="20260720-090000", campaign_id="camp-a",
+    )
+    (lauf_dir / "pruefung_ok.json").write_text("[]", encoding="utf-8")
+
+    antwort = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-090000")
+
+    assert antwort.status_code == 200
+    assert 'aria-label="0 versendet, 0 unzustellbar, 0 noch offen"' in antwort.text
+    assert 'class="kamp-ring kamp-ring--unbekannt"' not in antwort.text
+
+
 def test_detail_zeigt_pausiert_hinweis_nur_wenn_pausiert(angemeldeter_client, daten_dir):
     # Baustein 1 (20.07.2026): Text geaendert - der Start passiert jetzt HIER
     # im Tool (Knopf "Jetzt verschicken"), nicht mehr "von Hand" in Instantly.

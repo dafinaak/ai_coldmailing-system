@@ -27,4 +27,4 @@ kontakt_rollen:
 # Deckelt, wie viele Entscheider pro Firma maximal zu Leads werden laesst
 # (Rollen-Prioritaet oben zaehlt bei der Auswahl) - verhindert, dass an einer
 # einzigen kleinen Firma zu viele Personen angeschrieben werden.
-max_kontakte_pro_firma: 2
+max_kontakte_pro_firma: 1

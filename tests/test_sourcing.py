@@ -135,11 +135,20 @@ def test_nicht_entscheider_ohne_rollentreffer_wird_uebersprungen():
     assert [f["ausgang"] for f in ausgang] == ["info_fallback"]
 
 
-def test_deckelung_auf_max_kontakte_pro_firma():
+def test_standard_ist_ein_entscheider_pro_firma():
     firmen = [_firma("viele.de")]
     personen = {"viele.de": [_person(f"P{i}", title="Geschäftsführer") for i in range(5)]}
     mails = {f"P{i}": f"p{i}@viele.de" for i in range(5)}
-    leads, _, _ = source_leads(_kunde(), 10, "a", "b", "c",  # Default-Deckel = 2
+    leads, _, _ = source_leads(_kunde(), 10, "a", "b", "c",  # Default-Deckel = 1
+                               **_quellen(firmen, personen, mails))
+    assert len(leads) == 1
+
+
+def test_deckelung_respektiert_hoehere_obergrenze():
+    firmen = [_firma("viele.de")]
+    personen = {"viele.de": [_person(f"P{i}", title="Geschäftsführer") for i in range(5)]}
+    mails = {f"P{i}": f"p{i}@viele.de" for i in range(5)}
+    leads, _, _ = source_leads(_kunde(max_kontakte_pro_firma=2), 10, "a", "b", "c",
                                **_quellen(firmen, personen, mails))
     assert len(leads) == 2
 

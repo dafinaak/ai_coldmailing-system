@@ -37,10 +37,10 @@ Lead-Qualitaets-Fix (Probe-Lauf-Funde, siehe Auftrag):
    "Managing Director" - 5 Personen einer Firma anzuschreiben verbrennt
    Budget und wirkt unseriös, zumal die gewuenschten Rollen (kontakt_rollen,
    z.B. "Geschäftsführer"/"IT-Leiter") nur locker mit Apollos englischen
-   Jobtiteln abgeglichen wurden. Fix: _rolle_passt()/_kontakte_auswaehlen()
-   unten matchen ueber eine Synonym-Tabelle (deutsch<->englisch) und
-   deckeln auf kunde.max_kontakte_pro_firma (Default 2), sortiert nach
-   Rollen-Prioritaet aus kontakt_rollen (erste Rolle zuerst).
+   Jobtiteln abgeglichen wurden. Fix: _rolle_passt() unten matcht ueber eine
+   Synonym-Tabelle (deutsch<->englisch); _entscheider_kontakte() deckelt auf
+   kunde.max_kontakte_pro_firma (Default 1), sortiert nach Rollen-Prioritaet
+   aus kontakt_rollen (erste Rolle zuerst).
 2) Ein Google-Maps-Titel enthielt den Suchbegriff als Praefix
    ("IT-Dienstleister Hannover - Ihre Helden" statt "Ihre Helden"). Fix:
    _firmenname_saeubern() unten - genutzt wird der Name aber nur als
@@ -52,7 +52,7 @@ from pipeline.sources.apify_maps import ApifyMapsSource
 from pipeline.sources.hunter import HunterSource
 from pipeline.sources.dropcontact import DropcontactSource
 
-MAX_KONTAKTE_PRO_FIRMA_STANDARD = 2  # siehe Kunde.max_kontakte_pro_firma (pipeline.config)
+MAX_KONTAKTE_PRO_FIRMA_STANDARD = 1  # siehe Kunde.max_kontakte_pro_firma (pipeline.config)
 
 # Rollen-Synonym-Tabelle (Lead-Qualitaets-Fix): jede Gruppe fasst eine
 # gewuenschte Rolle mit ihren deutschen UND englischen Entsprechungen

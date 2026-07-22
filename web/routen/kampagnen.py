@@ -543,6 +543,7 @@ def _detail_kontext(request: Request, slug: str, ts: str, *, aktion_fehler: str 
         "kd_von": freigabe["von"] or "unbekannt",
         "kd_am": format_deutsches_datum(freigabe["am"]) or "—",
         "kd_gesamt": gesamt,
+        "kd_absender": stand.get("absender"),
         "kd_kennzahlen": {
             "empfaenger": stand.get("empfaenger"),
             "moeglich": gesamt * len(schritt_labels),

@@ -495,6 +495,8 @@ def test_detail_zeigt_warteschlange_sendefenster_und_tageslimit(angemeldeter_cli
         "tage_text": "Mo–Fr", "zeit_text": "08:00–19:00",
         "zeitzone": "Europe/Berlin", "ist_jetzt": True,
     }]
+    assert antwort.context["kd_absender"] == ["sender@firma.de"]
+    assert "sender@firma.de" in antwort.text
 
     app.state.jetzt = lambda: datetime(2026, 7, 26, 10, 30, tzinfo=ZoneInfo("Europe/Berlin"))
     sonntag = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-093000")
@@ -534,6 +536,13 @@ def test_detail_zeigt_unbekannte_live_werte_ohne_scheinbare_nullen(
     assert "Nicht in Instantly hinterlegt" in text
     assert 'class="kamp-ring kamp-ring--unbekannt"' in text
     assert "aria-valuenow" not in text
+    assert antwort.context["kd_absender"] is None
+    angaben = re.search(
+        r'<section class="kamp-detail-karte" aria-labelledby="kamp-angaben-titel">(.*?)</section>',
+        text, re.S,
+    )
+    assert angaben is not None
+    assert re.search(r"<dt>Absender</dt>\s*<dd>—</dd>", angaben.group(1))
 
 
 def test_detail_behaelt_aktivieren_formular_und_bestaetigung(
@@ -569,6 +578,38 @@ def test_detail_gibt_dem_inhalt_auf_schmalen_bildschirmen_die_volle_breite():
     assert "flex-direction: column" in rahmen.group(1)
     assert seitenleiste is not None
     assert "width: 100%" in seitenleiste.group(1)
+
+
+def test_detail_fokus_ist_auf_weiss_kontrastreich_statt_hellorange():
+    css_pfad = Path(__file__).parents[2] / "web" / "static" / "stil.css"
+    css = css_pfad.read_text(encoding="utf-8")
+    fokus = re.search(
+        r"\.kamp-detail-zurueck:focus-visible,(.*?)\{([^}]*)\}",
+        css, re.S,
+    )
+
+    assert fokus is not None
+    assert "#8A4D00" in fokus.group(2)
+    assert "#F5A000" not in fokus.group(2)
+
+
+def test_uebersicht_behaelt_760px_waehrend_details_bei_820px_stapeln():
+    css_pfad = Path(__file__).parents[2] / "web" / "static" / "stil.css"
+    css = css_pfad.read_text(encoding="utf-8")
+    start_820 = css.index("@media (max-width: 820px)")
+    ende_820 = css.index("@media (max-width: 760px)", start_820)
+    ende_760 = css.index("@media (prefers-reduced-motion: reduce)", ende_820)
+    media_820 = css[start_820:ende_820]
+    media_760 = css[ende_820:ende_760]
+
+    assert ".kamp-detail-kennzahlen" in media_820
+    assert ".kamp-warteschlange-raster" in media_820
+    assert ".kamp-uebersicht-kopf" not in media_820
+    assert ".kamp-filter" not in media_820
+    assert ".wholix-karten" not in media_820
+    assert ".kamp-uebersicht-kopf" in media_760
+    assert ".kamp-filter" in media_760
+    assert ".wholix-karten" in media_760
 
 
 def test_detail_behaelt_bekannte_nullwerte_auch_im_warteschlangenring(

@@ -93,6 +93,10 @@
         <dd class="kamp-wert-mono">{{ campaign_id }}</dd>
       </div>
       <div>
+        <dt>Absender</dt>
+        <dd>{% if kd_absender %}{{ kd_absender|join(", ") }}{% else %}—{% endif %}</dd>
+      </div>
+      <div>
         <dt>Freigabe</dt>
         <dd>Freigegeben von {{ kd_von }} am {{ kd_am }}</dd>
       </div>

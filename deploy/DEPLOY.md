@@ -13,7 +13,7 @@ Server: prod-srv01-automations (Hetzner, 178.104.175.42), Zugang per SSH
 │   ├── deploy/…
 │   ├── pipeline/  web/  prompts/
 ├── daten/            Volume: kunden/, laeufe/, sperrliste-global.yaml, users.yaml
-├── .env              Schluessel (APOLLO/OPENROUTER|ANTHROPIC/INSTANTLY, WEB_SECRET)
+├── .env              Schluessel (APIFY/HUNTER/DROPCONTACT/OPENROUTER|ANTHROPIC/INSTANTLY, WEB_SECRET)
 │                     -> wird per compose env_file in den Container injiziert
 └── ERSTZUGANG.txt    Start-Passwoerter (chmod 600) - nach Uebergabe LOESCHEN
 ```

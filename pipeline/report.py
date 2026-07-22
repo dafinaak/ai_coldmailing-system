@@ -9,17 +9,15 @@ def write_report(store, zahlen: dict):
               f"- Deckungsquote: {zahlen['firmen_mit_kontakt']}/{zahlen['firmen_gesamt']} "
               f"Firmen mit mindestens einem Kontakt ({zahlen['deckungsquote_prozent']}%)",
               f"- Firmen ohne Kontakt: {zahlen['ohne_email']}",
-              # Outcome-Aufschluesselung (Apollo-422-Fix): trennt die
-              # "Firmen ohne Kontakt"-Zahl oben nach dem WARUM auf - vorher
-              # steckten "keine Webseite gefunden", "Apollo hat wirklich
-              # nichts gefunden" und "technischer Fehler bei der
-              # Anreicherung" ununterscheidbar in einer einzigen Zahl, was
-              # den echten 422-Bug verschleiert hat. .get(..., 0) haelt
-              # diese Zeile abwaertskompatibel zu alten Aufrufern, die diese
-              # Schluessel (noch) nicht mitgeben.
-              f"- Firmen-Ausgang: {zahlen.get('firmen_mit_kontakt_ausgang', 0)} mit Kontakt, "
+              # Outcome-Aufschluesselung: trennt die "Firmen ohne Kontakt"-Zahl
+              # oben nach dem WARUM auf und - wichtig fuer den Chef-KPI -
+              # persoenliche Entscheider-Adressen von der reinen info@-
+              # Rueckfallebene. .get(..., 0) haelt die Zeile abwaertskompatibel
+              # zu alten Aufrufern, die diese Schluessel (noch) nicht mitgeben.
+              f"- Firmen-Ausgang: {zahlen.get('firmen_mit_entscheider', 0)} mit persönlichem "
+              f"Entscheider, {zahlen.get('firmen_info_fallback', 0)} nur über info@, "
               f"{zahlen.get('firmen_keine_webseite', 0)} ohne Webseite, "
-              f"{zahlen.get('firmen_apollo_kein_treffer', 0)} kein Apollo-Treffer, "
+              f"{zahlen.get('firmen_kein_entscheider', 0)} kein Entscheider-Treffer, "
               f"{zahlen.get('firmen_fehler', 0)} Fehler",
               f"- Verworfen: {zahlen['verworfen']} ({'; '.join(zahlen['gruende_verworfen']) or 'keine'})",
               f"- Personalisiert: {zahlen['personalisiert']}",

@@ -76,16 +76,27 @@ _KI_FEHLER = (
     "Versuch es in ein paar Minuten mit »Fortsetzen«.",
 )
 FEHLER_MUSTER = [
-    ("APOLLO_API_KEY", (
-        "Die Firmen-Datenbank hat gerade nicht geantwortet.",
+    ("HUNTER_API_KEY", (
+        "Der Zugang zur Entscheider-Suche fehlt.",
         "Es ist nichts verloren gegangen — alle bisherigen Ergebnisse sind gespeichert.",
-        "Trag den Zugang zur Firmen-Datenbank nach (Umgebungsvariable APOLLO_API_KEY) "
+        "Trag den Zugang zur Entscheider-Suche nach (Umgebungsvariable HUNTER_API_KEY) "
         "und versuch es mit »Fortsetzen« erneut.",
     )),
-    ("Apollo antwortet", (
-        "Die Firmen-Datenbank hat gerade nicht geantwortet.",
+    ("DROPCONTACT_API_KEY", (
+        "Der Zugang zur Mail-Prüfung fehlt.",
+        "Es ist nichts verloren gegangen — alle bisherigen Ergebnisse sind gespeichert.",
+        "Trag den Zugang zur Mail-Prüfung nach (Umgebungsvariable DROPCONTACT_API_KEY) "
+        "und versuch es mit »Fortsetzen« erneut.",
+    )),
+    ("Hunter antwortet", (
+        "Die Entscheider-Suche hat gerade nicht geantwortet.",
         "Es ist nichts verloren gegangen — alle bisherigen Ergebnisse sind gespeichert.",
         "Versuch es in ein paar Minuten mit »Fortsetzen«.",
+    )),
+    ("Dropcontact", (
+        "Die Mail-Prüfung hat gerade nicht geantwortet oder der Zugang ist aufgebraucht.",
+        "Es ist nichts verloren gegangen — alle bisherigen Ergebnisse sind gespeichert.",
+        "Versuch es in ein paar Minuten mit »Fortsetzen«, oder prüfe das Dropcontact-Guthaben.",
     )),
     ("ANTHROPIC_API_KEY", _KI_FEHLER),
     ("OPENROUTER_API_KEY", _KI_FEHLER),

@@ -41,10 +41,12 @@ def _setze_schritte_zurueck(store, ab_schritt: str):
 _LEERE_DECKUNG = {"firmen_gesamt": 0, "firmen_mit_kontakt": 0, "quote_prozent": 0.0}
 
 def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None = None):
-    # Reihenfolge folgt den 3 Stufen der Lead-Beschaffung (Kern-Umbau):
-    # Apify (Stufe 1) -> Apollo (Stufe 2) -> KI (Personalisierung, danach).
+    # Reihenfolge folgt den Stufen der Lead-Beschaffung (Weg A, siehe AGENTS.md):
+    # Apify (Firmen) -> Hunter (Entscheider finden) -> Dropcontact (persoenliche
+    # Mail bauen/pruefen) -> KI (Personalisierung, danach).
     _brauche_env("APIFY_API_KEY")
-    _brauche_env("APOLLO_API_KEY")
+    _brauche_env("HUNTER_API_KEY")
+    _brauche_env("DROPCONTACT_API_KEY")
     _brauche_env_eines_von("ANTHROPIC_API_KEY", "OPENROUTER_API_KEY")
     kunde = load_kunde(kunde_pfad)
     store = RunStore.resume(fortsetzen) if fortsetzen else RunStore(LAEUFE, kunde.name)
@@ -55,7 +57,8 @@ def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None
 
     if not store.step_done("leads"):
         gefunden, deckung, firmen_mit_ausgang = source_leads(
-            kunde, limit, os.environ["APIFY_API_KEY"], os.environ["APOLLO_API_KEY"])
+            kunde, limit, os.environ["APIFY_API_KEY"],
+            os.environ["HUNTER_API_KEY"], os.environ["DROPCONTACT_API_KEY"])
         store.save_step("leads", {"leads": [l.__dict__ for l in gefunden], "deckung": deckung})
         # Apollo-422-Fix: Stufe-1-Firmenliste + Pro-Firma-Ausgang separat
         # persistieren (firmen.json), damit ein spaeterer Blick in den
@@ -134,9 +137,10 @@ def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None
                          # personenbezogen: die Zahl der Stufe-1-Firmen ganz
                          # ohne nutzbaren Kontakt (persönlich oder info@).
                          "ohne_email": deckung["firmen_gesamt"] - deckung["firmen_mit_kontakt"],
-                         "firmen_mit_kontakt_ausgang": ausgang_zaehlung.get("mit_kontakt", 0),
+                         "firmen_mit_entscheider": ausgang_zaehlung.get("mit_entscheider", 0),
+                         "firmen_info_fallback": ausgang_zaehlung.get("info_fallback", 0),
                          "firmen_keine_webseite": ausgang_zaehlung.get("keine_webseite", 0),
-                         "firmen_apollo_kein_treffer": ausgang_zaehlung.get("apollo_kein_treffer", 0),
+                         "firmen_kein_entscheider": ausgang_zaehlung.get("kein_entscheider", 0),
                          "firmen_fehler": ausgang_zaehlung.get("fehler", 0),
                          "firmen_gesamt": deckung["firmen_gesamt"],
                          "firmen_mit_kontakt": deckung["firmen_mit_kontakt"],

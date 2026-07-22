@@ -16,14 +16,15 @@ test_empfaenger:
   - l.luzhnica@digitaldiamonds.agency
   - l.luzhnica@polepositionsolutions.de
 
-# Kern-Umbau: 3-stufige Lead-Beschaffung (Google Maps -> Apollo -> info@),
+# Lead-Beschaffung (Weg A): Google Maps -> Hunter (Entscheider finden) ->
+# Dropcontact (Mail bauen/prüfen) -> info@,
 # siehe pipeline/sourcing.py. "zielgruppe" oben bleibt als Feld stehen,
 # wird vom neuen Ablauf aber nicht mehr gelesen.
 maps_suche: "IT-Dienstleister Hannover"
 kontakt_rollen:
   - Geschäftsführer
   - IT-Leiter
-# Deckelt, wie viele Kontakte Apollo pro Firma maximal zu Leads werden laesst
+# Deckelt, wie viele Entscheider pro Firma maximal zu Leads werden laesst
 # (Rollen-Prioritaet oben zaehlt bei der Auswahl) - verhindert, dass an einer
 # einzigen kleinen Firma zu viele Personen angeschrieben werden.
 max_kontakte_pro_firma: 2

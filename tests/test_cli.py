@@ -88,21 +88,32 @@ def test_lade_dotenv_ohne_datei_tut_nichts(tmp_path):
 
 def test_lauf_bricht_ohne_apify_key_ab(monkeypatch):
     monkeypatch.delenv("APIFY_API_KEY", raising=False)
-    monkeypatch.setenv("APOLLO_API_KEY", "x")
+    monkeypatch.setenv("HUNTER_API_KEY", "x")
+    monkeypatch.setenv("DROPCONTACT_API_KEY", "x")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
     with pytest.raises(SystemExit, match="APIFY_API_KEY"):
         cli.lauf("kunden/demo-gmbh.yaml", 10, None)
 
-def test_lauf_bricht_ohne_apollo_key_ab(monkeypatch):
+def test_lauf_bricht_ohne_hunter_key_ab(monkeypatch):
     monkeypatch.setenv("APIFY_API_KEY", "x")
-    monkeypatch.delenv("APOLLO_API_KEY", raising=False)
+    monkeypatch.delenv("HUNTER_API_KEY", raising=False)
+    monkeypatch.setenv("DROPCONTACT_API_KEY", "x")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
-    with pytest.raises(SystemExit, match="APOLLO_API_KEY"):
+    with pytest.raises(SystemExit, match="HUNTER_API_KEY"):
+        cli.lauf("kunden/demo-gmbh.yaml", 10, None)
+
+def test_lauf_bricht_ohne_dropcontact_key_ab(monkeypatch):
+    monkeypatch.setenv("APIFY_API_KEY", "x")
+    monkeypatch.setenv("HUNTER_API_KEY", "x")
+    monkeypatch.delenv("DROPCONTACT_API_KEY", raising=False)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
+    with pytest.raises(SystemExit, match="DROPCONTACT_API_KEY"):
         cli.lauf("kunden/demo-gmbh.yaml", 10, None)
 
 def test_lauf_bricht_ohne_anthropic_key_ab(monkeypatch):
     monkeypatch.setenv("APIFY_API_KEY", "x")
-    monkeypatch.setenv("APOLLO_API_KEY", "x")
+    monkeypatch.setenv("HUNTER_API_KEY", "x")
+    monkeypatch.setenv("DROPCONTACT_API_KEY", "x")
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     with pytest.raises(SystemExit, match="ANTHROPIC_API_KEY"):
         cli.lauf("kunden/demo-gmbh.yaml", 10, None)
@@ -186,25 +197,25 @@ def test_senden_wiederholt_nach_fehlgeschlagenem_lead_import_ohne_neue_kampagne(
     versand_komplett = store.load_step("versand_komplett")
     assert versand_komplett["campaign_id"] == "camp-1"
 
-def _fake_source_leads(kunde, limit, apify_key, apollo_key):
+def _fake_source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key):
     """Ersetzt pipeline.sourcing.source_leads: liefert 2 feste Leads (statt
-    echter Apify-/Apollo-Aufrufe) plus eine dazu passende Deckungsquote
-    (2 von 2 Firmen mit Kontakt -> 100%), damit alles danach (Dedupe,
-    Personalisierung, Bericht) unveraendert real durchlaeuft. Die dritte
-    Rueckgabe (Apollo-422-Fix) spiegelt firmen_mit_ausgang aus
-    pipeline.sourcing.source_leads - beide Firmen landeten bei "mit_kontakt"."""
+    echter Apify-/Hunter-/Dropcontact-Aufrufe) plus eine dazu passende
+    Deckungsquote (2 von 2 Firmen mit Kontakt -> 100%), damit alles danach
+    (Dedupe, Personalisierung, Bericht) unveraendert real durchlaeuft. Die
+    dritte Rueckgabe spiegelt firmen_mit_ausgang - beide Firmen landeten bei
+    "mit_entscheider"."""
     leads = [
         Lead(first_name="Anna", last_name="Muster", email="anna@firma.de",
-             company="Firma GmbH", title="CEO", website="", source="apollo"),
+             company="Firma GmbH", title="CEO", website="", source="dropcontact"),
         Lead(first_name="Bob", last_name="Beispiel", email="bob@firma.de",
-             company="Firma GmbH", title="CTO", website="", source="apollo"),
+             company="Firma GmbH", title="CTO", website="", source="dropcontact"),
     ]
     deckung = {"firmen_gesamt": 2, "firmen_mit_kontakt": 2, "quote_prozent": 100.0}
     firmen_mit_ausgang = [
         {"name": "Firma GmbH", "website": "https://firma.de", "domain": "firma.de",
-         "address": "", "categories": [], "ausgang": "mit_kontakt"},
+         "address": "", "categories": [], "ausgang": "mit_entscheider"},
         {"name": "Firma GmbH", "website": "https://firma.de", "domain": "firma.de",
-         "address": "", "categories": [], "ausgang": "mit_kontakt"},
+         "address": "", "categories": [], "ausgang": "mit_entscheider"},
     ]
     return leads, deckung, firmen_mit_ausgang
 
@@ -239,7 +250,8 @@ def test_lauf_personalisiert_end_zu_ende_und_dedupe_greift_erst_im_naechsten_lau
     monkeypatch.setattr(cli, "LAEUFE", tmp_path)
     monkeypatch.setattr(run_store_modul, "datetime", _FakeDatetime)
     monkeypatch.setenv("APIFY_API_KEY", "test-key")
-    monkeypatch.setenv("APOLLO_API_KEY", "test-key")
+    monkeypatch.setenv("HUNTER_API_KEY", "test-key")
+    monkeypatch.setenv("DROPCONTACT_API_KEY", "test-key")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
 
     cli.lauf("kunden/demo-gmbh.yaml", 10, None)
@@ -261,10 +273,11 @@ def test_lauf_personalisiert_end_zu_ende_und_dedupe_greift_erst_im_naechsten_lau
     # als firmen.json im Laufordner.
     firmen = json.loads((erster_lauf / "firmen.json").read_text(encoding="utf-8"))
     assert len(firmen) == 2
-    assert all(f["ausgang"] == "mit_kontakt" for f in firmen)
+    assert all(f["ausgang"] == "mit_entscheider" for f in firmen)
     bericht = (erster_lauf / "bericht.md").read_text(encoding="utf-8")
     assert "Firmen ohne Kontakt: 0" in bericht
-    assert "Firmen-Ausgang: 2 mit Kontakt, 0 ohne Webseite, 0 kein Apollo-Treffer, 0 Fehler" in bericht
+    assert ("Firmen-Ausgang: 2 mit persönlichem Entscheider, 0 nur über info@, "
+            "0 ohne Webseite, 0 kein Entscheider-Treffer, 0 Fehler") in bericht
 
     # Zweiter, frischer Lauf: jetzt muessen beide Leads aus dem ersten Lauf
     # als "bereits in früherem Lauf angeschrieben" verworfen werden - das
@@ -287,7 +300,8 @@ def test_lauf_globale_sperrliste_blockt_lead_auch_ohne_eigene_kunden_sperrliste(
     monkeypatch.setattr(cli, "KI", _FakeKI)
     monkeypatch.setattr(run_store_modul, "datetime", _FakeDatetime)
     monkeypatch.setenv("APIFY_API_KEY", "test-key")
-    monkeypatch.setenv("APOLLO_API_KEY", "test-key")
+    monkeypatch.setenv("HUNTER_API_KEY", "test-key")
+    monkeypatch.setenv("DROPCONTACT_API_KEY", "test-key")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
 
     kunde_datei = tmp_path / "test-kunde.yaml"
@@ -319,7 +333,8 @@ def test_neu_ab_dedupe_verwendet_von_hand_bearbeitete_leads(tmp_path, monkeypatc
     monkeypatch.setattr(cli, "LAEUFE", tmp_path)
     monkeypatch.setattr(run_store_modul, "datetime", _FakeDatetime)
     monkeypatch.setenv("APIFY_API_KEY", "test-key")
-    monkeypatch.setenv("APOLLO_API_KEY", "test-key")
+    monkeypatch.setenv("HUNTER_API_KEY", "test-key")
+    monkeypatch.setenv("DROPCONTACT_API_KEY", "test-key")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
 
     cli.lauf("kunden/demo-gmbh.yaml", 10, None)
@@ -353,7 +368,8 @@ def test_neu_ab_widerruft_alte_freigabe(tmp_path, monkeypatch):
     monkeypatch.setattr(cli, "LAEUFE", tmp_path)
     monkeypatch.setattr(run_store_modul, "datetime", _FakeDatetime)
     monkeypatch.setenv("APIFY_API_KEY", "test-key")
-    monkeypatch.setenv("APOLLO_API_KEY", "test-key")
+    monkeypatch.setenv("HUNTER_API_KEY", "test-key")
+    monkeypatch.setenv("DROPCONTACT_API_KEY", "test-key")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
 
     cli.lauf("kunden/demo-gmbh.yaml", 10, None)
@@ -393,7 +409,8 @@ def test_lauf_speichert_abgelehnten_text_in_nacharbeit(tmp_path, monkeypatch):
     monkeypatch.setattr(cli, "LAEUFE", tmp_path)
     monkeypatch.setattr(run_store_modul, "datetime", _FakeDatetime)
     monkeypatch.setenv("APIFY_API_KEY", "test-key")
-    monkeypatch.setenv("APOLLO_API_KEY", "test-key")
+    monkeypatch.setenv("HUNTER_API_KEY", "test-key")
+    monkeypatch.setenv("DROPCONTACT_API_KEY", "test-key")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
 
     cli.lauf("kunden/demo-gmbh.yaml", 10, None)
@@ -415,7 +432,8 @@ def test_lauf_fortsetzen_akzeptiert_altes_leads_listenformat(tmp_path, monkeypat
     # Laufordner darf nicht mit TypeError scheitern.
     monkeypatch.setattr(cli, "KI", _FakeKI)
     monkeypatch.setenv("APIFY_API_KEY", "test-key")
-    monkeypatch.setenv("APOLLO_API_KEY", "test-key")
+    monkeypatch.setenv("HUNTER_API_KEY", "test-key")
+    monkeypatch.setenv("DROPCONTACT_API_KEY", "test-key")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
     store = RunStore(tmp_path, "Demo")
     store.save_step("kunde_pfad", {"pfad": "kunden/demo-gmbh.yaml"})

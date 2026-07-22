@@ -230,7 +230,7 @@ Die fehlenden und halben Punkte, in sinnvoller Baureihenfolge. Größen:
 ### Phase 1 — Kampagnen-Ansicht auf Wholix-Stand
 
 **Stand 22.07.2026:** Der Funktionsumfang dieser Phase ist gebaut und mit
-rein lokalen Testdaten geprüft. Der frische volle Testlauf ergab 458 grüne
+rein lokalen Testdaten geprüft. Der frische volle Testlauf ergab 461 grüne
 Tests und eine bekannte Abkündigungswarnung aus Starlette/TestClient.
 Die Desktop- und 390-px-Ansichten von Übersicht und Detail sind sichtbar
 geprüft. Bei 390 px liegt die Navigation oben, der Inhalt nutzt die volle
@@ -240,16 +240,19 @@ keine Instantly-Schreibschnittstelle wurden für die Prüfung benutzt.
 Empfängerzahlen stammen in der Anzeige aus Instantly; die Zahl des zuletzt
 freigegebenen Laufs bleibt im Detail getrennt erkennbar. Der heutige Versand
 wird über die tägliche Konten-Auswertung nur für die verwendeten
-Absenderpostfächer summiert. Fällt allein diese Auswertung aus, bleiben die
-anderen Live-Werte sichtbar. Ein zuletzt bekannter Postfachstand bleibt bei
-einem späteren Lesefehler ebenfalls sichtbar und wird klar als solcher
-gekennzeichnet.
+Absenderpostfächer summiert. Die Absender werden dabei als Pflichtfilter
+übergeben; der angefragte Zeitraum läuft von heute bis zum Folgetag. Fällt
+allein diese Auswertung aus, bleiben die anderen Live-Werte sichtbar. Ein
+zuletzt bekannter Postfachstand bleibt bei einem späteren Lesefehler ebenfalls
+sichtbar und wird klar als solcher gekennzeichnet. Sobald auch nur ein
+Kampagnenstatus unbekannt ist, bleibt die zusammengefasste Aktiv-Zahl ebenfalls
+unbekannt.
 
 | Baustein | Größe | Was es heißt |
 |---|---|---|
 | Kacheln „geöffnet / fehlgeschlagen / unzustellbar" in Übersicht und Detail (Nr. 29, 32) | S | **Gebaut.** Belegte Instantly-Zahlen werden angezeigt; „fehlgeschlagen" bleibt bei fehlender verlässlicher Quelle „—" |
 | Tages-Limit + Sendefenster anzeigen (Nr. 36) | S | **Gebaut.** Zeigt „Heute x von y", Wochentage, Uhrzeit, Zeitzone und ob das Fenster gerade offen ist; Sendefenster über Mitternacht werden richtig erkannt |
-| Warteschlangen-Status als Diagramm (Nr. 34) | M | **Gebaut im belegbaren Umfang.** Ring für versendet/unzustellbar; nicht getrennte Zustände werden nicht erfunden |
+| Warteschlangen-Status als Diagramm (Nr. 34) | M | **Gebaut im belegbaren Umfang.** Der Ring teilt mögliche E-Mails nur in „versendet" und „nicht getrennt verfügbar". „Unzustellbar" steht getrennt darunter, weil diese Instantly-Zahl sich mit „versendet" überschneiden kann |
 | Kampagnen-Einstellungen im Tool ändern (Nr. 37) | — | **Nicht bauen.** Einstellungen bleiben beim Link nach Instantly (Scope-Entscheidung vom 22.07.2026) |
 
 ### Phase 2 — Freigabe-Tabelle auf Wholix-Stand

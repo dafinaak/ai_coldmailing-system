@@ -1024,7 +1024,6 @@ h1 { margin: 0; font-size: 24px; }
 .kamp-ring-spalte { display: flex; flex-direction: column; align-items: center; }
 .kamp-ring {
   --kamp-versendet: 0%;
-  --kamp-unzustellbar: 0%;
   position: relative;
   width: 160px;
   height: 160px;
@@ -1034,8 +1033,7 @@ h1 { margin: 0; font-size: 24px; }
   border-radius: 50%;
   background: conic-gradient(
     #43C981 0 var(--kamp-versendet),
-    #F5A000 var(--kamp-versendet) calc(var(--kamp-versendet) + var(--kamp-unzustellbar)),
-    #A8ADBE calc(var(--kamp-versendet) + var(--kamp-unzustellbar)) 100%
+    #A8ADBE var(--kamp-versendet) 100%
   );
 }
 .kamp-ring::after {
@@ -1066,10 +1064,22 @@ h1 { margin: 0; font-size: 24px; }
   font-size: 10.5px;
 }
 .kamp-ring-legende span { white-space: nowrap; }
+.kamp-ring-zusatz {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  max-width: 300px;
+  margin: 12px 0 0;
+  color: #555B69;
+  font-size: 10.5px;
+  line-height: 1.35;
+  text-align: center;
+}
+.kamp-ring-zusatz strong { color: #6D4A00; font-weight: 700; }
 .kamp-punkt { display: inline-block; width: 8px; height: 8px; margin-right: 4px; border-radius: 50%; }
 .kamp-punkt--gruen { background: #43C981; }
 .kamp-punkt--grau { background: #A8ADBE; }
-.kamp-punkt--orange { background: #F5A000; }
 
 .kamp-schritt-spalte h3 {
   margin: 0;

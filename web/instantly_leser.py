@@ -51,13 +51,16 @@ markierte TODOs bleiben offen.
   # analytics-Antwort exakt dieselbe Zahlen-Codierung wie Campaign.status
   # verwendet (Schema legt es nahe, exakt gleiche x-enumDescriptions), ist
   # hier nicht live geprueft.
-- GET /api/v2/accounts/analytics/daily (Query-Parameter "start_date" und
-  "end_date"): liefert eine LISTE je Datum und Absenderpostfach mit
-  "date", "email_account" und "sent". Der Endpunkt ist konto- statt
-  kampagnenbezogen; deshalb werden unten ausschliesslich Zeilen der
-  tatsaechlich in Campaign.email_list verwendeten Absender summiert. Ein
-  Ausfall dieses Zusatzabrufs macht nur "heute_versendet" unbekannt und
-  verwirft nicht die weiterhin erreichbaren Kampagnen-/Schrittwerte.
+- GET /api/v2/accounts/analytics/daily (Query-Parameter "start_date",
+  "end_date" und das verpflichtende Array "emails"): liefert eine LISTE
+  je Datum und Absenderpostfach mit "date", "email_account" und "sent".
+  Start muss strikt vor Ende liegen; fuer einen Kalendertag wird deshalb
+  heute bis zum Folgetag angefragt. Der Endpunkt ist konto- statt
+  kampagnenbezogen; deshalb werden unten zusaetzlich nur Zeilen fuer heute
+  und fuer die tatsaechlich in Campaign.email_list verwendeten Absender
+  summiert. Ein Ausfall dieses Zusatzabrufs macht nur "heute_versendet"
+  unbekannt und verwirft nicht die weiterhin erreichbaren Kampagnen-/
+  Schrittwerte.
 
 GET /api/v2/emails (fuer Task 9, Postfach) ist ebenfalls in der Spec
 verifiziert (operationId "listEmail", Antwort {"items": [Email], ...}) -
@@ -134,7 +137,7 @@ zwar im Schema fuehrt, die im echten Konto aber gefehlt haben:
 from __future__ import annotations
 
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import requests
 
@@ -362,9 +365,11 @@ class InstantlyLeser:
         }
         if not verwendete_absender:
             return None
+        folgetag = (datetime.fromisoformat(heute) + timedelta(days=1)).date().isoformat()
         try:
             tageswerte = self._get("/accounts/analytics/daily", params={
-                "start_date": heute, "end_date": heute,
+                "start_date": heute, "end_date": folgetag,
+                "emails": sorted(verwendete_absender),
             })
         except (requests.exceptions.RequestException, RuntimeError, ValueError, KeyError):
             return None

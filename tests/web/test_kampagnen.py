@@ -271,6 +271,38 @@ def test_liste_zeigt_wholix_kennzahlen_und_filtert_nach_status(angemeldeter_clie
     assert antwort.context["status_filter"] == "aktiv"
 
 
+def test_liste_zeigt_aktive_kampagnen_bei_vollstaendigem_live_ausfall_unbekannt(
+        angemeldeter_client, daten_dir):
+    angemeldeter_client.app.state.instantly_leser = FakeInstantlyLeser({})
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml",
+                  ts="20260720-090000", campaign_id="camp-a")
+
+    antwort = angemeldeter_client.get("/kampagnen")
+
+    assert antwort.context["kennzahlen"]["aktiv"] is None
+    assert re.search(
+        r"<strong>—</strong><span>Aktive Kampagnen</span>", antwort.text,
+    )
+
+
+def test_liste_zeigt_aktive_kampagnen_bei_teilweisem_live_ausfall_unbekannt(
+        angemeldeter_client, daten_dir):
+    angemeldeter_client.app.state.instantly_leser = FakeInstantlyLeser({
+        "camp-a": _stand(status="aktiv", name="Aktive Runde"),
+    })
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml",
+                  ts="20260720-090000", campaign_id="camp-a")
+    _lauf_anlegen(daten_dir, "moveo", "moveo.yaml",
+                  ts="20260720-091500", campaign_id="camp-b")
+
+    antwort = angemeldeter_client.get("/kampagnen")
+
+    assert antwort.context["kennzahlen"]["aktiv"] is None
+    assert re.search(
+        r"<strong>—</strong><span>Aktive Kampagnen</span>", antwort.text,
+    )
+
+
 def test_liste_rendert_wholix_uebersicht_mit_filtern_und_vorbereitung(
         angemeldeter_client, daten_dir):
     stand = _stand(status="aktiv", name="Demo Kampagne", antworten=0)
@@ -596,7 +628,7 @@ def test_detail_zeigt_warteschlange_sendefenster_und_tageslimit(angemeldeter_cli
 
     antwort = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-093000")
     assert antwort.context["kd_warteschlange"] == {
-        "gesamt": 36, "versendet": 3, "unzustellbar": 1, "ungetrennt": 32,
+        "gesamt": 36, "versendet": 3, "unzustellbar": 1, "ungetrennt": 33,
     }
     assert antwort.context["kd_kennzahlen"]["moeglich"] == 36
     assert antwort.context["kd_tageslimit"] == {"heute": 7, "limit": 20}
@@ -702,9 +734,39 @@ def test_detail_benennt_warteschlangenrest_nicht_als_noch_offen(
 
     antwort = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-090000")
 
-    assert "Nicht getrennt verfügbar: 32" in antwort.text
-    assert "32 nicht getrennt verfügbar" in antwort.text
+    assert "Nicht getrennt verfügbar: 33" in antwort.text
+    assert "33 nicht getrennt verfügbar" in antwort.text
     assert "Noch offen" not in antwort.text
+
+
+def test_warteschlangenring_zieht_unzustellbar_nicht_vom_rest_ab(
+        angemeldeter_client, daten_dir):
+    stand = _stand(status="aktiv", versendet=3)
+    stand["unzustellbar"] = None
+    angemeldeter_client.app.state.instantly_leser = FakeInstantlyLeser({
+        "camp-a": stand,
+    })
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml",
+                  ts="20260720-090000", campaign_id="camp-a")
+
+    antwort = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-090000")
+    css = (Path(__file__).parents[2] / "web" / "static" / "stil.css").read_text(
+        encoding="utf-8",
+    )
+    ring_regel = re.search(r"^\.kamp-ring\s*\{([^}]*)\}", css, re.M | re.S)
+
+    assert antwort.context["kd_warteschlange"] == {
+        "gesamt": 36, "versendet": 3, "unzustellbar": None, "ungetrennt": 33,
+    }
+    assert ('aria-label="3 versendet, 33 nicht getrennt verfügbar, '
+            '36 mögliche E-Mails insgesamt"' in antwort.text)
+    assert "--kamp-unzustellbar" not in antwort.text
+    assert "kamp-punkt--orange" not in antwort.text
+    assert "Unzustellbar: —" in antwort.text
+    assert "kann sich mit „Versendet“ überschneiden" in antwort.text
+    assert ring_regel is not None
+    assert "--kamp-unzustellbar" not in ring_regel.group(1)
+    assert "#F5A000" not in ring_regel.group(1)
 
 
 def test_detail_zeigt_instantly_erstellzeit_deutsch_oder_als_strich(
@@ -878,8 +940,8 @@ def test_detail_behaelt_bekannte_nullwerte_auch_im_warteschlangenring(
     antwort = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-090000")
 
     assert antwort.status_code == 200
-    assert ('aria-label="0 versendet, 0 unzustellbar, '
-            '0 nicht getrennt verfügbar"' in antwort.text)
+    assert ('aria-label="0 versendet, 0 nicht getrennt verfügbar, '
+            '0 mögliche E-Mails insgesamt"' in antwort.text)
     assert 'class="kamp-ring kamp-ring--unbekannt"' not in antwort.text
 
 

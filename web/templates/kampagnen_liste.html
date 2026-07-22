@@ -16,7 +16,7 @@
 
   <section class="wholix-karten" aria-label="Kampagnen-Kennzahlen">
     <div class="wholix-karte wholix-karte--violett"><strong>{{ kennzahlen.kampagnen }}</strong><span>Kampagnen</span></div>
-    <div class="wholix-karte wholix-karte--gruen"><strong>{{ kennzahlen.aktiv }}</strong><span>Aktive Kampagnen</span></div>
+    <div class="wholix-karte wholix-karte--gruen"><strong>{{ kennzahlen.aktiv if kennzahlen.aktiv is not none else '—' }}</strong><span>Aktive Kampagnen</span></div>
     <div class="wholix-karte wholix-karte--blau"><strong>{{ kennzahlen.empfaenger }}</strong><span>Empfänger</span></div>
     <div class="wholix-karte wholix-karte--mint"><strong>{{ kennzahlen.geoeffnet if kennzahlen.geoeffnet is not none else '—' }}</strong><span>Geöffnet</span></div>
     <div class="wholix-karte wholix-karte--orange"><strong>{{ kennzahlen.versendet if kennzahlen.versendet is not none else '—' }}</strong><span>Versendet</span></div>

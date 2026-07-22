@@ -21,7 +21,7 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
   nicht erfunden, und der Link führt zu den Kampagnen-Einstellungen in
   Instantly.
 - Frischer voller Testlauf am 22.07.2026:
-  `458 passed, 1 warning in 87.95s`. Die eine Warnung ist die bekannte
+  `461 passed, 1 warning in 86.39s`. Die eine Warnung ist die bekannte
   Starlette-Abkündigung für `httpx` im TestClient.
 - Die Sichtprüfung lief nur lokal mit festen Testdaten und ohne
   Instantly-Schlüssel. Desktop und 390-px-Ansichten von Übersicht und Detail
@@ -31,8 +31,9 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
 - Die Kampagnenansicht nutzt die Empfängerzahl von Instantly. Die Zahl des
   zuletzt freigegebenen Laufs wird im Detail getrennt gezeigt. Der heutige
   Versand wird aus der täglichen Konten-Auswertung nur für die verwendeten
-  Absenderpostfächer summiert; ein Ausfall dieser einzelnen Auswertung macht
-  die übrigen Live-Werte nicht unbekannt.
+  Absenderpostfächer summiert. Die Absender werden als Pflichtfilter
+  übergeben; der Zeitraum reicht von heute bis zum Folgetag. Ein Ausfall
+  dieser einzelnen Auswertung macht die übrigen Live-Werte nicht unbekannt.
 - Ein zuletzt bekannter Postfachstand bleibt bei einem späteren Lesefehler
   sichtbar und wird mit der Fehlerzeit gekennzeichnet. Kampagnentabelle,
   Fehlermeldungen und Zahlenfarben sind auch für Tastatur und Lesesoftware
@@ -52,6 +53,11 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
 - Instantly und der freigegebene Lauf bleiben getrennte Datenquellen: Live-
   Kennzahlen und Warteschlange beruhen auf Instantly; der lokale Lauf wird
   nur als eigener Vergleichswert gezeigt.
+- Der Warteschlangenring verrechnet Unzustellbare nicht als eigene Gruppe.
+  Er zeigt nur „versendet" und den Rest „nicht getrennt verfügbar".
+  Unzustellbare stehen mit einem Überschneidungshinweis getrennt darunter.
+- Die zusammengefasste Zahl aktiver Kampagnen wird nur berechnet, wenn alle
+  berücksichtigten Kampagnen einen bekannten Status haben.
 - Die neun am 22.07.2026 gestrichenen Wholix-Funktionen bleiben gestrichen;
   insbesondere keine Benutzerverwaltung, Calls, Notizen oder AI-Chat.
 

@@ -114,7 +114,8 @@ def test_kampagnen_stand_liefert_wholix_kennzahlen_und_betriebsdaten():
         {"schritt": 2, "versendet": 2, "geoeffnet": 1},
     ]
     assert ("/accounts/analytics/daily", {
-        "start_date": "2026-07-22", "end_date": "2026-07-22",
+        "start_date": "2026-07-22", "end_date": "2026-07-23",
+        "emails": ["sender@firma.de"],
     }) in session.aufrufe
 
 
@@ -161,14 +162,21 @@ def test_tagesversand_summiert_nur_verwendete_absenderpostfaecher():
         {"date": "2026-07-22", "email_account": "sender@firma.de", "sent": 3},
         {"date": "2026-07-22", "email_account": "zweiter@firma.de", "sent": 5},
         {"date": "2026-07-22", "email_account": "fremd@firma.de", "sent": 90},
+        {"date": "2026-07-23", "email_account": "sender@firma.de", "sent": 70},
     ])
+    session = FakeSession(antworten)
 
     eintrag = InstantlyLeser(
-        "key", session=FakeSession(antworten),
+        "key", session=session,
         jetzt=lambda: datetime(2026, 7, 22, 10, 30),
     ).kampagnen_stand(["camp-1"])["camp-1"]
 
     assert eintrag["heute_versendet"] == 8
+    assert ("/accounts/analytics/daily", {
+        "start_date": "2026-07-22",
+        "end_date": "2026-07-23",
+        "emails": ["sender@firma.de", "zweiter@firma.de"],
+    }) in session.aufrufe
 
 
 def test_ausfall_der_tagesstatistik_laesst_kampagnenstand_erreichbar():

@@ -289,22 +289,27 @@ def _summe_oder_unbekannt(zeilen: list[dict], feld: str):
 
 
 def _warteschlange(gesamt_empfaenger: int | None, schritt_anzahl: int, stand: dict) -> dict:
-    """Bereitet nur die von Instantly belegten Gruppen der Warteschlange vor."""
+    """Bereitet nur ueberschneidungsfreie Ringgruppen vor.
+
+    Instantly kann Unzustellbare zugleich in emails_sent_count zaehlen. Der
+    Wert bleibt deshalb eine Zusatzangabe und wird nie vom grauen Rest
+    abgezogen.
+    """
     versendet = stand.get("versendet")
     unzustellbar = stand.get("unzustellbar")
     if gesamt_empfaenger is None:
         return {"gesamt": None, "versendet": versendet,
                 "unzustellbar": unzustellbar, "ungetrennt": None}
     moeglich = gesamt_empfaenger * schritt_anzahl
-    if versendet is None or unzustellbar is None:
+    if versendet is None:
         return {"gesamt": moeglich, "versendet": versendet,
                 "unzustellbar": unzustellbar, "ungetrennt": None}
-    if versendet + unzustellbar > moeglich:
+    if versendet > moeglich:
         return {"gesamt": moeglich, "versendet": versendet,
                 "unzustellbar": unzustellbar, "ungetrennt": None}
     return {"gesamt": moeglich, "versendet": versendet,
             "unzustellbar": unzustellbar,
-            "ungetrennt": moeglich - versendet - unzustellbar}
+            "ungetrennt": moeglich - versendet}
 
 
 _WOCHENTAGE = ("So", "Mo", "Di", "Mi", "Do", "Fr", "Sa")
@@ -440,7 +445,8 @@ def kampagnen_liste(request: Request, suche: str = "", status: str = "alle"):
     live_stand_hinweis = _live_stand_hinweis(list(stand_by_id.values()))
     kennzahlen = {
         "kampagnen": len(kampagnen_zeilen),
-        "aktiv": sum(zeile["status"] == "aktiv" for zeile in kampagnen_zeilen),
+        "aktiv": (None if any(zeile["status"] is None for zeile in kampagnen_zeilen)
+                  else sum(zeile["status"] == "aktiv" for zeile in kampagnen_zeilen)),
         "empfaenger": (0 if not kampagnen_zeilen
                        else _summe_oder_unbekannt(kampagnen_zeilen, "empfaenger")),
         "geoeffnet": _summe_oder_unbekannt(kampagnen_zeilen, "geoeffnet"),

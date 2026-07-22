@@ -126,14 +126,12 @@
         {% if kd_warteschlange.ungetrennt is not none %}
         {% if kd_warteschlange.gesamt %}
         {% set versendet_anteil = (100 * kd_warteschlange.versendet / kd_warteschlange.gesamt)|round %}
-        {% set unzustellbar_anteil = (100 * kd_warteschlange.unzustellbar / kd_warteschlange.gesamt)|round %}
         {% else %}
         {% set versendet_anteil = 0 %}
-        {% set unzustellbar_anteil = 0 %}
         {% endif %}
         <div class="kamp-ring" role="img"
-             aria-label="{{ kd_warteschlange.versendet }} versendet, {{ kd_warteschlange.unzustellbar }} unzustellbar, {{ kd_warteschlange.ungetrennt }} nicht getrennt verfügbar"
-             style="--kamp-versendet: {{ versendet_anteil }}%; --kamp-unzustellbar: {{ unzustellbar_anteil }}%;">
+             aria-label="{{ kd_warteschlange.versendet }} versendet, {{ kd_warteschlange.ungetrennt }} nicht getrennt verfügbar, {{ kd_warteschlange.gesamt }} mögliche E-Mails insgesamt"
+             style="--kamp-versendet: {{ versendet_anteil }}%;">
           <div class="kamp-ring-inhalt"><span>Gesamt</span><strong>{{ kd_warteschlange.gesamt }}</strong></div>
         </div>
         {% else %}
@@ -144,8 +142,11 @@
         <div class="kamp-ring-legende" aria-label="Aufteilung der Warteschlange">
           <span><i class="kamp-punkt kamp-punkt--gruen"></i>Versendet: {{ kd_warteschlange.versendet if kd_warteschlange.versendet is not none else "—" }}</span>
           <span><i class="kamp-punkt kamp-punkt--grau"></i>Nicht getrennt verfügbar: {{ kd_warteschlange.ungetrennt if kd_warteschlange.ungetrennt is not none else "—" }}</span>
-          <span><i class="kamp-punkt kamp-punkt--orange"></i>Unzustellbar: {{ kd_warteschlange.unzustellbar if kd_warteschlange.unzustellbar is not none else "—" }}</span>
         </div>
+        <p class="kamp-ring-zusatz">
+          <strong>Unzustellbar: {{ kd_warteschlange.unzustellbar if kd_warteschlange.unzustellbar is not none else "—" }}</strong>
+          <span>Diese Instantly-Zahl kann sich mit „Versendet“ überschneiden.</span>
+        </p>
       </div>
 
       <div class="kamp-schritt-spalte">

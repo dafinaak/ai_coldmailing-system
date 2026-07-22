@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import datetime, time
+from datetime import datetime, time, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -326,7 +326,7 @@ def _tage_bereich_text(start: int, ende: int) -> str:
     return _WOCHENTAGE[start] if start == ende else f"{_WOCHENTAGE[start]}–{_WOCHENTAGE[ende]}"
 
 
-def _sendefenster_anzeigen(sendefenster: list[dict]) -> list[dict]:
+def _sendefenster_anzeigen(sendefenster: list[dict], jetzt: datetime) -> list[dict]:
     """Formatiert Instantly-Sendefenster, ohne fehlende Angaben zu erfinden."""
     ergebnis = []
     for fenster in sendefenster or []:
@@ -343,7 +343,9 @@ def _sendefenster_anzeigen(sendefenster: list[dict]) -> list[dict]:
             continue
         try:
             von_zeit, bis_zeit = time.fromisoformat(von), time.fromisoformat(bis)
-            jetzt = datetime.now(ZoneInfo(zeitzone))
+            if jetzt.tzinfo is None:
+                raise ValueError("Zeitpunkt braucht eine Zeitzone")
+            lokale_zeit = jetzt.astimezone(ZoneInfo(zeitzone))
         except (TypeError, ValueError, ZoneInfoNotFoundError):
             ergebnis.append({
                 "tage_text": tage_text,
@@ -352,9 +354,9 @@ def _sendefenster_anzeigen(sendefenster: list[dict]) -> list[dict]:
                 "ist_jetzt": None,
             })
             continue
-        heute_aktiv = jetzt.weekday() + 1 if jetzt.weekday() < 6 else 0
-        ist_im_zeitraum = (von_zeit <= jetzt.time() <= bis_zeit if von_zeit <= bis_zeit
-                           else jetzt.time() >= von_zeit or jetzt.time() <= bis_zeit)
+        heute_aktiv = lokale_zeit.weekday() + 1 if lokale_zeit.weekday() < 6 else 0
+        ist_im_zeitraum = (von_zeit <= lokale_zeit.time() <= bis_zeit if von_zeit <= bis_zeit
+                           else lokale_zeit.time() >= von_zeit or lokale_zeit.time() <= bis_zeit)
         ergebnis.append({
             "tage_text": tage_text,
             "zeit_text": f"{von}–{bis}",
@@ -393,6 +395,12 @@ def _tageslimit(stand: dict, postfach_antwort: dict) -> dict:
         limits.append(postfach.get("daily_limit") if postfach is not None else None)
     return {"heute": heute, "limit": _summe_oder_unbekannt(
         [{"limit": limit} for limit in limits], "limit")}
+
+
+def _anzeige_zeitpunkt(request: Request) -> datetime:
+    """Liefert eine zeitzonenbewusste Uhr, die Tests gezielt setzen koennen."""
+    uhr = getattr(request.app.state, "jetzt", None)
+    return uhr() if callable(uhr) else datetime.now(timezone.utc)
 
 
 # Routen ------------------------------------------------------------------
@@ -521,6 +529,7 @@ def _detail_kontext(request: Request, slug: str, ts: str, *, aktion_fehler: str 
     postfach_antwort = (leser.postfaecher() if hasattr(leser, "postfaecher") else
                          {"erreichbar": False, "postfaecher": []})
     kd_warteschlange = _warteschlange(gesamt, len(schritt_labels), stand)
+    anzeige_zeitpunkt = _anzeige_zeitpunkt(request)
 
     return {
         "nutzer": auth.aktueller_nutzer(request),
@@ -545,7 +554,8 @@ def _detail_kontext(request: Request, slug: str, ts: str, *, aktion_fehler: str 
         },
         "kd_warteschlange": kd_warteschlange,
         "kd_schritte": kd_schritte,
-        "kd_sendefenster": _sendefenster_anzeigen(stand.get("sendefenster") or []),
+        "kd_sendefenster": _sendefenster_anzeigen(
+            stand.get("sendefenster") or [], anzeige_zeitpunkt),
         "kd_tageslimit": _tageslimit(stand, postfach_antwort),
         "kd_antworten": stand.get("antworten") if stand.get("antworten") is not None else "—",
         "campaign_id": campaign_id,

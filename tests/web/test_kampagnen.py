@@ -9,6 +9,7 @@ import json
 import re
 from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import pytest
 import yaml
@@ -389,9 +390,11 @@ def test_detail_zeigt_schritte_mit_echten_tagen_und_wer_wann(angemeldeter_client
 
 
 def test_detail_zeigt_warteschlange_sendefenster_und_tageslimit(angemeldeter_client, daten_dir):
-    angemeldeter_client.app.state.instantly_leser = FakeInstantlyLeser({
+    app = angemeldeter_client.app
+    app.state.instantly_leser = FakeInstantlyLeser({
         "camp-1": _stand(status="aktiv"),
     })
+    app.state.jetzt = lambda: datetime(2026, 7, 22, 10, 30, tzinfo=ZoneInfo("Europe/Berlin"))
     _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml",
                   ts="20260720-093000", campaign_id="camp-1")
 
@@ -404,6 +407,10 @@ def test_detail_zeigt_warteschlange_sendefenster_und_tageslimit(angemeldeter_cli
         "tage_text": "Mo–Fr", "zeit_text": "08:00–19:00",
         "zeitzone": "Europe/Berlin", "ist_jetzt": True,
     }]
+
+    app.state.jetzt = lambda: datetime(2026, 7, 26, 10, 30, tzinfo=ZoneInfo("Europe/Berlin"))
+    sonntag = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-093000")
+    assert sonntag.context["kd_sendefenster"][0]["ist_jetzt"] is False
 
 
 def test_detail_zeigt_pausiert_hinweis_nur_wenn_pausiert(angemeldeter_client, daten_dir):

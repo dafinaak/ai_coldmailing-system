@@ -20,7 +20,7 @@
 
 ---
 
-### Aufgabe 1: Belegte Kampagnenzahlen und Betriebsdaten lesen
+### Task 1: Belegte Kampagnenzahlen und Betriebsdaten lesen
 
 **Dateien:**
 
@@ -168,7 +168,7 @@ git commit -m "feat: read Wholix campaign metrics from Instantly"
 
 ---
 
-### Aufgabe 2: Zuverlässige Anzeigeformen für Übersicht und Details
+### Task 2: Zuverlässige Anzeigeformen für Übersicht und Details
 
 **Dateien:**
 
@@ -314,7 +314,7 @@ git commit -m "feat: prepare reliable Wholix campaign views"
 
 ---
 
-### Aufgabe 3: Kampagnenübersicht im Wholix-Muster
+### Task 3: Kampagnenübersicht im Wholix-Muster
 
 **Dateien:**
 
@@ -388,7 +388,7 @@ git commit -m "feat: match Wholix campaign overview"
 
 ---
 
-### Aufgabe 4: Kampagnendetails mit Warteschlange und Sendefenster
+### Task 4: Kampagnendetails mit Warteschlange und Sendefenster
 
 **Dateien:**
 
@@ -452,7 +452,7 @@ git commit -m "feat: add Wholix campaign operation details"
 
 ---
 
-### Aufgabe 5: Vollprüfung, Bildschirmfotos und Projektstand
+### Task 5: Vollprüfung, Bildschirmfotos und Projektstand
 
 **Dateien:**
 

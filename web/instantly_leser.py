@@ -247,6 +247,22 @@ def _nachricht_aus_email(email: dict, richtung: str) -> dict | None:
     return {"richtung": richtung, "zeit": zeit, "betreff": email.get("subject") or "", "text": text}
 
 
+def _sendefenster_aus_campaign(campaign: dict) -> list[dict]:
+    """Uebersetzt die von Instantly gelesenen Sendefenster ohne fehlende
+    Angaben zu ergaenzen."""
+    ergebnis = []
+    for eintrag in (campaign.get("campaign_schedule") or {}).get("schedules") or []:
+        timing = eintrag.get("timing") or {}
+        ergebnis.append({
+            "name": eintrag.get("name"),
+            "von": timing.get("from"),
+            "bis": timing.get("to"),
+            "tage": eintrag.get("days") or {},
+            "zeitzone": eintrag.get("timezone"),
+        })
+    return ergebnis
+
+
 def konversationen_aus_email_stand(stand_by_id: dict[str, dict]) -> list[dict]:
     """Reine Aufbereitung (kein Netzwerk-Zugriff) - baut aus einem bereits
     abgerufenen emails_stand()-Ergebnis die Konversationsliste: gruppiert
@@ -326,7 +342,7 @@ class InstantlyLeser:
         return (self._jetzt() - eintrag["abgerufen_um"]).total_seconds() < CACHE_TTL_SEKUNDEN
 
     def _hole_frisch(self, campaign_id: str) -> dict:
-        """Ruft die drei GET-Endpunkte fuer genau eine Kampagne ab und baut
+        """Ruft die vier GET-Endpunkte fuer genau eine Kampagne ab und baut
         daraus den Anzeige-Datensatz. Wirft weiter (RuntimeError bei
         HTTP-Fehlern, requests.exceptions.RequestException bei Netzwerk-/
         Timeout-Problemen) - kampagnen_stand() faengt das ab."""
@@ -334,12 +350,15 @@ class InstantlyLeser:
         status = _STATUS_TEXT.get(campaign.get("status"), "pausiert")
         name = campaign.get("name")
 
-        versendet = None
-        antworten = None
+        analytics_eintrag = {}
         analytics = self._get("/campaigns/analytics", params={"id": campaign_id})
         if analytics:
-            versendet = analytics[0].get("emails_sent_count")
-            antworten = analytics[0].get("reply_count")
+            analytics_eintrag = analytics[0]
+
+        heute = self._jetzt().date().isoformat()
+        tageswerte = self._get("/campaigns/analytics/daily", params={
+            "campaign_id": campaign_id, "start_date": heute, "end_date": heute,
+        }) or []
 
         # je-Schritt-Zaehler nur, wenn die API sie liefert (siehe
         # Modul-Docstring) - eine leere/fehlende Antwort ergibt bewusst eine
@@ -347,27 +366,44 @@ class InstantlyLeser:
         # einfach keine Fortschrittsbalken statt abzustuerzen.
         schritte_roh = self._get("/campaigns/analytics/steps",
                                   params={"campaign_id": campaign_id}) or []
-        summen: dict[str, int] = {}
+        summen: dict[str, dict[str, int]] = {}
         for eintrag in schritte_roh:
             schritt = eintrag.get("step")
             if schritt is None:
                 continue
-            summen[schritt] = summen.get(schritt, 0) + (eintrag.get("sent") or 0)
+            summe = summen.setdefault(schritt, {"versendet": 0, "geoeffnet": 0})
+            summe["versendet"] += eintrag.get("sent") or 0
+            summe["geoeffnet"] += eintrag.get("opened") or 0
         schritte = [
             {"schritt": int(schritt) if str(schritt).isdigit() else schritt,
-             "versendet": summen[schritt]}
+             "versendet": summen[schritt]["versendet"],
+             "geoeffnet": summen[schritt]["geoeffnet"]}
             for schritt in sorted(summen, key=lambda s: (len(str(s)), str(s)))
         ]
 
-        return {"status": status, "name": name, "versendet": versendet,
-                "antworten": antworten, "schritte": schritte}
+        return {
+            "status": status,
+            "name": name,
+            "empfaenger": analytics_eintrag.get("leads_count"),
+            "versendet": analytics_eintrag.get("emails_sent_count"),
+            "geoeffnet": analytics_eintrag.get("open_count"),
+            "antworten": analytics_eintrag.get("reply_count"),
+            "unzustellbar": analytics_eintrag.get("bounced_count"),
+            "abgeschlossen": analytics_eintrag.get("completed_count"),
+            "heute_versendet": sum((zeile.get("sent") or 0) for zeile in tageswerte),
+            "absender": campaign.get("email_list") or [],
+            "sendefenster": _sendefenster_aus_campaign(campaign),
+            "schritte": schritte,
+        }
 
     # Oeffentliche Schnittstelle -----------------------------------------
 
     def kampagnen_stand(self, campaign_ids: list[str]) -> dict[str, dict]:
         """Liefert je Kampagnen-ID einen Datensatz mit "erreichbar" (bool),
-        "status" ("aktiv"/"pausiert"/"abgeschlossen"/None), "name", "versendet"
-        (Zahl oder None), "antworten" (Zahl oder None, aus "reply_count"),
+        "status" ("aktiv"/"pausiert"/"abgeschlossen"/None), "name",
+        "empfaenger", "versendet", "geoeffnet", "antworten",
+        "unzustellbar", "abgeschlossen" und "heute_versendet" (jeweils
+        Zahl oder None), "absender" und "sendefenster" (Listen, ggf. leer),
         "schritte" (Liste, ggf. leer) und "stand" (Zeitpunkt
         des letzten ERFOLGREICHEN Abrufs, oder None, wenn noch nie einer
         gelang). Fehlertolerant: schlaegt ein Abruf fehl (HTTP-Fehler,
@@ -390,9 +426,13 @@ class InstantlyLeser:
                     ergebnis[campaign_id] = {**cache_eintrag["daten"], "erreichbar": False,
                                               "stand": cache_eintrag["abgerufen_um"]}
                 else:
-                    ergebnis[campaign_id] = {"erreichbar": False, "status": None, "name": None,
-                                              "versendet": None, "antworten": None,
-                                              "schritte": [], "stand": None}
+                    ergebnis[campaign_id] = {
+                        "erreichbar": False, "status": None, "name": None,
+                        "empfaenger": None, "versendet": None, "geoeffnet": None,
+                        "antworten": None, "unzustellbar": None, "abgeschlossen": None,
+                        "heute_versendet": None, "absender": [], "sendefenster": [],
+                        "schritte": [], "stand": None,
+                    }
                 continue
             jetzt = self._jetzt()
             self._cache[campaign_id] = {"daten": daten, "abgerufen_um": jetzt}

@@ -43,13 +43,32 @@ class FakeSession:
 def _standard_antworten(campaign_id="camp-1", status=0, name="[TEST] Demo GmbH",
                          emails_sent_count=5):
     return {
-        f"/campaigns/{campaign_id}": FakeResponse(200, {"id": campaign_id, "name": name,
-                                                         "status": status}),
+        f"/campaigns/{campaign_id}": FakeResponse(200, {
+            "id": campaign_id,
+            "name": name,
+            "status": status,
+            "email_list": ["sender@firma.de"],
+            "campaign_schedule": {"schedules": [{
+                "name": "Werktage",
+                "timing": {"from": "08:00", "to": "19:00"},
+                "days": {"0": False, "1": True, "2": True, "3": True,
+                         "4": True, "5": True, "6": False},
+                "timezone": "Europe/Berlin",
+            }]},
+        }),
         "/campaigns/analytics": FakeResponse(200, [{"campaign_id": campaign_id,
-                                                     "emails_sent_count": emails_sent_count}]),
+                                                     "emails_sent_count": emails_sent_count,
+                                                     "leads_count": 12,
+                                                     "open_count": 4,
+                                                     "reply_count": 2,
+                                                     "bounced_count": 1,
+                                                     "completed_count": 3}]),
         "/campaigns/analytics/steps": FakeResponse(200, [
-            {"step": "1", "variant": "A", "sent": 5},
-            {"step": "2", "variant": "A", "sent": 2},
+            {"step": "1", "variant": "A", "sent": 5, "opened": 4},
+            {"step": "2", "variant": "A", "sent": 2, "opened": 1},
+        ]),
+        "/campaigns/analytics/daily": FakeResponse(200, [
+            {"date": "2026-07-22", "sent": 3},
         ]),
     }
 
@@ -65,8 +84,35 @@ def test_kampagnen_stand_parst_status_name_versendet_und_schritte():
     assert eintrag["status"] == "pausiert"  # status=0 (Draft)
     assert eintrag["name"] == "[TEST] Demo GmbH"
     assert eintrag["versendet"] == 5
-    assert eintrag["schritte"] == [{"schritt": 1, "versendet": 5}, {"schritt": 2, "versendet": 2}]
+    assert eintrag["schritte"] == [{"schritt": 1, "versendet": 5, "geoeffnet": 4},
+                                    {"schritt": 2, "versendet": 2, "geoeffnet": 1}]
     assert eintrag["stand"] is not None
+
+
+def test_kampagnen_stand_liefert_wholix_kennzahlen_und_betriebsdaten():
+    jetzt = datetime(2026, 7, 22, 10, 30)
+    session = FakeSession(_standard_antworten())
+    eintrag = InstantlyLeser("key", session=session, jetzt=lambda: jetzt).kampagnen_stand(["camp-1"])["camp-1"]
+
+    assert eintrag["empfaenger"] == 12
+    assert eintrag["geoeffnet"] == 4
+    assert eintrag["antworten"] == 2
+    assert eintrag["unzustellbar"] == 1
+    assert eintrag["heute_versendet"] == 3
+    assert eintrag["absender"] == ["sender@firma.de"]
+    assert eintrag["sendefenster"] == [{
+        "name": "Werktage", "von": "08:00", "bis": "19:00",
+        "tage": {"0": False, "1": True, "2": True, "3": True,
+                 "4": True, "5": True, "6": False},
+        "zeitzone": "Europe/Berlin",
+    }]
+    assert eintrag["schritte"] == [
+        {"schritt": 1, "versendet": 5, "geoeffnet": 4},
+        {"schritt": 2, "versendet": 2, "geoeffnet": 1},
+    ]
+    assert ("/campaigns/analytics/daily", {
+        "campaign_id": "camp-1", "start_date": "2026-07-22", "end_date": "2026-07-22",
+    }) in session.aufrufe
 
 
 @pytest.mark.parametrize("status_zahl,erwartet", [
@@ -114,7 +160,7 @@ def test_cache_wird_innerhalb_60_sekunden_nicht_erneut_abgefragt():
 
     leser.kampagnen_stand(["camp-1"])
     erster_aufruf_anzahl = len(session.aufrufe)
-    assert erster_aufruf_anzahl == 3  # campaign + analytics + steps
+    assert erster_aufruf_anzahl == 4  # campaign + analytics + steps + daily
 
     uhr["jetzt"] += timedelta(seconds=59)
     stand = leser.kampagnen_stand(["camp-1"])

@@ -23,11 +23,17 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
 - Frischer voller Testlauf am 22.07.2026:
   `461 passed, 1 warning in 86.39s`. Die eine Warnung ist die bekannte
   Starlette-Abkündigung für `httpx` im TestClient.
-- Die Sichtprüfung lief nur lokal mit festen Testdaten und ohne
-  Instantly-Schlüssel. Desktop und 390-px-Ansichten von Übersicht und Detail
-  sind festgehalten. Bei 390 px liegt die Navigation oben; die Übersicht hat
-  volle Inhaltsbreite, keinen Dokument-Überlauf und nur die Tabelle scrollt
-  intern.
+- Die Sichtprüfung lief lokal mit festen Testdaten. Desktop und 390-px-
+  Ansichten von Übersicht und Detail sind festgehalten. Bei 390 px liegt die
+  Navigation oben; die Übersicht hat volle Inhaltsbreite, keinen Dokument-
+  Überlauf und nur die Tabelle scrollt intern.
+- Am 22.07.2026 wurde Phase 1 zusätzlich rein lesend gegen das echte
+  Instantly-Konto geprüft. Die fünf geprüften GET-Endpunkte für Kampagne,
+  Kennzahlen, Schrittwerte, Konten-Tageswerte und Postfächer antworteten mit
+  HTTP 200; es wurden keine Namen, Adressen oder Kennzahlen ausgegeben und
+  keine Daten verändert. Instantly lieferte für den heutigen Tageszeitraum
+  keine Zeile, daher zeigt das Tool den Tagesverbrauch zuverlässig als
+  unbekannt statt als erfundene Null.
 - Die Kampagnenansicht nutzt die Empfängerzahl von Instantly. Die Zahl des
   zuletzt freigegebenen Laufs wird im Detail getrennt gezeigt. Der heutige
   Versand wird aus der täglichen Konten-Auswertung nur für die verwendeten
@@ -67,5 +73,5 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
   der Freigabe-Tabelle.
 - Spätere Phasen bleiben Mail-Programm, CRM-Rand und die noch offenen
   Wholix-Funktionen laut Roadmap.
-- Echte Versand- oder Postfachprüfungen nur mit ausdrücklicher Freigabe und
-  Testkonten.
+- Schreibende Versand- oder Postfachprüfungen nur mit ausdrücklicher
+  Freigabe und Testkonten.

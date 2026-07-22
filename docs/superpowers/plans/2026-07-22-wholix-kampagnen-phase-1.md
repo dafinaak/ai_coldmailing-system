@@ -404,6 +404,7 @@ git commit -m "feat: match Wholix campaign overview"
 **Dateien:**
 
 - Ändern: `tests/web/test_kampagnen.py`
+- Ändern: `web/routen/kampagnen.py` ausschließlich, um `stand["absender"]` als `kd_absender` an die Detailvorlage weiterzugeben
 - Ändern: `web/templates/kampagne_detail.html`
 - Ändern: `web/static/stil.css`
 
@@ -417,6 +418,8 @@ git commit -m "feat: match Wholix campaign overview"
 Ein Test setzt alle neuen Live-Werte auf `None` und prüft „—“, „Instantly
 liefert keinen verlässlichen Zähler“ und „Nicht in Instantly hinterlegt“.
 Ein weiterer Test behält die vorhandenen Aktivieren-/Pausieren-Aktionen bei.
+Der Test mit vollständigen Daten prüft außerdem, dass
+`sender@firma.de` im Block „Kampagnenangaben“ sichtbar ist.
 
 - [ ] **Schritt 2: Tests ausführen und die erwarteten Fehler sehen**
 
@@ -437,6 +440,9 @@ Der Ring verwendet ein serverseitig berechnetes CSS-Verhältnis. Wenn die
 Zahlen unbekannt sind, wird ein neutraler Ring ohne Prozentangabe gezeigt.
 „Fehlgeschlagen“ bleibt immer `—` mit Erklärung. Bestehende Formulare für
 Aktivieren/Pausieren und ihre Bestätigungssätze bleiben unverändert.
+`_detail_kontext()` reicht dafür die bereits gelesene Liste
+`stand["absender"]` unverändert als `kd_absender` weiter; es entsteht kein
+zusätzlicher Instantly-Aufruf.
 
 - [ ] **Schritt 4: Detail-CSS ergänzen**
 

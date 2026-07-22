@@ -44,6 +44,11 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
   sichtbar und wird mit der Fehlerzeit gekennzeichnet. Kampagnentabelle,
   Fehlermeldungen und Zahlenfarben sind auch für Tastatur und Lesesoftware
   verständlich geprüft.
+- Die Gestaltung für Phase 2 ist mit dem Nutzer abgestimmt und als
+  `docs/superpowers/specs/2026-07-22-wholix-freigabe-phase-2-design.md`
+  gesichert. Der ausführbare Bauplan liegt unter
+  `docs/superpowers/plans/2026-07-22-wholix-freigabe-phase-2.md`; Programmcode
+  für Phase 2 wurde noch nicht verändert.
 
 ## Entscheidungen
 
@@ -66,11 +71,21 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
   berücksichtigten Kampagnen einen bekannten Status haben.
 - Die neun am 22.07.2026 gestrichenen Wholix-Funktionen bleiben gestrichen;
   insbesondere keine Benutzerverwaltung, Calls, Notizen oder AI-Chat.
+- In Phase 2 zeigt jede Prüftabelle genau eine E-Mail-Runde. Jeder der drei
+  Schritte wird einzeln bestätigt; mehrere Empfänger können gesammelt
+  bestätigt werden. An Instantly geht weiterhin nur die vollständig
+  bestätigte Runde.
+- Ein ungeeigneter Text wird nicht frei bearbeitet, sondern genau für diesen
+  Schritt neu erzeugt. Unbekannte Instantly-Zustände bleiben unbekannt.
+- Die globale Sperrliste erhält Grund und Kommentar sowie Muster wie
+  `*.bund.de`; alte einfache YAML-Einträge bleiben lesbar.
 
 ## Nächste Schritte
 
-- Phase 2 des Fahrplans planen: Status je Empfänger und je E-Mail-Schritt in
-  der Freigabe-Tabelle.
+- Den Phase-2-Bauplan freigeben und danach in neun einzeln prüfbaren Aufgaben
+  ausführen: Freigabezustand, Rundendaten, sichere Aktionen, einzelne
+  Neuerzeugung, Instantly-Lesestand, Prüftabelle, Sperrlisten-Daten,
+  Sperrlisten-Oberfläche und Gesamtnachweis.
 - Spätere Phasen bleiben Mail-Programm, CRM-Rand und die noch offenen
   Wholix-Funktionen laut Roadmap.
 - Schreibende Versand- oder Postfachprüfungen nur mit ausdrücklicher

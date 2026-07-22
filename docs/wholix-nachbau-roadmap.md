@@ -1,6 +1,6 @@
 # Wholix-Nachbau: Feature-Inventur und Fahrplan
 
-Stand: 22.07.2026 (Phase 1 gebaut und lokal geprüft; siehe Abschnitt 3)
+Stand: 22.07.2026 (Phase 1 und 2 gebaut und lokal geprüft; siehe Abschnitt 3)
 
 ## Scope-Entscheidungen (22.07.2026)
 
@@ -141,24 +141,24 @@ Jede Zeile ist eine Funktion von Wholix. Drei mögliche Stände:
 | Nr. | Funktion | Stand | Anmerkung |
 |---|---|---|---|
 | 38 | Texte je Empfänger lesen und freigeben (Betreff + Text für Anschreiben und Nachfässe) | HABEN WIR | Bei uns sogar strenger: Checkliste vor der Freigabe |
-| 39 | Große Status-Tabelle je Empfänger UND je Schritt: Freigabe-Status, Versand-Status, versendet am, Antwort erhalten am, Fehler — für Schritt 1, 2, 3 einzeln | TEILWEISE | Freigeben ja; den Versand- und Antwort-Status je Empfänger und Schritt zeigen wir nicht |
-| 40 | Einzelnen Text im Tool bearbeiten (Stift-Symbol) | FEHLT | Bei uns: neu erstellen lassen statt von Hand ändern |
-| 41 | Suche, Filter und Mehrfach-Auswahl in der Freigabe-Tabelle | FEHLT | |
+| 39 | Große Status-Tabelle je Empfänger UND je Schritt: Freigabe-Status, Versand-Status, versendet am, Antwort erhalten am, Fehler — für Schritt 1, 2, 3 einzeln | HABEN WIR | Freigabe, Versandzeit und belegbare Antworten werden je Schritt gezeigt. Was Instantly nicht eindeutig einem Schritt zuordnet, bleibt unbekannt |
+| 40 | Einzelnen Text im Tool bearbeiten (Stift-Symbol) | HABEN WIR | Im vereinbarten schlanken Umfang: genau einen Schritt neu erzeugen lassen; dadurch wird nur dessen alte Freigabe ungültig |
+| 41 | Suche, Filter und Mehrfach-Auswahl in der Freigabe-Tabelle | HABEN WIR | Suche, Statusfilter und Sammelfreigabe arbeiten immer nur innerhalb einer E-Mail-Runde |
 
 ### Domain Blacklist (Gesperrte Domains)
 
 | Nr. | Funktion | Stand | Anmerkung |
 |---|---|---|---|
 | 42 | Gesperrte Domains anzeigen, hinzufügen, entfernen | HABEN WIR | |
-| 43 | Zusatzfelder je Sperre (Webseite, Grund, Kommentar) und Platzhalter-Sperren wie `*.bund.de` | FEHLT | |
+| 43 | Zusatzfelder je Sperre (Webseite, Grund, Kommentar) und Platzhalter-Sperren wie `*.bund.de` | HABEN WIR | Alte einfache Einträge bleiben lesbar; neue Einträge werden geprüft und zuverlässig gespeichert |
 
 ### Zwischenstand
 
 | Stand | Anzahl |
 |---|---|
-| HABEN WIR | 10 |
-| TEILWEISE | 8 |
-| FEHLT | 24 |
+| HABEN WIR | 14 |
+| TEILWEISE | 7 |
+| FEHLT | 21 |
 | NICHT IM SCOPE | 1 |
 | **Gesamt** | **43** |
 
@@ -257,12 +257,36 @@ unbekannt.
 
 ### Phase 2 — Freigabe-Tabelle auf Wholix-Stand
 
+**Stand 22.07.2026:** Der Funktionsumfang dieser Phase ist gebaut und mit
+festen lokalen Testdaten geprüft. 518 Tests sind grün. Die Gesamtheit wurde
+in sieben frischen Testblöcken ausgeführt; einen einzelnen, durchlaufenden
+Testprozess beendete das System wiederholt ohne Testfehler und ohne
+Abschlussmeldung. Die einzige Warnung ist weiterhin die bekannte
+Starlette-Abkündigung im TestClient.
+
+Die Freigabe speichert jeden Empfänger und jeden der drei E-Mail-Schritte
+einzeln. Sammelaktionen gelten nur für die gerade geöffnete Runde. Die
+Übergabe bleibt gesperrt, solange auch nur ein Schritt offen, nach einer
+Neuerzeugung veraltet oder in Nacharbeit ist. Nach der Übergabe ist die
+Ansicht schreibgeschützt. Instantly wird für Versand- und Antwortstände nur
+lesend abgefragt. Eine Antwort wird nur dann einem einzelnen Schritt
+zugeordnet, wenn der Verlauf das eindeutig belegt; sonst bleibt der
+Schrittwert unbekannt und nur der belegbare Gesamtstand wird gezeigt.
+
+Die globale Sperrliste speichert Domain, Grund und Kommentar, versteht
+Platzhalter wie `*.bund.de`, erkennt Überschneidungen und liest alte einfache
+Einträge weiter. Desktop und 390-px-Ansichten von Freigabe und Sperrliste
+sind sichtbar geprüft. Bei 390 px liegt die Navigation oben, der
+Dokumentkörper hat keinen horizontalen Überlauf und nur die breiten Tabellen
+scrollen innerhalb ihres Bereichs. Für diesen Nachweis wurde keine echte
+E-Mail versendet und keine Instantly-Schreibschnittstelle benutzt.
+
 | Baustein | Größe | Was es heißt |
 |---|---|---|
-| Status-Tabelle je Empfänger und Schritt (Nr. 39) | M | Zu jedem Empfänger anzeigen: freigegeben? versendet am? Antwort erhalten? Fehler? — je Schritt 1–3 |
-| Einzelnen Text bearbeiten (Nr. 40) | S | Stift-Symbol; Änderung macht die alte Freigabe ungültig (unsere Regel bleibt) |
-| Suche, Filter, Mehrfach-Auswahl (Nr. 41) | S | |
-| Sperrliste: Grund/Kommentar-Felder + Platzhalter-Sperren (Nr. 43) | S | |
+| Status-Tabelle je Empfänger und Schritt (Nr. 39) | M | **Gebaut.** Freigabe und belegbare Instantly-Stände stehen je Empfänger und Schritt getrennt; unbekannte Werte bleiben sichtbar unbekannt |
+| Einzelnen Text bearbeiten (Nr. 40) | S | **Gebaut im vereinbarten Umfang.** Genau einen Schritt neu erzeugen lassen; nur dessen alte Freigabe wird ungültig |
+| Suche, Filter, Mehrfach-Auswahl (Nr. 41) | S | **Gebaut.** Suche, Statusfilter und Sammelaktionen bleiben auf eine Runde begrenzt |
+| Sperrliste: Grund/Kommentar-Felder + Platzhalter-Sperren (Nr. 43) | S | **Gebaut.** Einschließlich Bearbeiten, Entfernen, Überschneidungsprüfung und alten Einträgen |
 
 ### Phase 3 — Das Mail-Programm (der größte Brocken; braucht die Entscheidung aus Abschnitt 2)
 

@@ -20,9 +20,15 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
   Live-Werte werden lesend aus Instantly aufbereitet, fehlende Werte werden
   nicht erfunden, und der Link führt zu den Kampagnen-Einstellungen in
   Instantly.
-- Frischer voller Testlauf am 22.07.2026:
-  `461 passed, 1 warning in 86.39s`. Die eine Warnung ist die bekannte
-  Starlette-Abkündigung für `httpx` im TestClient.
+- Phase 2 des Wholix-Nachbaus ist gebaut: Freigabe je Empfänger und
+  E-Mail-Schritt, Suche, Filter, Sammelaktionen, einzelne Neuerzeugung,
+  vollständige Übergabesperre, lesender Instantly-Stand und die erweiterte
+  globale Sperrliste.
+- Frische Gesamtkontrolle am 22.07.2026: 518 Tests grün. Einen einzigen
+  langen Testprozess beendet das System wiederholt ohne Testfehler und ohne
+  Abschlussmeldung; deshalb wurden alle Tests vollständig in sieben frischen
+  Blöcken ausgeführt. Die einzige Warnung ist die bekannte
+  Starlette-Abkündigung im TestClient.
 - Die Sichtprüfung lief lokal mit festen Testdaten. Desktop und 390-px-
   Ansichten von Übersicht und Detail sind festgehalten. Bei 390 px liegt die
   Navigation oben; die Übersicht hat volle Inhaltsbreite, keinen Dokument-
@@ -44,11 +50,13 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
   sichtbar und wird mit der Fehlerzeit gekennzeichnet. Kampagnentabelle,
   Fehlermeldungen und Zahlenfarben sind auch für Tastatur und Lesesoftware
   verständlich geprüft.
-- Die Gestaltung für Phase 2 ist mit dem Nutzer abgestimmt und als
-  `docs/superpowers/specs/2026-07-22-wholix-freigabe-phase-2-design.md`
-  gesichert. Der ausführbare Bauplan liegt unter
-  `docs/superpowers/plans/2026-07-22-wholix-freigabe-phase-2.md`; Programmcode
-  für Phase 2 wurde noch nicht verändert.
+- Die Sichtprüfung für Phase 2 lief nur mit festen lokalen Testdaten. Die
+  Nachweise liegen unter `.superpowers/phase-2/`: Freigabeübersicht,
+  Prüftabelle, Textdialog, schreibgeschützte Übergabe, Sperrliste sowie beide
+  390-px-Ansichten. Auf 390 px gibt es keinen seitlichen Überlauf der ganzen
+  Seite; nur die breiten Tabellen scrollen in ihrem eigenen Bereich.
+- Der dauerhafte Arbeitsnachweis steht in Jira unter `AP-199` und ist als
+  erledigt markiert.
 
 ## Entscheidungen
 
@@ -79,14 +87,19 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
   Schritt neu erzeugt. Unbekannte Instantly-Zustände bleiben unbekannt.
 - Die globale Sperrliste erhält Grund und Kommentar sowie Muster wie
   `*.bund.de`; alte einfache YAML-Einträge bleiben lesbar.
+- Die Instantly-Abfrage der Freigabe ist rein lesend und konservativ. Nur bei
+  genau einer ausgehenden E-Mail in einem Verlauf wird eine Antwort diesem
+  Schritt zugeordnet. Bei mehreren möglichen Schritten bleibt die Zuordnung
+  unbekannt, während der belegbare Gesamtstand sichtbar bleibt.
+- Nach der Übergabe ist die E-Mail-Runde im Tool schreibgeschützt. Eine
+  einzelne Neuerzeugung macht nur den betroffenen Schritt wieder offen.
 
 ## Nächste Schritte
 
-- Den Phase-2-Bauplan freigeben und danach in neun einzeln prüfbaren Aufgaben
-  ausführen: Freigabezustand, Rundendaten, sichere Aktionen, einzelne
-  Neuerzeugung, Instantly-Lesestand, Prüftabelle, Sperrlisten-Daten,
-  Sperrlisten-Oberfläche und Gesamtnachweis.
-- Spätere Phasen bleiben Mail-Programm, CRM-Rand und die noch offenen
-  Wholix-Funktionen laut Roadmap.
+- Phase 2 nach Prüfung in den Hauptzweig übernehmen.
+- Danach Phase 3 planen: zuerst Google-/Microsoft-Verbindung und Mail-Abgleich
+  mit einem eigens dafür angelegten Testpostfach. Erst nach diesem Nachweis
+  folgen Antworten, Weiterleiten und neue Mails.
+- Danach bleiben CRM-Rand und die noch offenen Wholix-Funktionen laut Roadmap.
 - Schreibende Versand- oder Postfachprüfungen nur mit ausdrücklicher
   Freigabe und Testkonten.

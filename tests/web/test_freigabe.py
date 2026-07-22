@@ -49,6 +49,10 @@ _TEXT_ANNA = {"email": "anna@firma.de", "betreff": "Kurze Frage an Anna",
 _TEXT_BOB = {"email": "bob@firma.de", "betreff": "Kurze Frage an Bob",
              "mail_1": "Hallo Bob, ...", "follow_up_1": "Nachfass eins an Bob",
              "follow_up_2": "Nachfass zwei an Bob"}
+_TEXT_ANNA_GUELTIG = {
+    **_TEXT_ANNA,
+    "mail_1": " ".join(["Wort"] * 45),
+}
 
 _DEDUPE_BEHALTEN = [
     {"first_name": "Anna", "last_name": "Muster", "email": "anna@firma.de",
@@ -83,6 +87,19 @@ class FakeInstantly:
         if self.fehler_bei == "import_leads":
             raise RuntimeError("Instantly antwortet mit 500 auf /leads/add: Server-Fehler")
         self.leads_importiert.append((campaign_id, texte_pro_lead))
+
+
+class FakeKI:
+    def __init__(self, *antworten):
+        self.antworten = list(antworten)
+        self.prompts = []
+
+    def frage(self, system, prompt):
+        self.prompts.append(prompt)
+        antwort = self.antworten.pop(0)
+        if isinstance(antwort, Exception):
+            raise antwort
+        return antwort
 
 
 @pytest.fixture
@@ -427,6 +444,86 @@ def test_offene_nacharbeit_blockiert_die_komplette_uebergabe(
     assert "Nacharbeit" in antwort.text
     assert not (lauf_dir / "FREIGABE.txt").exists()
     assert fake.campaigns_erstellt == []
+
+
+def test_neu_erzeugen_ersetzt_nur_einen_schritt_und_hebt_nur_dessen_haken_auf(
+        angemeldeter_client, daten_dir, app):
+    _lauf_anlegen(
+        daten_dir, pruefung_ok=[_TEXT_ANNA_GUELTIG],
+        dedupe_behalten=[_DEDUPE_BEHALTEN[0]],
+    )
+    app.state.ki = FakeKI('{"text": "Neue ruhige Erinnerung"}', "JA")
+    app.state.webseiten_leser = lambda url: "Belegbarer Test-Webseitentext"
+    _alle_bestaetigen(angemeldeter_client)
+    seite = angemeldeter_client.get(f"/pruefen/{KUNDE_SLUG}/20260717-090000")
+    rid = _empfaenger_ids(seite)[0]
+
+    antwort = angemeldeter_client.post(
+        f"/pruefen/{KUNDE_SLUG}/20260717-090000/neu-erzeugen",
+        data={"revision": _revision_aus(seite), "recipient_id": rid,
+              "step": "follow_up_1"},
+        follow_redirects=False,
+    )
+
+    assert antwort.status_code == 303
+    neu = angemeldeter_client.get(antwort.headers["location"])
+    assert "Neue ruhige Erinnerung" in neu.text
+    assert 'data-step="mail_1" data-approved="true"' in neu.text
+    assert 'data-step="follow_up_1" data-approved="false"' in neu.text
+    assert _TEXT_ANNA_GUELTIG["follow_up_2"] in neu.text
+
+
+def test_fehlgeschlagene_neuerzeugung_laesst_text_und_freigabestand_unveraendert(
+        angemeldeter_client, daten_dir, app):
+    lauf_dir = _lauf_anlegen(
+        daten_dir, pruefung_ok=[_TEXT_ANNA_GUELTIG],
+        dedupe_behalten=[_DEDUPE_BEHALTEN[0]],
+    )
+    app.state.ki = FakeKI(RuntimeError("KI gerade nicht erreichbar"))
+    app.state.webseiten_leser = lambda url: "Test-Webseite"
+    _alle_bestaetigen(angemeldeter_client)
+    seite = angemeldeter_client.get(f"/pruefen/{KUNDE_SLUG}/20260717-090000")
+    vorher = (lauf_dir / "freigabe-status.json").read_bytes()
+
+    antwort = angemeldeter_client.post(
+        f"/pruefen/{KUNDE_SLUG}/20260717-090000/neu-erzeugen",
+        data={"revision": _revision_aus(seite), "recipient_id": _empfaenger_ids(seite)[0],
+              "step": "follow_up_1"},
+    )
+
+    assert antwort.status_code == 400
+    assert "KI gerade nicht erreichbar" in antwort.text
+    assert (lauf_dir / "freigabe-status.json").read_bytes() == vorher
+    assert _TEXT_ANNA_GUELTIG["follow_up_1"] in antwort.text
+
+
+def test_qualitativ_abgelehnter_neuer_text_bleibt_als_nacharbeit_gesperrt(
+        angemeldeter_client, daten_dir, app):
+    _lauf_anlegen(
+        daten_dir, pruefung_ok=[_TEXT_ANNA_GUELTIG],
+        dedupe_behalten=[_DEDUPE_BEHALTEN[0]],
+    )
+    app.state.ki = FakeKI(
+        '{"text": "Neue aber noch unpassende Erinnerung"}',
+        "NEIN - zu allgemein",
+    )
+    app.state.webseiten_leser = lambda url: "Test-Webseite"
+    _alle_bestaetigen(angemeldeter_client)
+    seite = angemeldeter_client.get(f"/pruefen/{KUNDE_SLUG}/20260717-090000")
+
+    antwort = angemeldeter_client.post(
+        f"/pruefen/{KUNDE_SLUG}/20260717-090000/neu-erzeugen",
+        data={"revision": _revision_aus(seite), "recipient_id": _empfaenger_ids(seite)[0],
+              "step": "follow_up_1"},
+        follow_redirects=False,
+    )
+
+    assert antwort.status_code == 303
+    neu = angemeldeter_client.get(antwort.headers["location"])
+    assert "Neue aber noch unpassende Erinnerung" in neu.text
+    assert 'data-status="nacharbeit"' in neu.text
+    assert "NEIN - zu allgemein" in neu.text
+    assert 'id="freigeben-knopf" disabled' in neu.text
 
 def test_unvollstaendig_bestaetigte_runde_sendet_auch_bei_direktem_post_nichts(
         angemeldeter_client, daten_dir):

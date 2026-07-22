@@ -23,6 +23,9 @@ from fastapi.responses import RedirectResponse
 
 from pipeline.__main__ import SendenFehler, _versand_ausfuehren
 from pipeline.approval import approve, freigabe_info, is_approved
+from pipeline.models import Lead
+from pipeline.personalize import regenerate_step
+from pipeline.quality import check as quality_check
 from pipeline.run_store import RunStore
 from web import auth
 from web.freigabe_status import (
@@ -107,6 +110,24 @@ def _hole_instantly(request: Request):
     from pipeline.senders.instantly import InstantlySender
 
     return InstantlySender(os.environ["INSTANTLY_API_KEY"])
+
+
+def _hole_ki(request: Request):
+    ki = getattr(request.app.state, "ki", None)
+    if ki is not None:
+        return ki
+    from pipeline.ki import KI
+
+    return KI()
+
+
+def _hole_webseiten_leser(request: Request):
+    leser = getattr(request.app.state, "webseiten_leser", None)
+    if leser is not None:
+        return leser
+    from pipeline.website import fetch_text
+
+    return fetch_text
 
 
 def _lauf_dir_oder_404(daten_dir, slug: str, ts: str) -> Path:
@@ -460,6 +481,92 @@ def empfaenger_mehrfach_bestaetigen(
             409,
         )
     except (OSError, ValueError, KeyError) as fehler:
+        return _freigabe_fehlerseite(request, slug, ts, str(fehler), 400)
+    return RedirectResponse(f"/pruefen/{slug}/{ts}", status_code=303)
+
+
+@router.post("/pruefen/{slug}/{ts}/neu-erzeugen")
+def schritt_neu_erzeugen(
+    request: Request,
+    slug: str,
+    ts: str,
+    revision: str = Form(...),
+    recipient_id: str = Form(...),
+    step: str = Form(...),
+):
+    lauf_dir = _lauf_dir_oder_404(request.app.state.daten_dir, slug, ts)
+    zustand_fehler = _pruefung_ist_schreibbar(request, lauf_dir)
+    if zustand_fehler:
+        return _freigabe_fehlerseite(request, slug, ts, zustand_fehler, 400)
+    if step not in SCHRITTE:
+        return _freigabe_fehlerseite(
+            request, slug, ts, "Der gewählte E-Mail-Schritt ist ungültig.", 400
+        )
+
+    status_store = FreigabeStatusStore(lauf_dir)
+    try:
+        grundtexte = grundtexte_fuer_lauf(lauf_dir)
+        stand = status_store.ansicht(grundtexte)
+        if stand["revision"] != revision:
+            raise VeralteterStand("Die E-Mail-Runde wurde inzwischen geändert.")
+        status_empfaenger = next(
+            (e for e in stand["recipients"] if e["id"] == recipient_id), None
+        )
+        if status_empfaenger is None:
+            raise ValueError("Der ausgewählte Empfänger ist nicht mehr vorhanden.")
+
+        wirksame_texte = status_store.materialisieren(grundtexte)
+        aktuelle_texte = next(
+            text for text in wirksame_texte
+            if text["email"].strip().lower() == status_empfaenger["email"].strip().lower()
+        )
+        info = _dedupe_info_by_email(lauf_dir).get(
+            status_empfaenger["email"].strip().lower()
+        )
+        if not info:
+            raise ValueError("Die Empfängerdaten für diese E-Mail sind nicht vollständig.")
+        lead = Lead(**{
+            feld: info.get(feld, "")
+            for feld in ("first_name", "last_name", "email", "company",
+                         "title", "website", "source")
+        })
+        kunde = _kunde_fuer(request.app.state.daten_dir, lauf_dir)
+        ki = _hole_ki(request)
+        webseiten_text = _hole_webseiten_leser(request)(lead.website)
+        neuer_schritt = regenerate_step(
+            lead, kunde, ki, webseiten_text, aktuelle_texte, step
+        )
+
+        kandidat = dict(aktuelle_texte)
+        if step == "mail_1":
+            kandidat["betreff"] = neuer_schritt["betreff"]
+        kandidat[step] = neuer_schritt["text"]
+        try:
+            _pflichttexte_pruefen([kandidat])
+        except ValueError:
+            qa_ok, qa_grund = False, "Weitere E-Mail-Schritte fehlen"
+        else:
+            qa_ok, qa_grund = quality_check(kandidat, lead, kunde, ki)
+
+        status_store.override_setzen(
+            grundtexte,
+            recipient_id,
+            step,
+            neuer_schritt,
+            revision,
+            qa_cleared=qa_ok,
+            qa_reason=None if qa_ok else qa_grund,
+        )
+    except VeralteterStand:
+        return _freigabe_fehlerseite(
+            request,
+            slug,
+            ts,
+            "Die E-Mail-Runde wurde inzwischen geändert. Die Seite wurde neu geladen; "
+            "bitte erzeuge den Schritt bei Bedarf noch einmal.",
+            409,
+        )
+    except (OSError, ValueError, RuntimeError, requests.RequestException, KeyError) as fehler:
         return _freigabe_fehlerseite(request, slug, ts, str(fehler), 400)
     return RedirectResponse(f"/pruefen/{slug}/{ts}", status_code=303)
 

@@ -2,8 +2,14 @@ import json, re
 from pathlib import Path
 
 PROMPT_DATEI = Path(__file__).parent.parent / "prompts" / "anschreiben.md"
+EINZEL_PROMPT_DATEI = Path(__file__).parent.parent / "prompts" / "einzelnen-schritt-neu.md"
 PFLICHT = ["betreff", "mail_1", "follow_up_1", "follow_up_2"]
 SYSTEM = "Du bist ein praeziser Texter fuer B2B-Kaltakquise. Antworte nur mit JSON."
+SCHRITT_LABELS = {
+    "mail_1": "E-Mail 1",
+    "follow_up_1": "Follow-up 1",
+    "follow_up_2": "Follow-up 2",
+}
 
 def personalize(lead, kunde, ki, webseiten_text: str, feedback: str = "") -> dict:
     prompt = PROMPT_DATEI.read_text(encoding="utf-8").format(
@@ -29,6 +35,35 @@ def personalize(lead, kunde, ki, webseiten_text: str, feedback: str = "") -> dic
     if any(not daten.get(k) for k in PFLICHT):
         raise ValueError(f"KI-Antwort unvollständig für {lead.email}")
     return {k: daten[k] for k in PFLICHT}
+
+
+def regenerate_step(lead, kunde, ki, webseiten_text: str,
+                    aktuelle_texte: dict, schritt: str) -> dict:
+    """Erzeugt genau einen Schritt neu und gibt nur dessen Felder zurück."""
+    if schritt not in SCHRITT_LABELS:
+        raise ValueError("Unbekannter E-Mail-Schritt.")
+    prompt = EINZEL_PROMPT_DATEI.read_text(encoding="utf-8").format(
+        schritt=SCHRITT_LABELS[schritt],
+        absender=kunde.absender,
+        kunde_name=kunde.name,
+        angebot=kunde.angebot,
+        tonalitaet=kunde.tonalitaet,
+        anrede_name=f"{lead.first_name} {lead.last_name}",
+        titel=lead.title,
+        firma=lead.company,
+        webseiten_text=webseiten_text or "(leer)",
+        aktuelle_texte=json.dumps(aktuelle_texte, ensure_ascii=False),
+    )
+    roh = ki.frage(SYSTEM, prompt)
+    treffer = re.search(r"\{.*\}", roh, re.DOTALL)
+    try:
+        daten = json.loads(treffer.group(0)) if treffer else {}
+    except ValueError:
+        daten = {}
+    pflicht = ("betreff", "text") if schritt == "mail_1" else ("text",)
+    if any(not isinstance(daten.get(k), str) or not daten[k].strip() for k in pflicht):
+        raise ValueError(f"KI-Antwort unvollständig für {lead.email}")
+    return {k: daten[k].strip() for k in pflicht}
 
 
 def personalisiere_mit_nachbesserung(lead, kunde, ki, webseiten_text, check,

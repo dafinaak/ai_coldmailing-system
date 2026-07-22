@@ -712,7 +712,107 @@ h1 { margin: 0; font-size: 24px; }
 .abgelehnt-titel { font-weight: 700; font-size: 15px; }
 .abgelehnt-text { font-size: 13.5px; color: var(--farbe-gedaempft); margin-top: 4px; }
 
-/* Kampagnen (Task 6) ------------------------------------------------------ */
+/* Kampagnen (Task 6 + Wholix-Uebersicht) ---------------------------------- */
+
+.kamp-uebersicht-kopf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  background: var(--farbe-weiss);
+  border: 1px solid #E7E9F0;
+  border-radius: 14px;
+  padding: 20px 28px;
+}
+.kamp-uebersicht-kopf .seiten-hilfstext { margin-bottom: 0; }
+
+.kamp-hauptaktion {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  background: #F5A000;
+  color: #FFFFFF;
+  text-decoration: none;
+}
+.kamp-hauptaktion:hover { background: #DB8F00; color: #FFFFFF; }
+
+.wholix-karten {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.wholix-karte {
+  min-height: 118px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 18px 12px;
+  background: var(--farbe-weiss);
+  border: 1px solid #E7E9F0;
+  border-radius: 14px;
+  text-align: center;
+}
+.wholix-karte strong {
+  font-family: var(--schrift-mono);
+  font-size: 27px;
+  line-height: 1.1;
+}
+.wholix-karte span { font-size: 12px; line-height: 1.25; }
+.wholix-karte--violett strong { color: #7C3AED; }
+.wholix-karte--gruen strong { color: #16B84E; }
+.wholix-karte--blau strong { color: #1479F8; }
+.wholix-karte--mint strong { color: #43C981; }
+.wholix-karte--orange strong { color: #F5A000; }
+.wholix-karte--rot strong { color: #E83F5B; }
+
+.kamp-filter {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--farbe-weiss);
+  border: 1px solid #E7E9F0;
+  border-radius: 14px;
+}
+.kamp-filter input,
+.kamp-filter select {
+  min-height: 38px;
+  border: 1px solid #D8DCE7;
+  border-radius: 7px;
+  background: #FFFFFF;
+  color: var(--farbe-text);
+  font-size: 13px;
+}
+.kamp-filter input { width: min(320px, 100%); padding: 8px 12px; }
+.kamp-filter select { min-width: 158px; padding: 8px 32px 8px 11px; }
+.kamp-filter-status { display: flex; gap: 8px; }
+.kamp-filter-knopf {
+  min-height: 38px;
+  padding: 8px 15px;
+  border: 1px solid #D8DCE7;
+  border-radius: 7px;
+  background: #FFFFFF;
+  color: var(--farbe-text);
+  font-weight: 600;
+  cursor: pointer;
+}
+.kamp-filter-knopf:hover { border-color: #AEB4C3; }
+
+.kamp-hauptaktion:focus-visible,
+.kamp-filter input:focus-visible,
+.kamp-filter select:focus-visible,
+.kamp-filter-knopf:focus-visible,
+.kamp-tabellenrahmen:focus-visible,
+.kamp-zeile:focus-visible {
+  outline: 2px solid #F5A000;
+  outline-offset: 2px;
+}
 
 .kamp-abschnitt-titel {
   font-family: var(--schrift-mono);
@@ -722,36 +822,40 @@ h1 { margin: 0; font-size: 24px; }
   margin: 24px 0 10px;
 }
 
-.kamp-tabelle {
+.kamp-tabellenrahmen {
+  overflow-x: auto;
   background: var(--farbe-weiss);
-  border: 1px solid var(--farbe-rand);
-  border-radius: 12px;
-  overflow: hidden;
+  border: 1px solid #E7E9F0;
+  border-radius: 14px;
+}
+.kamp-tabelle {
+  min-width: 1180px;
 }
 .kamp-kopf {
   display: grid;
-  grid-template-columns: 2fr 1fr 150px 100px 110px 130px;
+  grid-template-columns: minmax(220px, 2fr) minmax(150px, 1fr) 128px repeat(5, minmax(92px, .7fr)) 138px;
   gap: 12px;
-  padding: 11px 20px;
-  border-bottom: 1px solid var(--farbe-rand);
-  font-size: 11px;
-  color: var(--farbe-gedaempft);
-  font-family: var(--schrift-mono);
-  letter-spacing: 0.06em;
+  padding: 13px 18px;
+  border-bottom: 1px solid #E7E9F0;
+  font-size: 10.5px;
+  color: #555B69;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+  white-space: nowrap;
 }
 .kamp-zeile {
   display: grid;
-  grid-template-columns: 2fr 1fr 150px 100px 110px 130px;
+  grid-template-columns: minmax(220px, 2fr) minmax(150px, 1fr) 128px repeat(5, minmax(92px, .7fr)) 138px;
   gap: 12px;
   align-items: center;
-  padding: 13px 20px;
-  border-bottom: 1px solid #F0EEE5;
+  padding: 14px 18px;
+  border-bottom: 1px solid #EEF0F5;
   font-size: 13px;
   color: var(--farbe-text);
   text-decoration: none;
 }
 .kamp-zeile:last-child { border-bottom: none; }
-.kamp-zeile:hover { background: #FBFAF4; color: var(--farbe-text); }
+.kamp-zeile:hover { background: #FAFAFC; color: var(--farbe-text); }
 .kamp-name { font-family: var(--schrift-mono); font-weight: 600; font-size: 12.5px; }
 .kamp-gedaempft { color: var(--farbe-gedaempft); font-size: 12.5px; }
 .kamp-zahl { font-family: var(--schrift-mono); }
@@ -795,6 +899,16 @@ h1 { margin: 0; font-size: 24px; }
   margin-top: 14px;
   font-size: 13.5px;
   color: #2E5A82;
+}
+
+@media (max-width: 760px) {
+  .kamp-uebersicht-kopf,
+  .kamp-filter { align-items: stretch; flex-direction: column; }
+  .kamp-hauptaktion { justify-content: center; }
+  .wholix-karten { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kamp-filter input { width: 100%; }
+  .kamp-filter-status { width: 100%; }
+  .kamp-filter select { flex: 1; min-width: 0; }
 }
 
 /* Dashboard (Task 7) ------------------------------------------------------ */

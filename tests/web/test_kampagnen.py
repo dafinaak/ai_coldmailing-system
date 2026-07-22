@@ -265,6 +265,45 @@ def test_liste_zeigt_wholix_kennzahlen_und_filtert_nach_status(angemeldeter_clie
     assert antwort.context["status_filter"] == "aktiv"
 
 
+def test_liste_rendert_wholix_uebersicht_mit_filtern_und_vorbereitung(
+        angemeldeter_client, daten_dir):
+    stand = _stand(status="aktiv", name="Demo Kampagne", antworten=0)
+    stand["unzustellbar"] = None
+    angemeldeter_client.app.state.instantly_leser = FakeInstantlyLeser({
+        "camp-a": stand,
+    })
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml",
+                  ts="20260720-090000", campaign_id="camp-a")
+    _lauf_anlegen(daten_dir, "moveo", "moveo.yaml",
+                  ts="20260720-091500", zustand="wartet_auf_freigabe",
+                  campaign_id=None)
+
+    antwort = angemeldeter_client.get("/kampagnen?suche=demo&status=aktiv")
+
+    assert antwort.status_code == 200
+    text = antwort.text
+    karten = re.search(
+        r'<section class="wholix-karten"[^>]*>(.*?)</section>', text, re.S,
+    )
+    assert karten is not None
+    for bezeichnung in (
+        "Kampagnen", "Aktive Kampagnen", "Empfänger", "Geöffnet",
+        "Versendet", "Antworten", "Fehlgeschlagen", "Unzustellbar",
+    ):
+        assert f"<span>{bezeichnung}</span>" in karten.group(1)
+    assert "<strong>0</strong><span>Antworten</span>" in karten.group(1)
+    assert "<strong>—</strong><span>Unzustellbar</span>" in karten.group(1)
+    assert 'name="suche" value="demo"' in text
+    assert re.search(r'<option value="aktiv" selected>Aktiv</option>', text)
+    for spalte in (
+        "KAMPAGNE", "ANGEBOT", "STATUS", "EMPFÄNGER", "GEÖFFNET",
+        "VERSENDET", "ANTWORTEN", "UNZUSTELLBAR",
+    ):
+        assert f">{spalte}<" in text
+    assert "IN VORBEREITUNG" in text
+    assert "MOVEO Personalberatung" in text
+
+
 def test_liste_zeigt_vorbereitung_fuer_wartende_und_angehaltene_auftraege(angemeldeter_client, daten_dir):
     app = angemeldeter_client.app
     app.state.instantly_leser = FakeInstantlyLeser({})

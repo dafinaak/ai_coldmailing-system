@@ -1,18 +1,43 @@
 {% extends "layout.html" %}
 {% block titel %}Kampagnen{% endblock %}
 {% block inhalt %}
-<div class="seite">
-  <div class="kunden-kopf">
+<div class="seite seite--breit">
+  <div class="kamp-uebersicht-kopf">
     <div>
       <h1>Kampagnen</h1>
-      <p class="seiten-hilfstext">Jede Kampagne (in Instantly) entsteht aus einer gelesenen und freigegebenen E-Mail-Runde. Versendet wird über Instantly.</p>
+      <p class="seiten-hilfstext">Alle E-Mail-Kampagnen und ihr aktueller Stand in Instantly.</p>
     </div>
-    <a href="/auftraege/neu" class="knopf-primaer">E-Mails schreiben lassen</a>
+    <a href="/auftraege/neu" class="knopf-primaer kamp-hauptaktion"><span aria-hidden="true">+</span> E-Mails schreiben lassen</a>
   </div>
 
   {% if live_stand_hinweis %}
   <div class="hinweis-kasten">{{ live_stand_hinweis }}</div>
   {% endif %}
+
+  <section class="wholix-karten" aria-label="Kampagnen-Kennzahlen">
+    <div class="wholix-karte wholix-karte--violett"><strong>{{ kennzahlen.kampagnen }}</strong><span>Kampagnen</span></div>
+    <div class="wholix-karte wholix-karte--gruen"><strong>{{ kennzahlen.aktiv }}</strong><span>Aktive Kampagnen</span></div>
+    <div class="wholix-karte wholix-karte--blau"><strong>{{ kennzahlen.empfaenger }}</strong><span>Empfänger</span></div>
+    <div class="wholix-karte wholix-karte--mint"><strong>{{ kennzahlen.geoeffnet if kennzahlen.geoeffnet is not none else '—' }}</strong><span>Geöffnet</span></div>
+    <div class="wholix-karte wholix-karte--orange"><strong>{{ kennzahlen.versendet if kennzahlen.versendet is not none else '—' }}</strong><span>Versendet</span></div>
+    <div class="wholix-karte wholix-karte--violett"><strong>{{ kennzahlen.antworten if kennzahlen.antworten is not none else '—' }}</strong><span>Antworten</span></div>
+    <div class="wholix-karte wholix-karte--rot" title="Instantly liefert keinen verlässlichen Zähler"><strong>—</strong><span>Fehlgeschlagen</span></div>
+    <div class="wholix-karte wholix-karte--orange"><strong>{{ kennzahlen.unzustellbar if kennzahlen.unzustellbar is not none else '—' }}</strong><span>Unzustellbar</span></div>
+  </section>
+
+  <form method="get" action="/kampagnen" class="kamp-filter" role="search">
+    <input type="search" name="suche" value="{{ suche }}" placeholder="Kampagnen suchen" aria-label="Kampagnen suchen">
+    <div class="kamp-filter-status">
+      <select name="status" aria-label="Nach Status filtern">
+        <option value="alle"{% if status_filter == 'alle' %} selected{% endif %}>Alle Status</option>
+        <option value="aktiv"{% if status_filter == 'aktiv' %} selected{% endif %}>Aktiv</option>
+        <option value="pausiert"{% if status_filter == 'pausiert' %} selected{% endif %}>Pausiert</option>
+        <option value="abgeschlossen"{% if status_filter == 'abgeschlossen' %} selected{% endif %}>Fertig</option>
+        <option value="kontoproblem"{% if status_filter == 'kontoproblem' %} selected{% endif %}>Konto-Problem</option>
+      </select>
+      <button type="submit" class="kamp-filter-knopf">Filtern</button>
+    </div>
+  </form>
 
   {% if vorbereitung %}
   <div class="kamp-abschnitt-titel">IN VORBEREITUNG — DARAUS WERDEN KAMPAGNEN</div>
@@ -34,20 +59,25 @@
     <div>Sobald eine E-Mail-Runde gelesen und freigegeben ist, erscheint die Kampagne hier.</div>
   </div>
   {% else %}
-  <div class="kamp-tabelle">
-    <div class="kamp-kopf">
-      <div>KAMPAGNE</div><div>ANGEBOT</div><div>STATUS</div><div>EMPFÄNGER</div><div>VERSENDET</div><div>FREIGEGEBEN AM</div>
+  <div class="kamp-tabellenrahmen" tabindex="0" aria-label="Kampagnentabelle, horizontal scrollbar">
+    <div class="kamp-tabelle" role="table" aria-label="Kampagnen">
+      <div class="kamp-kopf" role="row">
+        <div role="columnheader">KAMPAGNE</div><div role="columnheader">ANGEBOT</div><div role="columnheader">STATUS</div><div role="columnheader">EMPFÄNGER</div><div role="columnheader">GEÖFFNET</div><div role="columnheader">VERSENDET</div><div role="columnheader">ANTWORTEN</div><div role="columnheader">UNZUSTELLBAR</div><div role="columnheader">FREIGEGEBEN AM</div>
+      </div>
+      {% for c in kampagnen %}
+      <a href="/kampagnen/{{ c.slug }}/{{ c.ts }}" class="kamp-zeile" role="row">
+        <div class="kamp-name" role="cell">{{ c.name }}</div>
+        <div class="kamp-gedaempft" role="cell">{{ c.kunde }}</div>
+        <div role="cell"><span class="kamp-status" style="background: {{ c.chip_bg }}; color: {{ c.chip_fg }};">{{ c.chip_text }}</span></div>
+        <div class="kamp-zahl" role="cell">{{ c.gesamt }}</div>
+        <div class="kamp-zahl" role="cell">{{ c.geoeffnet if c.geoeffnet is not none else '—' }}</div>
+        <div class="kamp-zahl" role="cell">{{ c.versendet if c.versendet is not none else '—' }}</div>
+        <div class="kamp-zahl" role="cell">{{ c.antworten if c.antworten is not none else '—' }}</div>
+        <div class="kamp-zahl" role="cell">{{ c.unzustellbar if c.unzustellbar is not none else '—' }}</div>
+        <div class="kamp-gedaempft" role="cell">{{ c.freigegeben_am }}</div>
+      </a>
+      {% endfor %}
     </div>
-    {% for c in kampagnen %}
-    <a href="/kampagnen/{{ c.slug }}/{{ c.ts }}" class="kamp-zeile">
-      <div class="kamp-name">{{ c.name }}</div>
-      <div class="kamp-gedaempft">{{ c.kunde }}</div>
-      <div><span class="kamp-status" style="background: {{ c.chip_bg }}; color: {{ c.chip_fg }};">{{ c.chip_text }}</span></div>
-      <div class="kamp-zahl">{{ c.gesamt }}</div>
-      <div class="kamp-zahl">{{ c.verschickt }}</div>
-      <div class="kamp-gedaempft">{{ c.freigegeben_am }}</div>
-    </a>
-    {% endfor %}
   </div>
   {% endif %}
 </div>

@@ -304,6 +304,44 @@ def test_liste_rendert_wholix_uebersicht_mit_filtern_und_vorbereitung(
     assert "MOVEO Personalberatung" in text
 
 
+def test_liste_behaelt_kampagnenzeile_als_nativen_link(
+        angemeldeter_client, daten_dir):
+    angemeldeter_client.app.state.instantly_leser = FakeInstantlyLeser({
+        "camp-a": _stand(status="aktiv", name="Demo Kampagne"),
+    })
+    _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml",
+                  ts="20260720-090000", campaign_id="camp-a")
+
+    antwort = angemeldeter_client.get("/kampagnen")
+
+    link = re.search(r'<a href="/kampagnen/[^\"]+" class="kamp-zeile"[^>]*>',
+                     antwort.text)
+    assert link is not None
+    assert "role=" not in link.group(0)
+    assert 'role="row"' not in antwort.text
+    assert 'role="cell"' not in antwort.text
+    assert 'role="columnheader"' not in antwort.text
+
+
+def test_kampagnen_mindestbreite_ist_auf_wholix_rahmen_begrenzt():
+    css_pfad = Path(__file__).parents[2] / "web" / "static" / "stil.css"
+    css = css_pfad.read_text(encoding="utf-8")
+    allgemeine_tabelle = re.search(r"^\.kamp-tabelle\s*\{([^}]*)\}", css, re.M | re.S)
+    wholix_tabelle = re.search(
+        r"^\.kamp-tabellenrahmen > \.kamp-tabelle\s*\{([^}]*)\}",
+        css, re.M | re.S,
+    )
+
+    assert allgemeine_tabelle is not None
+    assert "min-width" not in allgemeine_tabelle.group(1)
+    assert "background: var(--farbe-weiss)" in allgemeine_tabelle.group(1)
+    assert "border: 1px solid var(--farbe-rand)" in allgemeine_tabelle.group(1)
+    assert "border-radius: 12px" in allgemeine_tabelle.group(1)
+    assert "overflow: hidden" in allgemeine_tabelle.group(1)
+    assert wholix_tabelle is not None
+    assert "min-width: 1180px" in wholix_tabelle.group(1)
+
+
 def test_liste_zeigt_vorbereitung_fuer_wartende_und_angehaltene_auftraege(angemeldeter_client, daten_dir):
     app = angemeldeter_client.app
     app.state.instantly_leser = FakeInstantlyLeser({})

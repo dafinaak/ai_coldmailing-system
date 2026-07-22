@@ -60,21 +60,21 @@
   </div>
   {% else %}
   <div class="kamp-tabellenrahmen" tabindex="0" aria-label="Kampagnentabelle, horizontal scrollbar">
-    <div class="kamp-tabelle" role="table" aria-label="Kampagnen">
-      <div class="kamp-kopf" role="row">
-        <div role="columnheader">KAMPAGNE</div><div role="columnheader">ANGEBOT</div><div role="columnheader">STATUS</div><div role="columnheader">EMPFÄNGER</div><div role="columnheader">GEÖFFNET</div><div role="columnheader">VERSENDET</div><div role="columnheader">ANTWORTEN</div><div role="columnheader">UNZUSTELLBAR</div><div role="columnheader">FREIGEGEBEN AM</div>
+    <div class="kamp-tabelle">
+      <div class="kamp-kopf">
+        <div>KAMPAGNE</div><div>ANGEBOT</div><div>STATUS</div><div>EMPFÄNGER</div><div>GEÖFFNET</div><div>VERSENDET</div><div>ANTWORTEN</div><div>UNZUSTELLBAR</div><div>FREIGEGEBEN AM</div>
       </div>
       {% for c in kampagnen %}
-      <a href="/kampagnen/{{ c.slug }}/{{ c.ts }}" class="kamp-zeile" role="row">
-        <div class="kamp-name" role="cell">{{ c.name }}</div>
-        <div class="kamp-gedaempft" role="cell">{{ c.kunde }}</div>
-        <div role="cell"><span class="kamp-status" style="background: {{ c.chip_bg }}; color: {{ c.chip_fg }};">{{ c.chip_text }}</span></div>
-        <div class="kamp-zahl" role="cell">{{ c.gesamt }}</div>
-        <div class="kamp-zahl" role="cell">{{ c.geoeffnet if c.geoeffnet is not none else '—' }}</div>
-        <div class="kamp-zahl" role="cell">{{ c.versendet if c.versendet is not none else '—' }}</div>
-        <div class="kamp-zahl" role="cell">{{ c.antworten if c.antworten is not none else '—' }}</div>
-        <div class="kamp-zahl" role="cell">{{ c.unzustellbar if c.unzustellbar is not none else '—' }}</div>
-        <div class="kamp-gedaempft" role="cell">{{ c.freigegeben_am }}</div>
+      <a href="/kampagnen/{{ c.slug }}/{{ c.ts }}" class="kamp-zeile">
+        <div class="kamp-name">{{ c.name }}</div>
+        <div class="kamp-gedaempft">{{ c.kunde }}</div>
+        <div><span class="kamp-status" style="background: {{ c.chip_bg }}; color: {{ c.chip_fg }};">{{ c.chip_text }}</span></div>
+        <div class="kamp-zahl">{{ c.gesamt }}</div>
+        <div class="kamp-zahl">{{ c.geoeffnet if c.geoeffnet is not none else '—' }}</div>
+        <div class="kamp-zahl">{{ c.versendet if c.versendet is not none else '—' }}</div>
+        <div class="kamp-zahl">{{ c.antworten if c.antworten is not none else '—' }}</div>
+        <div class="kamp-zahl">{{ c.unzustellbar if c.unzustellbar is not none else '—' }}</div>
+        <div class="kamp-gedaempft">{{ c.freigegeben_am }}</div>
       </a>
       {% endfor %}
     </div>

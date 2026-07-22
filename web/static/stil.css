@@ -829,7 +829,15 @@ h1 { margin: 0; font-size: 24px; }
   border-radius: 14px;
 }
 .kamp-tabelle {
+  background: var(--farbe-weiss);
+  border: 1px solid var(--farbe-rand);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.kamp-tabellenrahmen > .kamp-tabelle {
   min-width: 1180px;
+  border: 0;
+  border-radius: 0;
 }
 .kamp-kopf {
   display: grid;

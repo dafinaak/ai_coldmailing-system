@@ -76,11 +76,8 @@ def load_kunde(path) -> Kunde:
                  kontakt_rollen=daten.get("kontakt_rollen") or [],
                  max_kontakte_pro_firma=daten.get("max_kontakte_pro_firma") or 1)
 
-def lade_globale_sperrliste(daten_dir) -> list:
-    """Liest sperrliste-global.yaml aus daten_dir: eine einfache Liste aus
-    Domains (Wildcards wie *.bund.de erlaubt, siehe pipeline.dedupe), die
-    fuer ALLE Kunden zusaetzlich zu deren eigener sperrliste gilt. Fehlt die
-    Datei, gibt es (noch) keine globalen Sperren - das ist kein Fehler."""
+def lade_globale_sperrlisten_eintraege(daten_dir) -> list[dict]:
+    """Liest alte Zeichenketten und neue strukturierte Sperrlisten-Eintraege."""
     pfad = Path(daten_dir) / "sperrliste-global.yaml"
     if not pfad.exists():
         return []
@@ -88,6 +85,32 @@ def lade_globale_sperrliste(daten_dir) -> list:
     if not isinstance(inhalt, list):
         raise ValueError(
             f"sperrliste-global.yaml in {pfad} ist falsch aufgebaut: erwartet wird eine "
-            f"einfache Liste von Domains (z.B. '- konkurrent-ki.de'), gefunden wurde "
+            f"Liste von Domains (z.B. '- konkurrent-ki.de'), gefunden wurde "
             f"stattdessen: {type(inhalt).__name__}.")
-    return inhalt
+    ergebnis = []
+    for eintrag in inhalt:
+        if isinstance(eintrag, str):
+            ergebnis.append({
+                "domain": eintrag, "reason": "", "comment": "", "legacy": True,
+            })
+            continue
+        if not isinstance(eintrag, dict) or not isinstance(eintrag.get("domain"), str):
+            raise ValueError(
+                f"Ein Sperrlisten-Eintrag in {pfad} ist falsch aufgebaut."
+            )
+        reason = eintrag.get("reason") or ""
+        comment = eintrag.get("comment") or ""
+        if not isinstance(reason, str) or not isinstance(comment, str):
+            raise ValueError(
+                f"Ein Sperrlisten-Eintrag in {pfad} ist falsch aufgebaut."
+            )
+        ergebnis.append({
+            "domain": eintrag["domain"], "reason": reason,
+            "comment": comment, "legacy": False,
+        })
+    return ergebnis
+
+
+def lade_globale_sperrliste(daten_dir) -> list[str]:
+    """Gibt fuer Pipeline und Deduplizierung weiterhin nur Domain-Muster aus."""
+    return [e["domain"] for e in lade_globale_sperrlisten_eintraege(daten_dir)]

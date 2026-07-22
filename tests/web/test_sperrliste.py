@@ -63,12 +63,16 @@ def test_seite_zeigt_leere_liste(angemeldeter_client):
 
 def test_domain_hinzufuegen_schreibt_datei(angemeldeter_client, daten_dir):
     antwort = angemeldeter_client.post(
-        "/domains/hinzufuegen", data={"domain": "  *.Bund.de  "}, follow_redirects=False
+        "/domains/hinzufuegen",
+        data={"domain": "  *.Bund.de  ", "grund": "Kunde", "kommentar": "Vertrag"},
+        follow_redirects=False,
     )
     assert antwort.status_code == 303
     assert antwort.headers["location"] == "/domains"
     inhalt = yaml.safe_load((daten_dir / "sperrliste-global.yaml").read_text(encoding="utf-8"))
-    assert inhalt == ["*.bund.de"]  # getrimmt und kleingeschrieben
+    assert inhalt == [{
+        "domain": "*.bund.de", "reason": "Kunde", "comment": "Vertrag",
+    }]
 
 
 def test_seite_zeigt_vorhandene_domains(angemeldeter_client, daten_dir):
@@ -80,7 +84,10 @@ def test_seite_zeigt_vorhandene_domains(angemeldeter_client, daten_dir):
 
 
 def test_domain_hinzufuegen_leer_gibt_deutschen_fehler(angemeldeter_client, daten_dir):
-    antwort = angemeldeter_client.post("/domains/hinzufuegen", data={"domain": "   "})
+    antwort = angemeldeter_client.post(
+        "/domains/hinzufuegen",
+        data={"domain": "   ", "grund": "Sonstiges", "kommentar": ""},
+    )
     assert antwort.status_code == 400
     assert "Bitte eine Domain eintragen." in antwort.text
     assert not (daten_dir / "sperrliste-global.yaml").exists()
@@ -93,12 +100,123 @@ def test_domain_hinzufuegen_doppelt_gibt_deutschen_fehler_und_aendert_datei_nich
         yaml.safe_dump(["konkurrent-ki.de"]), encoding="utf-8"
     )
     antwort = angemeldeter_client.post(
-        "/domains/hinzufuegen", data={"domain": "Konkurrent-KI.de"}
+        "/domains/hinzufuegen",
+        data={"domain": "Konkurrent-KI.de", "grund": "Konkurrent", "kommentar": ""},
     )
     assert antwort.status_code == 400
     assert "steht schon auf der Liste" in antwort.text
     inhalt = yaml.safe_load((daten_dir / "sperrliste-global.yaml").read_text(encoding="utf-8"))
     assert inhalt == ["konkurrent-ki.de"]
+
+
+@pytest.mark.parametrize(
+    "domain",
+    ["https://firma.de", "firma.de/pfad", "*firma.de", "firma", "fi rma.de"],
+)
+def test_ungueltiges_domain_muster_wird_abgewiesen(
+        angemeldeter_client, daten_dir, domain):
+    antwort = angemeldeter_client.post(
+        "/domains/hinzufuegen",
+        data={"domain": domain, "grund": "Kunde", "kommentar": ""},
+    )
+
+    assert antwort.status_code == 400
+    assert "gültige Domain" in antwort.text
+    assert not (daten_dir / "sperrliste-global.yaml").exists()
+
+
+def test_einzelne_domain_wird_abgewiesen_wenn_wildcard_sie_schon_abdeckt(
+        angemeldeter_client, daten_dir):
+    pfad = daten_dir / "sperrliste-global.yaml"
+    pfad.write_text('- "*.bund.de"\n', encoding="utf-8")
+    vorher = pfad.read_bytes()
+
+    antwort = angemeldeter_client.post(
+        "/domains/hinzufuegen",
+        data={"domain": "amt.bund.de", "grund": "Kunde", "kommentar": ""},
+    )
+
+    assert antwort.status_code == 400
+    assert "*.bund.de" in antwort.text
+    assert pfad.read_bytes() == vorher
+
+
+def test_neuer_platzhalter_wird_abgewiesen_wenn_er_einzelne_domain_abdeckt(
+        angemeldeter_client, daten_dir):
+    pfad = daten_dir / "sperrliste-global.yaml"
+    pfad.write_text('- "amt.bund.de"\n', encoding="utf-8")
+    vorher = pfad.read_bytes()
+
+    antwort = angemeldeter_client.post(
+        "/domains/hinzufuegen",
+        data={"domain": "*.bund.de", "grund": "Kunde", "kommentar": ""},
+    )
+
+    assert antwort.status_code == 400
+    assert "amt.bund.de" in antwort.text
+    assert pfad.read_bytes() == vorher
+
+
+@pytest.mark.parametrize("grund", ["", "Lieferant", "kunde"])
+def test_ungueltiger_grund_aendert_datei_nicht(
+        angemeldeter_client, daten_dir, grund):
+    antwort = angemeldeter_client.post(
+        "/domains/hinzufuegen",
+        data={"domain": "firma.de", "grund": grund, "kommentar": ""},
+    )
+
+    assert antwort.status_code == 400
+    assert "Grund" in antwort.text
+    assert not (daten_dir / "sperrliste-global.yaml").exists()
+
+
+def test_zu_langer_kommentar_aendert_datei_nicht(angemeldeter_client, daten_dir):
+    antwort = angemeldeter_client.post(
+        "/domains/hinzufuegen",
+        data={"domain": "firma.de", "grund": "Partner", "kommentar": "x" * 1001},
+    )
+
+    assert antwort.status_code == 400
+    assert "1000" in antwort.text
+    assert not (daten_dir / "sperrliste-global.yaml").exists()
+
+
+def test_alten_eintrag_bearbeiten_wandelt_nur_ihn_in_struktur_um(
+        angemeldeter_client, daten_dir):
+    pfad = daten_dir / "sperrliste-global.yaml"
+    pfad.write_text('- "alt.de"\n- "bleibt.de"\n', encoding="utf-8")
+
+    antwort = angemeldeter_client.post(
+        "/domains/bearbeiten",
+        data={
+            "urspruengliche_domain": "alt.de", "domain": "neu.de",
+            "grund": "Sonstiges", "kommentar": "Umbenannt",
+        },
+        follow_redirects=False,
+    )
+
+    assert antwort.status_code == 303
+    assert yaml.safe_load(pfad.read_text(encoding="utf-8")) == [
+        {"domain": "neu.de", "reason": "Sonstiges", "comment": "Umbenannt"},
+        "bleibt.de",
+    ]
+
+
+def test_strukturierter_eintrag_wird_mit_domain_entfernt(
+        angemeldeter_client, daten_dir):
+    pfad = daten_dir / "sperrliste-global.yaml"
+    pfad.write_text(
+        '- domain: "firma.de"\n  reason: "Kunde"\n  comment: "Vertrag"\n'
+        '- "bleibt.de"\n',
+        encoding="utf-8",
+    )
+
+    antwort = angemeldeter_client.post(
+        "/domains/entfernen", data={"domain": "firma.de"}, follow_redirects=False,
+    )
+
+    assert antwort.status_code == 303
+    assert yaml.safe_load(pfad.read_text(encoding="utf-8")) == ["bleibt.de"]
 
 
 def test_speichern_hinterlaesst_keine_temporaeren_dateien(angemeldeter_client, daten_dir):
@@ -108,7 +226,10 @@ def test_speichern_hinterlaesst_keine_temporaeren_dateien(angemeldeter_client, d
     # Datei im Datenverzeichnis zurueckbleiben (z.B. bei einem Absturz
     # mitten im write_text waere die Zieldatei vorher kurzzeitig
     # kaputt/leer gewesen).
-    angemeldeter_client.post("/domains/hinzufuegen", data={"domain": "konkurrent.de"})
+    angemeldeter_client.post(
+        "/domains/hinzufuegen",
+        data={"domain": "konkurrent.de", "grund": "Konkurrent", "kommentar": ""},
+    )
     reste = [p for p in daten_dir.iterdir() if p.name.startswith(".sperrliste-global")]
     assert reste == []
 

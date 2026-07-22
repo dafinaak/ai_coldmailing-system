@@ -1,6 +1,10 @@
 import pytest
 import yaml
-from pipeline.config import load_kunde, lade_globale_sperrliste
+from pipeline.config import (
+    lade_globale_sperrliste,
+    lade_globale_sperrlisten_eintraege,
+    load_kunde,
+)
 
 GUELTIG = """
 name: Demo GmbH
@@ -119,6 +123,20 @@ def test_lade_globale_sperrliste_liest_datei(tmp_path):
     (tmp_path / "sperrliste-global.yaml").write_text(
         yaml.safe_dump(["*.bund.de", "digitaldiamonds.de"]), encoding="utf-8")
     assert lade_globale_sperrliste(tmp_path) == ["*.bund.de", "digitaldiamonds.de"]
+
+
+def test_lade_globale_sperrliste_versteht_alte_und_neue_eintraege(tmp_path):
+    (tmp_path / "sperrliste-global.yaml").write_text(
+        '- "alt.de"\n- domain: "*.bund.de"\n  reason: "Kunde"\n  comment: "Vertrag"\n',
+        encoding="utf-8",
+    )
+
+    assert lade_globale_sperrliste(tmp_path) == ["alt.de", "*.bund.de"]
+    assert lade_globale_sperrlisten_eintraege(tmp_path) == [
+        {"domain": "alt.de", "reason": "", "comment": "", "legacy": True},
+        {"domain": "*.bund.de", "reason": "Kunde", "comment": "Vertrag",
+         "legacy": False},
+    ]
 
 def test_lade_globale_sperrliste_ohne_datei_gibt_leere_liste(tmp_path):
     assert lade_globale_sperrliste(tmp_path) == []

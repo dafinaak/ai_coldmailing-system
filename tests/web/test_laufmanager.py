@@ -121,7 +121,12 @@ def test_starte_verwendet_cwd_gleich_daten_dir(tmp_path, monkeypatch):
     assert lauf_dir == daten_dir / "laeufe" / "test-gmbh" / "20260101-000000"
 
 
-def test_pflicht_pipeline_ehrt_globale_sperrliste_bei_cwd_ungleich_code_dir(tmp_path, monkeypatch):
+@pytest.mark.parametrize("sperreintrag", [
+    "firma.de",
+    {"domain": "firma.de", "reason": "Kunde", "comment": "Vertrag"},
+])
+def test_pflicht_pipeline_ehrt_globale_sperrliste_bei_cwd_ungleich_code_dir(
+        tmp_path, monkeypatch, sperreintrag):
     """(b) siehe Modul-Docstring: die Pipeline selbst wendet die globale
     Sperrliste an, wenn ihr Arbeitsverzeichnis (cwd) auf ein daten_dir zeigt,
     das NICHT das Projekt-Wurzelverzeichnis (Code-Ordner) ist. Getrieben
@@ -138,7 +143,7 @@ def test_pflicht_pipeline_ehrt_globale_sperrliste_bei_cwd_ungleich_code_dir(tmp_
     kunde_datei = daten_dir / "test-kunde.yaml"
     kunde_datei.write_text(_TEST_KUNDE_YAML, encoding="utf-8")
     (daten_dir / "sperrliste-global.yaml").write_text(
-        yaml.safe_dump(["firma.de"]), encoding="utf-8")
+        yaml.safe_dump([sperreintrag]), encoding="utf-8")
 
     monkeypatch.setattr(cli, "source_leads", _fake_source_leads)
     monkeypatch.setattr(cli, "KI", _FakeKI)

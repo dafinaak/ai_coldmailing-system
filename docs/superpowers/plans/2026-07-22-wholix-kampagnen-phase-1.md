@@ -216,7 +216,9 @@ def postfaecher(self):
 
 - [ ] **Schritt 2: Fehlende Routentests schreiben**
 
-Die neuen Tests prüfen:
+Die neuen Tests prüfen den von Starlette am Test-Response bereitgestellten
+Jinja-Kontext. Sichtbare Texte werden erst in Task 3 und 4 getestet, sobald
+die Vorlagen diese Daten ausgeben:
 
 ```python
 def test_liste_zeigt_wholix_kennzahlen_und_filtert_nach_status(angemeldeter_client, daten_dir):
@@ -229,13 +231,19 @@ def test_liste_zeigt_wholix_kennzahlen_und_filtert_nach_status(angemeldeter_clie
     _lauf_anlegen(daten_dir, "moveo", "moveo.yaml",
                   ts="20260720-091500", campaign_id="camp-b")
 
-    html = angemeldeter_client.get("/kampagnen?status=aktiv").text
-    assert "Geöffnet" in html
-    assert "Unzustellbar" in html
-    assert "Instantly liefert keinen verlässlichen Zähler" in html
-    assert "Aktive Kampagnen" in html
-    assert "Aktive Runde" in html
-    assert "Fertige Runde" not in html
+    antwort = angemeldeter_client.get("/kampagnen?status=aktiv")
+    assert antwort.context["kennzahlen"] == {
+        "kampagnen": 2,
+        "aktiv": 1,
+        "empfaenger": 2,
+        "geoeffnet": 8,
+        "versendet": 6,
+        "antworten": 2,
+        "fehlgeschlagen": None,
+        "unzustellbar": 2,
+    }
+    assert [zeile["name"] for zeile in antwort.context["kampagnen"]] == ["Aktive Runde"]
+    assert antwort.context["status_filter"] == "aktiv"
 
 
 def test_detail_zeigt_warteschlange_sendefenster_und_tageslimit(angemeldeter_client, daten_dir):
@@ -245,12 +253,15 @@ def test_detail_zeigt_warteschlange_sendefenster_und_tageslimit(angemeldeter_cli
     _lauf_anlegen(daten_dir, "demo-gmbh", "demo-gmbh.yaml",
                   ts="20260720-093000", campaign_id="camp-1")
 
-    html = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-093000").text
-    assert "Warteschlange" in html
-    assert "Nicht getrennt verfügbar" in html
-    assert "Heute 7 von 20 versendet" in html
-    assert "Mo–Fr · 08:00–19:00" in html
-    assert "Europe/Berlin" in html
+    antwort = angemeldeter_client.get("/kampagnen/demo-gmbh/20260720-093000")
+    assert antwort.context["kd_warteschlange"] == {
+        "gesamt": 4, "versendet": 3, "unzustellbar": 1, "ungetrennt": 0,
+    }
+    assert antwort.context["kd_tageslimit"] == {"heute": 7, "limit": 20}
+    assert antwort.context["kd_sendefenster"] == [{
+        "tage_text": "Mo–Fr", "zeit_text": "08:00–19:00",
+        "zeitzone": "Europe/Berlin", "ist_jetzt": True,
+    }]
 ```
 
 - [ ] **Schritt 3: Tests ausführen und die erwarteten Fehler sehen**

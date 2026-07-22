@@ -424,6 +424,17 @@ class Laufmanager:
         if isinstance(leads, list):
             leads = {"leads": leads, "ohne_email": 0}
 
+        # Deckung + Ausgang-Aufschluesselung fuer die Ergebnis-Anzeige: die
+        # Deckungsquote steckt in leads.json, die Aufteilung persoenlich vs.
+        # nur-info@ in firmen.json (Pro-Firma-Ausgang). Beide fehlen bei alten
+        # Laeufen (vor diesem Stand) - dann bleiben die Zahlen None/0, die
+        # Anzeige zeigt dafuer einen Strich.
+        deckung = leads.get("deckung") if isinstance(leads, dict) else None
+        firmen = _lade_json_sicher(lauf_dir / "firmen.json")
+        firmen = firmen if isinstance(firmen, list) else []
+        def _zaehle_ausgang(wert):
+            return sum(1 for f in firmen if f.get("ausgang") == wert)
+
         if leads is None:
             schritt = 1
         elif dedupe is None:
@@ -458,9 +469,15 @@ class Laufmanager:
             "schritt_fertig": schritt_fertig,
             "schritt_label": SCHRITTE[schritt - 1],
             "gefunden": len(leads["leads"]) if leads else 0,
-            "ohne_email": leads["ohne_email"] if leads else 0,
+            "ohne_email": leads.get("ohne_email", 0) if leads else 0,
             "verworfen": len(dedupe["verworfen"]) if dedupe else 0,
             "fertig": len(personalisierung["fertig"]) if personalisierung else 0,
             "nacharbeit": len(personalisierung["nacharbeit"]) if personalisierung else 0,
+            # Deckung + persoenlich/info@ fuer die Ergebnis-Anzeige:
+            "deckungsquote": deckung.get("quote_prozent") if deckung else None,
+            "firmen_gesamt": deckung.get("firmen_gesamt") if deckung else None,
+            "firmen_mit_kontakt": deckung.get("firmen_mit_kontakt") if deckung else None,
+            "mit_entscheider": _zaehle_ausgang("mit_entscheider"),
+            "info_fallback": _zaehle_ausgang("info_fallback"),
             "fehler": fehler,
         }

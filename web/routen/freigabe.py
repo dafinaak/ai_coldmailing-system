@@ -25,22 +25,18 @@ from pipeline.__main__ import SendenFehler, _versand_ausfuehren
 from pipeline.approval import approve, freigabe_info, is_approved
 from pipeline.run_store import RunStore
 from web import auth
-from web.freigabe_status import FreigabeStatusStore, grundtexte_fuer_lauf
+from web.freigabe_status import (
+    SCHRITTE,
+    FreigabeStatusStore,
+    VeralteterStand,
+    grundtexte_fuer_lauf,
+)
 from web.laufmanager import Laufmanager, _lade_json_sicher
 from web.nav import nav_kontext
 from web.wartende import kunde_fuer as _kunde_fuer, pruefbare_laeufe
 
 router = APIRouter()
 
-# Woertlich aus docs/design/Poleposition-v4.dc.html (checkTexte) - die drei
-# Punkte der Freigabe-Checkliste, eingefroren als Freigabe-Geste.
-CHECKLISTE_TEXTE = [
-    "Ich habe die E-Mails und Nachfass-Mails gelesen",
-    "Ich habe die durchgefallenen Texte und ihre Gründe gesehen",
-    "Absender, gesperrte Domains und Test-Adressen stimmen",
-]
-
-CHECKLISTE_FEHLER = "Bitte alle drei Punkte abhaken, bevor du freigibst."
 BEGRUENDUNG_FEHLER = "Bitte kurz begründen, was nicht gepasst hat."
 
 KUNDE_DATEI_FEHLER = ("Die Angebots-Datei zu dieser E-Mail-Runde ist gerade nicht lesbar oder "
@@ -272,7 +268,6 @@ def _lese_kontext(request: Request, slug: str, ts: str, *,
         "revision": status_ansicht["revision"],
         "uebergabe_bereit": status_ansicht["all_approved"] and pflichttexte_vollstaendig,
         "schreibgeschuetzt": stand["zustand"] == "uebergeben",
-        "checkliste_texte": CHECKLISTE_TEXTE,
         "fehler": fehler,
         "versand_fehler": versand_fehler,
         "freigabe": freigabe_info(store),
@@ -281,6 +276,36 @@ def _lese_kontext(request: Request, slug: str, ts: str, *,
         "campaign_id": (store.load_step("versand_komplett")["campaign_id"]
                         if store.step_done("versand_komplett") else None),
     }
+
+
+def _freigabe_fehlerseite(
+    request: Request, slug: str, ts: str, fehler: str, status_code: int
+):
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "freigabe_lesen.html",
+        _lese_kontext(request, slug, ts, fehler=fehler),
+        status_code=status_code,
+    )
+
+
+def _pruefung_ist_schreibbar(request: Request, lauf_dir: Path) -> str | None:
+    zustand = _manager(request).status(lauf_dir)["zustand"]
+    if zustand == "wartet_auf_freigabe":
+        return None
+    return _zustand_fehler("Ändern", zustand)
+
+
+def _pflichttexte_pruefen(texte: list[dict]) -> None:
+    if not texte:
+        raise ValueError("Diese E-Mail-Runde enthält keine Empfänger.")
+    pflicht = ("email", "betreff", "mail_1", "follow_up_1", "follow_up_2")
+    for text in texte:
+        if any(not isinstance(text.get(feld), str) or not text[feld].strip()
+               for feld in pflicht):
+            raise ValueError(
+                "Mindestens ein Empfänger hat noch nicht alle drei vollständigen E-Mails."
+            )
 
 
 def _versand_fehlertext(fehler: Exception) -> dict:
@@ -356,47 +381,136 @@ async def freigabe_lesen(request: Request, slug: str, ts: str):
     return request.app.state.templates.TemplateResponse(request, "freigabe_lesen.html", kontext)
 
 
+@router.post("/pruefen/{slug}/{ts}/bestaetigen")
+def schritt_bestaetigen(
+    request: Request,
+    slug: str,
+    ts: str,
+    revision: str = Form(...),
+    recipient_id: str = Form(...),
+    step: str = Form(...),
+    approved: str = Form("1"),
+):
+    lauf_dir = _lauf_dir_oder_404(request.app.state.daten_dir, slug, ts)
+    zustand_fehler = _pruefung_ist_schreibbar(request, lauf_dir)
+    if zustand_fehler:
+        return _freigabe_fehlerseite(request, slug, ts, zustand_fehler, 400)
+    if step not in SCHRITTE or approved not in {"0", "1"}:
+        return _freigabe_fehlerseite(
+            request, slug, ts, "Die gewählte Änderung ist ungültig.", 400
+        )
+    try:
+        texte = grundtexte_fuer_lauf(lauf_dir)
+        FreigabeStatusStore(lauf_dir).bestaetigungen_setzen(
+            texte,
+            [recipient_id],
+            actor=auth.aktueller_nutzer(request),
+            approved=approved == "1",
+            revision=revision,
+            step=step,
+        )
+    except VeralteterStand:
+        return _freigabe_fehlerseite(
+            request,
+            slug,
+            ts,
+            "Die E-Mail-Runde wurde inzwischen geändert. Die Seite wurde neu geladen; "
+            "bitte prüfe deine Auswahl noch einmal.",
+            409,
+        )
+    except (OSError, ValueError, KeyError) as fehler:
+        return _freigabe_fehlerseite(request, slug, ts, str(fehler), 400)
+    return RedirectResponse(f"/pruefen/{slug}/{ts}", status_code=303)
+
+
+@router.post("/pruefen/{slug}/{ts}/mehrfach")
+def empfaenger_mehrfach_bestaetigen(
+    request: Request,
+    slug: str,
+    ts: str,
+    revision: str = Form(...),
+    recipient_ids: list[str] = Form([]),
+    action: str = Form(...),
+):
+    lauf_dir = _lauf_dir_oder_404(request.app.state.daten_dir, slug, ts)
+    zustand_fehler = _pruefung_ist_schreibbar(request, lauf_dir)
+    if zustand_fehler:
+        return _freigabe_fehlerseite(request, slug, ts, zustand_fehler, 400)
+    if action not in {"approve", "clear"}:
+        return _freigabe_fehlerseite(
+            request, slug, ts, "Die gewählte Mehrfachaktion ist ungültig.", 400
+        )
+    try:
+        texte = grundtexte_fuer_lauf(lauf_dir)
+        FreigabeStatusStore(lauf_dir).bestaetigungen_setzen(
+            texte,
+            recipient_ids,
+            actor=auth.aktueller_nutzer(request),
+            approved=action == "approve",
+            revision=revision,
+            step=None,
+        )
+    except VeralteterStand:
+        return _freigabe_fehlerseite(
+            request,
+            slug,
+            ts,
+            "Die E-Mail-Runde wurde inzwischen geändert. Die Seite wurde neu geladen; "
+            "bitte prüfe deine Auswahl noch einmal.",
+            409,
+        )
+    except (OSError, ValueError, KeyError) as fehler:
+        return _freigabe_fehlerseite(request, slug, ts, str(fehler), 400)
+    return RedirectResponse(f"/pruefen/{slug}/{ts}", status_code=303)
+
+
 @router.post("/pruefen/{slug}/{ts}/freigeben")
 # Bewusst KEIN `async def` - _versand_ausfuehren macht (moeglicherweise)
 # einen synchronen HTTP-Aufruf an Instantly; als Koroutine wuerde das den
 # Event-Loop fuer ALLE Nutzer blockieren (gleicher Grund wie in
 # web/routen/auftraege.py bei auftrag_neu_starten).
-def freigabe_absenden(request: Request, slug: str, ts: str,
-                       checkliste: list[str] = Form([])):
+def freigabe_absenden(request: Request, slug: str, ts: str):
     daten_dir = request.app.state.daten_dir
     lauf_dir = _lauf_dir_oder_404(daten_dir, slug, ts)
     store = RunStore.resume(lauf_dir)
+    status_store = FreigabeStatusStore(lauf_dir)
 
-    # Zustands-Waechter (Review-Fund Task 5) - MUSS vor jeder Mutation
-    # stehen: ohne ihn koennte z.B. ein abgelehnter Auftrag trotzdem noch
-    # freigegeben und an Instantly uebergeben werden.
-    zustand = _manager(request).status(lauf_dir)["zustand"]
-    if zustand not in ZUSTAND_ERLAUBT_FREIGEBEN:
-        kontext = _lese_kontext(request, slug, ts,
-                                 fehler=_zustand_fehler("Freigeben", zustand))
-        return request.app.state.templates.TemplateResponse(
-            request, "freigabe_lesen.html", kontext, status_code=400)
+    # Ein gemeinsamer RLock umfasst Zustandsprüfung, Audit-Trail, letzte
+    # Inhaltsprüfung, Materialisierung und Versand. So kann ein Doppelklick
+    # nicht zwischen Prüfung und approve() rutschen.
+    with status_store.lock:
+        zustand = _manager(request).status(lauf_dir)["zustand"]
+        if zustand not in ZUSTAND_ERLAUBT_FREIGEBEN:
+            return _freigabe_fehlerseite(
+                request, slug, ts, _zustand_fehler("Freigeben", zustand), 400
+            )
+        if is_approved(store):
+            info = freigabe_info(store)
+            fehler = (
+                f"Diese E-Mail-Runde ist bereits freigegeben von "
+                f"{info['von'] or 'unbekannt'} am {info['am']}. "
+                "Zum erneuten Senden »Erneut senden« benutzen."
+            )
+            return _freigabe_fehlerseite(request, slug, ts, fehler, 400)
 
-    # Audit-Trail-Schutz (Review-Fund Task 5): ist schon freigegeben (Zustand
-    # "freigegeben" - Versand nur noch nicht durch), darf ein weiteres POST
-    # NICHT approve() erneut aufrufen (das wuerde Name/Zeitstempel der
-    # urspruenglichen Freigabe in FREIGABE.txt ueberschreiben). Der Versand-
-    # Retry hat mit /senden-erneut einen eigenen, dafuer vorgesehenen Weg.
-    if is_approved(store):
-        info = freigabe_info(store)
-        fehler = (f"Diese E-Mail-Runde ist bereits freigegeben von {info['von'] or 'unbekannt'} "
-                  f"am {info['am']}. Zum erneuten Senden »Erneut senden« benutzen.")
-        kontext = _lese_kontext(request, slug, ts, fehler=fehler)
-        return request.app.state.templates.TemplateResponse(
-            request, "freigabe_lesen.html", kontext, status_code=400)
+        try:
+            grundtexte = grundtexte_fuer_lauf(lauf_dir)
+            if not status_store.alles_bestaetigt(grundtexte):
+                return _freigabe_fehlerseite(
+                    request,
+                    slug,
+                    ts,
+                    "Noch nicht alle E-Mails sind bestätigt oder eine Nacharbeit ist offen.",
+                    400,
+                )
+            wirksame_texte = status_store.materialisieren(grundtexte)
+            _pflichttexte_pruefen(wirksame_texte)
+        except (OSError, ValueError, KeyError) as fehler:
+            return _freigabe_fehlerseite(request, slug, ts, str(fehler), 400)
 
-    if len(set(checkliste) & {"1", "2", "3"}) < 3:
-        kontext = _lese_kontext(request, slug, ts, fehler=CHECKLISTE_FEHLER)
-        return request.app.state.templates.TemplateResponse(
-            request, "freigabe_lesen.html", kontext, status_code=400)
-
-    approve(store, name=auth.aktueller_nutzer(request))
-    return _versand_antwort(request, slug, ts)
+        store.save_step("pruefung_ok", wirksame_texte)
+        approve(store, name=auth.aktueller_nutzer(request))
+        return _versand_antwort(request, slug, ts)
 
 
 @router.post("/pruefen/{slug}/{ts}/senden-erneut")

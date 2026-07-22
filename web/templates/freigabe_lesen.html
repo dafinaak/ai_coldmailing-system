@@ -108,16 +108,16 @@
           <div class="lese-firma">{{ e.firma }}</div>
           <div class="lese-mail">{{ e.email }}</div>
         </div>
-        <div data-step="mail_1">
+        <div data-step="mail_1" data-approved="{{ 'true' if e.steps[0].approved else 'false' }}">
           <div class="lese-textteil-label">Erste E-Mail (geht sofort raus)</div>
           <div class="lese-betreff">{{ e.betreff }}</div>
           <div class="lese-text">{{ e.mail_1 }}</div>
         </div>
-        <div data-step="follow_up_1">
+        <div data-step="follow_up_1" data-approved="{{ 'true' if e.steps[1].approved else 'false' }}">
           <div class="lese-textteil-label">Nachfass-Mail 1 (nach {{ tag_1 }} Tagen)</div>
           <div class="lese-text">{{ e.follow_up_1 }}</div>
         </div>
-        <div data-step="follow_up_2">
+        <div data-step="follow_up_2" data-approved="{{ 'true' if e.steps[2].approved else 'false' }}">
           <div class="lese-textteil-label">Nachfass-Mail 2 (nach {{ tag_2 }} Tagen)</div>
           <div class="lese-text">{{ e.follow_up_2 }}</div>
         </div>
@@ -135,17 +135,13 @@
 
     <form method="post" action="/pruefen/{{ slug }}/{{ ts }}/freigeben" id="freigeben-form">
       <input type="hidden" name="revision" value="{{ revision }}">
-      <div class="checkliste" id="checkliste">
-        {% for text in checkliste_texte %}
-        <label class="checkliste-zeile">
-          <input type="checkbox" name="checkliste" value="{{ loop.index }}" class="checkliste-box">
-          <span>{{ text }}</span>
-        </label>
-        {% endfor %}
-      </div>
       <div class="gate-knopf-zeile">
-        <button type="submit" class="knopf-primaer" id="freigeben-knopf" disabled>Freigeben</button>
-        <div class="auftrag-hinweis">Geht erst, wenn alle drei Punkte abgehakt sind.</div>
+        <button type="submit" class="knopf-primaer" id="freigeben-knopf"{% if not uebergabe_bereit %} disabled{% endif %}>Runde übergeben</button>
+        {% if uebergabe_bereit %}
+        <div class="auftrag-hinweis">Alle vorgesehenen E-Mails sind bestätigt.</div>
+        {% else %}
+        <div class="auftrag-hinweis">Geht erst, wenn alle E-Mails bestätigt sind und keine Nacharbeit offen ist.</div>
+        {% endif %}
       </div>
     </form>
 
@@ -163,17 +159,6 @@
 
 <script>
 (function () {
-  var boxen = document.querySelectorAll('#checkliste .checkliste-box');
-  var knopf = document.getElementById('freigeben-knopf');
-  function aktualisieren() {
-    if (!knopf) return;
-    var alle = true;
-    boxen.forEach(function (b) { if (!b.checked) alle = false; });
-    knopf.disabled = !alle;
-  }
-  boxen.forEach(function (b) { b.addEventListener('change', aktualisieren); });
-  aktualisieren();
-
   document.querySelectorAll('#empf-liste .empf-zeile').forEach(function (zeile) {
     zeile.addEventListener('click', function () {
       zeile.classList.toggle('empf-zeile--gelesen');

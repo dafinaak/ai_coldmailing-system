@@ -8,6 +8,9 @@ tests/web/test_kunden.py)."""
 from __future__ import annotations
 
 import json
+import re
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -130,6 +133,25 @@ def _lauf_anlegen(daten_dir: Path, *, ts: str = "20260717-090000",
     if abgelehnt is not None:
         (lauf_dir / "abgelehnt.json").write_text(json.dumps(abgelehnt), encoding="utf-8")
     return lauf_dir
+
+
+def _revision_aus(antwort) -> str:
+    return re.search(r'name="revision" value="([^"]+)"', antwort.text).group(1)
+
+
+def _empfaenger_ids(antwort) -> list[str]:
+    return list(dict.fromkeys(re.findall(r'data-recipient-id="([^"]+)"', antwort.text)))
+
+
+def _alle_bestaetigen(client, *, ts: str = "20260717-090000"):
+    seite = client.get(f"/pruefen/{KUNDE_SLUG}/{ts}")
+    antwort = client.post(
+        f"/pruefen/{KUNDE_SLUG}/{ts}/mehrfach",
+        data={"revision": _revision_aus(seite),
+              "recipient_ids": _empfaenger_ids(seite), "action": "approve"},
+        follow_redirects=False,
+    )
+    assert antwort.status_code == 303
 
 
 # Anmeldung ------------------------------------------------------------------
@@ -284,7 +306,130 @@ def test_lese_ansicht_kaputte_kunden_datei_zeigt_freundlichen_fehler_statt_abstu
 
 # Freigeben ----------------------------------------------------------------
 
-def test_freigeben_ohne_alle_haken_gibt_fehler_und_sendet_nichts(angemeldeter_client, daten_dir):
+def test_einzelner_schritt_bleibt_nach_neuladen_bestaetigt(
+        angemeldeter_client, daten_dir):
+    _lauf_anlegen(daten_dir, dedupe_behalten=_DEDUPE_BEHALTEN)
+    seite = angemeldeter_client.get(f"/pruefen/{KUNDE_SLUG}/20260717-090000")
+
+    antwort = angemeldeter_client.post(
+        f"/pruefen/{KUNDE_SLUG}/20260717-090000/bestaetigen",
+        data={"revision": _revision_aus(seite), "recipient_id": _empfaenger_ids(seite)[0],
+              "step": "mail_1", "approved": "1"},
+        follow_redirects=False,
+    )
+
+    assert antwort.status_code == 303
+    neu = angemeldeter_client.get(antwort.headers["location"])
+    assert 'data-step="mail_1" data-approved="true"' in neu.text
+
+
+def test_mehrfachaktion_bestaetigt_alle_schritte_der_auswahl(
+        angemeldeter_client, daten_dir):
+    _lauf_anlegen(daten_dir, dedupe_behalten=_DEDUPE_BEHALTEN)
+    seite = angemeldeter_client.get(f"/pruefen/{KUNDE_SLUG}/20260717-090000")
+    erster, zweiter = _empfaenger_ids(seite)
+
+    antwort = angemeldeter_client.post(
+        f"/pruefen/{KUNDE_SLUG}/20260717-090000/mehrfach",
+        data={"revision": _revision_aus(seite), "recipient_ids": erster,
+              "action": "approve"},
+        follow_redirects=False,
+    )
+
+    assert antwort.status_code == 303
+    neu = angemeldeter_client.get(antwort.headers["location"])
+    erster_block = neu.text.split(f'data-recipient-id="{erster}"', 1)[1]
+    assert erster_block.count('data-approved="true"') >= 3
+    zweiter_block = neu.text.split(f'data-recipient-id="{zweiter}"', 1)[1]
+    assert 'data-approved="false"' in zweiter_block
+
+
+def test_veraltete_mehrfachaktion_wird_ohne_zweite_mutation_abgewiesen(
+        angemeldeter_client, daten_dir):
+    lauf_dir = _lauf_anlegen(daten_dir, dedupe_behalten=_DEDUPE_BEHALTEN)
+    alt = angemeldeter_client.get(f"/pruefen/{KUNDE_SLUG}/20260717-090000")
+    rid = _empfaenger_ids(alt)[0]
+    angemeldeter_client.post(
+        f"/pruefen/{KUNDE_SLUG}/20260717-090000/bestaetigen",
+        data={"revision": _revision_aus(alt), "recipient_id": rid,
+              "step": "mail_1", "approved": "1"},
+    )
+    stand = (lauf_dir / "freigabe-status.json").read_bytes()
+
+    konflikt = angemeldeter_client.post(
+        f"/pruefen/{KUNDE_SLUG}/20260717-090000/mehrfach",
+        data={"revision": _revision_aus(alt), "recipient_ids": rid,
+              "action": "approve"},
+    )
+
+    assert konflikt.status_code == 409
+    assert "neu geladen" in konflikt.text
+    assert (lauf_dir / "freigabe-status.json").read_bytes() == stand
+
+
+def test_uebergabeknopf_folgt_echtem_bestaetigungsstand_statt_alter_checkliste(
+        angemeldeter_client, daten_dir):
+    _lauf_anlegen(daten_dir, dedupe_behalten=_DEDUPE_BEHALTEN)
+
+    offen = angemeldeter_client.get(f"/pruefen/{KUNDE_SLUG}/20260717-090000")
+    assert 'id="freigeben-knopf" disabled' in offen.text
+    assert 'name="checkliste"' not in offen.text
+
+    _alle_bestaetigen(angemeldeter_client)
+    bereit = angemeldeter_client.get(f"/pruefen/{KUNDE_SLUG}/20260717-090000")
+    knopf = bereit.text.split('id="freigeben-knopf"', 1)[1].split(">", 1)[0]
+    assert "disabled" not in knopf
+
+
+def test_mehrfachaktion_kann_bestaetigungen_wieder_aufheben(
+        angemeldeter_client, daten_dir):
+    _lauf_anlegen(daten_dir, dedupe_behalten=_DEDUPE_BEHALTEN)
+    _alle_bestaetigen(angemeldeter_client)
+    bestaetigt = angemeldeter_client.get(f"/pruefen/{KUNDE_SLUG}/20260717-090000")
+    rid = _empfaenger_ids(bestaetigt)[0]
+
+    antwort = angemeldeter_client.post(
+        f"/pruefen/{KUNDE_SLUG}/20260717-090000/mehrfach",
+        data={"revision": _revision_aus(bestaetigt), "recipient_ids": rid,
+              "action": "clear"},
+        follow_redirects=False,
+    )
+
+    assert antwort.status_code == 303
+    neu = angemeldeter_client.get(antwort.headers["location"])
+    erster_block = neu.text.split(f'data-recipient-id="{rid}"', 1)[1]
+    assert erster_block.count('data-approved="false"') >= 3
+
+
+def test_offene_nacharbeit_blockiert_die_komplette_uebergabe(
+        angemeldeter_client, daten_dir):
+    app = angemeldeter_client.app
+    fake = FakeInstantly()
+    app.state.instantly = fake
+    lauf_dir = _lauf_anlegen(
+        daten_dir, dedupe_behalten=_DEDUPE_BEHALTEN, nacharbeit=_NACHARBEIT
+    )
+    seite = angemeldeter_client.get(f"/pruefen/{KUNDE_SLUG}/20260717-090000")
+    bestandene_ids = _empfaenger_ids(seite)[:2]
+    bestaetigt = angemeldeter_client.post(
+        f"/pruefen/{KUNDE_SLUG}/20260717-090000/mehrfach",
+        data={"revision": _revision_aus(seite), "recipient_ids": bestandene_ids,
+              "action": "approve"},
+        follow_redirects=False,
+    )
+    assert bestaetigt.status_code == 303
+
+    antwort = angemeldeter_client.post(
+        f"/pruefen/{KUNDE_SLUG}/20260717-090000/freigeben"
+    )
+
+    assert antwort.status_code == 400
+    assert "Nacharbeit" in antwort.text
+    assert not (lauf_dir / "FREIGABE.txt").exists()
+    assert fake.campaigns_erstellt == []
+
+def test_unvollstaendig_bestaetigte_runde_sendet_auch_bei_direktem_post_nichts(
+        angemeldeter_client, daten_dir):
     app = angemeldeter_client.app
     fake = FakeInstantly()
     app.state.instantly = fake
@@ -292,9 +437,9 @@ def test_freigeben_ohne_alle_haken_gibt_fehler_und_sendet_nichts(angemeldeter_cl
 
     antwort = angemeldeter_client.post(
         f"/pruefen/{KUNDE_SLUG}/20260717-090000/freigeben",
-        data={"checkliste": ["1", "2"]},
     )
     assert antwort.status_code == 400
+    assert "Noch nicht alle E-Mails" in antwort.text
     assert not (lauf_dir / "FREIGABE.txt").exists()
     assert fake.campaigns_erstellt == []
     assert fake.leads_importiert == []
@@ -305,10 +450,10 @@ def test_freigeben_vollstaendig_setzt_freigabe_und_sendet(angemeldeter_client, d
     fake = FakeInstantly()
     app.state.instantly = fake
     lauf_dir = _lauf_anlegen(daten_dir, dedupe_behalten=_DEDUPE_BEHALTEN)
+    _alle_bestaetigen(angemeldeter_client)
 
     antwort = angemeldeter_client.post(
         f"/pruefen/{KUNDE_SLUG}/20260717-090000/freigeben",
-        data={"checkliste": ["1", "2", "3"]},
         follow_redirects=True,
     )
     assert antwort.status_code == 200
@@ -338,10 +483,10 @@ def test_freigeben_fremder_empfaenger_zeigt_fehler_ohne_versand(angemeldeter_cli
     fremder_text = {**_TEXT_ANNA, "email": "fremd@echt-firma.de"}
     lauf_dir = _lauf_anlegen(daten_dir, dedupe_behalten=_DEDUPE_BEHALTEN,
                               pruefung_ok=[fremder_text])
+    _alle_bestaetigen(angemeldeter_client)
 
     antwort = angemeldeter_client.post(
         f"/pruefen/{KUNDE_SLUG}/20260717-090000/freigeben",
-        data={"checkliste": ["1", "2", "3"]},
     )
     assert antwort.status_code == 200 or antwort.status_code == 400
     assert "fremd@echt-firma.de" in antwort.text or "Test-Adressen" in antwort.text
@@ -353,10 +498,10 @@ def test_freigeben_instantly_fehler_zeigt_dreiteiligen_text(angemeldeter_client,
     fake = FakeInstantly(fehler_bei="create_campaign")
     app.state.instantly = fake
     lauf_dir = _lauf_anlegen(daten_dir, dedupe_behalten=_DEDUPE_BEHALTEN)
+    _alle_bestaetigen(angemeldeter_client)
 
     antwort = angemeldeter_client.post(
         f"/pruefen/{KUNDE_SLUG}/20260717-090000/freigeben",
-        data={"checkliste": ["1", "2", "3"]},
     )
     assert antwort.status_code == 200
     # Freigabe bleibt trotz Instantly-Fehler bestehen (erneutes Senden moeglich).
@@ -377,7 +522,6 @@ def test_freigeben_auf_abgelehntem_lauf_wird_verweigert(angemeldeter_client, dat
 
     antwort = angemeldeter_client.post(
         f"/pruefen/{KUNDE_SLUG}/20260717-090000/freigeben",
-        data={"checkliste": ["1", "2", "3"]},
     )
     assert antwort.status_code == 400
     assert not (lauf_dir / "FREIGABE.txt").exists()
@@ -394,10 +538,10 @@ def test_freigeben_bereits_freigegeben_ueberschreibt_audit_trail_nicht(angemelde
     fake = FakeInstantly(fehler_bei="create_campaign")
     app.state.instantly = fake
     lauf_dir = _lauf_anlegen(daten_dir, dedupe_behalten=_DEDUPE_BEHALTEN)
+    _alle_bestaetigen(angemeldeter_client)
 
     erste = angemeldeter_client.post(
         f"/pruefen/{KUNDE_SLUG}/20260717-090000/freigeben",
-        data={"checkliste": ["1", "2", "3"]},
     )
     assert erste.status_code == 200
     erster_inhalt = (lauf_dir / "FREIGABE.txt").read_text(encoding="utf-8")
@@ -406,7 +550,6 @@ def test_freigeben_bereits_freigegeben_ueberschreibt_audit_trail_nicht(angemelde
 
     zweite = angemeldeter_client.post(
         f"/pruefen/{KUNDE_SLUG}/20260717-090000/freigeben",
-        data={"checkliste": ["1", "2", "3"]},
     )
     assert zweite.status_code == 400
     assert "bereits freigegeben" in zweite.text
@@ -417,6 +560,49 @@ def test_freigeben_bereits_freigegeben_ueberschreibt_audit_trail_nicht(angemelde
     # Kein zweiter Versand-Versuch ueber freigeben() ausgeloest - der
     # Versand-Retry bleibt der eigene /senden-erneut-Weg vorbehalten.
     assert fake.campaigns_erstellt == []
+
+
+def test_zwei_gleichzeitige_freigaben_erzeugen_nur_eine_kampagne_und_einen_audit_eintrag(
+        angemeldeter_client, daten_dir, app):
+    class LangsamesInstantly(FakeInstantly):
+        def __init__(self):
+            super().__init__()
+            self.angekommen = threading.Event()
+            self.weiter = threading.Event()
+
+        def create_campaign(self, kunde):
+            self.angekommen.set()
+            assert self.weiter.wait(timeout=5)
+            return super().create_campaign(kunde)
+
+    nutzer = yaml.safe_load((daten_dir / "users.yaml").read_text(encoding="utf-8"))
+    nutzer.append({"name": "Max Beispiel", "passwort_hash": PWD_CONTEXT.hash("richtig123")})
+    (daten_dir / "users.yaml").write_text(
+        yaml.safe_dump(nutzer, allow_unicode=True), encoding="utf-8"
+    )
+    zweiter_client = TestClient(app)
+    zweiter_client.post("/login", data={"name": "Max Beispiel", "passwort": "richtig123"})
+    zweiter_client.cookies.set("intro_gesehen", "1")
+
+    fake = LangsamesInstantly()
+    app.state.instantly = fake
+    lauf_dir = _lauf_anlegen(daten_dir, dedupe_behalten=_DEDUPE_BEHALTEN)
+    _alle_bestaetigen(angemeldeter_client)
+    url = f"/pruefen/{KUNDE_SLUG}/20260717-090000/freigeben"
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        erste = pool.submit(angemeldeter_client.post, url)
+        assert fake.angekommen.wait(timeout=5)
+        zweite = pool.submit(zweiter_client.post, url)
+        fake.weiter.set()
+        antworten = [erste.result(timeout=5), zweite.result(timeout=5)]
+
+    assert sorted(a.status_code for a in antworten) == [200, 400]
+    assert fake.campaigns_erstellt == [KUNDE_NAME]
+    assert len(fake.leads_importiert) == 1
+    audit = (lauf_dir / "FREIGABE.txt").read_text(encoding="utf-8")
+    assert "Lena Hartmann" in audit
+    assert "Max Beispiel" not in audit
 
 
 def test_freigeben_laesst_programmierfehler_durch_statt_ihn_zu_verschlucken(
@@ -435,11 +621,11 @@ def test_freigeben_laesst_programmierfehler_durch_statt_ihn_zu_verschlucken(
     app = angemeldeter_client.app
     app.state.instantly = KaputterSenderProgrammierfehler()
     _lauf_anlegen(daten_dir, dedupe_behalten=_DEDUPE_BEHALTEN)
+    _alle_bestaetigen(angemeldeter_client)
 
     with pytest.raises(TypeError):
         angemeldeter_client.post(
             f"/pruefen/{KUNDE_SLUG}/20260717-090000/freigeben",
-            data={"checkliste": ["1", "2", "3"]},
         )
 
 
@@ -474,7 +660,6 @@ def test_freigeben_verlangt_anmeldung(client, daten_dir):
     _lauf_anlegen(daten_dir, dedupe_behalten=_DEDUPE_BEHALTEN)
     antwort = client.post(
         f"/pruefen/{KUNDE_SLUG}/20260717-090000/freigeben",
-        data={"checkliste": ["1", "2", "3"]},
         follow_redirects=False,
     )
     assert antwort.status_code == 303

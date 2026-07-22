@@ -1,6 +1,34 @@
 # Wholix-Nachbau: Feature-Inventur und Fahrplan
 
-Stand: 21.07.2026
+Stand: 21.07.2026 (Scope-Entscheidungen ergänzt 22.07.2026)
+
+## Scope-Entscheidungen (22.07.2026)
+
+Nach Durchsicht mit Leonard: nicht jede Wholix-Funktion ist für ein
+internes Tool sinnvoll. Bauen wir NICHT (gestrichen):
+
+- Arbeitsbereiche / "My office" (2)
+- Zwei-Faktor-Anmeldung (4)
+- Hell-/Dunkel-Ansicht (5)
+- Benachrichtigungs-Glocke (6)
+- Support-Chat-Knopf (7)
+- AI-Chat (8)
+- Benutzerverwaltung / Kollegen einladen (3) — ein gemeinsamer Zugang bleibt
+- Anrufe-Bereich (25)
+- Notizen (28)
+
+Nur schlank statt 1:1:
+
+- Kampagnen-Einstellungen im Tool ändern (37) — Link nach Instantly statt Nachbau
+- Text einzeln von Hand bearbeiten (40) — wir bleiben bei "neu erzeugen lassen"
+
+Bleibt voll im Scope (Aussehen wie Wholix): alles Übrige, inklusive dem
+CRM mit Verkaufs-Stufen (11, 12) und dem vollen Mail-Programm (13–24, über
+Weg A — siehe Abschnitt 2). Von 43 Funktionen sind damit 9 gestrichen,
+34 bleiben.
+
+---
+
 
 **Auftrag:** Unser Tool soll eine vollständige Kopie von Wholix werden — gleiche
 Bereiche, gleiche Funktionen. Dieses Dokument listet ALLES auf, was Wholix kann,

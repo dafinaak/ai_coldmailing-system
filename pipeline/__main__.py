@@ -8,7 +8,7 @@ from pipeline.sourcing import source_leads
 from pipeline.dedupe import dedupe as dedupe_leads
 from pipeline.website import fetch_text
 from pipeline.ki import KI
-from pipeline.personalize import personalize
+from pipeline.personalize import personalisiere_mit_nachbesserung
 from pipeline.quality import check
 from pipeline.approval import write_preview, is_approved, approve
 from pipeline.report import write_report
@@ -95,8 +95,12 @@ def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None
             lead = Lead(**{k: d[k] for k in ("first_name", "last_name", "email",
                                               "company", "title", "website", "source")})
             try:
-                texte = personalize(lead, kunde, ki, fetch_text(lead.website))
-                ok, grund = check(texte, lead, kunde, ki)
+                webseiten_text = fetch_text(lead.website)
+                # Nachbesserungs-Schleife: bei NEIN wird der Text mit dem
+                # Prüfer-Grund bis zu 3x neu geschrieben, bevor er zur
+                # Nacharbeit fällt (statt sofort auszusortieren).
+                ok, grund, texte, _ = personalisiere_mit_nachbesserung(
+                    lead, kunde, ki, webseiten_text, check)
             except ValueError as fehler:
                 ok, grund, texte = False, str(fehler), {}
             if ok:

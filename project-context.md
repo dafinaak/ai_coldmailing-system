@@ -92,6 +92,9 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
   vollständigen Postfach-Abgleich.
 - Der freigegebene Entwurf und die spätere Umsetzung werden in Jira unter
   `AP-201` geführt; der Eintrag steht während der Planung auf „Planning“.
+- Der testgetriebene Bauplan steht unter
+  `docs/superpowers/plans/2026-07-23-instantly-antworten.md`. Er ist vollständig
+  selbstgeprüft und wartet vor der Umsetzung auf die Freigabe des Nutzers.
 - Kampagnen-Einstellungen (Tageslimit, Sendefenster, Signatur und ähnliche
   Werte) werden nicht im Tool nachgebaut. Der Weg dafür ist der Link nach
   Instantly.
@@ -125,10 +128,10 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
 
 ## Nächste Schritte
 
-- Den freigegebenen Entwurf
-  `docs/superpowers/specs/2026-07-23-instantly-antworten-design.md`
-  in einen testgetriebenen Bauplan überführen und umsetzen. Echte Testantworten
-  brauchen weiterhin eine neue ausdrückliche Freigabe.
+- Den Bauplan
+  `docs/superpowers/plans/2026-07-23-instantly-antworten.md`
+  nach Nutzerfreigabe umsetzen. Echte Testantworten brauchen weiterhin eine
+  neue ausdrückliche Freigabe.
 - Danach den CRM-Ausbau als eigenes Arbeitspaket entwerfen: zuerst Kontakte
   zuverlässig durch Verkaufsstufen führen.
 - Weitere Wholix-Bereiche bleiben gestrichen, solange die Scope-Entscheidungen

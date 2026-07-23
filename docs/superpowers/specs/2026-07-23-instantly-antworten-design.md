@@ -58,7 +58,9 @@ bekannten Absenderpostfach vorhanden ist:
 3. Der Knopf heißt „Antwort endgültig senden“.
 4. Ein leerer Text kann nicht versendet werden.
 5. Nach erfolgreichem Versand öffnet sich derselbe Verlauf erneut und zeigt
-   den klaren Hinweis „Antwort wurde über Instantly gesendet.“
+   den klaren Hinweis „Antwort wurde über Instantly gesendet.“ Der Hinweis
+   erscheint nur mit einem fünf Minuten gültigen, signierten Versandnachweis;
+   ein selbst eingetragener URL-Zusatz kann keinen Erfolg vortäuschen.
 6. Der bisherige Link „In Instantly öffnen“ bleibt als Ausweichweg erhalten.
 
 Fehlen eine Nachrichtenkennung oder das verbundene Absenderpostfach, erscheint

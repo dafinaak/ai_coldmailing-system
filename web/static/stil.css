@@ -1566,6 +1566,50 @@ h1 { margin: 0; font-size: 24px; }
   background: #FBFAF4;
 }
 
+@media (max-width: 820px) {
+  .rahmen:has(.postfach-seite) { flex-direction: column; }
+  .rahmen:has(.postfach-seite) .seitenleiste {
+    width: 100%;
+    min-height: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-right: 0;
+    border-bottom: 1px solid var(--farbe-rand);
+  }
+  .rahmen:has(.postfach-seite) .marke {
+    order: 1;
+    flex: 1;
+    padding: 12px 14px;
+    border-bottom: 0;
+  }
+  .rahmen:has(.postfach-seite) .nutzer-fuss {
+    order: 2;
+    gap: 12px;
+    padding: 10px 14px;
+    border-top: 0;
+  }
+  .rahmen:has(.postfach-seite) .nav {
+    order: 3;
+    width: 100%;
+    flex: none;
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 7px 8px;
+    border-top: 1px solid var(--farbe-rand);
+  }
+  .rahmen:has(.postfach-seite) .nav-eintrag { flex: 0 0 auto; }
+  .rahmen:has(.postfach-seite) .inhalt {
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+  .postfach-seite {
+    width: 100%;
+    min-width: 0;
+    padding: 22px 14px 44px;
+  }
+}
+
 @media (max-width: 700px) {
   .postfach-layout { grid-template-columns: 1fr; }
   .postfach-detail { min-width: 0; padding: 20px 16px; }

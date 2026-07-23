@@ -91,6 +91,22 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
   Hinweis sichtbar, aber Antwortfeld und Sendeknopf fehlen.
 - Für den Bau und die lokale Prüfung wurde keine echte E-Mail versendet und
   kein Gmail-/Microsoft-Zugang eingerichtet oder gespeichert.
+- Anbieter-Vergleich vorbereitet (23.07.2026): Bevor der CRM-Ausbau beginnt,
+  soll der Datenanbieter für deutsche Kleinfirmen per Messung entschieden
+  werden. Dafür ist alles Lokale gebaut und mit Tests belegt (577 Tests grün):
+  ein Prospeo-Baustein (`pipeline/sources/prospeo.py`, Suche über die
+  Firmen-Domain plus Anreicherung nur geprüfter Mails) und ein
+  wiederaufnehmbarer Vergleichs-Läufer (`pipeline/vergleich.py`), der Weg A
+  (Apify→Prospeo) und Weg B (Apify→Hunter→Dropcontact) über dieselbe
+  Apify-Firmenliste schickt und Bericht + Rohdaten in einen Lauf-Ordner
+  schreibt. Achtung Benennung: im älteren Code von `pipeline/sourcing.py`
+  heißt Hunter→Dropcontact noch „Weg A"; im Vergleich gilt die neue
+  Benennung aus dem Auftrag (Weg A = Prospeo). Es wurde noch keine echte
+  Anbieter-Abfrage ausgeführt; es fehlen die Schlüssel PROSPEO_API_KEY,
+  HUNTER_API_KEY und DROPCONTACT_API_KEY sowie Leonards Okay für den
+  Guthaben-Verbrauch (Gratis-Kontingente laut offiziellen Seiten am
+  23.07.2026: Prospeo 100 Credits/Monat, Hunter 50 Credits/Monat,
+  Dropcontact 50 Gratis-Credits).
 - Kontrollierter Live-Test am 23.07.2026: Das neue Antwortfeld sendete genau
   eine klar gekennzeichnete Testantwort über Instantly von
   `email@seo-poleposition.online` an das eigene Testkonto
@@ -154,8 +170,16 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
 
 ## Nächste Schritte
 
-- Den CRM-Ausbau als eigenes Arbeitspaket entwerfen: zuerst Kontakte
-  zuverlässig durch Verkaufsstufen führen.
+- Zuerst den Anbieter-Vergleich abschließen: Konten/Schlüssel für Prospeo,
+  Hunter und Dropcontact anlegen, kleinen Apify-Nachschub auf 30–40 Firmen
+  holen (eine echte 20er-Liste liegt unter
+  `laeufe/demo-gmbh/20260721-145036/firmen.json`), dann
+  `python -m pipeline.vergleich` laufen lassen — erst nach Leonards Okay,
+  weil dabei Gratis-Guthaben verbraucht wird. Danach Empfehlung geben und
+  `docs/datenquellen-strategie.md` plus diese Datei aktualisieren.
+- Erst nach der Anbieter-Entscheidung: den CRM-Ausbau als eigenes
+  Arbeitspaket entwerfen — zuerst Kontakte zuverlässig durch
+  Verkaufsstufen führen.
 - Weitere Wholix-Bereiche bleiben gestrichen, solange die Scope-Entscheidungen
   nicht ausdrücklich geändert werden.
 - Schreibende Versand- oder Postfachprüfungen nur mit ausdrücklicher

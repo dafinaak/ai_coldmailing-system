@@ -19,6 +19,7 @@ from pipeline.approval import approve
 from pipeline.run_store import RunStore
 from web.antwort_freigabe import (
     erstelle_antwort_freigabe,
+    erstelle_versandhinweis,
     pruefe_versandhinweis,
 )
 from web.app import create_app
@@ -270,9 +271,8 @@ def test_detail_zeigt_chronologische_nachrichten_mit_sichtbarer_richtung(angemel
     # ... und optisch unterscheidbar (eigene CSS-Klassen je Richtung).
     assert "postfach-nachricht--gesendet" in text
     assert "postfach-nachricht--empfangen" in text
-    # Antwort-Knopf zeigt zu Instantly, kein eigenes Antwortfeld im Markup.
-    assert "In Instantly antworten ↗" in text
-    assert "<textarea" not in text
+    # Der Ausweichweg zu Instantly bleibt neben der internen Antwort erhalten.
+    assert "In Instantly öffnen ↗" in text
 
 
 def test_neuere_konversation_ist_zuerst_ausgewaehlt_ohne_query_parameter(angemeldeter_client, daten_dir):
@@ -295,6 +295,71 @@ def test_neuere_konversation_ist_zuerst_ausgewaehlt_ohne_query_parameter(angemel
 
 
 # Antworten über Instantly -------------------------------------------------
+
+def test_empfangene_mail_zeigt_antwortfeld_und_absender_ohne_rohe_zieldaten(
+    angemeldeter_client, daten_dir
+):
+    _bereite_antwortfall_vor(angemeldeter_client, daten_dir)
+    antwort = angemeldeter_client.get(
+        "/postfach?kontakt=anna@firma.de"
+    )
+
+    assert antwort.status_code == 200
+    assert "<textarea" in antwort.text
+    assert "Antwort endgültig senden" in antwort.text
+    assert "Gesendet über wir@digitaldiamonds.de" in antwort.text
+    assert 'name="antwort_token"' in antwort.text
+    assert 'name="eaccount"' not in antwort.text
+    assert 'name="campaign_id"' not in antwort.text
+    assert 'name="reply_to_uuid"' not in antwort.text
+    assert 'name="subject"' not in antwort.text
+
+
+def test_ohne_vollstaendiges_empfangsziel_gibt_es_nur_instantly_ausweichweg(
+    angemeldeter_client, daten_dir
+):
+    _bereite_antwortfall_vor(
+        angemeldeter_client, daten_dir, eaccount=None
+    )
+    antwort = angemeldeter_client.get(
+        "/postfach?kontakt=anna@firma.de"
+    )
+
+    assert "<textarea" not in antwort.text
+    assert (
+        "Für dieses Gespräch ist Antworten nur in Instantly möglich."
+        in antwort.text
+    )
+    assert "In Instantly öffnen ↗" in antwort.text
+
+
+def test_nur_signierter_erfolgsnachweis_zeigt_versandhinweis(
+    angemeldeter_client, daten_dir
+):
+    _bereite_antwortfall_vor(angemeldeter_client, daten_dir)
+    token = erstelle_versandhinweis(
+        angemeldeter_client.app.state.serializer,
+        kontakt="anna@firma.de",
+        antwort_id="antwort-1",
+    )
+    antwort = angemeldeter_client.get(
+        "/postfach",
+        params={"kontakt": "anna@firma.de", "versand": token},
+    )
+    assert "Antwort wurde über Instantly gesendet." in antwort.text
+
+    manipuliert = angemeldeter_client.get(
+        "/postfach",
+        params={
+            "kontakt": "anna@firma.de",
+            "versand": token + "falsch",
+        },
+    )
+    assert (
+        "Antwort wurde über Instantly gesendet."
+        not in manipuliert.text
+    )
+
 
 def test_antwort_wird_genau_einmal_aus_belegten_instantly_daten_gesendet(
     angemeldeter_client, daten_dir
@@ -342,6 +407,8 @@ def test_antwort_wird_genau_einmal_aus_belegten_instantly_daten_gesendet(
     )
     assert zweite_antwort.status_code == 409
     assert len(antworter.aufrufe) == 1
+    assert "<textarea" not in zweite_antwort.text
+    assert "Dein nicht verlorener Entwurf" in zweite_antwort.text
 
 
 @pytest.mark.parametrize("text", ["", " ", "x" * 10_001])

@@ -1511,6 +1511,69 @@ h1 { margin: 0; font-size: 24px; }
 .postfach-nachricht-zeit { font-family: var(--schrift-mono); font-size: 10.5px; color: var(--farbe-gedaempft); }
 .postfach-nachricht-betreff { font-size: 12px; color: var(--farbe-gedaempft); margin-top: 4px; }
 .postfach-nachricht-text { white-space: pre-wrap; font-size: 13.5px; line-height: 1.6; margin-top: 6px; }
+.postfach-antwort-form,
+.postfach-antwort-entwurf {
+  margin-top: 20px;
+  border-top: 1px solid var(--farbe-rand);
+  padding-top: 18px;
+}
+.postfach-antwort-label {
+  display: block;
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+.postfach-antwort-konto {
+  color: var(--farbe-gedaempft);
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+.postfach-antwort-form textarea {
+  display: block;
+  width: 100%;
+  min-height: 150px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+.postfach-antwort-aktionen {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+.postfach-antwort-erfolg,
+.postfach-antwort-fehler {
+  margin-top: 18px;
+  border-radius: 9px;
+  padding: 11px 13px;
+  font-size: 13px;
+}
+.postfach-antwort-erfolg {
+  color: #20613D;
+  background: #EAF7EF;
+  border: 1px solid #BFE2CC;
+}
+.postfach-antwort-fehler {
+  color: #8A2F2F;
+  background: #FFF0F0;
+  border: 1px solid #EFC4C4;
+}
+.postfach-antwort-entwurf-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--farbe-rand);
+  border-radius: 8px;
+  padding: 12px;
+  background: #FBFAF4;
+}
+
+@media (max-width: 700px) {
+  .postfach-layout { grid-template-columns: 1fr; }
+  .postfach-detail { min-width: 0; padding: 20px 16px; }
+  .postfach-nachricht { max-width: 100%; }
+  .postfach-nachricht--empfangen { margin-left: 18px; }
+  .postfach-antwort-aktionen,
+  .postfach-antwort-aktionen .knopf-primaer { width: 100%; }
+}
 .dash-kamp-zeile:hover { background: #FBFAF4; color: var(--farbe-text); }
 
 /* Wholix-Freigabe (Phase 2) ---------------------------------------------- */

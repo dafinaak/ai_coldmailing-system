@@ -58,6 +58,46 @@
         </div>
         {% endfor %}
       </div>
+
+      {% if antwort_erfolg %}
+      <div class="postfach-antwort-erfolg" role="status">
+        Antwort wurde über Instantly gesendet.
+      </div>
+      {% endif %}
+
+      {% if antwort_fehler %}
+      <div class="postfach-antwort-fehler" role="alert">{{ antwort_fehler }}</div>
+      {% endif %}
+
+      {% if antwort_unsicher %}
+      <div class="postfach-antwort-entwurf">
+        <div class="postfach-antwort-label">Dein nicht verlorener Entwurf</div>
+        <div class="postfach-antwort-entwurf-text">{{ antwort_text }}</div>
+      </div>
+      {% elif detail.antwort %}
+      <form method="post"
+            action="/postfach/antworten"
+            class="postfach-antwort-form"
+            onsubmit="this.querySelector('button[type=submit]').disabled=true">
+        <input type="hidden" name="kontakt" value="{{ detail.kontakt_email }}">
+        <input type="hidden" name="antwort_token" value="{{ detail.antwort.token }}">
+        <label class="postfach-antwort-label" for="antwort_text">Deine Antwort</label>
+        <div class="postfach-antwort-konto">
+          Gesendet über {{ detail.antwort.konto }}
+        </div>
+        <textarea id="antwort_text"
+                  name="antwort_text"
+                  maxlength="10000"
+                  required>{{ antwort_text }}</textarea>
+        <div class="postfach-antwort-aktionen">
+          <button type="submit" class="knopf-primaer">Antwort endgültig senden</button>
+        </div>
+      </form>
+      {% else %}
+      <div class="hinweis-kasten">
+        Für dieses Gespräch ist Antworten nur in Instantly möglich.
+      </div>
+      {% endif %}
       {% endif %}
     </div>
   </div>

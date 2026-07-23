@@ -56,7 +56,7 @@ KEINE_ANTWORTEN_HINWEIS = "Antworten siehst du derzeit nur in Instantly."
 INSTANTLY_LINK = "https://app.instantly.ai/app/unibox"
 
 # Wortwoertlich aus der v4-Vorlage.
-INSTANTLY_KNOPF_TEXT = "In Instantly antworten ↗"
+INSTANTLY_KNOPF_TEXT = "In Instantly öffnen ↗"
 
 
 def _hole_leser(request: Request):
@@ -345,8 +345,14 @@ def postfach_antworten(
         )
     try:
         verbrauche_antwort_freigabe(daten_dir, freigabe["nonce"])
-    except AntwortFreigabeBenutzt as fehler:
-        return fehler_anzeigen(str(fehler), 409, text=antwort_text)
+    except AntwortFreigabeBenutzt:
+        return fehler_anzeigen(
+            "Diese Antwortfreigabe wurde bereits benutzt. Bitte prüfe den "
+            "Verlauf in Instantly, bevor du erneut sendest.",
+            409,
+            text=antwort_text,
+            unsicher=True,
+        )
 
     try:
         versand = antworter.antworten(

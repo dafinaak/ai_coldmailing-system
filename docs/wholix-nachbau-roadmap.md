@@ -282,7 +282,7 @@ Google-/Microsoft-Anbindung und das vollständige Mailprogramm entfallen.
 | Baustein | Größe | Was es heißt |
 |---|---|---|
 | Kampagnenverläufe zusammenführen und lesen (Nr. 14–16) | S | **Gebaut und live bewiesen.** Alle sichtbaren Instantly-Kampagnengespräche stehen chronologisch im eigenen Postfach |
-| Auf eine bestehende empfangene Mail antworten (Teil von Nr. 17) | S | **Gebaut und lokal geprüft.** Versand ausschließlich über den offiziellen Instantly-Antwort-Endpunkt, mit signierter Kurzfreigabe, atomarem Einmalverbrauch und ohne automatische Wiederholung bei unklarem Ausgang |
+| Auf eine bestehende empfangene Mail antworten (Teil von Nr. 17) | S | **Gebaut und live bewiesen.** Eine kontrollierte Antwort aus dem internen Postfach wurde von Instantly bestätigt, im Verlauf angezeigt und an das eigene Gmail-Testkonto zugestellt. Der Versand nutzt eine signierte Kurzfreigabe, atomaren Einmalverbrauch und keine automatische Wiederholung bei unklarem Ausgang |
 | Verbindungsprobleme sichtbar machen (Teil von Nr. 22, 24) | S | **Gebaut.** Status und Warnung kommen aus Instantly; Reparatur bleibt über den Link nach Instantly |
 | Vollständiges Mailprogramm (Nr. 13, 18–23 und übrige Teile von 14, 15, 17, 24) | — | **Nicht im Scope.** Keine direkte Gmail-/Microsoft-Verbindung, keine Ordner, freien Mails, Suche, Markierungen, Signaturen oder eigene Reparatur |
 

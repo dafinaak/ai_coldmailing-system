@@ -89,8 +89,15 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
   `postfach-antwort-unklar-390.png`. Desktop und 390-px-Ansicht haben keinen
   seitlichen Seitenüberlauf; beim unklaren Ausgang bleiben Entwurf und
   Hinweis sichtbar, aber Antwortfeld und Sendeknopf fehlen.
-- Für diesen Bau und seine Prüfung wurde keine echte E-Mail versendet und
+- Für den Bau und die lokale Prüfung wurde keine echte E-Mail versendet und
   kein Gmail-/Microsoft-Zugang eingerichtet oder gespeichert.
+- Kontrollierter Live-Test am 23.07.2026: Das neue Antwortfeld sendete genau
+  eine klar gekennzeichnete Testantwort über Instantly von
+  `email@seo-poleposition.online` an das eigene Testkonto
+  `ingeborgmarder@gmail.com`. Instantly bestätigte den Versand, die
+  ausgehende Nachricht erschien direkt im internen Verlauf und Gmail zeigte
+  sie um 11:42 Uhr als dritte Nachricht desselben Threads. Gmail war dabei
+  nur das Testziel und wurde weiterhin nicht an das Tool angebunden.
 
 ## Entscheidungen
 

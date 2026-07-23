@@ -107,6 +107,18 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
   Guthaben-Verbrauch (Gratis-Kontingente laut offiziellen Seiten am
   23.07.2026: Prospeo 100 Credits/Monat, Hunter 50 Credits/Monat,
   Dropcontact 50 Gratis-Credits).
+- Kaskade nach Chef-Vorgabe gebaut (23.07.2026, per Leonard übermittelt):
+  Google Maps liefert die Firmen (übernommen wird v. a. die Website),
+  danach versuchen die Anbieter-Stufen aus `anbieter_reihenfolge` in der
+  Kunden-Datei NACHEINANDER den Entscheider mit geprüfter persönlicher
+  Mail zu finden („findet Stufe 1 nur 80 von 100, versucht Stufe 2 die
+  restlichen 20"); wer übrig bleibt, bekommt info@ — neu: vor der
+  Übernahme über Hunters Email Verifier geprüft (invalid/disposable/
+  unknown wird verworfen, Ausgang „info_ungueltig"). Der Bericht zählt
+  je Stufe, wer geliefert hat (`deckung.je_stufe`), und der
+  Vergleichsbericht rechnet die Kombination beider Wege aus
+  („Kaskade"-Abschnitt). Standard bleibt einstufig Hunter→Dropcontact,
+  bis der Anbieter-Vergleich die Reihenfolge festlegt. 592 Tests grün.
 - Kontrollierter Live-Test am 23.07.2026: Das neue Antwortfeld sendete genau
   eine klar gekennzeichnete Testantwort über Instantly von
   `email@seo-poleposition.online` an das eigene Testkonto

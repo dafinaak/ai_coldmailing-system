@@ -233,3 +233,31 @@ def test_lauf_speichern_und_fortsetzen(tmp_path):
                                hunter=hunter, dropcontact=FakeDropcontact(),
                                vorhandene=geladen, fortschritt=lambda text: None)
     assert neu[0]["weg_a"]["status"] == "gepruefte_mail"
+
+
+# --- Kaskaden-Auswertung (Chef-Vorgabe: wie viel deckt die Kombination?) ---
+
+def _eintrag(domain, a_status, b_status):
+    def w(status):
+        return {"status": status, "email_geprueft": status == "gepruefte_mail",
+                "fehler": None, "credits": 0, "dauer_s": 0.1}
+    return {"firma": domain, "domain": domain, "weg_a": w(a_status), "weg_b": w(b_status)}
+
+
+def test_zusammenfassung_zaehlt_kaskade():
+    ergebnisse = [
+        _eintrag("nur-a.de", "gepruefte_mail", "kein_treffer"),
+        _eintrag("nur-b.de", "kein_treffer", "gepruefte_mail"),
+        _eintrag("beide.de", "gepruefte_mail", "gepruefte_mail"),
+        _eintrag("keiner.de", "kein_treffer", "kein_treffer"),
+    ]
+    k = zusammenfassung(ergebnisse)["kaskade"]
+    assert k == {"mindestens_ein_weg": 3, "quote_prozent": 75.0,
+                 "nur_weg_a": 1, "nur_weg_b": 1, "beide_wege": 1}
+
+
+def test_bericht_enthaelt_kaskaden_zeile():
+    ergebnisse = [_eintrag("nur-a.de", "gepruefte_mail", "kein_treffer"),
+                  _eintrag("keiner.de", "kein_treffer", "kein_treffer")]
+    text = bericht_markdown(ergebnisse, zusammenfassung(ergebnisse))
+    assert "Kaskade" in text and "50.0" in text

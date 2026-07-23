@@ -34,6 +34,13 @@ class Kunde:
     # mehrere Personen derselben kleinen Firma angeschrieben werden. Optional,
     # damit alte Kunden-Dateien ohne dieses Feld weiter laden.
     max_kontakte_pro_firma: int = 1
+    # Kaskade (Chef-Vorgabe 23.07.2026): Reihenfolge der Anbieter-Stufen fuer
+    # die Entscheider-Suche, z.B. ["prospeo", "hunter_dropcontact"] - Stufe 2
+    # versucht nur die Firmen, bei denen Stufe 1 leer ausging; ganz am Ende
+    # greift immer die info@-Regel. Leer = Standard (nur "hunter_dropcontact",
+    # bis der Anbieter-Vergleich die Reihenfolge festgelegt hat). Gueltige
+    # Stufennamen prueft pipeline.sourcing.source_leads() mit klarem Fehler.
+    anbieter_reihenfolge: list = field(default_factory=list)
 
 def load_kunde(path) -> Kunde:
     with open(path, encoding="utf-8") as f:
@@ -74,7 +81,8 @@ def load_kunde(path) -> Kunde:
                  webseite=daten.get("webseite") or "",
                  maps_suche=daten.get("maps_suche") or "",
                  kontakt_rollen=daten.get("kontakt_rollen") or [],
-                 max_kontakte_pro_firma=daten.get("max_kontakte_pro_firma") or 1)
+                 max_kontakte_pro_firma=daten.get("max_kontakte_pro_firma") or 1,
+                 anbieter_reihenfolge=daten.get("anbieter_reihenfolge") or [])
 
 def lade_globale_sperrlisten_eintraege(daten_dir) -> list[dict]:
     """Liest alte Zeichenketten und neue strukturierte Sperrlisten-Eintraege."""

@@ -44,6 +44,14 @@ import requests
 
 BASE_URL = "https://api.hunter.io/v2"
 DOMAIN_SUCH_URL = f"{BASE_URL}/domain-search"
+# Email Verifier (Live-Doku hunter.io/api-documentation/v2, geprueft
+# 2026-07-23): GET /v2/email-verifier?email=...&api_key=... Antwort:
+# data.status = valid/invalid/accept_all/webmail/disposable/unknown plus
+# data.score (0-100). Sonderfaelle laut Doku: HTTP 202 = Pruefung laeuft
+# noch (erneut fragen, zaehlt nur als eine Anfrage), HTTP 222 = SMTP-Server
+# der Gegenseite antwortete unerwartet (spaeter erneut versuchen). Kosten:
+# 0,5 Credits je Pruefung.
+PRUEF_URL = f"{BASE_URL}/email-verifier"
 STANDARD_LIMIT = 10
 # Nur Treffer ab dieser Confidence gelten als brauchbar - ein sehr unsicherer
 # Namens-/Mail-Treffer soll nicht als "Entscheider gefunden" durchgehen und
@@ -71,25 +79,29 @@ class HunterSource:
         self.wartezeit = wartezeit
         self.max_versuche = max_versuche
 
-    def _get(self, params: dict):
+    def _get(self, params: dict, url: str = DOMAIN_SUCH_URL,
+             auch_wiederholen: tuple = ()):
         """GET mit einfachem Wiederholen bei 429/5xx (wie ApolloSource): ein
         einzelner Schluckauf der API soll nicht sofort die ganze Firma
         verlieren. Bei 4xx (ausser 429) sofort Fehler - das ist ein echtes
-        Problem (falscher Key o.ae.), das lautes Scheitern verdient."""
+        Problem (falscher Key o.ae.), das lautes Scheitern verdient.
+        `auch_wiederholen` ergaenzt endpunkt-eigene Warte-Codes (der
+        Email Verifier nutzt 202 = laeuft noch und 222 = SMTP-Problem)."""
         for versuch in range(1, self.max_versuche + 1):
-            antwort = self.session.get(DOMAIN_SUCH_URL, params=params, timeout=30)
-            if antwort.status_code < 400:
+            antwort = self.session.get(url, params=params, timeout=30)
+            if antwort.status_code < 400 and antwort.status_code not in auch_wiederholen:
                 return antwort
-            if antwort.status_code == 429 or antwort.status_code >= 500:
+            if (antwort.status_code == 429 or antwort.status_code >= 500
+                    or antwort.status_code in auch_wiederholen):
                 if versuch < self.max_versuche:
                     time.sleep(self.wartezeit)
                     continue
             raise RuntimeError(
-                f"Hunter antwortet mit {antwort.status_code} auf {DOMAIN_SUCH_URL}: "
+                f"Hunter antwortet mit {antwort.status_code} auf {url}: "
                 f"{getattr(antwort, 'text', '')}")
         raise RuntimeError(
             f"Hunter antwortet nach {self.max_versuche} Versuchen weiter mit "
-            f"{antwort.status_code} auf {DOMAIN_SUCH_URL}")
+            f"{antwort.status_code} auf {url}")
 
     def entscheider_finden(self, domain: str, limit: int = STANDARD_LIMIT) -> list:
         """Findet die persoenlichen Kontakte einer Domain und gibt sie nach
@@ -122,3 +134,18 @@ class HunterSource:
             })
         personen.sort(key=_rang)
         return personen
+
+    def email_pruefen(self, email: str) -> dict | None:
+        """Prueft eine einzelne Adresse ueber Hunters Email Verifier (0,5
+        Credits). Gibt {"status", "score"} zurueck (status: valid/invalid/
+        accept_all/webmail/disposable/unknown). Zweck in der Kaskade: die
+        info@-Rueckfallebene darf laut Projektregel nur GEPRUEFTE Adressen in
+        den Versand geben - Ruecklaeufer schaedigen die Absender-Postfaecher.
+        202 (laeuft noch) und 222 (SMTP-Problem der Gegenseite) werden mit
+        Wartezeit wiederholt und scheitern danach laut."""
+        if not email:
+            return None
+        antwort = self._get({"email": email, "api_key": self.api_key},
+                            url=PRUEF_URL, auch_wiederholen=(202, 222))
+        daten = (antwort.json() or {}).get("data") or {}
+        return {"status": daten.get("status", ""), "score": daten.get("score") or 0}

@@ -70,7 +70,8 @@ def test_lead_aus_hunter_treffer_und_dropcontact_mail():
     assert lead.first_name == "Anna" and lead.title == "Geschäftsführerin"
     assert lead.company == "firma-a.de"
     assert lead.source == "dropcontact"
-    assert deckung == {"firmen_gesamt": 1, "firmen_mit_kontakt": 1, "quote_prozent": 100.0}
+    assert deckung == {"firmen_gesamt": 1, "firmen_mit_kontakt": 1, "quote_prozent": 100.0,
+                       "je_stufe": {"hunter_dropcontact": 1, "info@": 0}}
     assert [f["ausgang"] for f in ausgang] == ["mit_entscheider"]
 
 
@@ -163,13 +164,15 @@ def test_deckungsquote_4_von_5_firmen():
     mails = {f"A{i}": f"a@f{i}.de" for i in range(4)}
     leads, deckung, _ = source_leads(_kunde(), 10, "a", "b", "c",
                                      **_quellen(firmen, personen, mails))
-    assert deckung == {"firmen_gesamt": 5, "firmen_mit_kontakt": 4, "quote_prozent": 80.0}
+    assert deckung == {"firmen_gesamt": 5, "firmen_mit_kontakt": 4, "quote_prozent": 80.0,
+                       "je_stufe": {"hunter_dropcontact": 4, "info@": 0}}
 
 
 def test_deckungsquote_ohne_firmen_ist_null():
     leads, deckung, _ = source_leads(_kunde(), 10, "a", "b", "c",
                                      **_quellen([], {}, {}))
-    assert leads == [] and deckung == {"firmen_gesamt": 0, "firmen_mit_kontakt": 0, "quote_prozent": 0.0}
+    assert leads == [] and deckung == {"firmen_gesamt": 0, "firmen_mit_kontakt": 0, "quote_prozent": 0.0,
+                                       "je_stufe": {"hunter_dropcontact": 0, "info@": 0}}
 
 
 def test_fehlerhafte_firma_bricht_den_lauf_nicht_ab():
@@ -190,7 +193,8 @@ def test_fehlerhafte_firma_bricht_den_lauf_nicht_ab():
         apify_source=_FakeApify(firmen), hunter_source=_FakeHunter(personen),
         dropcontact_source=_FlackerndesDropcontact())
     assert {l.email for l in leads} == {"a@f1.de", "a@f3.de"}
-    assert deckung == {"firmen_gesamt": 3, "firmen_mit_kontakt": 2, "quote_prozent": 66.7}
+    assert deckung == {"firmen_gesamt": 3, "firmen_mit_kontakt": 2, "quote_prozent": 66.7,
+                       "je_stufe": {"hunter_dropcontact": 2, "info@": 0}}
     ausgang_je_domain = {f["domain"]: f["ausgang"] for f in ausgang}
     assert ausgang_je_domain == {"f1.de": "mit_entscheider", "f2.de": "fehler",
                                  "f3.de": "mit_entscheider"}
@@ -329,3 +333,133 @@ def test_firmenname_saeubern_laesst_saubere_namen_unangetastet():
 def test_firmenname_saeubern_laesst_echten_bindestrich_namen_unangetastet():
     assert (_firmenname_saeubern("Müller - Schmidt GbR", "IT-Dienstleister Hannover")
             == "Müller - Schmidt GbR")
+
+
+# --- Kaskade (Chef-Vorgabe 23.07.2026): Stufe 1 -> Stufe 2 -> info@ --------
+
+class _FakeProspeo:
+    """Wie ProspeoSource: findet Personen je Domain, deckt Mails je person_id auf."""
+    def __init__(self, personen_je_domain=None, mail_je_person_id=None):
+        self._p = personen_je_domain or {}
+        self._m = mail_je_person_id or {}
+        self.such_domains = []
+    def entscheider_finden(self, domain):
+        self.such_domains.append(domain)
+        return list(self._p.get(domain, []))
+    def email_anreichern(self, person_id):
+        return self._m.get(person_id)
+
+
+class _FakeHunterMitPruefer(_FakeHunter):
+    """Hunter-Fake samt Email-Verifier (fuer die info@-Pruefung)."""
+    def __init__(self, personen_je_domain, pruefstatus_je_email=None, pruef_fehler=None):
+        super().__init__(personen_je_domain)
+        self._status = pruefstatus_je_email or {}
+        self._fehler = pruef_fehler
+        self.geprueft = []
+    def email_pruefen(self, email):
+        if self._fehler:
+            raise RuntimeError(self._fehler)
+        self.geprueft.append(email)
+        return {"status": self._status.get(email, "unknown"), "score": 50}
+
+
+def _prospeo_person(pid="p-1", first="Paula", last="Prosp", title="Geschäftsführerin",
+                    seniority="Founder/Owner"):
+    return {"person_id": pid, "first_name": first, "last_name": last,
+            "title": title, "seniority": seniority}
+
+
+def test_stufe2_prospeo_fuellt_die_luecken_von_stufe1():
+    firmen = [_firma("a.de"), _firma("b.de")]
+    kunde = _kunde(anbieter_reihenfolge=["hunter_dropcontact", "prospeo"])
+    prospeo = _FakeProspeo(
+        personen_je_domain={"b.de": [_prospeo_person()]},
+        mail_je_person_id={"p-1": {"email": "paula.prosp@b.de", "status": "VERIFIED",
+                                   "verification_method": "SMTP", "schon_bezahlt": False}})
+    leads, deckung, firmen_aus = source_leads(
+        kunde, 10, "k", "k", "k",
+        **_quellen(firmen, {"a.de": [_person("Anna")]}, {"Anna": "anna@a.de"}),
+        prospeo_source=prospeo)
+    assert deckung["firmen_mit_kontakt"] == 2
+    assert [l.source for l in leads] == ["dropcontact", "prospeo"]
+    assert deckung["je_stufe"] == {"hunter_dropcontact": 1, "prospeo": 1, "info@": 0}
+    assert [f["stufe"] for f in firmen_aus] == ["hunter_dropcontact", "prospeo"]
+    # Stufe 2 wird nur fuer die Luecke gefragt, nicht fuer die schon gefundene Firma:
+    assert prospeo.such_domains == ["b.de"]
+
+
+def test_reihenfolge_der_stufen_ist_konfigurierbar():
+    firmen = [_firma("a.de")]
+    kunde = _kunde(anbieter_reihenfolge=["prospeo", "hunter_dropcontact"])
+    prospeo = _FakeProspeo(
+        personen_je_domain={"a.de": [_prospeo_person()]},
+        mail_je_person_id={"p-1": {"email": "paula.prosp@a.de", "status": "VERIFIED",
+                                   "verification_method": "SMTP", "schon_bezahlt": False}})
+    leads, deckung, _ = source_leads(
+        kunde, 10, "k", "k", "k",
+        **_quellen(firmen, {"a.de": [_person("Anna")]}, {"Anna": "anna@a.de"}),
+        prospeo_source=prospeo)
+    # Prospeo steht vorn und liefert - Hunter/Dropcontact kommen nicht mehr dran.
+    assert [l.source for l in leads] == ["prospeo"]
+    assert deckung["je_stufe"]["prospeo"] == 1
+
+
+def test_unbekannte_stufe_scheitert_mit_klarem_fehler():
+    kunde = _kunde(anbieter_reihenfolge=["zauberquelle"])
+    with pytest.raises(ValueError, match="zauberquelle"):
+        source_leads(kunde, 10, "k", "k", "k",
+                     **_quellen([_firma("a.de")], {}, {}))
+
+
+def test_prospeo_stufe_ohne_quelle_scheitert_mit_klarem_fehler():
+    kunde = _kunde(anbieter_reihenfolge=["prospeo"])
+    with pytest.raises(ValueError, match="PROSPEO_API_KEY"):
+        source_leads(kunde, 10, "k", "k", "k",
+                     **_quellen([_firma("a.de")], {}, {}))
+
+
+def test_info_mail_wird_vor_uebernahme_geprueft():
+    hunter = _FakeHunterMitPruefer({}, {"info@a.de": "accept_all"})
+    leads, deckung, firmen_aus = source_leads(
+        _kunde(), 10, "k", "k", "k",
+        apify_source=_FakeApify([_firma("a.de")]),
+        hunter_source=hunter, dropcontact_source=_FakeDropcontact())
+    assert [l.email for l in leads] == ["info@a.de"]
+    assert hunter.geprueft == ["info@a.de"]
+    assert firmen_aus[0]["ausgang"] == "info_fallback"
+    assert firmen_aus[0]["info_pruefstatus"] == "accept_all"
+    assert deckung["je_stufe"]["info@"] == 1
+
+
+def test_ungueltige_info_mail_wird_verworfen():
+    hunter = _FakeHunterMitPruefer({}, {"info@a.de": "invalid"})
+    leads, deckung, firmen_aus = source_leads(
+        _kunde(), 10, "k", "k", "k",
+        apify_source=_FakeApify([_firma("a.de")]),
+        hunter_source=hunter, dropcontact_source=_FakeDropcontact())
+    assert leads == []
+    assert firmen_aus[0]["ausgang"] == "info_ungueltig"
+    assert deckung["firmen_mit_kontakt"] == 0
+
+
+def test_fehler_bei_der_info_pruefung_verwendet_mail_nicht():
+    hunter = _FakeHunterMitPruefer({}, pruef_fehler="Verifier 500")
+    leads, deckung, firmen_aus = source_leads(
+        _kunde(), 10, "k", "k", "k",
+        apify_source=_FakeApify([_firma("a.de")]),
+        hunter_source=hunter, dropcontact_source=_FakeDropcontact())
+    # Zuverlaessigkeit zuerst: eine ungepruefte Adresse geht NICHT in den
+    # Versand, die Firma endet als Fehler statt als stiller info@-Lead.
+    assert leads == []
+    assert firmen_aus[0]["ausgang"] == "fehler"
+
+
+def test_ohne_pruefer_bleibt_altes_info_verhalten():
+    # Alte Fakes/Quellen ohne email_pruefen: info@ wird wie bisher ungeprueft
+    # uebernommen (Rueckwaerts-Kompatibilitaet der bestehenden Tests/Ablaeufe).
+    leads, deckung, firmen_aus = source_leads(
+        _kunde(), 10, "k", "k", "k",
+        **_quellen([_firma("a.de")], {}, {}))
+    assert [l.email for l in leads] == ["info@a.de"]
+    assert firmen_aus[0]["ausgang"] == "info_fallback"

@@ -104,3 +104,48 @@ def test_dauerhaft_500_scheitert_nach_versuchen():
     with pytest.raises(RuntimeError):
         HunterSource("key", session=session, wartezeit=0, max_versuche=3).entscheider_finden("firma.de")
     assert len(session.urls) == 3
+
+
+# --- Email Verifier (info@-Pruefung der Kaskade) ---------------------------
+
+def pruef_antwort(status="valid", score=100):
+    return FakeResponse(200, {"data": {"status": status, "score": score,
+                                       "email": "info@firma.de"}})
+
+
+def test_email_pruefen_liefert_status_und_score():
+    session = FakeSession([pruef_antwort()])
+    ergebnis = HunterSource("key", session=session).email_pruefen("info@firma.de")
+    assert ergebnis == {"status": "valid", "score": 100}
+    from pipeline.sources.hunter import PRUEF_URL
+    assert session.urls == [PRUEF_URL]
+    assert session.params[0] == {"email": "info@firma.de", "api_key": "key"}
+
+
+def test_email_pruefen_wiederholt_bei_202_laeuft_noch():
+    # 202 = "Pruefung laeuft noch, gleich nochmal fragen" (laut Hunter-Doku
+    # zaehlt das nur als eine Anfrage).
+    session = FakeSession([FakeResponse(202, {}), pruef_antwort("accept_all", 61)])
+    ergebnis = HunterSource("key", session=session,
+                            wartezeit=0).email_pruefen("info@firma.de")
+    assert ergebnis == {"status": "accept_all", "score": 61}
+    assert len(session.urls) == 2
+
+
+def test_email_pruefen_222_smtp_problem_scheitert_nach_versuchen():
+    session = FakeSession([FakeResponse(222, {}), FakeResponse(222, {})])
+    with pytest.raises(RuntimeError, match="222"):
+        HunterSource("key", session=session, wartezeit=0,
+                     max_versuche=2).email_pruefen("info@firma.de")
+
+
+def test_email_pruefen_4xx_scheitert_laut():
+    session = FakeSession([FakeResponse(400, {}, text="invalid_email")])
+    with pytest.raises(RuntimeError, match="400"):
+        HunterSource("key", session=session, wartezeit=0).email_pruefen("info@firma.de")
+
+
+def test_email_pruefen_ohne_email_macht_keinen_aufruf():
+    session = FakeSession([])
+    assert HunterSource("key", session=session).email_pruefen("") is None
+    assert session.urls == []

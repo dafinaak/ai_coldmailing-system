@@ -41,14 +41,21 @@ def _setze_schritte_zurueck(store, ab_schritt: str):
 _LEERE_DECKUNG = {"firmen_gesamt": 0, "firmen_mit_kontakt": 0, "quote_prozent": 0.0}
 
 def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None = None):
-    # Reihenfolge folgt den Stufen der Lead-Beschaffung (Weg A, siehe AGENTS.md):
-    # Apify (Firmen) -> Hunter (Entscheider finden) -> Dropcontact (persoenliche
-    # Mail bauen/pruefen) -> KI (Personalisierung, danach).
+    # Reihenfolge folgt den Stufen der Lead-Beschaffung (Kaskade, siehe
+    # pipeline.sourcing): Apify (Firmen) -> Anbieter-Stufen laut
+    # Kunde.anbieter_reihenfolge (Standard: Hunter findet Entscheider,
+    # Dropcontact baut/prueft die Mail; optional Prospeo als eigene Stufe) ->
+    # info@-Regel mit Pruefung -> KI (Personalisierung, danach). Der Kunde
+    # wird VOR den Env-Checks geladen, weil erst seine anbieter_reihenfolge
+    # entscheidet, ob PROSPEO_API_KEY Pflicht ist.
+    kunde = load_kunde(kunde_pfad)
     _brauche_env("APIFY_API_KEY")
     _brauche_env("HUNTER_API_KEY")
     _brauche_env("DROPCONTACT_API_KEY")
+    prospeo_noetig = "prospeo" in (kunde.anbieter_reihenfolge or [])
+    if prospeo_noetig:
+        _brauche_env("PROSPEO_API_KEY")
     _brauche_env_eines_von("ANTHROPIC_API_KEY", "OPENROUTER_API_KEY")
-    kunde = load_kunde(kunde_pfad)
     store = RunStore.resume(fortsetzen) if fortsetzen else RunStore(LAEUFE, kunde.name)
     if neu_ab:
         _setze_schritte_zurueck(store, neu_ab)
@@ -56,9 +63,14 @@ def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None
     print(f"Laufordner: {store.run_dir}")
 
     if not store.step_done("leads"):
+        # prospeo_key nur mitgeben, wenn die Kaskade die Stufe auch nutzt -
+        # so bleibt der Aufruf fuer den Standardfall unveraendert.
+        zusatz = ({"prospeo_key": os.environ["PROSPEO_API_KEY"]}
+                  if prospeo_noetig else {})
         gefunden, deckung, firmen_mit_ausgang = source_leads(
             kunde, limit, os.environ["APIFY_API_KEY"],
-            os.environ["HUNTER_API_KEY"], os.environ["DROPCONTACT_API_KEY"])
+            os.environ["HUNTER_API_KEY"], os.environ["DROPCONTACT_API_KEY"],
+            **zusatz)
         store.save_step("leads", {"leads": [l.__dict__ for l in gefunden], "deckung": deckung})
         # Apollo-422-Fix: Stufe-1-Firmenliste + Pro-Firma-Ausgang separat
         # persistieren (firmen.json), damit ein spaeterer Blick in den

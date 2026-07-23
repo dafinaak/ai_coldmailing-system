@@ -42,18 +42,13 @@ from datetime import datetime
 from pathlib import Path
 
 from pipeline.env import lade_dotenv, brauche_env
-from pipeline.sourcing import (_rolle_passt, _qualifiziert,
+from pipeline.sourcing import (_qualifiziert, _qualifiziert_prospeo,
                                _nach_rollen_sortieren, _verifizierte_email)
 from pipeline.sources.prospeo import ProspeoSource
 from pipeline.sources.hunter import HunterSource
 from pipeline.sources.dropcontact import DropcontactSource
 
 STANDARD_ROLLEN = ["Geschäftsführer", "Inhaber"]
-# Prospeo kennt keinen decision_maker-Schalter wie Hunter; diese
-# Seniority-Stufen gelten als Entscheider-Merkmal (nur fuer die LOKALE
-# Auswahl benutzt, sie gehen nicht als Filter an die API - ein Tippfehler
-# koennte dort den ganzen Aufruf scheitern lassen).
-ENTSCHEIDER_SENIORITIES = {"Founder/Owner", "C-Level"}
 # Pro Firma werden hoechstens so viele passende Personen auf eine gepruefte
 # Mail probiert - gleicher Deckel fuer beide Wege (Fairness). Fehlversuche
 # kosten bei beiden Anbietern laut Doku keine Credits ("pay on success").
@@ -99,15 +94,6 @@ def _basis(status, person=None, email=None, geprueft=False, pruefweg="",
             "domain_passt": _domain_passt(email, domain),
             "fehler": fehler, "credits": credits,
             "dauer_s": round(dauer_s, 2)}
-
-
-def _qualifiziert_prospeo(person: dict, rollen: list) -> bool:
-    """Gegenstueck zu sourcing._qualifiziert fuer Prospeo-Personen: Entscheider
-    ist, wessen Seniority als Entscheider-Stufe gilt ODER wessen Jobtitel zu
-    einer gewuenschten Rolle passt."""
-    if person.get("seniority") in ENTSCHEIDER_SENIORITIES:
-        return True
-    return any(_rolle_passt(person.get("title", ""), rolle) for rolle in rollen)
 
 
 def weg_a_pruefen(firma: dict, rollen: list, prospeo,
@@ -265,6 +251,19 @@ def zusammenfassung(ergebnisse: list) -> dict:
                                        if w.get("domain_passt") is False),
                   "credits_geschaetzt": sum(w.get("credits") or 0 for w in werte),
                   "dauer_s": round(sum(w.get("dauer_s") or 0 for w in werte), 1)}
+    # Kaskaden-Auswertung (Chef-Vorgabe 23.07.2026: "wenn Stufe 1 nur 80 von
+    # 100 findet, versucht Stufe 2 die restlichen 20"): Wie viele Firmen
+    # bekommt die KOMBINATION beider Wege abgedeckt, und wer traegt was bei?
+    def _hat_mail(e, weg):
+        return (e.get(weg) or {}).get("status") == "gepruefte_mail"
+    nur_a = sum(1 for e in ergebnisse if _hat_mail(e, "weg_a") and not _hat_mail(e, "weg_b"))
+    nur_b = sum(1 for e in ergebnisse if _hat_mail(e, "weg_b") and not _hat_mail(e, "weg_a"))
+    beide = sum(1 for e in ergebnisse if _hat_mail(e, "weg_a") and _hat_mail(e, "weg_b"))
+    vereint = nur_a + nur_b + beide
+    z["kaskade"] = {
+        "mindestens_ein_weg": vereint,
+        "quote_prozent": round(vereint / len(ergebnisse) * 100, 1) if ergebnisse else 0.0,
+        "nur_weg_a": nur_a, "nur_weg_b": nur_b, "beide_wege": beide}
     return z
 
 
@@ -319,11 +318,22 @@ def bericht_markdown(ergebnisse: list, z: dict, stand: str = "") -> str:
         else:
             a, b = paar(schluessel)
             zeilen.append(f"| {beschriftung} | {a} | {b} |")
+    k = z.get("kaskade") or {}
     zeilen += [
         "",
         "Trefferquote = Anteil der Firmen mit geprüfter persönlicher Mail.",
         "Credits sind Schätzungen nach den Doku-Regeln der Anbieter; der",
         "echte Verbrauch steht im jeweiligen Anbieter-Konto.",
+        "",
+        "## Kaskade: Was bringt die Kombination beider Wege?",
+        "",
+        f"Mindestens ein Weg fand eine geprüfte persönliche Mail bei "
+        f"**{k.get('mindestens_ein_weg', 0)} von {z['firmen_gesamt']} Firmen "
+        f"({k.get('quote_prozent', 0.0)} %)** — davon nur Weg A: "
+        f"{k.get('nur_weg_a', 0)}, nur Weg B: {k.get('nur_weg_b', 0)}, beide: "
+        f"{k.get('beide_wege', 0)}. Die „nur\"-Zahlen zeigen, wie viele "
+        f"Firmen eine zweite Stufe zusätzlich retten würde; für den Rest "
+        f"bliebe die info@-Regel.",
         "",
         "## Firmen im Einzelnen",
         "",

@@ -1,24 +1,24 @@
-"""Orchestriert die 3-stufige Lead-Beschaffung (Kern-Umbau).
+"""Orchestriert die Lead-Beschaffung als Kaskade (Chef-Vorgabe 23.07.2026).
 
 Stufe 1: Firmen ueber Google Maps finden (pipeline.sources.apify_maps.
-         ApifyMapsSource).
-Stufe 2: Pro Firma Kontakte in den gewuenschten Rollen anreichern
-         (pipeline.sources.apollo.ApolloSource.unternehmen_anreichern) -
-         E-Mail-Suche JE UNTERNEHMEN, nicht die alte kriterien-basierte
-         Massensuche (ApolloSource.search() bleibt fuer Rueckwaertskompatibilitaet
-         bestehen, wird vom neuen Ablauf aber nicht mehr genutzt).
-Stufe 3: Steckplatz fuer eine kuenftige dritte Datenbank (Hunter/Lusha/Clay
-         - noch NICHT ausgewaehlt, siehe Auftrag). Aktuell ein reiner
-         No-Op-Durchreicher (NoOpDrittquelle unten): liefert nie zusaetzliche
-         Kontakte, macht den Ablauf aber unabhaengig davon, WOHER ein
-         fehlender Kontakt irgendwann zusaetzlich kommen koennte - eine
-         echte Implementierung ersetzt spaeter nur `drittquelle`.
+         ApifyMapsSource) - uebernommen wird v.a. die Website/Domain; der
+         Maps-Titel dient nur bereinigt als Namens-Rueckfallebene.
+Stufe 2+: Anbieter-Stufen laut Kunde.anbieter_reihenfolge, NACHEINANDER je
+         Firma, bis eine Stufe liefert ("wenn Stufe 1 nur 80 von 100 findet,
+         versucht Stufe 2 die restlichen 20"):
+         - "hunter_dropcontact": Hunter findet die Entscheider der Domain,
+           Dropcontact baut + prueft die persoenliche Mail.
+         - "prospeo": Prospeo sucht Personen ueber die Domain und deckt nur
+           geprueft zustellbare Mails auf.
+         Standard (solange der Anbieter-Vergleich die Reihenfolge nicht
+         festgelegt hat): nur "hunter_dropcontact".
+Zuletzt: info@-Regel (unten) fuer Firmen, bei denen keine Stufe traf.
 
-info@-Regel: Findet Apollo fuer eine kleine Firma (<= 3 Mitarbeiter laut
-Apollos "estimated_num_employees") keinen persoenlichen Kontakt, wird
-info@<domain> als Lead-E-Mail verwendet (source="info@"). Greift NUR bei
-tatsaechlich bekannter kleiner Mitarbeiterzahl (nicht bei unbekannter
-Zahl - kein Rate-ins-Blaue) und nur, wenn eine Domain bekannt ist.
+info@-Regel: Findet keine Stufe einen persoenlichen Kontakt, wird
+info@<domain> als Lead-E-Mail verwendet (source="info@") - nur, wenn eine
+Domain bekannt ist, und GEPRUEFT ueber Hunters Email Verifier, sofern die
+Hunter-Quelle das anbietet (Projektregel: keine ungepruefte Adresse in den
+Versand; nicht versandtaugliche Adressen enden als "info_ungueltig").
 
 Deckungsquote: Anteil der Stufe-1-Firmen, die am Ende mindestens einen
 nutzbaren Kontakt (persoenlich ODER info@) haben - das ist die vom Chef
@@ -51,8 +51,30 @@ from pipeline.models import Lead
 from pipeline.sources.apify_maps import ApifyMapsSource
 from pipeline.sources.hunter import HunterSource
 from pipeline.sources.dropcontact import DropcontactSource
+from pipeline.sources.prospeo import ProspeoSource
 
 MAX_KONTAKTE_PRO_FIRMA_STANDARD = 1  # siehe Kunde.max_kontakte_pro_firma (pipeline.config)
+
+# Kaskade (Chef-Vorgabe 23.07.2026): Die Entscheider-Suche laeuft in
+# konfigurierbaren Stufen (Kunde.anbieter_reihenfolge). Stufe 2 versucht nur
+# die Firmen, bei denen Stufe 1 leer ausging; wer danach immer noch ohne
+# Kontakt ist, faellt in die info@-Regel (mit Pruefung, siehe unten).
+# Solange der Anbieter-Vergleich die Reihenfolge nicht festgelegt hat, bleibt
+# der Standard beim bisherigen einstufigen Ablauf.
+STANDARD_REIHENFOLGE = ["hunter_dropcontact"]
+GUELTIGE_STUFEN = ("hunter_dropcontact", "prospeo")
+# info@-Pruefstatus (Hunter Email Verifier), die als versandtauglich gelten.
+# "accept_all" bewusst dabei: der Server nimmt dort formal alles an, mehr als
+# diese Aussage gibt es fuer solche Domains technisch nicht - bei unseren
+# Kleinstfirmen ist das der haeufigste Fall. "invalid"/"disposable"/"unknown"
+# fliegen raus (Zuverlaessigkeit zuerst).
+INFO_OK_STATUS = ("valid", "accept_all")
+
+# Prospeo kennt keinen decision_maker-Schalter wie Hunter; diese
+# Seniority-Stufen gelten als Entscheider-Merkmal. Nur fuer die LOKALE
+# Auswahl benutzt - sie gehen nicht als Filter an die Prospeo-API, damit ein
+# unbekannter Enum-Wert dort nicht den ganzen Aufruf scheitern laesst.
+ENTSCHEIDER_SENIORITIES = {"Founder/Owner", "C-Level"}
 
 # Rollen-Synonym-Tabelle (Lead-Qualitaets-Fix): jede Gruppe fasst eine
 # gewuenschte Rolle mit ihren deutschen UND englischen Entsprechungen
@@ -250,6 +272,40 @@ def _entscheider_kontakte(firma: dict, kontakt_rollen: list, max_pro_firma: int,
     return kontakte
 
 
+def _qualifiziert_prospeo(person: dict, kontakt_rollen: list) -> bool:
+    """Gegenstueck zu _qualifiziert() fuer Prospeo-Personen: Entscheider ist,
+    wessen Seniority als Entscheider-Stufe gilt ODER wessen Jobtitel zu einer
+    gewuenschten Rolle passt."""
+    if person.get("seniority") in ENTSCHEIDER_SENIORITIES:
+        return True
+    return any(_rolle_passt(person.get("title", ""), rolle) for rolle in kontakt_rollen)
+
+
+def _prospeo_kontakte(firma: dict, kontakt_rollen: list, max_pro_firma: int,
+                      prospeo) -> list:
+    """Prospeo-Stufe der Kaskade: findet die Personen einer Firma ueber die
+    Domain und deckt fuer die passendsten Entscheider die persoenliche Mail
+    auf - nur geprueft zustellbare Adressen (only_verified_email in
+    ProspeoSource). Gleiche Rueckgabeform wie _entscheider_kontakte()."""
+    domain = firma.get("domain")
+    if not domain:
+        return []
+    personen = [p for p in prospeo.entscheider_finden(domain)
+                if _qualifiziert_prospeo(p, kontakt_rollen)]
+    kontakte = []
+    for person in _nach_rollen_sortieren(personen, kontakt_rollen):
+        if len(kontakte) >= max_pro_firma:
+            break
+        mail = prospeo.email_anreichern(person.get("person_id", ""))
+        if mail:
+            kontakte.append({
+                "first_name": person.get("first_name", ""),
+                "last_name": person.get("last_name", ""),
+                "email": mail["email"], "title": person.get("title", ""),
+                "source": "prospeo"})
+    return kontakte
+
+
 def _pruefe_kunde(kunde):
     fehlend = [f for f in ("maps_suche", "kontakt_rollen") if not getattr(kunde, f, None)]
     if fehlend:
@@ -261,52 +317,106 @@ def _pruefe_kunde(kunde):
             f"Konfigurationsdatei ergänzen.")
 
 
+def _stufen_bauen(kunde, hunter, dropcontact, prospeo_key, prospeo_source,
+                  max_pro_firma) -> list:
+    """Baut die Stufenliste [(name, kontakt_funktion)] aus
+    Kunde.anbieter_reihenfolge. Unbekannte Stufennamen und eine
+    Prospeo-Stufe ohne Quelle/Key scheitern laut mit deutscher Erklaerung -
+    NICHT still als 'keine Kontakte' (das wuerde die Deckungsquote
+    verfaelschen, wie damals der leere Apollo-Account)."""
+    reihenfolge = list(getattr(kunde, "anbieter_reihenfolge", None)
+                       or STANDARD_REIHENFOLGE)
+    unbekannt = [s for s in reihenfolge if s not in GUELTIGE_STUFEN]
+    if unbekannt:
+        raise ValueError(
+            f"Unbekannte Anbieter-Stufe(n) in anbieter_reihenfolge des Kunden "
+            f"'{kunde.name}': {', '.join(unbekannt)}. Gültig sind: "
+            f"{', '.join(GUELTIGE_STUFEN)}.")
+    prospeo = prospeo_source
+    if "prospeo" in reihenfolge and prospeo is None:
+        if not prospeo_key:
+            raise ValueError(
+                f"Die Stufe 'prospeo' steht in der anbieter_reihenfolge des "
+                f"Kunden '{kunde.name}', aber es wurde weder eine "
+                f"Prospeo-Quelle noch ein PROSPEO_API_KEY übergeben. Bitte "
+                f"PROSPEO_API_KEY in .env eintragen (siehe .env.example).")
+        prospeo = ProspeoSource(prospeo_key)
+    stufen = []
+    for name in reihenfolge:
+        if name == "hunter_dropcontact":
+            stufen.append((name, lambda firma: _entscheider_kontakte(
+                firma, kunde.kontakt_rollen, max_pro_firma, hunter, dropcontact)))
+        else:
+            stufen.append((name, lambda firma: _prospeo_kontakte(
+                firma, kunde.kontakt_rollen, max_pro_firma, prospeo)))
+    return stufen
+
+
 def source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
-                  apify_source=None, hunter_source=None, dropcontact_source=None) -> tuple:
+                  apify_source=None, hunter_source=None, dropcontact_source=None,
+                  prospeo_key=None, prospeo_source=None) -> tuple:
     """Fuehrt alle Stufen aus und liefert (leads, deckung, firmen_mit_ausgang):
     - leads: Liste von pipeline.models.Lead (bestehende Form, downstream
       unveraendert nutzbar).
     - deckung: {"firmen_gesamt": int, "firmen_mit_kontakt": int,
-      "quote_prozent": float} - die Deckungsquote fuer den Bericht. "mit
-      Kontakt" zaehlt eine persoenliche Entscheider-Mail ODER die info@-
-      Rueckfallebene.
+      "quote_prozent": float, "je_stufe": {stufenname: int, "info@": int}} -
+      die Deckungsquote fuer den Bericht. "mit Kontakt" zaehlt eine
+      persoenliche Entscheider-Mail ODER die info@-Rueckfallebene; "je_stufe"
+      zaehlt, welche Kaskaden-Stufe die Firma geliefert hat (die
+      100/80/20-Aufschluesselung aus der Chef-Vorgabe vom 23.07.2026).
     - firmen_mit_ausgang: die Stufe-1-Firmenliste aus Apify, JEDE Firma
       zusaetzlich um ein "ausgang"-Feld ergaenzt: einer von
-      "mit_entscheider" (persoenliche, gepruefte Mail) / "info_fallback"
-      (kein persoenlicher Treffer, aber info@ als Rueckfall) / "keine_webseite"
-      / "kein_entscheider" (Webseite da, aber weder Hunter noch Dropcontact
-      lieferten eine gepruefte Person) / "fehler". Zweck: sauber unterscheiden,
-      WARUM eine Firma so endete - vor allem persoenlich vs. nur info@, denn
-      der eigentliche Ziel-Wert sind persoenliche Adressen. __main__.lauf()
-      persistiert diese Liste als firmen.json und zaehlt daraus die
-      Aufschluesselung fuer den Bericht.
+      "mit_entscheider" (persoenliche, gepruefte Mail; dazu "stufe" = Name
+      der liefernden Kaskaden-Stufe) / "info_fallback" (kein persoenlicher
+      Treffer, aber info@ als Rueckfall; dazu ggf. "info_pruefstatus") /
+      "info_ungueltig" (info@ wurde geprueft und ist NICHT versandtauglich)
+      / "keine_webseite" / "kein_entscheider" (Webseite da, aber keine Stufe
+      lieferte eine gepruefte Person) / "fehler". Zweck: sauber unterscheiden,
+      WARUM eine Firma so endete. __main__.lauf() persistiert diese Liste als
+      firmen.json und zaehlt daraus die Aufschluesselung fuer den Bericht.
 
-    Ablauf (Weg A, siehe AGENTS.md): Google Maps (Firmen) -> Hunter
-    (Entscheider finden) -> Dropcontact (persoenliche Mail bauen/pruefen) ->
-    info@-Regel als Rueckfall. `apify_source`/`hunter_source`/
-    `dropcontact_source` sind fuer Tests injizierbar; im echten Betrieb baut
-    diese Funktion die echten Klassen selbst mit den uebergebenen API-Keys."""
+    Kaskaden-Ablauf (Chef-Vorgabe 23.07.2026): Google Maps liefert die Firmen
+    (uebernommen wird v.a. die Website/Domain) -> die Anbieter-Stufen aus
+    Kunde.anbieter_reihenfolge versuchen NACHEINANDER, Entscheider samt
+    geprueft zustellbarer persoenlicher Mail zu finden (jede Stufe nur fuer
+    die Firmen, bei denen die vorherige leer ausging) -> wer danach noch ohne
+    Kontakt ist, bekommt info@<domain> als Rueckfall - GEPRUEFT ueber Hunters
+    Email Verifier, sofern die Hunter-Quelle das kann (Projektregel: keine
+    ungepruefte Adresse in den Versand). Quellen sind fuer Tests injizierbar;
+    im echten Betrieb baut diese Funktion die echten Klassen selbst."""
     _pruefe_kunde(kunde)
     apify = apify_source or ApifyMapsSource(apify_key)
     hunter = hunter_source or HunterSource(hunter_key)
     dropcontact = dropcontact_source or DropcontactSource(dropcontact_key)
     max_pro_firma = getattr(kunde, "max_kontakte_pro_firma", None) or MAX_KONTAKTE_PRO_FIRMA_STANDARD
+    stufen = _stufen_bauen(kunde, hunter, dropcontact, prospeo_key,
+                           prospeo_source, max_pro_firma)
+    # info@-Pruefer: Hunters Email Verifier, wenn die (ggf. gefakte) Quelle
+    # ihn anbietet. Aeltere Test-Fakes ohne email_pruefen behalten das alte
+    # Verhalten (info@ ungeprueft uebernehmen) - Rueckwaerts-Kompatibilitaet.
+    email_pruefer = getattr(hunter, "email_pruefen", None)
 
     firmen = apify.search(kunde.maps_suche, limit)
     leads, firmen_mit_kontakt, firmen_mit_ausgang = [], 0, []
+    je_stufe = {name: 0 for name, _ in stufen}
+    je_stufe["info@"] = 0
     for firma in firmen:
         try:
-            kontakte = _entscheider_kontakte(
-                firma, kunde.kontakt_rollen, max_pro_firma, hunter, dropcontact)
+            kontakte, liefernde_stufe = [], None
+            for name, kontakt_funktion in stufen:
+                kontakte = kontakt_funktion(firma)
+                if kontakte:
+                    liefernde_stufe = name
+                    break
         except Exception as fehler:
-            # Eine einzelne fehlerhafte Firma (Hunter/Dropcontact dauerhaft
-            # 4xx/5xx, oder Dropcontact lehnt den Batch ab - z.B. leere
-            # Credits) darf bei ~50 Firmen pro Lauf nicht den ganzen Lauf
-            # mitreissen: sonst sind alle bereits gefundenen Leads UND das
-            # verbrauchte Kontingent futsch. Diese Firma zaehlt weiter zu
-            # firmen_gesamt (Nenner der Deckungsquote), aber nicht zu
-            # firmen_mit_kontakt. Die Fehlermeldungen enthalten keine Secrets
-            # (Api-Key steht im Header, nicht im geloggten Text).
+            # Eine einzelne fehlerhafte Firma (ein Anbieter dauerhaft 4xx/5xx,
+            # oder Dropcontact lehnt den Batch ab - z.B. leere Credits) darf
+            # bei ~50 Firmen pro Lauf nicht den ganzen Lauf mitreissen: sonst
+            # sind alle bereits gefundenen Leads UND das verbrauchte
+            # Kontingent futsch. Diese Firma zaehlt weiter zu firmen_gesamt
+            # (Nenner der Deckungsquote), aber nicht zu firmen_mit_kontakt.
+            # Die Fehlermeldungen enthalten keine Secrets (API-Key steht im
+            # Header bzw. Query, nicht im geloggten Text).
             print(f"Firma '{firma.get('name') or firma.get('domain') or '?'}' "
                   f"übersprungen (Fehler bei der Entscheider-Suche): {fehler}")
             firmen_mit_ausgang.append({**firma, "ausgang": "fehler"})
@@ -315,6 +425,7 @@ def source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
         firmenname = _firmenname_saeubern(firma.get("name", ""), kunde.maps_suche)
 
         ausgang = "kein_entscheider" if firma.get("website") else "keine_webseite"
+        zusatz = {}
         if kontakte:
             for k in kontakte:
                 leads.append(Lead(
@@ -323,23 +434,44 @@ def source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
                     website=firma["website"], source=k["source"]))
             firmen_mit_kontakt += 1
             ausgang = "mit_entscheider"
+            je_stufe[liefernde_stufe] += 1
+            zusatz["stufe"] = liefernde_stufe
         elif firma.get("domain"):
-            # info@-Regel: kein persoenlicher Entscheider geprueft, aber Domain
-            # vorhanden -> info@ als letzter Ausweg. Unsere Zielgruppe sind
-            # kleine Firmen, bei denen info@ oft direkt beim Inhaber landet.
-            # Bewusst als eigener Ausgang ("info_fallback") getrennt, damit im
-            # Bericht sichtbar bleibt, wie viele Firmen NUR ueber info@ statt
-            # ueber eine persoenliche Adresse erreicht werden.
-            leads.append(Lead(
-                first_name="", last_name="", email=f"info@{firma['domain']}",
-                company=firmenname, title="", website=firma["website"], source="info@"))
-            firmen_mit_kontakt += 1
-            ausgang = "info_fallback"
+            # info@-Regel: keine Stufe fand einen persoenlichen Entscheider,
+            # aber die Domain ist da -> info@ als letzter Ausweg. Unsere
+            # Zielgruppe sind kleine Firmen, bei denen info@ oft direkt beim
+            # Inhaber landet. Vorher pruefen (Projektregel!), sofern ein
+            # Pruefer verfuegbar ist; nicht versandtaugliche Adressen werden
+            # verworfen ("info_ungueltig") statt still versendet.
+            info_email = f"info@{firma['domain']}"
+            pruefstatus = None
+            if email_pruefer:
+                try:
+                    pruefstatus = (email_pruefer(info_email) or {}).get("status", "")
+                except Exception as fehler:
+                    # Zuverlaessigkeit zuerst: laesst sich die Adresse nicht
+                    # pruefen, geht sie NICHT in den Versand.
+                    print(f"Firma '{firma.get('name') or firma.get('domain')}' "
+                          f"übersprungen (Fehler bei der info@-Prüfung): {fehler}")
+                    firmen_mit_ausgang.append({**firma, "ausgang": "fehler"})
+                    continue
+            if pruefstatus is not None:
+                zusatz["info_pruefstatus"] = pruefstatus
+            if pruefstatus is None or pruefstatus in INFO_OK_STATUS:
+                leads.append(Lead(
+                    first_name="", last_name="", email=info_email,
+                    company=firmenname, title="", website=firma["website"],
+                    source="info@"))
+                firmen_mit_kontakt += 1
+                ausgang = "info_fallback"
+                je_stufe["info@"] += 1
+            else:
+                ausgang = "info_ungueltig"
 
-        firmen_mit_ausgang.append({**firma, "ausgang": ausgang})
+        firmen_mit_ausgang.append({**firma, "ausgang": ausgang, **zusatz})
 
     anzahl_firmen = len(firmen)
     quote = (firmen_mit_kontakt / anzahl_firmen * 100) if anzahl_firmen else 0.0
     deckung = {"firmen_gesamt": anzahl_firmen, "firmen_mit_kontakt": firmen_mit_kontakt,
-               "quote_prozent": round(quote, 1)}
+               "quote_prozent": round(quote, 1), "je_stufe": je_stufe}
     return leads, deckung, firmen_mit_ausgang

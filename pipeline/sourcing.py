@@ -74,7 +74,11 @@ INFO_OK_STATUS = ("valid", "accept_all")
 # Seniority-Stufen gelten als Entscheider-Merkmal. Nur fuer die LOKALE
 # Auswahl benutzt - sie gehen nicht als Filter an die Prospeo-API, damit ein
 # unbekannter Enum-Wert dort nicht den ganzen Aufruf scheitern laesst.
-ENTSCHEIDER_SENIORITIES = {"Founder/Owner", "C-Level"}
+# "Partner" seit dem Messlauf 23.07.2026 dabei: bei unseren Kleinfirmen sind
+# "Partner" (beobachtet u.a. fuer "Geschaeftsfuehrender Gesellschafter")
+# praktisch immer Mitinhaber. Live beobachtete weitere Werte: Manager, Head,
+# Director, Entry - die bleiben bewusst draussen (keine Entscheider-Garantie).
+ENTSCHEIDER_SENIORITIES = {"Founder/Owner", "C-Level", "Partner"}
 
 # Rollen-Synonym-Tabelle (Lead-Qualitaets-Fix): jede Gruppe fasst eine
 # gewuenschte Rolle mit ihren deutschen UND englischen Entsprechungen
@@ -85,7 +89,12 @@ ENTSCHEIDER_SENIORITIES = {"Founder/Owner", "C-Level"}
 # zurueck, matcht also weiterhin, nur eben ohne Synonyme.
 ROLLEN_GRUPPEN = [
     {"geschäftsführer", "geschäftsführung", "managing director", "ceo",
-     "inhaber", "owner", "gründer", "founder"},
+     "inhaber", "owner", "gründer", "founder",
+     # Messlauf-Funde 23.07.2026 (Prospeo, echte 20er-Liste): deutsche
+     # Titelformen, die der Wortgrenzen-Abgleich sonst verfehlt -
+     # "geschäftsführender" ist ein anderes Wort als "geschäftsführer".
+     "geschäftsführender gesellschafter", "geschäftsführende gesellschafterin",
+     "gründungspartner"},
     {"it-leiter", "it-leitung", "leiter it", "head of it", "it manager",
      "it-manager", "cto", "cio"},
 ]
@@ -137,6 +146,13 @@ def _rolle_passt(kontakt_titel: str, gewuenschte_rolle: str) -> bool:
     aber weiterhin wortgrenzen-genauen Abgleich (in beide Richtungen,
     toleriert also sowohl kuerzere als auch laengere Formulierungen)."""
     titel_norm, rolle_norm = _normalisieren(kontakt_titel), _normalisieren(gewuenschte_rolle)
+    # Falsche Freunde (Messlauf-Fund 23.07.2026, echte 20er-Liste): in
+    # "Product Owner"/"Process Owner" steckt "owner" als eigenes Wort, die
+    # Person ist aber Projektrolle, kein Inhaber. Solche Phrasen werden vor
+    # dem Abgleich aus dem Titel entfernt - ein alleinstehendes "Owner"
+    # (oder "Owner / CEO") matcht weiterhin.
+    for falscher_freund in ("product owner", "process owner"):
+        titel_norm = " ".join(titel_norm.replace(falscher_freund, " ").split())
     if not titel_norm or not rolle_norm:
         return False
     gruppe = _gruppe_fuer_rolle(rolle_norm)

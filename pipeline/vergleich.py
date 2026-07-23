@@ -399,7 +399,11 @@ def main(argv=None):
     prospeo = hunter = dropcontact = None
     if args.weg in ("a", "beide"):
         brauche_env("PROSPEO_API_KEY")
-        prospeo = ProspeoSource(os.environ["PROSPEO_API_KEY"])
+        # wartezeit 20s: Prospeo drosselt pro Minute (im Messlauf 23.07.2026
+        # live beobachtet: 429 "Rate limit exceeded" nach ~16 Anfragen kurz
+        # hintereinander). Drei Versuche mit 20s Abstand ueberbruecken das
+        # Minutenfenster, statt die Firma faelschlich als Fehler zu werten.
+        prospeo = ProspeoSource(os.environ["PROSPEO_API_KEY"], wartezeit=20)
     if args.weg in ("b", "beide"):
         brauche_env("HUNTER_API_KEY")
         brauche_env("DROPCONTACT_API_KEY")

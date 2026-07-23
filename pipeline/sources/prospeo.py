@@ -33,11 +33,13 @@ Anreicherung - POST https://api.prospeo.io/enrich-person
     Credits: 1 Credit je GEFUNDENER Mail; kein Treffer kostet nichts;
     dieselbe Person ist 90 Tage lang frei (free_enrichment == true).
 
-Kein Treffer heisst bei BEIDEN Endpunkten: HTTP 400 mit {"error": true,
-"error_code": "NO_MATCH"} - das ist KEIN technischer Fehler (und kostet
-keinen Credit), sondern schlicht "Prospeo kennt hier niemanden" bzw. "keine
-geprueft zustellbare Mail vorhanden". Alle anderen Fehlercodes (falscher
-Key, ungueltige Filter, ...) scheitern laut, wie bei Hunter/Dropcontact.
+Kein Treffer heisst: HTTP 400 mit {"error": true, "error_code": ...} -
+die Suche meldet "NO_RESULTS" (im Messlauf vom 23.07.2026 live belegt),
+die Anreicherung laut Doku "NO_MATCH". Beides ist KEIN technischer Fehler
+(und kostet keinen Credit), sondern schlicht "Prospeo kennt hier niemanden"
+bzw. "keine geprueft zustellbare Mail vorhanden". Alle anderen Fehlercodes
+(falscher Key, ungueltige Filter, ...) scheitern laut, wie bei
+Hunter/Dropcontact.
 """
 import time
 import requests
@@ -45,8 +47,9 @@ import requests
 BASE_URL = "https://api.prospeo.io"
 SUCH_URL = f"{BASE_URL}/search-person"
 ANREICHERN_URL = f"{BASE_URL}/enrich-person"
-# Prospeos "kein Treffer"-Code - bewusst KEIN RuntimeError (siehe Docstring).
-KEIN_TREFFER_CODE = "NO_MATCH"
+# Prospeos "kein Treffer"-Codes - bewusst KEIN RuntimeError (siehe Docstring):
+# NO_MATCH kommt von der Anreicherung, NO_RESULTS von der Suche.
+KEIN_TREFFER_CODES = ("NO_MATCH", "NO_RESULTS")
 
 
 def _aktuelle_seniority(p: dict) -> str:
@@ -83,13 +86,13 @@ class ProspeoSource:
             daten = daten or {}
             if antwort.status_code < 400:
                 if daten.get("error"):
-                    if daten.get("error_code") == KEIN_TREFFER_CODE:
+                    if daten.get("error_code") in KEIN_TREFFER_CODES:
                         return None
                     raise RuntimeError(
                         f"Prospeo meldet Fehler auf {url}: "
                         f"{daten.get('error_code') or 'unbekannt'}")
                 return daten
-            if antwort.status_code == 400 and daten.get("error_code") == KEIN_TREFFER_CODE:
+            if antwort.status_code == 400 and daten.get("error_code") in KEIN_TREFFER_CODES:
                 return None
             if antwort.status_code == 429 or antwort.status_code >= 500:
                 if versuch < self.max_versuche:

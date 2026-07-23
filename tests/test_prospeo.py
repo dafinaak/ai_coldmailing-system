@@ -141,3 +141,12 @@ def test_dauerhaft_500_scheitert_nach_versuchen():
         ProspeoSource("key", session=session, wartezeit=0,
                       max_versuche=3).entscheider_finden("firma.de")
     assert len(session.urls) == 3
+
+
+def test_suche_kein_treffer_400_no_results_gibt_leere_liste():
+    # Live-Befund vom Messlauf 23.07.2026: die SUCHE meldet "kein Treffer"
+    # nicht als NO_MATCH (so die Doku fuers Anreichern), sondern als
+    # NO_RESULTS - auch das ist kein technischer Fehler und kostet nichts.
+    session = FakeSession([FakeResponse(400, {"error": True,
+                                              "error_code": "NO_RESULTS"})])
+    assert ProspeoSource("key", session=session).entscheider_finden("firma.de") == []

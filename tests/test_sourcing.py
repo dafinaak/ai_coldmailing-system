@@ -463,3 +463,32 @@ def test_ohne_pruefer_bleibt_altes_info_verhalten():
         **_quellen([_firma("a.de")], {}, {}))
     assert [l.email for l in leads] == ["info@a.de"]
     assert firmen_aus[0]["ausgang"] == "info_fallback"
+
+
+# --- Deutsche Titelformen (Messlauf-Funde 23.07.2026) ----------------------
+
+def test_geschaeftsfuehrender_gesellschafter_passt_zu_geschaeftsfuehrer():
+    # Live-Fund: "Geschäftsführender Gesellschafter" IST die Geschäftsführung,
+    # wurde aber vom Wortgrenzen-Abgleich verfehlt ("geschäftsführender" ist
+    # ein anderes Wort als "geschäftsführer").
+    assert _rolle_passt("Geschäftsführender Gesellschafter", "Geschäftsführer")
+    assert _rolle_passt("Geschäftsführende Gesellschafterin", "Geschäftsführer")
+    assert _rolle_passt("Gründungspartner", "Geschäftsführer")
+
+
+def test_prospeo_seniority_partner_zaehlt_als_entscheider():
+    from pipeline.sourcing import _qualifiziert_prospeo
+    partner = {"title": "Irgendwas ohne Rollentreffer", "seniority": "Partner"}
+    angestellter = {"title": "IT-Administrator", "seniority": "Manager"}
+    assert _qualifiziert_prospeo(partner, ["Geschäftsführer"])
+    assert not _qualifiziert_prospeo(angestellter, ["Geschäftsführer"])
+
+
+def test_product_owner_ist_kein_inhaber():
+    # Messlauf-Fund: "Product Owner" matchte ueber das Wort "Owner" die
+    # Geschäftsführer-Gruppe - eine Projektrolle, kein Inhaber.
+    assert not _rolle_passt("Product Owner", "Geschäftsführer")
+    assert not _rolle_passt("Senior Process Owner", "Inhaber")
+    # Ein echtes "Owner" (allein oder kombiniert) bleibt ein Treffer:
+    assert _rolle_passt("Owner", "Geschäftsführer")
+    assert _rolle_passt("Owner / CEO", "Geschäftsführer")

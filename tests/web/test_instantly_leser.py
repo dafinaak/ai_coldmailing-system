@@ -392,6 +392,27 @@ def test_konversationen_gruppiert_nach_kontakt_und_sortiert_chronologisch():
     assert anna["betreff"] == "Re: Anschreiben"  # Betreff der juengsten Nachricht
 
 
+def test_empfangene_nachricht_behaelt_belegte_antwort_metadaten():
+    session = FakeSession({
+        "/emails": FakeResponse(200, {"items": [
+            _email(
+                campaign_id="camp-1",
+                ue_type=2,
+                frm="anna@firma.de",
+                betreff="Re: Anschreiben",
+            ),
+        ]}),
+    })
+
+    nachricht = InstantlyLeser(
+        "key", session=session
+    ).konversationen(["camp-1"])[0]["nachrichten"][0]
+
+    assert nachricht["id"] == "mail-1"
+    assert nachricht["eaccount"] == "wir@digitaldiamonds.de"
+    assert nachricht["campaign_id"] == "camp-1"
+
+
 def test_konversationen_ue_type_2_ist_empfangen_1_und_3_sind_gesendet():
     session = FakeSession({
         "/emails": FakeResponse(200, {"items": [
@@ -476,6 +497,27 @@ def test_emails_stand_cache_60_sekunden():
     uhr["jetzt"] += timedelta(seconds=2)  # insgesamt 61s
     leser.emails_stand(["camp-1"])
     assert len(session.aufrufe) == 2  # neu abgefragt
+
+
+def test_email_cache_kann_fuer_genau_eine_kampagne_verworfen_werden():
+    session = FakeSession({
+        "/emails": [
+            FakeResponse(200, {"items": [_email(text="Vorher")]}),
+            FakeResponse(200, {"items": [_email(text="Nachher")]}),
+        ],
+    })
+    leser = InstantlyLeser("key", session=session)
+
+    assert (
+        leser.emails_stand(["camp-1"])["camp-1"]["items"][0]["body"]["text"]
+        == "Vorher"
+    )
+    leser.verwerfe_email_cache("camp-1")
+    assert (
+        leser.emails_stand(["camp-1"])["camp-1"]["items"][0]["body"]["text"]
+        == "Nachher"
+    )
+    assert len(session.aufrufe) == 2
 
 
 def test_emails_stand_api_fehler_ohne_cache_liefert_marker_statt_absturz():

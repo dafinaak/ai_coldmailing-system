@@ -246,7 +246,9 @@ def _richtung_und_kontakt(email: dict) -> tuple[str, str] | None:
     return ("gesendet", kontakt) if kontakt else None
 
 
-def _nachricht_aus_email(email: dict, richtung: str) -> dict | None:
+def _nachricht_aus_email(
+    email: dict, richtung: str, campaign_id: str | None = None
+) -> dict | None:
     """Baut aus einer rohen Email + ihrer Richtung eine Anzeige-Nachricht
     ("zeit", "betreff", "text"). Ohne auswertbaren Zeitstempel wird die
     Nachricht ausgeblendet statt unsortierbar mitzulaufen (_parse_zeit
@@ -256,7 +258,15 @@ def _nachricht_aus_email(email: dict, richtung: str) -> dict | None:
         return None
     body = email.get("body") or {}
     text = (body.get("text") or "").strip() or (email.get("content_preview") or "").strip()
-    return {"richtung": richtung, "zeit": zeit, "betreff": email.get("subject") or "", "text": text}
+    return {
+        "id": email.get("id"),
+        "campaign_id": email.get("campaign_id") or campaign_id,
+        "eaccount": email.get("eaccount"),
+        "richtung": richtung,
+        "zeit": zeit,
+        "betreff": email.get("subject") or "",
+        "text": text,
+    }
 
 
 def _sendefenster_aus_campaign(campaign: dict) -> list[dict]:
@@ -289,13 +299,13 @@ def konversationen_aus_email_stand(stand_by_id: dict[str, dict]) -> list[dict]:
     zweites Mal abfragen muss - exakt das Muster aus
     web.routen.kampagnen._stand_fuer / _kampagnen_zeilen_aus_stand."""
     email_zu_konversation: dict[str, dict] = {}
-    for eintrag in stand_by_id.values():
+    for campaign_id, eintrag in stand_by_id.items():
         for roh in eintrag.get("items") or []:
             ergebnis = _richtung_und_kontakt(roh)
             if ergebnis is None:
                 continue
             richtung, kontakt_email = ergebnis
-            nachricht = _nachricht_aus_email(roh, richtung)
+            nachricht = _nachricht_aus_email(roh, richtung, campaign_id)
             if nachricht is None:
                 continue
             konversation = email_zu_konversation.setdefault(
@@ -559,6 +569,10 @@ class InstantlyLeser:
             self._email_cache[campaign_id] = {"daten": items, "abgerufen_um": jetzt}
             ergebnis[campaign_id] = {"items": items, "erreichbar": True, "stand": jetzt}
         return ergebnis
+
+    def verwerfe_email_cache(self, campaign_id: str) -> None:
+        """Erzwingt beim nächsten Abruf frische Mails für genau eine Kampagne."""
+        self._email_cache.pop(campaign_id, None)
 
     def konversationen(self, campaign_ids: list[str]) -> list[dict]:
         """Bequemlichkeits-Wrapper um emails_stand() + die Modul-Funktion

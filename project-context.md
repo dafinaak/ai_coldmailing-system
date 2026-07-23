@@ -24,6 +24,13 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
   E-Mail-Schritt, Suche, Filter, Sammelaktionen, einzelne Neuerzeugung,
   vollständige Übergabesperre, lesender Instantly-Stand und die erweiterte
   globale Sperrliste.
+- Der vereinbarte kleine Teil von Phase 3 ist gebaut: Im internen Postfach
+  kann das Team auf eine bestehende empfangene Instantly-Mail antworten.
+  Das Absenderkonto ist sichtbar und kommt aus den belegten Instantly-Daten.
+  Eine 15 Minuten gültige Signatur bindet Kontakt und Mail; ein atomarer
+  Einmalverbrauch verhindert wiederholten Versand mit demselben Beleg.
+  Bei einem unklaren Ausgang gibt es keine automatische Wiederholung und
+  keinen neuen Sendeknopf, bis der Verlauf in Instantly geprüft wurde.
 - Frische Gesamtkontrolle am 22.07.2026: 518 Tests grün. Einen einzigen
   langen Testprozess beendet das System wiederholt ohne Testfehler und ohne
   Abschlussmeldung; deshalb wurden alle Tests vollständig in sieben frischen
@@ -72,6 +79,18 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
   Lauf. Es bleibt nur die bekannte Starlette-Abkündigungswarnung.
 - Der Nachweis zum kontrollierten End-to-End-Test steht in Jira unter
   `AP-200` und ist als erledigt markiert.
+- Frische Gesamtkontrolle der Antwortfunktion am 23.07.2026: 550 Tests grün
+  in einem vollständigen Lauf. Es bleibt nur dieselbe bekannte
+  Starlette/httpx-Abkündigungswarnung.
+- Die sichtbare Prüfung nutzte ausschließlich feste lokale Testdaten und
+  eine Demo ohne Versandroute. Die Nachweise liegen unter
+  `.superpowers/phase_3/`: `postfach-antwort-desktop.png`,
+  `postfach-antwort-390.png`, `postfach-antwort-erfolg-desktop.png` und
+  `postfach-antwort-unklar-390.png`. Desktop und 390-px-Ansicht haben keinen
+  seitlichen Seitenüberlauf; beim unklaren Ausgang bleiben Entwurf und
+  Hinweis sichtbar, aber Antwortfeld und Sendeknopf fehlen.
+- Für diesen Bau und seine Prüfung wurde keine echte E-Mail versendet und
+  kein Gmail-/Microsoft-Zugang eingerichtet oder gespeichert.
 
 ## Entscheidungen
 
@@ -90,11 +109,11 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
   bestehende empfangene Kampagnenmail antworten. Es gibt weiterhin keine
   direkte Gmail-/Microsoft-Verbindung, keinen freien Mailversand und keinen
   vollständigen Postfach-Abgleich.
-- Der freigegebene Entwurf und die spätere Umsetzung werden in Jira unter
-  `AP-201` geführt; der Eintrag steht während der Planung auf „Planning“.
+- Der Bau und sein Nachweis stehen in Jira unter `AP-201`; die Aufgabe ist
+  mit dem vollständigen Test- und Sichtnachweis als erledigt markiert.
 - Der testgetriebene Bauplan steht unter
-  `docs/superpowers/plans/2026-07-23-instantly-antworten.md`. Er ist vollständig
-  selbstgeprüft und wartet vor der Umsetzung auf die Freigabe des Nutzers.
+  `docs/superpowers/plans/2026-07-23-instantly-antworten.md` und wurde
+  vollständig umgesetzt.
 - Kampagnen-Einstellungen (Tageslimit, Sendefenster, Signatur und ähnliche
   Werte) werden nicht im Tool nachgebaut. Der Weg dafür ist der Link nach
   Instantly.
@@ -128,11 +147,7 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
 
 ## Nächste Schritte
 
-- Den Bauplan
-  `docs/superpowers/plans/2026-07-23-instantly-antworten.md`
-  nach Nutzerfreigabe umsetzen. Echte Testantworten brauchen weiterhin eine
-  neue ausdrückliche Freigabe.
-- Danach den CRM-Ausbau als eigenes Arbeitspaket entwerfen: zuerst Kontakte
+- Den CRM-Ausbau als eigenes Arbeitspaket entwerfen: zuerst Kontakte
   zuverlässig durch Verkaufsstufen führen.
 - Weitere Wholix-Bereiche bleiben gestrichen, solange die Scope-Entscheidungen
   nicht ausdrücklich geändert werden.

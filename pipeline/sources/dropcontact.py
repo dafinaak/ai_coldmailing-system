@@ -59,7 +59,12 @@ def _beste_email(email_liste: list):
 
 
 class DropcontactSource:
-    def __init__(self, api_key, session=None, wartezeit=5.0, max_abfragen=6):
+    # Standard-Abholfenster ~2 Minuten (12 x 10s): Im Messlauf vom 23.07.2026
+    # brauchte Dropcontact fuer 5 von 8 Auftraegen laenger als das alte
+    # Fenster von ~26s (6 x 5s) - die Firmen endeten faelschlich als Fehler,
+    # obwohl das Ergebnis nur noch nicht fertig war. Lieber laenger warten
+    # als eine bezahlte Anreicherung wegwerfen (Zuverlaessigkeit zuerst).
+    def __init__(self, api_key, session=None, wartezeit=10.0, max_abfragen=12):
         self.api_key = api_key
         self.session = session or requests.Session()
         self.wartezeit = wartezeit          # Sekunden zwischen den Abfragen

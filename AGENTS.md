@@ -1,5 +1,9 @@
 # Projekt-Regeln: AI Coldmailing System
 
+> These rules apply on top of the globally installed Agentic Workflow
+> core (four phases, the human decides, outward-impact brake). They
+> override it only where they explicitly say so.
+
 ## Zuverlässigkeit zuerst
 
 Zuverlässigkeit hat in diesem Projekt höchste Priorität — vor

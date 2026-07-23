@@ -119,6 +119,23 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
   Vergleichsbericht rechnet die Kombination beider Wege aus
   („Kaskade"-Abschnitt). Standard bleibt einstufig Hunter→Dropcontact,
   bis der Anbieter-Vergleich die Reihenfolge festlegt. 592 Tests grün.
+- Messlauf am 23.07.2026 mit echten Gratis-Konten über die 20 echten
+  Firmen (IT-Dienstleister Hannover, Liste vom 21.07.): Weg A (Prospeo)
+  6 geprüfte persönliche Mails, Weg B (Hunter→Dropcontact) 7; auf den
+  16 von beiden geprüften Firmen je 6 (37,5 %), Kombination 8 von 16
+  (50 %) — jeder Weg rettet Firmen, die der andere nicht kennt. Keine
+  fremden Domains. Vier Firmen blieben bei Weg A offen (Tageslimit des
+  Prospeo-Gratis-Kontos), bewusst nicht nachgezogen. Qualitäts-Vorbehalt:
+  einige Treffer tragen Titel wie „Product Owner"/„Director" (kein
+  Inhaber) — Handprüfung durch Leonard steht aus. Live-Funde behoben:
+  Prospeo-„NO_RESULTS" ist kein Fehler, Prospeo drosselt (~45 Suchen/Tag
+  frei), Dropcontact braucht bis ~2 Minuten Abholzeit, deutsche
+  Titelformen („Geschäftsführender Gesellschafter") und falsche Freunde
+  („Product Owner") im Rollen-Abgleich. Ergebnisse liegen unter
+  `laeufe/vergleich-anbieter/2026-07-23-prospeo-20-firmen-v2/`
+  (bericht.md mit Handprüfungs-Spalte). Echten Credit-Verbrauch in den
+  Anbieter-Dashboards gegenprüfen, bevor Preise je Kontakt gerechnet
+  werden.
 - Kontrollierter Live-Test am 23.07.2026: Das neue Antwortfeld sendete genau
   eine klar gekennzeichnete Testantwort über Instantly von
   `email@seo-poleposition.online` an das eigene Testkonto

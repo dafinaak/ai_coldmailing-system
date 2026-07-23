@@ -56,10 +56,16 @@ def create_app(daten_dir: Path) -> FastAPI:
     # (gewinnt in _hole_leser vor allem anderen, unveraendertes Muster).
     app.state.instantly_leser = None
     app.state._instantly_leser_lock = threading.Lock()
+    app.state.instantly_antworter = None
+    app.state._instantly_antworter_lock = threading.Lock()
     if os.environ.get("INSTANTLY_API_KEY"):
         from .instantly_leser import InstantlyLeser
+        from .instantly_antworter import InstantlyAntworter
 
         app.state.instantly_leser = InstantlyLeser(os.environ["INSTANTLY_API_KEY"])
+        app.state.instantly_antworter = InstantlyAntworter(
+            os.environ["INSTANTLY_API_KEY"]
+        )
 
     app.mount("/static", StaticFiles(directory=str(BASIS / "static")), name="static")
     templates = Jinja2Templates(directory=str(BASIS / "templates"))

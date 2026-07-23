@@ -25,8 +25,11 @@ def _frisch_importieren(monkeypatch):
 def test_web_main_mit_daten_dir_baut_app(tmp_path, monkeypatch):
     monkeypatch.setenv("WEB_SECRET", "test-geheimnis-nur-fuer-tests")
     monkeypatch.setenv("DATEN_DIR", str(tmp_path))
+    monkeypatch.delenv("INSTANTLY_API_KEY", raising=False)
     modul = _frisch_importieren(monkeypatch)
     assert isinstance(modul.app, FastAPI)
+    assert modul.app.state.instantly_antworter is None
+    assert modul.app.state._instantly_antworter_lock is not None
 
 
 def test_web_main_ohne_daten_dir_bricht_klar_ab(monkeypatch):

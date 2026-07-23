@@ -21,27 +21,31 @@ Nur schlank statt 1:1:
 
 - Kampagnen-Einstellungen im Tool ändern (37) — Link nach Instantly statt Nachbau
 - Text einzeln von Hand bearbeiten (40) — wir bleiben bei "neu erzeugen lassen"
+- Mail-Bereich (13–24) — nur Kampagnenverläufe lesen, über Instantly auf
+  bestehende empfangene Mails antworten und Instantly-Verbindungsprobleme
+  sichtbar machen. Kein vollständiges Gmail-/Microsoft-Postfach.
 
-Bleibt voll im Scope (Aussehen wie Wholix): alles Übrige, inklusive dem
-CRM mit Verkaufs-Stufen (11, 12) und dem vollen Mail-Programm (13–24, über
-Weg A — siehe Abschnitt 2). Von 43 Funktionen sind damit 9 gestrichen,
-34 bleiben.
+Bleibt voll im Scope (Aussehen wie Wholix): der bisherige Kampagnen- und
+Freigabebereich sowie das CRM mit Verkaufs-Stufen (9–12, 26, 27). Die
+Inventur unten bleibt als Vergleich mit Wholix vollständig; gebaut wird nur,
+was die Scope-Entscheidungen in diesem Abschnitt vorsehen.
 
-**Klarstellung vom 23.07.2026:** Das Gmail-Testkonto ist nur für sichere
-Testmails gedacht. Es soll nicht dauerhaft mit dem Tool verbunden werden.
-Eine direkte Gmail-Anmeldung, gespeicherte Google-Zugänge und ein dauerhafter
-Mail-Abgleich sind damit vorerst nicht freigegeben. Der Umfang von Phase 3
-muss deshalb vor dem Bau neu festgelegt werden; die bisher beschriebene
-Google-/Microsoft-Anbindung startet nicht.
+**Entscheidung vom 23.07.2026:** Das Gmail-Testkonto ist nur für sichere
+Testmails gedacht. Es wird nicht dauerhaft mit dem Tool verbunden. Eine
+direkte Gmail-Anmeldung, gespeicherte Google-Zugänge und ein dauerhafter
+Mail-Abgleich werden nicht gebaut. Phase 3 wird auf das Instantly-
+Kampagnenpostfach verkleinert: Gespräche lesen und über den offiziellen
+Instantly-Endpunkt auf eine bestehende empfangene Mail antworten. Freier
+Mailversand und ein vollständiges Postfach bleiben außerhalb des Umfangs.
 
 ---
 
 
-**Auftrag:** Unser Tool soll eine vollständige Kopie von Wholix werden — gleiche
-Bereiche, gleiche Funktionen. Dieses Dokument listet ALLES auf, was Wholix kann,
-markiert bei jedem Punkt, wie weit wir schon sind, und macht daraus einen
-Baufahrplan. Die Grundsatz-Entscheidung (Kopie ja) steht fest und wird hier
-nicht neu aufgemacht.
+**Auftrag:** Unser Tool übernimmt die für das Team sinnvollen Wholix-Bereiche
+in gleicher Gestaltung und Bedienlogik. Dieses Dokument listet zum Vergleich
+weiterhin ALLES auf, was Wholix kann, markiert bei jedem Punkt den aktuellen
+Stand und macht daraus einen Baufahrplan. Die Scope-Entscheidungen oben legen
+verbindlich fest, welche Teile bewusst nicht oder nur schlank gebaut werden.
 
 **Quellen:**
 
@@ -171,61 +175,30 @@ Jede Zeile ist eine Funktion von Wholix. Drei mögliche Stände:
 
 Kurz gesagt: Kampagnen, Freigabe und Sperrliste — also der Kern, mit dem das
 Team heute arbeitet — sind bei uns schon gut abgedeckt, teils strenger als bei
-Wholix. Was großflächig fehlt, sind drei Blöcke: das eingebaute
-**Mail-Programm** (Nr. 13–24), das **CRM drumherum** (Kontakte mit Stufen,
-Leads bearbeiten, Notizen, Anrufe, AI-Chat) und der **Rahmen** (Arbeitsbereiche,
-Benutzerverwaltung).
+Wholix. Es fehlen noch die vereinbarte Antwortfunktion im schlanken
+Instantly-Postfach und das **CRM** mit Kontaktbearbeitung, Verkaufs-Stufen
+und Kartenansicht. Die übrigen Wholix-Bereiche sind laut Scope-Entscheidung
+bewusst gestrichen.
 
 ---
 
-## 2. Die eine große Architektur-Frage
+## 2. Architektur-Entscheidung für den Mail-Bereich
 
-Bevor der Fahrplan losgehen kann, braucht es eine Entscheidung. Hier ist sie,
-so einfach wie möglich erklärt.
+Die frühere Frage zwischen direkter Postfach-Anbindung und einem vollständigen
+Ersatz von Instantly ist am 23.07.2026 entschieden worden: **Beides wird nicht
+gebaut.**
 
-**Was der Netzwerk-Mitschnitt zeigt:** Wholix ist im E-Mail-Bereich ein
-echtes, eigenes Mail-Programm. Es meldet sich mit einer Google-/
-Microsoft-Anmeldung direkt am Postfach an, lädt alle Ordner und alle Mails auf
-den eigenen Server und zeigt sie von dort an. Deshalb kann Wholix Entwürfe,
-Junk, Papierkorb, Suche, Markierungen und „neue Mail schreiben" — es sieht
-das komplette Postfach, nicht nur den Kampagnen-Verkehr.
+Instantly bleibt der einzige Mail-Zugang und der unsichtbare Versand-Motor.
+Unser Tool liest daraus ausschließlich Kampagnenverläufe und darf über den
+offiziellen Instantly-Endpunkt auf eine bestehende empfangene Mail antworten.
+Damit kann das Team die tägliche Antwortarbeit im eigenen Werkzeug erledigen,
+ohne dass wir Gmail-/Microsoft-Zugänge speichern oder eine zweite Mailtechnik
+betreiben.
 
-**Wie unser Tool heute arbeitet:** Wir lesen über Instantly. Instantly zeigt
-uns aber nur, was mit Kampagnen zu tun hat — versendete Kampagnen-Mails und
-eingegangene Antworten darauf. Ordner, Entwürfe, Junk, beliebige alte Mails:
-davon weiß Instantly nichts. **Ein 1:1-Nachbau des Wholix-Postfachs ist über
-Instantly allein nicht möglich.** Wir müssen uns, wie Wholix, direkt mit den
-Postfächern verbinden.
-
-Damit gibt es zwei Wege:
-
-**Weg A — Mischbetrieb (direkt lesen, Instantly sendet weiter):**
-Wir verbinden dieselben Postfächer zusätzlich direkt mit unserem Tool (die
-Google-/Microsoft-Anmeldung, die man einmal pro Postfach durchklickt). Das
-Tool liest dann das komplette Postfach und kann auch antworten, weiterleiten
-und neue Mails schreiben. Der Kampagnen-Versand samt Anwärmen bleibt bei
-Instantly — das läuft, ist bezahlt, und das Anwärmen selbst nachzubauen wäre
-ein eigenes Großprojekt. Beides verträgt sich: ein Postfach kann gleichzeitig
-mit Instantly und mit unserem Tool verbunden sein.
-
-**Weg B — alles direkt (Instantly ganz ersetzen):**
-Wir bauen zusätzlich den Versand selbst: Warteschlange, Tages-Limits,
-Sendefenster, Anwärmen, Zustellbarkeits-Pflege. Das ist genau der Teil, bei
-dem man am meisten kaputt machen kann (Postfach-Ruf, Spam-Ordner), und er
-ersetzt etwas, das heute funktioniert und bezahlt ist. Wholix selbst macht
-zwar alles in einem Haus — aber wir müssen das nicht am ersten Tag, um für
-das Team 1:1 auszusehen und sich 1:1 zu bedienen.
-
-**Meine Empfehlung: Weg A.** Damit erreichen wir die volle Wholix-Oberfläche
-(inklusive komplettem Postfach) und behalten den erprobten Versandmotor.
-Weg B bleibt später möglich, ohne dass etwas aus Weg A weggeworfen wird —
-das direkte Postfach-Lesen braucht man in beiden Fällen.
-
-**Die Frage an dich, in einem Satz:** Sollen wir die Postfächer direkt mit
-unserem Tool verbinden, damit das volle Mail-Programm nachgebaut werden kann,
-während Instantly weiter den Kampagnen-Versand und das Anwärmen macht (Weg A) —
-oder sollen wir auch den Versand selbst bauen und Instantly ganz ablösen
-(Weg B)?
+Die Grenze bleibt bewusst sichtbar: Ordner, Entwürfe, Junk, beliebige alte
+Mails, freie neue Mails und Postfach-Suche gehören nicht zum System. Der
+verbindliche Entwurf für die einzige neue Schreibfunktion steht in
+`docs/superpowers/specs/2026-07-23-instantly-antworten-design.md`.
 
 ---
 
@@ -295,25 +268,23 @@ E-Mail versendet und keine Instantly-Schreibschnittstelle benutzt.
 | Suche, Filter, Mehrfach-Auswahl (Nr. 41) | S | **Gebaut.** Suche, Statusfilter und Sammelaktionen bleiben auf eine Runde begrenzt |
 | Sperrliste: Grund/Kommentar-Felder + Platzhalter-Sperren (Nr. 43) | S | **Gebaut.** Einschließlich Bearbeiten, Entfernen, Überschneidungsprüfung und alten Einträgen |
 
-### Phase 3 — Das Mail-Programm (der größte Brocken; braucht die Entscheidung aus Abschnitt 2)
+### Phase 3 — Schlankes Instantly-Postfach
 
 **Stand 23.07.2026:** Der vorhandene Instantly-Postfachbereich wurde mit
 genau einer Testmail und einer Testantwort end-to-end bewiesen. Gmail war
 dabei nur das Testziel und wurde nicht an das Tool angebunden. Versand,
 Antwortabruf und die sichtbare Konversation liefen über Instantly; die
-Testkampagne ist pausiert. Die direkte Google-/Microsoft-Anbindung bleibt
-gemäß der Klarstellung oben gestoppt. Vor weiterem Bau wird entschieden, ob
-der schlanke Instantly-Postfachbereich genügt und Phase 3 entsprechend
-verkleinert wird.
+Testkampagne ist pausiert. Phase 3 ist nun verbindlich verkleinert: Der
+vorhandene Verlauf bleibt und erhält als einzige neue Schreibfunktion das
+Antworten auf eine bestehende empfangene Instantly-Mail. Die direkte
+Google-/Microsoft-Anbindung und das vollständige Mailprogramm entfallen.
 
 | Baustein | Größe | Was es heißt |
 |---|---|---|
-| Postfächer direkt verbinden (Google-/Microsoft-Anmeldung) + Status (Nr. 22) | M | Einmal pro Postfach durchklicken; Tool merkt sich den Zugang und zeigt, ob er noch gültig ist |
-| Ordner + Mails abgleichen und speichern (Nr. 13, 23) | L | Das Herzstück: alle Ordner und Mails vom Postfach auf unseren Server laden, laufend aktuell halten |
-| Mail-Liste + Konversations-Ansicht + Suche + Markierungen (Nr. 15, 19, 20) | M | Die eigentliche Posteingangs-Ansicht wie bei Wholix |
-| Antworten / Weiterleiten / Verfassen + Signaturen (Nr. 17, 18, 21) | M | Erst mit Test-Postfach und Test-Empfängern beweisen, dann echt |
-| Einheits-Posteingang + Postfach-Wechsel (Nr. 14) | S | Alle Postfächer zusammen oder einzeln |
-| „Neu verbinden"-Knopf bei Postfach-Problemen (Nr. 24) | S | |
+| Kampagnenverläufe zusammenführen und lesen (Nr. 14–16) | S | **Gebaut und live bewiesen.** Alle sichtbaren Instantly-Kampagnengespräche stehen chronologisch im eigenen Postfach |
+| Auf eine bestehende empfangene Mail antworten (Teil von Nr. 17) | S | **Entwurf freigegeben.** Versand ausschließlich über den offiziellen Instantly-Antwort-Endpunkt, mit Schutz vor falschem und doppeltem Versand |
+| Verbindungsprobleme sichtbar machen (Teil von Nr. 22, 24) | S | **Gebaut.** Status und Warnung kommen aus Instantly; Reparatur bleibt über den Link nach Instantly |
+| Vollständiges Mailprogramm (Nr. 13, 18–23 und übrige Teile von 14, 15, 17, 24) | — | **Nicht im Scope.** Keine direkte Gmail-/Microsoft-Verbindung, keine Ordner, freien Mails, Suche, Markierungen, Signaturen oder eigene Reparatur |
 
 ### Phase 4 — CRM-Ausbau
 
@@ -321,26 +292,12 @@ verkleinert wird.
 |---|---|---|
 | Leads-Tabelle: mehr Spalten, bearbeiten, anlegen (Nr. 26, 27) | M | Aus unserer Lese-Tabelle eine echte Arbeits-Tabelle machen |
 | Kontakte mit Pipelines und Stufen + Karten-Ansicht (Nr. 10, 11, 12) | L | New Lead → Demo → … → Won/Lost, eigene Pipelines, Karten verschieben |
-| Notizen (Nr. 28) | S | |
-| Anrufe (Nr. 25) | M | Umfang bei Wholix unklar (im Mitschnitt nicht erfasst) — vor dem Bau kurz im Wholix-Konto ansehen |
-
-### Phase 5 — Rahmen und Extras
-
-| Baustein | Größe | Was es heißt |
-|---|---|---|
-| Benutzerverwaltung mit Einladungen (Nr. 3) | M | Eigene Zugänge je Kollege — auch Voraussetzung für „wer hat was freigegeben" mit echten Namen |
-| Zwei-Faktor-Anmeldung (Nr. 4) | S | |
-| Arbeitsbereiche (Nr. 2) | M | Mehrere getrennte Bereiche (z.B. je Kunde) in einem Konto |
-| Dunkel-Ansicht, Benachrichtigungs-Glocke, Hilfe-Knopf (Nr. 5, 6, 7) | S | |
-| AI-Chat (Nr. 8) | L | Mit der KI über Kontakte/Kampagnen reden; Umfang bei Wholix vorher im Konto ansehen |
 
 ### Reihenfolge-Logik, kurz
 
 Phase 1 und 2 machen die Bereiche fertig, in denen das Team heute schon
-arbeitet — schnellster sichtbarer Fortschritt, kein Risiko. Phase 3 ist der
-größte und wichtigste Brocken (das halbe Wholix hängt am Mail-Programm) und
-startet, sobald die Frage aus Abschnitt 2 entschieden ist. Phase 4 und 5
-machen die Kopie komplett. Bei Anrufen, Notizen und AI-Chat lohnt vor dem Bau
-ein kurzer Blick ins laufende Wholix-Konto (und ein zweiter
-Netzwerk-Mitschnitt dieser Bereiche), weil der vorhandene Mitschnitt sie
-nicht abdeckt.
+arbeitet — schnellster sichtbarer Fortschritt, kein Risiko. Phase 3 ergänzt
+nur noch die klar begrenzte Instantly-Antwortfunktion. Danach folgt Phase 4:
+Kontakte bearbeiten und zuverlässig durch Verkaufs-Stufen führen. Weitere
+Wholix-Bereiche werden nicht gebaut, solange die Scope-Entscheidungen oben
+nicht ausdrücklich geändert werden.

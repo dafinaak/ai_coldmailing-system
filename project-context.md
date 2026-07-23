@@ -85,6 +85,13 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
 - Der erfolgreiche End-to-End-Test ändert daran nichts: Gmail war nur
   Empfänger und Absender der manuellen Testantwort. Unser Tool erhielt keinen
   Gmail-Zugang; Versand und Antwortabruf liefen ausschließlich über Instantly.
+- Am 23.07.2026 wurde der verkleinerte Umfang von Phase 3 festgelegt:
+  Das interne Postfach darf über den offiziellen Instantly-Endpunkt auf eine
+  bestehende empfangene Kampagnenmail antworten. Es gibt weiterhin keine
+  direkte Gmail-/Microsoft-Verbindung, keinen freien Mailversand und keinen
+  vollständigen Postfach-Abgleich.
+- Der freigegebene Entwurf und die spätere Umsetzung werden in Jira unter
+  `AP-201` geführt; der Eintrag steht während der Planung auf „Planning“.
 - Kampagnen-Einstellungen (Tageslimit, Sendefenster, Signatur und ähnliche
   Werte) werden nicht im Tool nachgebaut. Der Weg dafür ist der Link nach
   Instantly.
@@ -118,13 +125,13 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
 
 ## Nächste Schritte
 
-- Vor Phase 3 den Postfach-Umfang neu festlegen: Das Test-Gmail darf für
-  Testmails verwendet werden, aber nicht dauerhaft an das Tool angebunden
-  werden. Die bisher geplante direkte Google-/Microsoft-Verbindung startet
-  daher nicht.
-- Als schlanke Alternative prüfen: den vorhandenen, nun live bewiesenen
-  Instantly-Postfachbereich für Kampagnenantworten beibehalten und danach den
-  CRM-Ausbau beginnen.
-- Danach bleiben CRM-Rand und die noch offenen Wholix-Funktionen laut Roadmap.
+- Den freigegebenen Entwurf
+  `docs/superpowers/specs/2026-07-23-instantly-antworten-design.md`
+  in einen testgetriebenen Bauplan überführen und umsetzen. Echte Testantworten
+  brauchen weiterhin eine neue ausdrückliche Freigabe.
+- Danach den CRM-Ausbau als eigenes Arbeitspaket entwerfen: zuerst Kontakte
+  zuverlässig durch Verkaufsstufen führen.
+- Weitere Wholix-Bereiche bleiben gestrichen, solange die Scope-Entscheidungen
+  nicht ausdrücklich geändert werden.
 - Schreibende Versand- oder Postfachprüfungen nur mit ausdrücklicher
   Freigabe und Testkonten.

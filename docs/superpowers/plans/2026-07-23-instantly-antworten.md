@@ -788,7 +788,7 @@ def _bereite_antwortfall_vor(
 
 Die Testdatei importiert dafür `re` sowie
 `parse_qs`/`urlparse`, `erstelle_versandhinweis`,
-`pruefe_versandhinweis`,
+`pruefe_versandhinweis`, `erstelle_antwort_freigabe`,
 `InstantlyAntwortAbgelehnt` und `InstantlyAntwortStatusUnklar`.
 
 - [ ] **Schritt 2: Erfolgsweg als roten Routentest schreiben**
@@ -801,8 +801,11 @@ def test_antwort_wird_genau_einmal_aus_belegten_instantly_daten_gesendet(
         angemeldeter_client, daten_dir
     )
 
-    seite = angemeldeter_client.get("/postfach?kontakt=anna@firma.de")
-    token = _antwort_token(seite.text)
+    token = erstelle_antwort_freigabe(
+        angemeldeter_client.app.state.serializer,
+        kontakt="anna@firma.de",
+        reply_to_uuid="mail-1",
+    )
     antwort = angemeldeter_client.post(
         "/postfach/antworten",
         data={
@@ -854,8 +857,11 @@ def test_ungueltiger_text_sendet_nichts(
     _, antworter = _bereite_antwortfall_vor(
         angemeldeter_client, daten_dir
     )
-    seite = angemeldeter_client.get("/postfach?kontakt=anna@firma.de")
-    token = _antwort_token(seite.text)
+    token = erstelle_antwort_freigabe(
+        angemeldeter_client.app.state.serializer,
+        kontakt="anna@firma.de",
+        reply_to_uuid="mail-1",
+    )
     antwort = angemeldeter_client.post(
         "/postfach/antworten",
         data={
@@ -877,8 +883,11 @@ def test_kontakt_oder_token_manipulation_sendet_nichts(
     _, antworter = _bereite_antwortfall_vor(
         angemeldeter_client, daten_dir
     )
-    seite = angemeldeter_client.get("/postfach?kontakt=anna@firma.de")
-    token = _antwort_token(seite.text)
+    token = erstelle_antwort_freigabe(
+        angemeldeter_client.app.state.serializer,
+        kontakt="anna@firma.de",
+        reply_to_uuid="mail-1",
+    )
     antwort = angemeldeter_client.post(
         "/postfach/antworten",
         data={
@@ -917,8 +926,11 @@ def test_fehlerzustand_bleibt_ehrlich_und_text_bleibt_sichtbar(
     _, antworter = _bereite_antwortfall_vor(
         angemeldeter_client, daten_dir, fehler=fehler
     )
-    seite = angemeldeter_client.get("/postfach?kontakt=anna@firma.de")
-    token = _antwort_token(seite.text)
+    token = erstelle_antwort_freigabe(
+        angemeldeter_client.app.state.serializer,
+        kontakt="anna@firma.de",
+        reply_to_uuid="mail-1",
+    )
     antwort = angemeldeter_client.post(
         "/postfach/antworten",
         data={

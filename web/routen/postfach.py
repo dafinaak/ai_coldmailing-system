@@ -1,29 +1,34 @@
-"""Route fuer den Postfach-Bereich (Task 9): rein lesende Sicht auf
-Konversationen aus Instantly, gruppiert nach Kontakt. EIN Screen (wie in
-docs/design/Poleposition-v4.dc.html, istPostfach-Block: Liste links,
-gewaehlte Konversation rechts, KEIN eigener Detail-Screen) - die Auswahl
-laeuft ueber den Query-Parameter "kontakt" statt client-seitigem State,
-weil dieses Interface serverseitig rendert (siehe Plan Task 9: nur EIN
-Template `postfach.html`, anders als Kampagnen mit zwei Templates).
+"""Postfach: Instantly-Konversationen lesen und sicher darauf antworten.
 
-Instantly ist ueber request.app.state.instantly_leser fakebar - gleiches
-Muster wie web.routen.kampagnen/freigabe. EIN Abruf je Seitenaufruf
-(InstantlyLeser.emails_stand, 60s-Cache) speist sowohl die
-Konversationsliste (instantly_leser.konversationen_aus_email_stand, reine
-Aufbereitung ohne Netzwerk) als auch den ehrlichen "Live-Stand gerade
-nicht erreichbar"-Hinweis (web.routen.kampagnen._live_stand_hinweis,
-wiederverwendet statt dupliziert - exakt das Muster aus
-web.routen.dashboard). Kampagnen-IDs kommen aus
-web.routen.kampagnen._alle_laeufe (Quelle der Wahrheit: lokale
-Laufordner, kein eigener Weg, Kampagnen zu finden).
-
-Kein Antwortfeld, keine POST-Route - der Bereich ist bewusst rein lesend
-(Plan Task 9: "Read-only: no POST routes, no reply field")."""
+Die Auswahl bleibt serverseitig über ``kontakt``. Eine Antwort ist nur auf
+eine tatsächlich gelesene, eingegangene Instantly-Mail möglich. Ein kurz
+gültiger, signierter und atomar nur einmal nutzbarer Beleg bindet den
+Versand an Kontakt und Mail-ID.
+"""
 from __future__ import annotations
 
-from fastapi import APIRouter, Request
+from urllib.parse import urlencode
+
+from fastapi import APIRouter, Form, Request
+from fastapi.responses import RedirectResponse
 
 from web import auth
+from web.antwort_freigabe import (
+    AntwortFreigabeBenutzt,
+    AntwortFreigabeUngueltig,
+    AntwortTextUngueltig,
+    erstelle_antwort_freigabe,
+    erstelle_versandhinweis,
+    pruefe_antwort_freigabe,
+    pruefe_versandhinweis,
+    validiere_antworttext,
+    verbrauche_antwort_freigabe,
+)
+from web.instantly_antworter import (
+    InstantlyAntwortAbgelehnt,
+    InstantlyAntwortStatusUnklar,
+    geteilten_antworter,
+)
 from web.instantly_leser import konversationen_aus_email_stand
 from web.kontakte import sammle_kontakte
 from web.nav import nav_kontext
@@ -32,8 +37,9 @@ from web.routen import kampagnen as kampagnen_routen
 router = APIRouter()
 
 # Wortwoertlich aus der v4-Vorlage (istPostfach-Block) - Kopfsatz der Seite.
-POSTFACH_HINWEIS = ("Alle Gespräche an einem Ort: unsere Mails und die Antworten darauf. "
-                     "Antworten schreibst du in Instantly.")
+POSTFACH_HINWEIS = (
+    "Alle Gespräche an einem Ort: unsere Mails und die Antworten darauf."
+)
 
 # Plan Task 9 (woertlich aus dem Aufgabenbrief): ehrlicher Hinweis statt
 # stiller Leere, wenn Instantly erreichbar ist, aber (noch) keine einzige
@@ -118,14 +124,34 @@ def _nachrichten_zeilen(nachrichten: list[dict], kontakt_name: str) -> list[dict
     ]
 
 
-@router.get("/postfach")
-# Bewusst KEIN `async def` - IMPORTANT Review-Fund: _hole_leser(request).
-# emails_stand(...) ist ein synchroner, blockierender HTTP-Aufruf (siehe
-# web.instantly_leser). Als Koroutine wuerde das den Event-Loop fuer ALLE
-# gleichzeitigen Nutzer blockieren (gleicher Grund wie
-# web/routen/auftraege.py). Als normale `def`-Funktion fuehrt FastAPI die
-# Route stattdessen in einem Threadpool aus.
-def postfach(request: Request):
+def _antwortziel(
+    konversation: dict | None, reply_to_uuid: str | None = None
+) -> dict | None:
+    """Findet nur eine belegte, eingegangene Instantly-Mail als Ziel."""
+    if not konversation:
+        return None
+    for nachricht in reversed(konversation["nachrichten"]):
+        if nachricht.get("richtung") != "empfangen":
+            continue
+        if reply_to_uuid is not None and nachricht.get("id") != reply_to_uuid:
+            continue
+        if all(
+            isinstance(nachricht.get(feld), str)
+            and bool(nachricht[feld].strip())
+            for feld in ("id", "eaccount", "campaign_id")
+        ):
+            return nachricht
+    return None
+
+
+def _antwort_betreff(betreff: str) -> str:
+    bereinigt = (betreff or "").strip()
+    if bereinigt.casefold().startswith("re:"):
+        return bereinigt
+    return f"Re: {bereinigt or '(ohne Betreff)'}"
+
+
+def _lade_postfach(request: Request, gewuenscht: str | None = None):
     daten_dir = request.app.state.daten_dir
     laeufe = kampagnen_routen._alle_laeufe(daten_dir)
     campaign_ids = sorted({l["campaign_id"] for l in laeufe if l["campaign_id"]})
@@ -135,10 +161,34 @@ def postfach(request: Request):
     konversationen = konversationen_aus_email_stand(stand_by_id)
     live_stand_hinweis = kampagnen_routen._live_stand_hinweis(list(stand_by_id.values()))
 
-    gewuenscht = (request.query_params.get("kontakt") or "").strip().lower()
+    if gewuenscht is None:
+        gewuenscht = request.query_params.get("kontakt") or ""
+    gewuenscht = gewuenscht.strip().casefold()
     treffer = next((k for k in konversationen if k["kontakt_email"] == gewuenscht), None)
     ausgewaehlt = treffer or (konversationen[0] if konversationen else None)
+    return (
+        daten_dir,
+        campaign_ids,
+        leser,
+        konversationen,
+        live_stand_hinweis,
+        ausgewaehlt,
+    )
 
+
+def _render_postfach(
+    request: Request,
+    *,
+    daten_dir,
+    campaign_ids,
+    konversationen,
+    live_stand_hinweis,
+    ausgewaehlt,
+    status_code: int = 200,
+    antwort_text: str = "",
+    antwort_fehler: str | None = None,
+    antwort_unsicher: bool = False,
+):
     kontakt_info = _kontakt_info_je_email(daten_dir)
     zeilen = _konversations_zeilen(
         konversationen, kontakt_info, ausgewaehlt["kontakt_email"] if ausgewaehlt else None)
@@ -155,6 +205,23 @@ def postfach(request: Request):
             "letzte_zeit": _format_zeit(ausgewaehlt["letzte_zeit"]),
             "nachrichten": _nachrichten_zeilen(ausgewaehlt["nachrichten"], kontakt_name),
         }
+        ziel = _antwortziel(ausgewaehlt)
+        if ziel is not None and not antwort_unsicher:
+            detail["antwort"] = {
+                "konto": ziel["eaccount"],
+                "token": erstelle_antwort_freigabe(
+                    request.app.state.serializer,
+                    kontakt=ausgewaehlt["kontakt_email"],
+                    reply_to_uuid=ziel["id"],
+                ),
+            }
+
+    kontakt = ausgewaehlt["kontakt_email"] if ausgewaehlt else ""
+    antwort_erfolg = pruefe_versandhinweis(
+        request.app.state.serializer,
+        request.query_params.get("versand") or "",
+        kontakt=kontakt,
+    )
 
     return request.app.state.templates.TemplateResponse(
         request, "postfach.html",
@@ -177,5 +244,140 @@ def postfach(request: Request):
             "detail": detail,
             "instantly_link": INSTANTLY_LINK,
             "instantly_knopf_text": INSTANTLY_KNOPF_TEXT,
+            "antwort_text": antwort_text,
+            "antwort_fehler": antwort_fehler,
+            "antwort_unsicher": antwort_unsicher,
+            "antwort_erfolg": antwort_erfolg,
         },
+        status_code=status_code,
     )
+
+
+@router.get("/postfach")
+# Der Instantly-Abruf ist synchron und läuft deshalb im FastAPI-Threadpool.
+def postfach(request: Request):
+    (
+        daten_dir,
+        campaign_ids,
+        _,
+        konversationen,
+        live_stand_hinweis,
+        ausgewaehlt,
+    ) = _lade_postfach(request)
+    return _render_postfach(
+        request,
+        daten_dir=daten_dir,
+        campaign_ids=campaign_ids,
+        konversationen=konversationen,
+        live_stand_hinweis=live_stand_hinweis,
+        ausgewaehlt=ausgewaehlt,
+    )
+
+
+@router.post("/postfach/antworten")
+def postfach_antworten(
+    request: Request,
+    kontakt: str = Form(...),
+    antwort_token: str = Form(...),
+    antwort_text: str = Form(""),
+):
+    kontakt = kontakt.strip().casefold()
+    (
+        daten_dir,
+        campaign_ids,
+        leser,
+        konversationen,
+        live_stand_hinweis,
+        ausgewaehlt,
+    ) = _lade_postfach(request, kontakt)
+
+    def fehler_anzeigen(
+        meldung: str, status_code: int, *, text: str = "", unsicher: bool = False
+    ):
+        return _render_postfach(
+            request,
+            daten_dir=daten_dir,
+            campaign_ids=campaign_ids,
+            konversationen=konversationen,
+            live_stand_hinweis=live_stand_hinweis,
+            ausgewaehlt=ausgewaehlt,
+            status_code=status_code,
+            antwort_text=text,
+            antwort_fehler=meldung,
+            antwort_unsicher=unsicher,
+        )
+
+    try:
+        text = validiere_antworttext(antwort_text)
+        freigabe = pruefe_antwort_freigabe(
+            request.app.state.serializer, antwort_token
+        )
+    except (AntwortTextUngueltig, AntwortFreigabeUngueltig) as fehler:
+        return fehler_anzeigen(str(fehler), 400, text=antwort_text)
+
+    if freigabe["kontakt"] != kontakt:
+        return fehler_anzeigen(
+            "Kontakt und Antwortfreigabe passen nicht zusammen.",
+            400,
+            text=antwort_text,
+        )
+    ziel = _antwortziel(ausgewaehlt, freigabe["reply_to_uuid"])
+    if (
+        ziel is None
+        or ausgewaehlt is None
+        or ausgewaehlt["kontakt_email"] != kontakt
+    ):
+        return fehler_anzeigen(
+            "Das belegte Antwortziel wurde nicht gefunden.",
+            400,
+            text=antwort_text,
+        )
+
+    # Die Konfiguration wird vor dem einmaligen Verbrauch geprüft. Danach
+    # gibt es genau einen Versandversuch und bewusst keine Wiederholung.
+    try:
+        antworter = geteilten_antworter(request.app)
+    except RuntimeError:
+        return fehler_anzeigen(
+            "Instantly ist für Antworten noch nicht eingerichtet.",
+            503,
+            text=antwort_text,
+        )
+    try:
+        verbrauche_antwort_freigabe(daten_dir, freigabe["nonce"])
+    except AntwortFreigabeBenutzt as fehler:
+        return fehler_anzeigen(str(fehler), 409, text=antwort_text)
+
+    try:
+        versand = antworter.antworten(
+            eaccount=ziel["eaccount"],
+            reply_to_uuid=ziel["id"],
+            betreff=_antwort_betreff(ziel.get("betreff", "")),
+            text=text,
+        )
+    except InstantlyAntwortAbgelehnt:
+        return fehler_anzeigen(
+            "Instantly hat die Antwort nicht angenommen. "
+            "Es wurde kein erfolgreicher Versand bestätigt.",
+            502,
+            text=antwort_text,
+        )
+    except InstantlyAntwortStatusUnklar:
+        return fehler_anzeigen(
+            "Der Versandstatus ist unklar. Bitte prüfe den Verlauf in "
+            "Instantly, bevor du erneut sendest.",
+            502,
+            text=antwort_text,
+            unsicher=True,
+        )
+
+    leser.verwerfe_email_cache(ziel["campaign_id"])
+    versandhinweis = erstelle_versandhinweis(
+        request.app.state.serializer,
+        kontakt=kontakt,
+        antwort_id=str(versand["id"]),
+    )
+    ziel_url = "/postfach?" + urlencode(
+        {"kontakt": kontakt, "versand": versandhinweis}
+    )
+    return RedirectResponse(ziel_url, status_code=303)

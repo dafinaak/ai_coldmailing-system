@@ -95,15 +95,18 @@ BASIS = "https://api.instantly.ai/api/v2"
 class InstantlySender:
     def __init__(self, api_key, session=None):
         self.session = session or requests.Session()
-        self.headers = {"Authorization": f"Bearer {api_key}",
-                        "Content-Type": "application/json"}
+        self.headers = {"Authorization": f"Bearer {api_key}"}
 
     def _post(self, url, payload):
         """Postet und scheitert laut statt leise (wie apollo.py, aber ohne
         Wiederholung: ein fehlgeschlagenes Kampagnen-Setup soll den Lauf
         sofort stoppen statt mit unvollstaendigen Daten weiterzumachen -
         der Mensch behebt die Ursache und startet "senden" danach neu)."""
-        antwort = self.session.post(url, headers=self.headers, json=payload, timeout=60)
+        if payload is None:
+            antwort = self.session.post(url, headers=self.headers, timeout=60)
+        else:
+            headers = {**self.headers, "Content-Type": "application/json"}
+            antwort = self.session.post(url, headers=headers, json=payload, timeout=60)
         if antwort.status_code >= 400:
             ausschnitt = (getattr(antwort, "text", "") or "")[:200]
             raise RuntimeError(

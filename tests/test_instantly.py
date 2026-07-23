@@ -92,6 +92,26 @@ class _FakeSessionMitURL:
         return self.antworten.pop(0)
 
 
+class _FakeSessionRequestSpy:
+    def __init__(self, antwort):
+        self.antwort, self.aufrufe = antwort, []
+
+    def post(self, url, **kwargs):
+        self.aufrufe.append((url, kwargs))
+        return self.antwort
+
+
+def test_aktivieren_sendet_weder_json_body_noch_json_content_type():
+    session = _FakeSessionRequestSpy(
+        FakeResponse(200, {"id": "camp-1", "status": 1})
+    )
+    InstantlySender("key", session=session).aktiviere_kampagne("camp-1")
+
+    _, kwargs = session.aufrufe[0]
+    assert "json" not in kwargs
+    assert kwargs["headers"] == {"Authorization": "Bearer key"}
+
+
 def test_aktiviert_kampagne_ruft_activate_endpunkt_ohne_body_auf():
     session = _FakeSessionMitURL([FakeResponse(200, {"id": "camp-1", "status": 1})])
     sender = InstantlySender("key", session=session)

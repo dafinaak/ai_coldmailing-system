@@ -56,6 +56,19 @@ def _int_oder_none(wert) -> int | None:
         return None
 
 
+def _schritt_von_api(wert) -> str | None:
+    """Versteht alte 1-basierte Werte und das live gelieferte 0_1_0-Format."""
+    nummer = _int_oder_none(wert)
+    if nummer in SCHRITT_VON_API:
+        return SCHRITT_VON_API[nummer]
+    if not isinstance(wert, str):
+        return None
+    teile = wert.strip().split("_")
+    if len(teile) != 3 or teile[0] != "0" or not all(t.isdigit() for t in teile):
+        return None
+    return SCHRITT_VON_API.get(int(teile[1]) + 1)
+
+
 def _zeit_oder_none(wert) -> tuple[datetime, str] | None:
     if not isinstance(wert, str) or not wert.strip():
         return None
@@ -122,8 +135,7 @@ def freigabe_anzeige(leads: list[dict], emails: list[dict]) -> dict[str, dict]:
         eintrag = ergebnis.setdefault(email, _leerer_empfaenger(lead_present=False))
 
         typ = _int_oder_none(email_objekt.get("ue_type"))
-        schritt_nummer = _int_oder_none(email_objekt.get("step"))
-        schritt = SCHRITT_VON_API.get(schritt_nummer)
+        schritt = _schritt_von_api(email_objekt.get("step"))
         zeit = _zeit_oder_none(email_objekt.get("timestamp_email"))
         if typ in GESENDET_TYPEN and schritt and zeit:
             key = (email, schritt)

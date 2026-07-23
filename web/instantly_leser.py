@@ -573,7 +573,9 @@ class InstantlyLeser:
 
     def _freigabe_hole_frisch(self, campaign_id: str) -> dict[str, dict]:
         def leads_abrufen(cursor):
-            daten = {"campaign_id": campaign_id, "limit": 100}
+            # Instantly unterscheidet hier zwei ähnlich benannte Felder:
+            # /leads/add erwartet campaign_id, /leads/list dagegen campaign.
+            daten = {"campaign": campaign_id, "limit": 100}
             if cursor is not None:
                 daten["starting_after"] = cursor
             return self._post("/leads/list", daten)

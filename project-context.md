@@ -57,12 +57,34 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
   Seite; nur die breiten Tabellen scrollen in ihrem eigenen Bereich.
 - Der dauerhafte Arbeitsnachweis steht in Jira unter `AP-199` und ist als
   erledigt markiert.
+- Kontrollierter End-to-End-Test am 23.07.2026: Eine eigene Instantly-
+  Testkampagne hatte genau einen Absender, einen Schritt, Tageslimit eins und
+  `ingeborgmarder@gmail.com` als einzigen Empfänger. Die Mail wurde um 10:09
+  Uhr zugestellt, die einmalige Testantwort um 10:10 Uhr von Instantly
+  übernommen und im eigenen Postfach sichtbar angezeigt. Die Kampagne wurde
+  direkt nach dem Versand pausiert.
+- Der Live-Test fand und belegte drei Instantly-Abweichungen, die behoben
+  wurden: `/leads/list` erwartet den Filter `campaign`, Aktivieren/Pausieren
+  darf keinen JSON-Inhaltstyp ohne Inhalt senden und echte E-Mail-Schritte
+  kommen als `0_0_0`, `0_1_0`, `0_2_0`. Die Korrekturen sind mit zuerst
+  fehlschlagenden Gegentests abgesichert.
+- Frische Gesamtkontrolle am 23.07.2026: 520 Tests grün in einem vollständigen
+  Lauf. Es bleibt nur die bekannte Starlette-Abkündigungswarnung.
+- Der Nachweis zum kontrollierten End-to-End-Test steht in Jira unter
+  `AP-200` und ist als erledigt markiert.
 
 ## Entscheidungen
 
 - Instantly bleibt der unsichtbare Versand-Motor. Das Tool liest seine Daten
   für die Kampagnenansicht; echte Schreibaktionen sind nicht Teil der
   lokalen Prüfungen.
+- Das Gmail-Testkonto dient ausschließlich als ungefährliches Testpostfach.
+  Es wird nicht dauerhaft mit dem Tool verbunden. Eine direkte Gmail-
+  Anmeldung, gespeicherte Google-Zugänge oder ein dauerhafter Mail-Abgleich
+  sind nicht freigegeben.
+- Der erfolgreiche End-to-End-Test ändert daran nichts: Gmail war nur
+  Empfänger und Absender der manuellen Testantwort. Unser Tool erhielt keinen
+  Gmail-Zugang; Versand und Antwortabruf liefen ausschließlich über Instantly.
 - Kampagnen-Einstellungen (Tageslimit, Sendefenster, Signatur und ähnliche
   Werte) werden nicht im Tool nachgebaut. Der Weg dafür ist der Link nach
   Instantly.
@@ -96,10 +118,13 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
 
 ## Nächste Schritte
 
-- Phase 2 nach Prüfung in den Hauptzweig übernehmen.
-- Danach Phase 3 planen: zuerst Google-/Microsoft-Verbindung und Mail-Abgleich
-  mit einem eigens dafür angelegten Testpostfach. Erst nach diesem Nachweis
-  folgen Antworten, Weiterleiten und neue Mails.
+- Vor Phase 3 den Postfach-Umfang neu festlegen: Das Test-Gmail darf für
+  Testmails verwendet werden, aber nicht dauerhaft an das Tool angebunden
+  werden. Die bisher geplante direkte Google-/Microsoft-Verbindung startet
+  daher nicht.
+- Als schlanke Alternative prüfen: den vorhandenen, nun live bewiesenen
+  Instantly-Postfachbereich für Kampagnenantworten beibehalten und danach den
+  CRM-Ausbau beginnen.
 - Danach bleiben CRM-Rand und die noch offenen Wholix-Funktionen laut Roadmap.
 - Schreibende Versand- oder Postfachprüfungen nur mit ausdrücklicher
   Freigabe und Testkonten.

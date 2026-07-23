@@ -156,7 +156,11 @@ def test_kampagnen_stand_behaelt_vorhandene_nullwerte_in_summen():
         {"date": "2026-07-22", "email_account": "sender@firma.de", "sent": 0},
     ])
 
-    eintrag = InstantlyLeser("key", session=FakeSession(antworten)).kampagnen_stand(["camp-1"])["camp-1"]
+    eintrag = InstantlyLeser(
+        "key",
+        session=FakeSession(antworten),
+        jetzt=lambda: datetime(2026, 7, 22, 12, 0, 0),
+    ).kampagnen_stand(["camp-1"])["camp-1"]
 
     assert eintrag["schritte"] == [{"schritt": 1, "versendet": 0, "geoeffnet": 0}]
     assert eintrag["heute_versendet"] == 0
@@ -535,7 +539,7 @@ def test_freigabe_stand_nutzt_lesende_lead_liste_und_email_liste():
     assert stand["recipients"]["anna@firma.de"]["steps"]["mail_1"]["sent_at"] == \
         "2026-07-22T08:00:00Z"
     assert session.post_aufrufe == [
-        ("/leads/list", {"campaign_id": "camp-1", "limit": 100}),
+        ("/leads/list", {"campaign": "camp-1", "limit": 100}),
     ]
     assert session.aufrufe == [
         ("/emails", {"campaign_id": "camp-1", "limit": 100}),
@@ -563,7 +567,7 @@ def test_freigabe_stand_laesst_leads_und_emails_vollstaendig_durch_paginierung()
     assert set(stand["recipients"]) == {"anna@firma.de", "bob@firma.de"}
     assert session.post_aufrufe[-1] == (
         "/leads/list",
-        {"campaign_id": "camp-1", "limit": 100, "starting_after": "lead-seite-2"},
+        {"campaign": "camp-1", "limit": 100, "starting_after": "lead-seite-2"},
     )
     assert session.aufrufe[-1] == (
         "/emails",

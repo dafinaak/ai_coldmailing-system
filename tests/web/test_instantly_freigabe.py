@@ -54,6 +54,32 @@ def test_antwort_gehoert_nur_bei_einem_einzigen_ausgang_im_thread_zum_schritt():
     assert stand["overall"]["replied"] is True
 
 
+def test_live_schrittbezeichner_ordnen_erste_mail_und_antwort_richtig_zu():
+    leads = [{"id": "lead-1", "email": "anna@firma.de", "status": 1}]
+    emails = [
+        {"id": "out-1", "lead": "anna@firma.de", "lead_id": "lead-1",
+         "thread_id": "thread-1", "ue_type": 1, "step": "0_0_0",
+         "timestamp_email": "2026-07-23T08:09:01Z"},
+        {"id": "in-1", "lead": "anna@firma.de",
+         "thread_id": "thread-1", "ue_type": 2, "step": "0_0_0",
+         "timestamp_email": "2026-07-23T08:10:41Z"},
+        {"id": "out-2", "lead": "anna@firma.de",
+         "thread_id": "thread-2", "ue_type": 1, "step": "0_1_0",
+         "timestamp_email": "2026-07-24T08:09:01Z"},
+        {"id": "out-3", "lead": "anna@firma.de",
+         "thread_id": "thread-3", "ue_type": 1, "step": "0_2_0",
+         "timestamp_email": "2026-07-25T08:09:01Z"},
+    ]
+
+    stand = freigabe_anzeige(leads, emails)["anna@firma.de"]
+
+    assert stand["steps"]["mail_1"] == {
+        "sent_at": "2026-07-23T08:09:01Z", "replied": True,
+    }
+    assert stand["steps"]["follow_up_1"]["sent_at"] == "2026-07-24T08:09:01Z"
+    assert stand["steps"]["follow_up_2"]["sent_at"] == "2026-07-25T08:09:01Z"
+
+
 def test_mehrere_ausgaenge_im_thread_lassen_schrittantwort_unbekannt():
     leads = [{"id": "lead-1", "email": "anna@firma.de", "status": 1}]
     emails = [

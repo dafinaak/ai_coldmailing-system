@@ -27,6 +27,13 @@ CRM mit Verkaufs-Stufen (11, 12) und dem vollen Mail-Programm (13–24, über
 Weg A — siehe Abschnitt 2). Von 43 Funktionen sind damit 9 gestrichen,
 34 bleiben.
 
+**Klarstellung vom 23.07.2026:** Das Gmail-Testkonto ist nur für sichere
+Testmails gedacht. Es soll nicht dauerhaft mit dem Tool verbunden werden.
+Eine direkte Gmail-Anmeldung, gespeicherte Google-Zugänge und ein dauerhafter
+Mail-Abgleich sind damit vorerst nicht freigegeben. Der Umfang von Phase 3
+muss deshalb vor dem Bau neu festgelegt werden; die bisher beschriebene
+Google-/Microsoft-Anbindung startet nicht.
+
 ---
 
 
@@ -289,6 +296,15 @@ E-Mail versendet und keine Instantly-Schreibschnittstelle benutzt.
 | Sperrliste: Grund/Kommentar-Felder + Platzhalter-Sperren (Nr. 43) | S | **Gebaut.** Einschließlich Bearbeiten, Entfernen, Überschneidungsprüfung und alten Einträgen |
 
 ### Phase 3 — Das Mail-Programm (der größte Brocken; braucht die Entscheidung aus Abschnitt 2)
+
+**Stand 23.07.2026:** Der vorhandene Instantly-Postfachbereich wurde mit
+genau einer Testmail und einer Testantwort end-to-end bewiesen. Gmail war
+dabei nur das Testziel und wurde nicht an das Tool angebunden. Versand,
+Antwortabruf und die sichtbare Konversation liefen über Instantly; die
+Testkampagne ist pausiert. Die direkte Google-/Microsoft-Anbindung bleibt
+gemäß der Klarstellung oben gestoppt. Vor weiterem Bau wird entschieden, ob
+der schlanke Instantly-Postfachbereich genügt und Phase 3 entsprechend
+verkleinert wird.
 
 | Baustein | Größe | Was es heißt |
 |---|---|---|

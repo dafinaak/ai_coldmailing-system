@@ -144,6 +144,17 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
   sie um 11:42 Uhr als dritte Nachricht desselben Threads. Gmail war dabei
   nur das Testziel und wurde weiterhin nicht an das Tool angebunden.
 
+- Messung „Impressum-Name → Dropcontact" am 23.07.2026 (Olivers Frage nach
+  dem Weg zu 80 %): Bei 6 der 8 Lücken-Firmen stand der Chef-Name im
+  Impressum; aus allen 6 Namen baute und prüfte Dropcontact eine
+  persönliche Mail (100 %). Neue Gesamtabdeckung 14 von 16 Firmen
+  (87,5 %) — über dem 80-%-Ziel. Details und Vorbehalte (Handarbeit,
+  JavaScript-Impressum, abweichende Mail-Domains, veraltbare Impressen):
+  `laeufe/vergleich-anbieter/2026-07-23-prospeo-20-firmen-v2/impressum-messung.md`.
+  Der BAU der Impressum-Stufe ist NICHT begonnen — er braucht Olivers
+  Okay (berührt die Projektregel „kein selbst gebautes Fundament") und
+  einen abgesegneten Bauplan.
+
 ## Entscheidungen
 
 - Instantly bleibt der unsichtbare Versand-Motor. Das Tool liest seine Daten

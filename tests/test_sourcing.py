@@ -492,3 +492,94 @@ def test_product_owner_ist_kein_inhaber():
     # Ein echtes "Owner" (allein oder kombiniert) bleibt ein Treffer:
     assert _rolle_passt("Owner", "Geschäftsführer")
     assert _rolle_passt("Owner / CEO", "Geschäftsführer")
+
+
+# --- Impressum-Stufe in der Kaskade (Bauplan 2026-07-27) -------------------
+
+class _FakeImpressum:
+    def __init__(self, texte=None, ergebnisse=None):
+        self.texte = texte or {}          # website -> Impressumstext
+        self.ergebnisse = ergebnisse or {}  # website -> entscheider_lesen-Ergebnis
+        self.hinweise = []
+    def impressum_text(self, website):
+        return self.texte.get(website)
+    def entscheider_lesen(self, text, firmenname, domain="", hinweis_name=""):
+        self.hinweise.append(hinweis_name)
+        return self.ergebnisse.get(domain,
+                                   {"personen": [], "mail_domain": None})
+
+
+def test_impressum_stufe_liefert_kontakt_ueber_dropcontact():
+    firmen = [_firma("a.de")]
+    kunde = _kunde(anbieter_reihenfolge=["impressum"])
+    impressum = _FakeImpressum(
+        texte={"https://a.de": "Impressum ... Inhaberin Nadine Pelaccia"},
+        ergebnisse={"a.de": {"personen": [{"vorname": "Nadine", "nachname": "Pelaccia"}],
+                             "mail_domain": None}})
+    dropcontact = _FakeDropcontact({"Nadine": "pelaccia@a.de"})
+    leads, deckung, firmen_aus = source_leads(
+        kunde, 10, "k", "k", "k", apify_source=_FakeApify(firmen),
+        hunter_source=_FakeHunter({}), dropcontact_source=dropcontact,
+        impressum_quelle=impressum)
+    assert [l.email for l in leads] == ["pelaccia@a.de"]
+    assert leads[0].source == "impressum"
+    assert deckung["je_stufe"]["impressum"] == 1
+    assert firmen_aus[0]["stufe"] == "impressum"
+
+
+def test_impressum_stufe_nutzt_abweichende_mail_domain():
+    # Pflichtfall it-hannover.de: Mails laufen ueber hannover-edv.de -
+    # Dropcontact muss die Mail-Domain aus dem Impressum bekommen.
+    firmen = [_firma("it-hannover.de")]
+    kunde = _kunde(anbieter_reihenfolge=["impressum"])
+    impressum = _FakeImpressum(
+        texte={"https://it-hannover.de": "Impressum ..."},
+        ergebnisse={"it-hannover.de": {
+            "personen": [{"vorname": "Thomas", "nachname": "Riek"}],
+            "mail_domain": "hannover-edv.de"}})
+    dropcontact = _FakeDropcontact({"Thomas": "riek@hannover-edv.de"})
+    leads, _, _ = source_leads(
+        kunde, 10, "k", "k", "k", apify_source=_FakeApify(firmen),
+        hunter_source=_FakeHunter({}), dropcontact_source=dropcontact,
+        impressum_quelle=impressum)
+    assert [l.email for l in leads] == ["riek@hannover-edv.de"]
+    assert dropcontact.aufrufe[0][2] == "https://hannover-edv.de"
+
+
+def test_impressum_stufe_uebergibt_listen_hinweis():
+    firmen = [{**_firma("a.de"), "gf_name_liste": "Nadine Pelaccia"}]
+    kunde = _kunde(anbieter_reihenfolge=["impressum"])
+    impressum = _FakeImpressum(texte={"https://a.de": "Impressum ..."})
+    source_leads(kunde, 10, "k", "k", "k", apify_source=_FakeApify(firmen),
+                 hunter_source=_FakeHunter({}),
+                 dropcontact_source=_FakeDropcontact(),
+                 impressum_quelle=impressum)
+    assert impressum.hinweise == ["Nadine Pelaccia"]
+
+
+def test_impressum_stufe_ohne_quelle_scheitert_mit_klarem_fehler():
+    kunde = _kunde(anbieter_reihenfolge=["impressum"])
+    with pytest.raises(ValueError, match="impressum"):
+        source_leads(kunde, 10, "k", "k", "k",
+                     **_quellen([_firma("a.de")], {}, {}))
+
+
+def test_kaskade_prospeo_dann_impressum():
+    # Firma a: Prospeo trifft. Firma b: erst das Impressum rettet sie.
+    firmen = [_firma("a.de"), _firma("b.de")]
+    kunde = _kunde(anbieter_reihenfolge=["prospeo", "impressum"])
+    prospeo = _FakeProspeo(
+        personen_je_domain={"a.de": [_prospeo_person()]},
+        mail_je_person_id={"p-1": {"email": "paula.prosp@a.de", "status": "VERIFIED",
+                                   "verification_method": "SMTP", "schon_bezahlt": False}})
+    impressum = _FakeImpressum(
+        texte={"https://b.de": "Impressum ..."},
+        ergebnisse={"b.de": {"personen": [{"vorname": "Ben", "nachname": "Berg"}],
+                             "mail_domain": None}})
+    leads, deckung, _ = source_leads(
+        kunde, 10, "k", "k", "k", apify_source=_FakeApify(firmen),
+        hunter_source=_FakeHunter({}),
+        dropcontact_source=_FakeDropcontact({"Ben": "ben.berg@b.de"}),
+        prospeo_source=prospeo, impressum_quelle=impressum)
+    assert {l.email for l in leads} == {"paula.prosp@a.de", "ben.berg@b.de"}
+    assert deckung["je_stufe"] == {"prospeo": 1, "impressum": 1, "info@": 0}

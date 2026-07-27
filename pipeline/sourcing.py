@@ -62,7 +62,7 @@ MAX_KONTAKTE_PRO_FIRMA_STANDARD = 1  # siehe Kunde.max_kontakte_pro_firma (pipel
 # Solange der Anbieter-Vergleich die Reihenfolge nicht festgelegt hat, bleibt
 # der Standard beim bisherigen einstufigen Ablauf.
 STANDARD_REIHENFOLGE = ["hunter_dropcontact"]
-GUELTIGE_STUFEN = ("hunter_dropcontact", "prospeo")
+GUELTIGE_STUFEN = ("hunter_dropcontact", "prospeo", "impressum")
 # info@-Pruefstatus (Hunter Email Verifier), die als versandtauglich gelten.
 # "accept_all" bewusst dabei: der Server nimmt dort formal alles an, mehr als
 # diese Aussage gibt es fuer solche Domains technisch nicht - bei unseren
@@ -322,6 +322,41 @@ def _prospeo_kontakte(firma: dict, kontakt_rollen: list, max_pro_firma: int,
     return kontakte
 
 
+def _impressum_kontakte(firma: dict, max_pro_firma: int, impressum,
+                        dropcontact) -> list:
+    """Impressum-Stufe der Kaskade (Bauplan 2026-07-27): liest die
+    Geschaeftsfuehrer-Namen von der Firmen-Webseite (ImpressumQuelle, KI)
+    und laesst Dropcontact daraus die gepruefte persoenliche Mail bauen.
+    Kein Rollen-Filter: Das Impressum nennt per Gesetz die Geschaeftsfuehrung,
+    also genau die Rueckfall-Person der Kaskade. Ein Namens-Hinweis aus einer
+    importierten Lead-Liste (firma["gf_name_liste"]) wird der KI zur Pruefung
+    mitgegeben - Hinweis, nicht Fakt (Stichproben-Fund: Listen irren)."""
+    website = firma.get("website")
+    if not website:
+        return []
+    text = impressum.impressum_text(website)
+    if not text:
+        return []
+    ergebnis = impressum.entscheider_lesen(
+        text, firma.get("name", ""), domain=firma.get("domain", ""),
+        hinweis_name=firma.get("gf_name_liste", ""))
+    mail_domain = ergebnis.get("mail_domain")
+    ziel_website = f"https://{mail_domain}" if mail_domain else website
+    kontakte = []
+    for person in ergebnis.get("personen") or []:
+        if len(kontakte) >= max_pro_firma:
+            break
+        mail = dropcontact.email_bauen(person["vorname"], person["nachname"],
+                                       ziel_website, company=firma.get("name", ""))
+        if mail:
+            kontakte.append({
+                "first_name": person["vorname"], "last_name": person["nachname"],
+                "email": mail["email"],
+                "title": "Geschäftsführung (laut Impressum)",
+                "source": "impressum"})
+    return kontakte
+
+
 def _pruefe_kunde(kunde):
     fehlend = [f for f in ("maps_suche", "kontakt_rollen") if not getattr(kunde, f, None)]
     if fehlend:
@@ -334,7 +369,7 @@ def _pruefe_kunde(kunde):
 
 
 def _stufen_bauen(kunde, hunter, dropcontact, prospeo_key, prospeo_source,
-                  max_pro_firma) -> list:
+                  impressum_quelle, max_pro_firma) -> list:
     """Baut die Stufenliste [(name, kontakt_funktion)] aus
     Kunde.anbieter_reihenfolge. Unbekannte Stufennamen und eine
     Prospeo-Stufe ohne Quelle/Key scheitern laut mit deutscher Erklaerung -
@@ -357,20 +392,30 @@ def _stufen_bauen(kunde, hunter, dropcontact, prospeo_key, prospeo_source,
                 f"Prospeo-Quelle noch ein PROSPEO_API_KEY übergeben. Bitte "
                 f"PROSPEO_API_KEY in .env eintragen (siehe .env.example).")
         prospeo = ProspeoSource(prospeo_key)
+    if "impressum" in reihenfolge and impressum_quelle is None:
+        raise ValueError(
+            f"Die Stufe 'impressum' steht in der anbieter_reihenfolge des "
+            f"Kunden '{kunde.name}', aber es wurde keine impressum_quelle "
+            f"übergeben (pipeline.sources.impressum.ImpressumQuelle, braucht "
+            f"den KI-Baustein).")
     stufen = []
     for name in reihenfolge:
         if name == "hunter_dropcontact":
             stufen.append((name, lambda firma: _entscheider_kontakte(
                 firma, kunde.kontakt_rollen, max_pro_firma, hunter, dropcontact)))
-        else:
+        elif name == "prospeo":
             stufen.append((name, lambda firma: _prospeo_kontakte(
                 firma, kunde.kontakt_rollen, max_pro_firma, prospeo)))
+        else:
+            stufen.append((name, lambda firma: _impressum_kontakte(
+                firma, max_pro_firma, impressum_quelle, dropcontact)))
     return stufen
 
 
 def source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
                   apify_source=None, hunter_source=None, dropcontact_source=None,
-                  prospeo_key=None, prospeo_source=None) -> tuple:
+                  prospeo_key=None, prospeo_source=None,
+                  impressum_quelle=None) -> tuple:
     """Fuehrt alle Stufen aus und liefert (leads, deckung, firmen_mit_ausgang):
     - leads: Liste von pipeline.models.Lead (bestehende Form, downstream
       unveraendert nutzbar).
@@ -406,7 +451,7 @@ def source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
     dropcontact = dropcontact_source or DropcontactSource(dropcontact_key)
     max_pro_firma = getattr(kunde, "max_kontakte_pro_firma", None) or MAX_KONTAKTE_PRO_FIRMA_STANDARD
     stufen = _stufen_bauen(kunde, hunter, dropcontact, prospeo_key,
-                           prospeo_source, max_pro_firma)
+                           prospeo_source, impressum_quelle, max_pro_firma)
     # info@-Pruefer: Hunters Email Verifier, wenn die (ggf. gefakte) Quelle
     # ihn anbietet. Aeltere Test-Fakes ohne email_pruefen behalten das alte
     # Verhalten (info@ ungeprueft uebernehmen) - Rueckwaerts-Kompatibilitaet.

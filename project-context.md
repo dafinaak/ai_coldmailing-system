@@ -155,6 +155,18 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
   Okay (berührt die Projektregel „kein selbst gebautes Fundament") und
   einen abgesegneten Bauplan.
 
+- Olivers Großauftrag (24./27.07.2026) ist gebaut und wartet nur noch auf
+  die API-Schlüssel der neuen Firmen-Konten: Impressum-Stufe (KI liest
+  Chef-Namen, Dropcontact prüft; alle Messlauf-Sonderfälle als Tests),
+  Listen-Import (319er-Liste PLR 30–39 liegt unter
+  `laeufe/plr30-39/firmen.json`), wiederaufnehmbares Großlauf-Skript
+  (`python -m pipeline.grosslauf`) mit Dubletten-Meldung und Bericht im
+  Oliver-Format. Kaskade des Laufs: prospeo → impressum → info@
+  (ungeprüft markiert, Prüfung vor Versand über künftiges
+  Hunter-Firmenkonto von x@redschlag.de). Abos: Prospeo Starter 49 $ +
+  Dropcontact Starter 29 €, Kets Karte, von Oliver freigegeben.
+  616 Tests grün, Stand committet.
+
 ## Entscheidungen
 
 - Instantly bleibt der unsichtbare Versand-Motor. Das Tool liest seine Daten

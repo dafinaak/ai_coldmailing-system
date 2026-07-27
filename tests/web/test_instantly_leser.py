@@ -1,7 +1,7 @@
 """Tests fuer web.instantly_leser.InstantlyLeser (Task 6): liest den
 Live-Stand von Kampagnen aus Instantly (nur GET). Kein echter HTTP-Aufruf -
 eine Fake-Session antwortet je nach Pfad, exakt wie FakeSession/FakeResponse
-in tests/test_apollo.py fuer den Schreib-Pfad (dort nur .post, hier .get)."""
+in tests/fakes.py fuer den Schreib-Pfad (dort nur .post, hier .get)."""
 from __future__ import annotations
 
 from datetime import datetime, timedelta

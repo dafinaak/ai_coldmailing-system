@@ -10,7 +10,7 @@ from pipeline.models import Lead
 from pipeline.run_store import RunStore
 from pipeline.senders.instantly import InstantlySender
 from pipeline.approval import approve
-from tests.test_apollo import FakeSession, FakeResponse
+from tests.fakes import FakeSession, FakeResponse
 
 _PRUEFUNG_OK = [{"email": "test1@example.com", "betreff": "B", "mail_1": "M",
                 "follow_up_1": "F1", "follow_up_2": "F2"}]

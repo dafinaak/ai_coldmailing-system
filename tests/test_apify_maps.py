@@ -8,7 +8,7 @@ class FakeResponse:
         return self._payload
 
 class FakeSession:
-    """Wie das FakeSession-Muster in tests/test_apollo.py: eine feste Warteschlange
+    """Wie das FakeSession-Muster in tests/fakes.py: eine feste Warteschlange
     an Antworten, jeder Aufruf wird protokolliert. Nur .post() noetig, weil der
     genutzte Apify-Endpunkt (run-sync-get-dataset-items) ein einzelner POST ist."""
     def __init__(self, antworten):

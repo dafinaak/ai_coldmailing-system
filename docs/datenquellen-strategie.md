@@ -1,5 +1,36 @@
 # Datenquellen-Strategie: Persönliche E-Mail-Adressen für deutsche Firmen
 
+## 0. Ergebnis-Update (27.07.2026): gemessen statt recherchiert
+
+Die Empfehlung unten (Kaskade selbst bauen) wurde umgesetzt und mit echten
+Firmen gemessen. Der Stand, der jetzt gilt:
+
+- **Gemessener Vergleich** (20 echte IT-Dienstleister Hannover, je 16
+  auswertbar): Prospeo allein 6/16, Hunter→Dropcontact allein 6/16,
+  Kombination 8/16 (50 %) — keiner reicht allein, die Kaskade ist bestätigt.
+  Details: `laeufe/vergleich-anbieter/2026-07-23-prospeo-20-firmen-v2/`.
+- **Der Namens-Engpass ist der Kern:** Die Anbieter kennen Angestellte
+  (LinkedIn-Quellen), aber oft nicht die Inhaber kleiner Firmen. Deren Name
+  steht im Impressum. Messung „Impressum-Name → Dropcontact": 6 von 8
+  Lücken-Firmen hatten den Namen im Impressum, alle 6 ergaben eine geprüfte
+  persönliche Mail → **Gesamtabdeckung 14/16 = 87,5 %.**
+- **Produktiv-Kaskade** (gebaut, `Kunde.anbieter_reihenfolge`):
+  `prospeo` → `impressum` (KI liest NUR Namen, Dropcontact baut/prüft die
+  Mail — Projektregel bleibt gewahrt) → geprüfte info@-Regel. Hunter dient
+  nur noch als info@-Prüfer (Gratis-Kontingent reicht dafür).
+- **Gebuchtes Setup** (Oliver, 27.07.2026): Prospeo Starter 49 $/M.
+  (2.000 Credits) + Dropcontact Starter 29 €/M. (500 Credits), monatlich
+  kündbar, Firmen-Konten. Kapazität grob 1.000 Firmen/Monat.
+- **Klarstellung zu Instantly SuperSearch:** Die Formulierung „wir zahlen
+  Instantly ohnehin" unten meint NUR das Versand-Abo. SuperSearch-Credits
+  sind NICHT enthalten und würden extra kosten — SuperSearch hat also
+  keinen Kostenvorteil gegenüber anderen Anbietern und bleibt gestrichen.
+- Apollo ist vollständig entfernt (Code und Tests) — die Kaskade ersetzt es.
+
+Die Recherche unten bleibt als Begründung und Marktübersicht stehen.
+
+---
+
 Stand: Juli 2026. Recherche mit aktuellen Anbieter-Seiten und Vergleichstests.
 Alle Preise sind die zum Recherche-Zeitpunkt veröffentlichten Zahlen — Anbieter
 ändern Preise laufend, vor Vertragsabschluss immer nochmal auf der

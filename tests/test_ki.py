@@ -1,5 +1,5 @@
 import pytest
-from tests.test_apollo import FakeSession, FakeResponse
+from tests.fakes import FakeSession, FakeResponse
 
 def test_openrouter_baut_richtiges_payload_und_liefert_antwort(monkeypatch):
     """OpenRouter-Pfad: Modell-Slug bekommt "anthropic/"-Prefix (Default

@@ -1,6 +1,6 @@
 import pytest
 from pipeline.senders.instantly import InstantlySender
-from tests.test_apollo import FakeSession, FakeResponse
+from tests.fakes import FakeSession, FakeResponse
 from tests.test_personalize import KUNDE
 
 TEXTE = [{"email": "t@example.com", "betreff": "B", "mail_1": "M",
@@ -79,7 +79,7 @@ def test_fehlermeldung_enthaelt_ausschnitt_der_antwort():
 
 
 # Baustein 1: Kampagne im Tool scharf schalten/pausieren ---------------------
-# Eigene FakeSession (statt der geteilten aus tests.test_apollo), weil hier
+# Eigene FakeSession (statt der geteilten aus tests.fakes), weil hier
 # zusaetzlich die genaue URL geprueft wird (Endpunkte laut
 # docs/instantly-api-machbarkeit.md #1: POST .../activate bzw. .../pause,
 # kein Request-Body) - die geteilte FakeSession zeichnet nur den Payload auf.

@@ -3,8 +3,9 @@
 Olivers Auftrag: Fuer jede Firma der Liste den Entscheider mit persoenlicher,
 GEPRUEFTER E-Mail ermitteln. Kaskade: Prospeo (Personen-Suche) -> Impressum
 (KI liest den Chef-Namen, Dropcontact baut/prueft die Mail) -> info@ als
-letzter Rueckfall (hier ohne Hunter-Konto ungeprueft, wird im Bericht so
-gekennzeichnet - geprueft wird VOR einem Versand). Es wird nichts versendet.
+letzter Rueckfall, geprueft ueber Hunters Email Verifier (Bauplan
+Versandstart 2026-07-28, Schritt 1); nicht versandtaugliche info@-Adressen
+werden verworfen statt versendet. Es wird nichts versendet.
 
 Der Lauf ist wiederaufnehmbar: nach jeder Firma wird gespeichert; ein
 Neustart mit demselben --lauf-Ordner ueberspringt fertige Firmen und
@@ -18,8 +19,8 @@ Standorte, andere je Standort eine eigene).
 Aufruf:
     python -m pipeline.grosslauf --firmen laeufe/plr30-39/firmen.json \
         --lauf laeufe/plr30-39/lauf-1 [--limit N]
-Benoetigt: PROSPEO_API_KEY, DROPCONTACT_API_KEY und einen KI-Schluessel
-(ANTHROPIC_API_KEY oder OPENROUTER_API_KEY) in der .env.
+Benoetigt: PROSPEO_API_KEY, DROPCONTACT_API_KEY, HUNTER_API_KEY und einen
+KI-Schluessel (ANTHROPIC_API_KEY oder OPENROUTER_API_KEY) in der .env.
 """
 import argparse
 import json
@@ -94,7 +95,8 @@ def _schluessel(f: dict) -> str:
 
 
 def lauf_ausfuehren(firmen: list, kunde, prospeo, dropcontact, impressum,
-                    vorhandene=None, fortschritt=print, nach_firma=None) -> list:
+                    hunter=None, vorhandene=None, fortschritt=print,
+                    nach_firma=None) -> list:
     """Fuehrt die Kaskade Firma fuer Firma aus (je Firma ein eigener
     source_leads-Aufruf mit Ein-Firmen-Liste - so bleibt der Lauf nach
     jeder Firma speicherbar und wiederaufnehmbar). Firmen mit frueherem
@@ -108,7 +110,10 @@ def lauf_ausfuehren(firmen: list, kunde, prospeo, dropcontact, impressum,
             continue
         leads, _, mit_ausgang = source_leads(
             kunde, 1, "", "", "", apify_source=ListenQuelle([firma]),
-            hunter_source=object(),  # kein Hunter: info@ bleibt ungeprueft
+            # Mit Hunter-Quelle wird info@ ueber deren email_pruefen()
+            # verifiziert; ohne (hunter=None) bleibt das alte Verhalten
+            # (info@ ungeprueft, im Bericht so gekennzeichnet).
+            hunter_source=hunter if hunter is not None else object(),
             dropcontact_source=dropcontact, prospeo_source=prospeo,
             impressum_quelle=impressum)
         eintrag = {**mit_ausgang[0],
@@ -222,9 +227,13 @@ def main(argv=None):
     lade_dotenv()
     brauche_env("PROSPEO_API_KEY")
     brauche_env("DROPCONTACT_API_KEY")
+    # Projektregel: keine ungepruefte Adresse in den Versand - deshalb ist
+    # Hunter (Email Verifier fuer die info@-Rueckfallebene) Pflicht.
+    brauche_env("HUNTER_API_KEY")
     brauche_env_eines_von("ANTHROPIC_API_KEY", "OPENROUTER_API_KEY")
 
     from pipeline.ki import KI
+    from pipeline.sources.hunter import HunterSource
     firmen = json.loads(Path(args.firmen).read_text(encoding="utf-8"))
     if args.limit:
         firmen = firmen[:args.limit]
@@ -236,12 +245,14 @@ def main(argv=None):
     prospeo = ProspeoSource(os.environ["PROSPEO_API_KEY"], wartezeit=20)
     dropcontact = DropcontactSource(os.environ["DROPCONTACT_API_KEY"])
     impressum = ImpressumQuelle(KI())
+    hunter = HunterSource(os.environ["HUNTER_API_KEY"])
     dubletten = dubletten_finden(firmen)
     vorhandene = lauf_laden(args.lauf)
     if vorhandene:
         print(f"Setze bestehenden Lauf fort ({len(vorhandene)} Firmen gespeichert).")
     ergebnisse = lauf_ausfuehren(
-        firmen, kunde, prospeo, dropcontact, impressum, vorhandene=vorhandene,
+        firmen, kunde, prospeo, dropcontact, impressum, hunter=hunter,
+        vorhandene=vorhandene,
         nach_firma=lambda erg: lauf_speichern(args.lauf, erg, dubletten))
     lauf_speichern(args.lauf, ergebnisse, dubletten)
     z = zusammenfassung(ergebnisse)

@@ -35,6 +35,72 @@ def test_legt_pausierte_kampagne_an_und_importiert_leads():
     assert leads["leads"][0]["custom_variables"]["mail_1"] == "M"
     assert leads["campaign_id"] == "camp-1"
 
+def test_produktions_kampagne_mit_name_absendern_und_betreffs():
+    # Bauplan Versandstart 2026-07-28, Schritt 2: Fuer Olivers Kampagne
+    # braucht der Baukasten einen echten Namen (ohne [TEST]-Vorsatz),
+    # die Absender-Postfaecher im Payload und je Stufe einen eigenen
+    # Betreff (Olivers Mails 2 und 3 haben eigene Betreffzeilen).
+    session = FakeSession([FakeResponse(200, {"id": "camp-2"})])
+    sender = InstantlySender("key", session=session)
+    sender.create_campaign(
+        KUNDE, name="Partnerschafts-Anfrage IT-Dienstleister",
+        absender_emails=["a@x.de", "b@y.de"],
+        betreffs=("Betreff 1", "Betreff 2", "Betreff 3"))
+    kampagne, = session.aufrufe
+    assert kampagne["name"] == "Partnerschafts-Anfrage IT-Dienstleister"
+    assert kampagne["email_list"] == ["a@x.de", "b@y.de"]
+    assert [s["variants"][0]["subject"]
+            for s in kampagne["sequences"][0]["steps"]] == \
+        ["Betreff 1", "Betreff 2", "Betreff 3"]
+
+
+def test_kampagne_ohne_zusatzangaben_bleibt_wie_bisher():
+    session = FakeSession([FakeResponse(200, {"id": "camp-3"})])
+    sender = InstantlySender("key", session=session)
+    sender.create_campaign(KUNDE)
+    kampagne, = session.aufrufe
+    assert kampagne["name"].startswith("[TEST] ")
+    assert "email_list" not in kampagne
+    assert [s["variants"][0]["subject"]
+            for s in kampagne["sequences"][0]["steps"]] == \
+        ["{{betreff}}", "", ""]
+
+
+def test_import_mit_anrede_schickt_anrede_als_variable():
+    # Weg B (Bauplan Versandstart, Schritt 6): Texte stehen in der Kampagne,
+    # pro Kontakt geht nur die gefuellte {{anrede}}-Variable mit.
+    session = FakeSession([FakeResponse(200, {})])
+    sender = InstantlySender("key", session=session)
+    sender.import_leads_mit_anrede("camp-1", [
+        {"email": "m.ehlers@itanix.de", "anrede": "Herr Ehlers",
+         "first_name": "Malte", "last_name": "Ehlers", "company": "ITANIX GmbH"}])
+    leads, = session.aufrufe
+    assert leads["campaign_id"] == "camp-1"
+    lead = leads["leads"][0]
+    assert lead["email"] == "m.ehlers@itanix.de"
+    assert lead["custom_variables"]["anrede"] == "Herr Ehlers"
+    assert lead["first_name"] == "Malte"
+    assert lead["company_name"] == "ITANIX GmbH"
+
+
+def test_import_mit_anrede_verweigert_kontakte_ohne_anrede():
+    # Die Sperre gegen "Guten Tag ,": ein einziger Kontakt ohne Anrede
+    # stoppt den ganzen Import, BEVOR irgendetwas an Instantly geht.
+    sender = InstantlySender("key", session=FakeSession([]))
+    with pytest.raises(ValueError, match="[Aa]nrede"):
+        sender.import_leads_mit_anrede("camp-1", [
+            {"email": "ok@a.de", "anrede": "Herr Ehlers"},
+            {"email": "leer@b.de", "anrede": "  "}])
+    assert sender.session.aufrufe == []
+
+
+def test_import_mit_anrede_verweigert_leere_liste():
+    sender = InstantlySender("key", session=FakeSession([]))
+    with pytest.raises(ValueError):
+        sender.import_leads_mit_anrede("camp-1", [])
+    assert sender.session.aufrufe == []
+
+
 def test_verweigert_nicht_aufsteigende_follow_up_tage():
     from dataclasses import replace
     kunde = replace(KUNDE, follow_up_tage=[7, 3])

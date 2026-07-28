@@ -113,12 +113,21 @@ class InstantlySender:
                 f"Instantly antwortet mit {antwort.status_code} auf {url}: {ausschnitt}")
         return antwort
 
-    def create_campaign(self, kunde) -> str:
+    def create_campaign(self, kunde, name=None, absender_emails=None,
+                        betreffs=None) -> str:
         """Legt nur die (pausierte) Kampagne an - ohne Leads. Getrennt von
         import_leads(), damit "senden" nach einem Fehler beim Lead-Import
         nicht versehentlich eine zweite Kampagne anlegt: der Laufordner
         merkt sich die campaign_id nach diesem Schritt und ein
-        Wiederanlauf ruft nur noch import_leads() erneut auf."""
+        Wiederanlauf ruft nur noch import_leads() erneut auf.
+
+        name: echter Kampagnenname; ohne Angabe bleibt der bisherige
+        [TEST]-Name (Sicherheits-Voreinstellung der Testlaeufe).
+        absender_emails: Postfaecher, die Instantly der Kampagne zuordnet
+        ("email_list"); ohne Angabe wie bisher Zuordnung von Hand.
+        betreffs: drei Betreffzeilen fuer die drei Stufen; ohne Angabe wie
+        bisher {{betreff}} je Lead und betrefflose Follow-ups im selben
+        Gespraechsfaden."""
         # follow_up_tage=[a, b] bedeutet "Follow-up 1 an Tag a, Follow-up 2 an
         # Tag b" (Gesamtabstand ab Mail 1). Instantly zaehlt "delay" aber ab
         # dem Schritt, auf dem er steht, bis zum naechsten Schritt (siehe
@@ -131,16 +140,17 @@ class InstantlySender:
             raise ValueError(
                 f"follow_up_tage muss aufsteigend sein (Tag a < Tag b), "
                 f"gefunden: [{a}, {b}]. Bitte die Angebots-Datei korrigieren.")
+        b1, b2, b3 = betreffs or ("{{betreff}}", "", "")
         sequenz_schritte = [
             {"type": "email", "delay": a,
-             "variants": [{"subject": "{{betreff}}", "body": "{{mail_1}}"}]},
+             "variants": [{"subject": b1, "body": "{{mail_1}}"}]},
             {"type": "email", "delay": b - a,
-             "variants": [{"subject": "", "body": "{{follow_up_1}}"}]},
+             "variants": [{"subject": b2, "body": "{{follow_up_1}}"}]},
             {"type": "email", "delay": 0,
-             "variants": [{"subject": "", "body": "{{follow_up_2}}"}]},
+             "variants": [{"subject": b3, "body": "{{follow_up_2}}"}]},
         ]
         kampagne = {
-            "name": f"[TEST] {kunde.name}",
+            "name": name or f"[TEST] {kunde.name}",
             # Kein "status"-Feld - Kampagne bleibt automatisch "Draft"
             # (inaktiv). Diese Klasse ruft niemals /activate auf.
             "campaign_schedule": {
@@ -158,6 +168,8 @@ class InstantlySender:
             # zu Kampagnen- vs. Postfach-Ebene).
             "daily_limit": 20,
         }
+        if absender_emails:
+            kampagne["email_list"] = list(absender_emails)
         antwort = self._post(f"{BASIS}/campaigns", kampagne)
         return antwort.json()["id"]
 
@@ -172,6 +184,29 @@ class InstantlySender:
                   "custom_variables": {k: t[k] for k in
                                        ("betreff", "mail_1", "follow_up_1", "follow_up_2")}}
                  for t in texte_pro_lead]
+        self._post(f"{BASIS}/leads/add", {"campaign_id": campaign_id, "leads": leads})
+
+    def import_leads_mit_anrede(self, campaign_id: str, kontakte) -> None:
+        """Lead-Import fuer Weg B (Bauplan Versandstart, Leonards
+        Entscheidung 2026-07-28): Die Mail-Texte stehen sichtbar in der
+        Kampagne, pro Kontakt geht nur die gefuellte {{anrede}}-Variable
+        mit (plus Name/Firma fuer die Instantly-Ansicht). Sperre gegen
+        "Guten Tag ,": schon EIN Kontakt ohne Anrede stoppt den ganzen
+        Import, bevor irgendetwas an Instantly geht."""
+        if not kontakte:
+            raise ValueError("Keine Kontakte - kein Lead-Import.")
+        ohne = [k.get("email") or "?" for k in kontakte
+                if not (k.get("anrede") or "").strip()]
+        if ohne:
+            raise ValueError(
+                f"{len(ohne)} Kontakt(e) ohne Anrede - Import gestoppt "
+                f"(kein 'Guten Tag ,' im Versand): {', '.join(ohne[:5])}")
+        leads = [{"email": k["email"],
+                  "first_name": k.get("first_name", ""),
+                  "last_name": k.get("last_name", ""),
+                  "company_name": k.get("company", ""),
+                  "custom_variables": {"anrede": k["anrede"].strip()}}
+                 for k in kontakte]
         self._post(f"{BASIS}/leads/add", {"campaign_id": campaign_id, "leads": leads})
 
     def aktiviere_kampagne(self, campaign_id: str) -> None:

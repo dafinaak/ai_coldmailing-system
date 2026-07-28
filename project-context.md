@@ -167,6 +167,26 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
   Dropcontact Starter 29 €, Kets Karte, von Oliver freigegeben.
   616 Tests grün, Stand committet.
 
+- Versandstart-Vorbereitung am 28.07.2026 (Bauplan:
+  `docs/bauplan-versandstart-it-dienstleister.md`, Olivers 3-Stufen-Sequenz:
+  `docs/email-sequenz-it-dienstleister.md`): Alle API-Schlüssel liegen in
+  der `.env` und funktionieren (Instantly-Schlüssel neu, getestet; Achtung:
+  Cloudflare blockt Python-urllib ohne Browser-Kennung — sieht aus wie 403).
+  Gebaut und grün (603 Tests): Hunter-Prüfung der info@-Adressen im
+  Großlauf (Pflicht-Schlüssel), Kampagnen-Baukasten mit echtem Namen/
+  Absendern/Betreffs je Stufe, Lead-Import mit {{anrede}}-Variable samt
+  harter Sperre gegen fehlende Anreden, Text-Wache
+  (`python -m pipeline.kampagnen_pruefung`, Referenz unter
+  `laeufe/plr30-39/kampagne-referenz.json`). Die Kampagne
+  „Partnerschafts-Anfrage IT-Dienstleister PLR 30-39"
+  (id e9f33e56-d753-49ce-92c8-b6915808e969) ist als inaktiver Entwurf in
+  Instantly angelegt: echte Texte in den Stufen (Weg B), Abstände 7+7 Tage,
+  20/Tag, Mo–Fr 8–19 Uhr, Absender-Anzeigename „Oliver Redschlag".
+- Wholix-Anschreiben gesichert (28.07.2026, Olivers Auftrag vom 26.07.):
+  alle 194 Sequenzen (Body 1–3, Status, 5 Antworten) plus Master-Prompt
+  liegen unter `wholix-export/`. Erkenntnis: Follow-ups 2/3 waren feste
+  Prompt-Vorlagen, individuell generiert wurde nur Mail 1.
+
 ## Entscheidungen
 
 - Instantly bleibt der unsichtbare Versand-Motor. Das Tool liest seine Daten
@@ -222,17 +242,21 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
 
 ## Nächste Schritte
 
-- Zuerst den Anbieter-Vergleich abschließen: Konten/Schlüssel für Prospeo,
-  Hunter und Dropcontact anlegen, kleinen Apify-Nachschub auf 30–40 Firmen
-  holen (eine echte 20er-Liste liegt unter
-  `laeufe/demo-gmbh/20260721-145036/firmen.json`), dann
-  `python -m pipeline.vergleich` laufen lassen — erst nach Leonards Okay,
-  weil dabei Gratis-Guthaben verbraucht wird. Danach Empfehlung geben und
-  `docs/datenquellen-strategie.md` plus diese Datei aktualisieren.
-- Erst nach der Anbieter-Entscheidung: den CRM-Ausbau als eigenes
-  Arbeitspaket entwerfen — zuerst Kontakte zuverlässig durch
-  Verkaufsstufen führen.
-- Weitere Wholix-Bereiche bleiben gestrichen, solange die Scope-Entscheidungen
+Fahrplan Versandstart (Ziel: erste Mail am Donnerstag, 30.07.2026 —
+Details und Fortschritt in `docs/bauplan-versandstart-it-dienstleister.md`):
+
+- Probelauf über 10 Firmen (`python -m pipeline.grosslauf … --limit 10`),
+  Bericht zeigen; bei gutem Ergebnis direkt der volle Datenlauf über 319.
+- Danach Anrede-Spalte je Kontakt füllen (Claude, neutral bei Unsicherheit)
+  und komplett zur Kontrolle vorlegen.
+- Geprüfte Kontakte mit Anrede in die Kampagne laden
+  (`import_leads_mit_anrede`), 5 Beispiel-Mails plus echte Testmail an ein
+  eigenes Test-Postfach zeigen, Text-Wache laufen lassen.
+- Erst nach Freigabe durch Leonard/Oliver aktivieren; danach täglich
+  Kurzmeldung mit den Zahlen an Oliver (Zuständigkeit für das Beantworten
+  der Antworten vor dem Start klären).
+- Später/parallel: CRM-Ausbau als eigenes Arbeitspaket entwerfen; weitere
+  Wholix-Bereiche bleiben gestrichen, solange die Scope-Entscheidungen
   nicht ausdrücklich geändert werden.
 - Schreibende Versand- oder Postfachprüfungen nur mit ausdrücklicher
   Freigabe und Testkonten.

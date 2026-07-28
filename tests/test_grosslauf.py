@@ -3,7 +3,7 @@ from pipeline.grosslauf import (lauf_ausfuehren, zusammenfassung,
                                 bericht_markdown, dubletten_finden,
                                 lauf_speichern, lauf_laden)
 from tests.test_sourcing import (_FakeProspeo, _FakeDropcontact, _FakeImpressum,
-                                 _kunde, _prospeo_person)
+                                 _FakeHunterMitPruefer, _kunde, _prospeo_person)
 
 
 def firma(name, domain, telefon="0511 123", **extra):
@@ -65,6 +65,28 @@ def test_zusammenfassung_und_bericht_im_oliver_format():
     assert "Gamma GmbH" in text and "0511 999" in text      # Restliste + Telefon
     assert "außerhalb der Region" in text                    # nicht vergessen
     assert "ungeprüft" in text                               # info@-Kennzeichnung
+
+
+def test_lauf_prueft_info_adressen_mit_hunter():
+    # Bauplan Versandstart 2026-07-28, Schritt 1: Mit Hunter-Quelle wird die
+    # info@-Rueckfalladresse VOR der Aufnahme geprueft statt ungeprueft
+    # uebernommen.
+    hunter = _FakeHunterMitPruefer({}, {"info@c.de": "valid"})
+    ergebnisse = lauf_ausfuehren(_drei_firmen(), _kunde_grosslauf(),
+                                 *_quellen_fuer_lauf(), hunter=hunter,
+                                 fortschritt=lambda t: None)
+    assert hunter.geprueft == ["info@c.de"]
+    assert ergebnisse[2]["ausgang"] == "info_fallback"
+    assert ergebnisse[2]["info_pruefstatus"] == "valid"
+
+
+def test_lauf_verwirft_ungueltige_info_adressen():
+    hunter = _FakeHunterMitPruefer({}, {"info@c.de": "invalid"})
+    ergebnisse = lauf_ausfuehren(_drei_firmen(), _kunde_grosslauf(),
+                                 *_quellen_fuer_lauf(), hunter=hunter,
+                                 fortschritt=lambda t: None)
+    assert ergebnisse[2]["ausgang"] == "info_ungueltig"
+    assert ergebnisse[2]["leads"] == []
 
 
 def test_lauf_setzt_fort_ohne_neue_abfragen(tmp_path):

@@ -261,6 +261,14 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
 - Nach der Übergabe ist die E-Mail-Runde im Tool schreibgeschützt. Eine
   einzelne Neuerzeugung macht nur den betroffenen Schritt wieder offen.
 
+- CRM-Grundsatzentscheidungen getroffen (Leonard, 29.07.2026) — damit
+  ist der CRM-Bau entsperrt, sobald er drankommt: (1) Kontakte fließen
+  automatisch ins CRM, aber NUR wer geantwortet hat; (2) Verkaufsstufen
+  wie Wholix, deutsch beschriftet (gegen die Screenshots prüfen);
+  (3) Einzelnutzer Leonard; (4) Speicher: SQLite-Datenbankdatei im
+  Datenverzeichnis. Die Wholix-Screenshots liegen wieder im Projekt
+  (Ordner "wholix interface screenshots", von Leonards Desktop kopiert).
+
 ## Nächste Schritte
 
 Fahrplan Versandstart (Basis ist jetzt die NEUE 1.481er-Liste, nicht

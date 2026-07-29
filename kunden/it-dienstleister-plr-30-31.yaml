@@ -1,0 +1,20 @@
+# Registrierung der direkt per API angelegten Partnerschafts-Kampagne im
+# Team-Tool (Tool-Check-Fund 29.07.2026: API-Kampagnen erschienen sonst
+# nirgends). Kein Lauf der klassischen Strecke - dient der Sichtbarkeit
+# in Kampagnen-Seite/Dashboard.
+name: IT-Dienstleister PLR 30+31 (Partnerschaft)
+zielgruppe:
+  titel: ["Geschäftsführer", "Inhaber"]
+  region: [Germany]
+  firmengroesse: ["alle"]
+angebot: >-
+  Technologie-Partnerschaft mit PolePosition Automation für
+  IT-Dienstleister (Olivers 3-Stufen-Sequenz, feste Texte).
+tonalitaet: ruhig, erklärend, keine Superlative, keine Ausrufezeichen
+absender: Oliver Redschlag
+follow_up_tage: [7, 14]
+test_empfaenger:
+  - leonardluzhnica7@gmail.com
+maps_suche: "(Liste PLR 30+31)"
+kontakt_rollen: ["Geschäftsführer", "Inhaber"]
+anbieter_reihenfolge: ["impressum"]

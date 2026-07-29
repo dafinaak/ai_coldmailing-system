@@ -63,6 +63,74 @@ class ApifyMapsSource:
         self.api_key = api_key
         self.session = session or requests.Session()
 
+    def _pruefen(self, antwort, was):
+        if antwort.status_code >= 400:
+            raise RuntimeError(
+                f"Apify antwortet mit {antwort.status_code} bei {was}: "
+                f"{getattr(antwort, 'text', '')}")
+        return antwort.json()
+
+    def _gebietslauf_abrufen(self, body, schlaf, poll_sekunden=30) -> list:
+        """Asynchroner Ablauf fuer lange Gebiets-Raster (30-60 min): Lauf
+        starten -> Status abfragen bis fertig -> Dataset abholen. Der
+        Sync-Endpunkt (run-sync-get-dataset-items) reisst bei solchen
+        Laufzeiten an der Verbindungs-Zeitgrenze (bekannte
+        Einschraenkung, siehe Kopf-Doku)."""
+        start = self._pruefen(self.session.post(
+            f"https://api.apify.com/v2/acts/{ACTOR_ID}/runs?token={self.api_key}",
+            json=body, timeout=60), "Lauf-Start")["data"]
+        lauf_id, dataset_id = start["id"], start["defaultDatasetId"]
+        while True:
+            stand = self._pruefen(self.session.get(
+                f"https://api.apify.com/v2/actor-runs/{lauf_id}?token={self.api_key}",
+                timeout=60), "Status")["data"]
+            status = stand.get("status")
+            if status == "SUCCEEDED":
+                break
+            if status in ("FAILED", "ABORTED", "TIMED-OUT"):
+                raise RuntimeError(f"Apify-Gebietslauf endete mit {status}")
+            schlaf(poll_sekunden)
+        eintraege = self._pruefen(self.session.get(
+            f"https://api.apify.com/v2/datasets/{dataset_id}/items?token={self.api_key}&clean=true",
+            timeout=300), "Dataset")
+        if not isinstance(eintraege, list):
+            raise RuntimeError(
+                f"Apify liefert unerwartetes Format (keine Liste): {eintraege!r}")
+        return eintraege
+
+    def search_gebiet(self, suchbegriffe, gebiet_geojson, limit_pro_suche,
+                      schlaf=None) -> list:
+        """Gebiets-Raster fuer das Leadquellen-Fundament (Bauplan
+        29.07.2026): Der Actor rastert ein GeoJSON-Gebiet
+        ("customGeolocation", siehe Actor-Doku) selbst ab - Olivers
+        Vorgabe "nach Postleitregionen" loesen wir als Umriss ueber den
+        Regionen plus PLZ-Feinfilter in der Fusion. Liefert das
+        Fusions-Format (inkl. plz/telefon/quelle); "email" kennt Maps
+        nicht, das Feld bleibt leer."""
+        import time
+        body = {"searchStringsArray": list(suchbegriffe),
+                "customGeolocation": gebiet_geojson,
+                "maxCrawledPlacesPerSearch": limit_pro_suche,
+                "language": "de"}
+        firmen = []
+        for e in self._gebietslauf_abrufen(body, schlaf or time.sleep):
+            website = e.get("website") or ""
+            kategorien = e.get("categories")
+            if not kategorien:
+                kategorien = [e["categoryName"]] if e.get("categoryName") else []
+            firmen.append({
+                "name": e.get("title", ""),
+                "website": website,
+                "domain": _domain_aus_website(website),
+                "address": e.get("address", ""),
+                "plz": e.get("postalCode") or "",
+                "telefon": e.get("phone") or "",
+                "vorhandene_email": "",
+                "categories": kategorien,
+                "quelle": "maps",
+            })
+        return firmen
+
     def search(self, suchbegriff: str, limit: int) -> list:
         body = {"searchStringsArray": [suchbegriff],
                 "maxCrawledPlacesPerSearch": limit, "language": "de"}

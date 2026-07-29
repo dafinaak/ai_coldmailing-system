@@ -16,10 +16,15 @@ class FakeResponse:
 class FakeSession:
     def __init__(self, antworten):
         self.antworten, self.aufrufe, self.urls = list(antworten), [], []
-    def post(self, url, json=None, headers=None, timeout=None):
-        self.aufrufe.append(json)
+    def post(self, url, json=None, data=None, headers=None, timeout=None):
+        # json ODER data (Formular-Feld, z. B. Overpass) - was gesetzt ist,
+        # wird festgehalten; bestehende Tests bleiben unveraendert.
+        self.aufrufe.append(json if json is not None else data)
         self.urls.append(url)
-        return self.antworten.pop(0)
+        antwort = self.antworten.pop(0)
+        if isinstance(antwort, Exception):
+            raise antwort            # simuliert Netzwerk-Abrisse/Timeouts
+        return antwort
     def get(self, url, params=None, headers=None, timeout=None):
         self.aufrufe.append(params)
         self.urls.append(url)

@@ -16,6 +16,10 @@ class FakeSession:
     def post(self, url, json=None, headers=None, timeout=None):
         self.aufrufe.append({"url": url, "json": json})
         return self.antworten.pop(0)
+    def get(self, url, params=None, headers=None, timeout=None):
+        # fuer den asynchronen Ablauf (Status abfragen, Dataset holen)
+        self.aufrufe.append({"url": url, "params": params})
+        return self.antworten.pop(0)
 
 def eintrag(**overrides):
     """Ein Dataset-Eintrag, wie ihn der Google-Maps-Scraper-Actor liefert
@@ -80,3 +84,46 @@ def test_wirft_fehler_bei_http_fehler():
     session = FakeSession([FakeResponse(500, {}, text="Server-Fehler")])
     with pytest.raises(RuntimeError):
         ApifyMapsSource("key", session=session).search("x", limit=5)
+
+
+def test_gebietssuche_laeuft_asynchron_und_liefert_fusionsformat():
+    # Bauplan Leadquellen-Fundament: Gebiets-Raster dauern 30-60 min -
+    # der Sync-Abruf reisst an der Verbindungs-Zeitgrenze (bekannte
+    # Einschraenkung, siehe apify_maps-Doku). Deshalb asynchron:
+    # Lauf starten -> Status abfragen -> Dataset abholen.
+    session = FakeSession([
+        FakeResponse(201, {"data": {"id": "lauf-1",
+                                    "defaultDatasetId": "daten-1"}}),
+        FakeResponse(200, {"data": {"status": "RUNNING"}}),
+        FakeResponse(200, {"data": {"status": "SUCCEEDED"}}),
+        FakeResponse(200, [eintrag(phone="+49 511 1", postalCode="30159")]),
+    ])
+    quelle = ApifyMapsSource("key", session=session)
+    gebiet = {"type": "Polygon", "coordinates": [[[8.9, 51.7], [10.6, 51.7],
+              [10.6, 52.7], [8.9, 52.7], [8.9, 51.7]]]}
+    firmen = quelle.search_gebiet(["IT-Dienstleister", "IT-Service"],
+                                  gebiet, limit_pro_suche=500,
+                                  schlaf=lambda s: None)
+    anfrage = session.aufrufe[0]["json"]
+    assert anfrage["searchStringsArray"] == ["IT-Dienstleister", "IT-Service"]
+    assert anfrage["customGeolocation"] == gebiet
+    assert anfrage["maxCrawledPlacesPerSearch"] == 500
+    f, = firmen
+    assert f["plz"] == "30159"
+    assert f["telefon"] == "+49 511 1"
+    assert f["quelle"] == "maps"
+    assert f["domain"] == "it-muster.de"
+    assert f["vorhandene_email"] == ""
+
+
+def test_gebietssuche_gescheiterter_lauf_stoppt_laut():
+    session = FakeSession([
+        FakeResponse(201, {"data": {"id": "lauf-1",
+                                    "defaultDatasetId": "daten-1"}}),
+        FakeResponse(200, {"data": {"status": "FAILED"}}),
+    ])
+    quelle = ApifyMapsSource("key", session=session)
+    import pytest
+    with pytest.raises(RuntimeError, match="FAILED"):
+        quelle.search_gebiet(["x"], {"type": "Polygon", "coordinates": []},
+                             limit_pro_suche=5, schlaf=lambda s: None)

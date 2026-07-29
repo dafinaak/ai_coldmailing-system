@@ -35,6 +35,7 @@ def test_main_bricht_ohne_ki_schluessel_ab(monkeypatch, tmp_path):
     # nicht, mutiert aber echt) - das muss hier separat entfernt werden.
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)  # seit 29.07.2026 dritter Anbieter
     monkeypatch.setattr(sys, "argv", ["offer.py", "http://example.com", "kunde.yaml"])
     with pytest.raises(SystemExit, match="ANTHROPIC_API_KEY"):
         main()

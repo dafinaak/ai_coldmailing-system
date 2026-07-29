@@ -187,6 +187,27 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
   liegen unter `wholix-export/`. Erkenntnis: Follow-ups 2/3 waren feste
   Prompt-Vorlagen, individuell generiert wurde nur Mail 1.
 
+- Leadquellen-Fundament gebaut und Voll-Scrape gelaufen (29.07.2026,
+  Olivers Auftrag; Bauplan: `docs/bauplan-leadquellen-fundament.md`):
+  Drei neue Quellen-Bausteine (Gelbe Seiten via Apify-Firmenkonto,
+  OpenStreetMap/Overpass mit Ausweich-Server, Google-Maps-Gebietsraster
+  asynchron) plus Fusions-Baustein mit Olivers Branchen-Ausschlüssen.
+  Ergebnis: **1.481 einzigartige IT-Dienstleister der PLR 30+31**
+  (`laeufe/leadquellen/plr-30-31/`), alte 319er-Liste nur noch
+  Auffüller (56 übernommen, GF-Hinweise erhalten). Scrape-Kosten ~7 $.
+- Anbieter-Lage neu (29.07.2026): Prospeo-Konto bei deren API-Umbau
+  stillgelegt (Schlüssel tot, Login tot) -> Kaskade läuft ohne Prospeo,
+  Impressum-KI ist Hauptstufe. OpenRouter tot -> KI läuft über Leonards
+  OpenAI-Schlüssel (KI_MODELL=gpt-4.1-mini). Dropcontact: neues Konto,
+  500 Credits/Monat -> Adress-Bau in Monats-Paketen à ~450 Firmen
+  (passt zu Olivers 20/Tag). Hunter frei: 50 Suchen + 100 Prüfungen.
+  North Data gestrichen (hat keine E-Mails, nur Namen).
+- Probelauf-Endstand (29.07.2026): 9 von 10 Firmen mit persönlicher,
+  geprüfter Chef-Mail (90 %), 1 geprüfte info@. Kurzmeldungs-Baustein
+  für Olivers tägliche Zahlen gebaut (`python -m pipeline.kurzmeldung`).
+  Namens-Lauf (Impressum-KI über alle 1.481) läuft; Ergebnis unter
+  `laeufe/leadquellen/plr-30-31/namenslauf.json`.
+
 ## Entscheidungen
 
 - Instantly bleibt der unsichtbare Versand-Motor. Das Tool liest seine Daten
@@ -242,11 +263,12 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
 
 ## Nächste Schritte
 
-Fahrplan Versandstart (Ziel: erste Mail am Donnerstag, 30.07.2026 —
-Details und Fortschritt in `docs/bauplan-versandstart-it-dienstleister.md`):
+Fahrplan Versandstart (Basis ist jetzt die NEUE 1.481er-Liste, nicht
+mehr die alte 319er — Details in beiden Bauplänen unter `docs/`):
 
-- Probelauf über 10 Firmen (`python -m pipeline.grosslauf … --limit 10`),
-  Bericht zeigen; bei gutem Ergebnis direkt der volle Datenlauf über 319.
+- Namens-Lauf abwarten (läuft), dann Monats-Paket 1 (~450 Firmen mit
+  gefundenem Namen, priorisiert) durch den Dropcontact-Adress-Bau —
+  daraus Olivers Ergebnis-Auswertung (Gesamt, Quote, Anruf/Brief-Liste).
 - Danach Anrede-Spalte je Kontakt füllen (Claude, neutral bei Unsicherheit)
   und komplett zur Kontrolle vorlegen.
 - Geprüfte Kontakte mit Anrede in die Kampagne laden

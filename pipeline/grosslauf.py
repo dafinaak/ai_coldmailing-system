@@ -20,7 +20,8 @@ Aufruf:
     python -m pipeline.grosslauf --firmen laeufe/plr30-39/firmen.json \
         --lauf laeufe/plr30-39/lauf-1 [--limit N]
 Benoetigt: PROSPEO_API_KEY, DROPCONTACT_API_KEY, HUNTER_API_KEY und einen
-KI-Schluessel (ANTHROPIC_API_KEY oder OPENROUTER_API_KEY) in der .env.
+KI-Schluessel (ANTHROPIC_API_KEY, OPENROUTER_API_KEY oder OPENAI_API_KEY)
+in der .env.
 """
 import argparse
 import json
@@ -36,7 +37,12 @@ from pipeline.sources.prospeo import ProspeoSource
 from pipeline.sources.dropcontact import DropcontactSource
 from pipeline.sources.impressum import ImpressumQuelle
 
+# Mit Prospeo-Schluessel: Datenbank zuerst, Impressum als Rueckfall.
+# Ohne (Konto bei Prospeos API-Umbau am 29.07.2026 stillgelegt, Schluessel
+# ungueltig, Login tot): direkt Impressum - sonst wuerde die tote
+# Prospeo-Stufe jede Firma auf "fehler" reissen.
 REIHENFOLGE = ["prospeo", "impressum"]
+REIHENFOLGE_OHNE_PROSPEO = ["impressum"]
 PERSOENLICH = "mit_entscheider"
 
 # Namenszusaetze, die fuer den Dubletten-Vergleich keinen Unterschied machen.
@@ -225,24 +231,28 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     lade_dotenv()
-    brauche_env("PROSPEO_API_KEY")
     brauche_env("DROPCONTACT_API_KEY")
     # Projektregel: keine ungepruefte Adresse in den Versand - deshalb ist
     # Hunter (Email Verifier fuer die info@-Rueckfallebene) Pflicht.
     brauche_env("HUNTER_API_KEY")
-    brauche_env_eines_von("ANTHROPIC_API_KEY", "OPENROUTER_API_KEY")
+    brauche_env_eines_von("ANTHROPIC_API_KEY", "OPENROUTER_API_KEY", "OPENAI_API_KEY")
 
     from pipeline.ki import KI
     from pipeline.sources.hunter import HunterSource
     firmen = json.loads(Path(args.firmen).read_text(encoding="utf-8"))
     if args.limit:
         firmen = firmen[:args.limit]
+    prospeo_key = os.environ.get("PROSPEO_API_KEY")
     kunde = Kunde(name="Großlauf", zielgruppe={}, angebot="-", tonalitaet="-",
                   absender="-", follow_up_tage=[3, 7],
                   test_empfaenger=["test@example.com"],
                   maps_suche="(Liste)", kontakt_rollen=["Geschäftsführer", "Inhaber"],
-                  anbieter_reihenfolge=REIHENFOLGE)
-    prospeo = ProspeoSource(os.environ["PROSPEO_API_KEY"], wartezeit=20)
+                  anbieter_reihenfolge=REIHENFOLGE if prospeo_key
+                  else REIHENFOLGE_OHNE_PROSPEO)
+    prospeo = ProspeoSource(prospeo_key, wartezeit=20) if prospeo_key else None
+    if not prospeo_key:
+        print("Hinweis: kein PROSPEO_API_KEY - Kaskade startet direkt mit "
+              "der Impressum-Stufe.")
     dropcontact = DropcontactSource(os.environ["DROPCONTACT_API_KEY"])
     impressum = ImpressumQuelle(KI())
     hunter = HunterSource(os.environ["HUNTER_API_KEY"])

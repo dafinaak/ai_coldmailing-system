@@ -59,3 +59,47 @@ def test_ohne_schluessel_wirft_klaren_fehler_bei_konstruktion(monkeypatch):
 
     with pytest.raises(RuntimeError):
         KI()
+
+
+def test_openai_pfad_springt_ein_wenn_nur_openai_schluessel_da_ist(monkeypatch):
+    """Dritter Anbieter (29.07.2026, Leonards OpenAI-Schluessel als
+    OpenRouter-Ersatz): gleiches Chat-Format, eigene URL, und der
+    Claude-Default wird auf das OpenAI-Gegenstueck gemappt."""
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("OPENAI_API_KEY", "oa-test-key")
+    monkeypatch.delenv("KI_MODELL", raising=False)
+    from pipeline.ki import KI
+
+    antwort = FakeResponse(200, {"choices": [{"message": {"content": "Malte Ehlers"}}]})
+    session = FakeSession([antwort])
+    ki = KI(session=session)
+
+    ergebnis = ki.frage("Lies das Impressum.", "...")
+
+    assert ergebnis == "Malte Ehlers"
+    assert session.urls[0].startswith("https://api.openai.com/")
+    payload = session.aufrufe[0]
+    assert payload["model"] == "gpt-4o-mini"
+    assert ki.headers["Authorization"] == "Bearer oa-test-key"
+
+
+def test_openai_eigenes_modell_wird_unveraendert_benutzt(monkeypatch):
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("OPENAI_API_KEY", "oa-test-key")
+    monkeypatch.setenv("KI_MODELL", "gpt-4o")
+    from pipeline.ki import KI
+    session = FakeSession([FakeResponse(200, {"choices": [{"message": {"content": "x"}}]})])
+    KI(session=session).frage("s", "p")
+    assert session.aufrufe[0]["model"] == "gpt-4o"
+
+
+def test_openai_fehlerstatus_wirft_runtimeerror(monkeypatch):
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("OPENAI_API_KEY", "oa-test-key")
+    from pipeline.ki import KI
+    session = FakeSession([FakeResponse(429, {}, text="zu viele Anfragen")])
+    with pytest.raises(RuntimeError, match="OpenAI antwortet mit 429"):
+        KI(session=session).frage("s", "p")

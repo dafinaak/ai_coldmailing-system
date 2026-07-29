@@ -55,7 +55,7 @@ def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None
     prospeo_noetig = "prospeo" in (kunde.anbieter_reihenfolge or [])
     if prospeo_noetig:
         _brauche_env("PROSPEO_API_KEY")
-    _brauche_env_eines_von("ANTHROPIC_API_KEY", "OPENROUTER_API_KEY")
+    _brauche_env_eines_von("ANTHROPIC_API_KEY", "OPENROUTER_API_KEY", "OPENAI_API_KEY")
     store = RunStore.resume(fortsetzen) if fortsetzen else RunStore(LAEUFE, kunde.name)
     if neu_ab:
         _setze_schritte_zurueck(store, neu_ab)

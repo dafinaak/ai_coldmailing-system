@@ -167,7 +167,13 @@ die laufende Kampagne.
       Status Entwurf, 2 Absender, Betreffs je Stufe, Abstände 7+7 Tage,
       20/Tag, Mo-Fr 08-19 Uhr; Baukasten dafür um name/absender_emails/
       betreffs erweitert, Tests grün)
-- [ ] Schritt 3: Probelauf ~10 Firmen
+- [x] Schritt 3: Probelauf 10 Firmen ABGESCHLOSSEN (28./29.07.:
+      **9 persönliche Mails = 90 %**, davon 6 Datenbank + 3
+      Impressum-KI über OpenAI; 1 geprüfte info@ (Hunter "valid");
+      kommunity.net am 29.07. mit neuem Dropcontact-Konto gelöst.
+      Nebenbefunde behoben: OpenRouter-Zugang tot -> OpenAI als
+      dritter KI-Anbieter; Prospeo-Konto stillgelegt -> Kaskade
+      läuft ohne Prospeo)
 - [ ] Schritt 4: Voller Datenlauf 319
 - [ ] Schritt 5: Anrede-Spalte ergänzt und gezeigt
 - [ ] Schritt 6: Leads hochgeladen + Stichprobe gezeigt

@@ -540,6 +540,50 @@ def empfaenger_mehrfach_bestaetigen(
     return RedirectResponse(f"/pruefen/{slug}/{ts}", status_code=303)
 
 
+@router.post("/pruefen/{slug}/{ts}/alle-bestaetigen")
+def alle_bestaetigen(
+    request: Request,
+    slug: str,
+    ts: str,
+    revision: str = Form(...),
+):
+    """Wholix-Modus (Leonards Entscheidung 30.07.2026): EIN Klick
+    bestaetigt alle drei Mail-Schritte ALLER Empfaenger der Runde -
+    wie Wholix' Sammel-Approve. Die Einzel-Pruefung bleibt als Weg
+    erhalten; dieser Knopf ist die bewusste Abkuerzung. Uebergabe an
+    Instantly bleibt ein eigener, expliziter Schritt danach."""
+    lauf_dir = _lauf_dir_oder_404(request.app.state.daten_dir, slug, ts)
+    zustand_fehler = _pruefung_ist_schreibbar(request, lauf_dir)
+    if zustand_fehler:
+        return _freigabe_fehlerseite(request, slug, ts, zustand_fehler, 400)
+    try:
+        texte = grundtexte_fuer_lauf(lauf_dir)
+        store = FreigabeStatusStore(lauf_dir)
+        # Die Empfaenger-Ids vergibt der Status-Store selbst - deshalb erst
+        # die Ansicht ziehen und ALLE Ids daraus nehmen (nicht qa-blockierte
+        # laesst bestaetigungen_setzen ohnehin nicht durch).
+        alle_ids = [e["id"] for e in store.ansicht(texte)["recipients"]
+                    if not e.get("qa_blocked")]
+        store.bestaetigungen_setzen(
+            texte,
+            alle_ids,
+            actor=auth.aktueller_nutzer(request),
+            approved=True,
+            revision=revision,
+            step=None,
+        )
+    except VeralteterStand:
+        return _freigabe_fehlerseite(
+            request, slug, ts,
+            "Die E-Mail-Runde wurde inzwischen geändert. Bitte die Seite "
+            "neu laden und noch einmal bestätigen.",
+            409,
+        )
+    except (OSError, ValueError, KeyError) as fehler:
+        return _freigabe_fehlerseite(request, slug, ts, str(fehler), 400)
+    return RedirectResponse(f"/pruefen/{slug}/{ts}", status_code=303)
+
+
 @router.post("/pruefen/{slug}/{ts}/neu-erzeugen")
 def schritt_neu_erzeugen(
     request: Request,

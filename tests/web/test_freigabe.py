@@ -945,3 +945,23 @@ def test_ablehnen_mit_begruendung_speichert_und_verschwindet_aus_liste(angemelde
     assert f"/pruefen/{KUNDE_SLUG}/20260717-090000" not in liste.text
 
     assert Laufmanager(daten_dir).status(lauf_dir)["zustand"] == "abgelehnt"
+
+
+def test_wholix_stil_bestaetigt_alle_empfaenger_mit_einem_klick(
+        angemeldeter_client, daten_dir):
+    # Wholix-Modus (Leonards Entscheidung 30.07.2026): ein Klick
+    # bestaetigt alle drei Schritte ALLER Empfaenger; danach ist die
+    # Runde uebergabebereit.
+    _lauf_anlegen(daten_dir, dedupe_behalten=_DEDUPE_BEHALTEN)
+    seite = angemeldeter_client.get(f"/pruefen/{KUNDE_SLUG}/20260717-090000")
+
+    antwort = angemeldeter_client.post(
+        f"/pruefen/{KUNDE_SLUG}/20260717-090000/alle-bestaetigen",
+        data={"revision": _revision_aus(seite)},
+        follow_redirects=False,
+    )
+
+    assert antwort.status_code == 303
+    neu = angemeldeter_client.get(antwort.headers["location"])
+    assert 'data-approved="false"' not in neu.text
+    assert neu.text.count('data-approved="true"') >= 6   # 2 Empfaenger x 3 Schritte

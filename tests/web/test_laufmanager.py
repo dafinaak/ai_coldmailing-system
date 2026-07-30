@@ -831,7 +831,9 @@ def test_fortschrittsseite_zeigt_fuenf_haken_wenn_wartet_auf_freigabe(
 
 def test_start_mit_ungueltigem_limit_zeigt_deutschen_fehler_und_startet_nichts(
         angemeldeter_client, daten_dir, monkeypatch):
-    """(4) Server-seitige Allowlist: nur 25/40/60 sind gueltig. subprocess.Popen
+    """(4) Server-seitige Pruefung: seit dem Wholix-Modus (30.07.2026) ist
+    jede Zahl 1..1000 gueltig - ungueltig sind 0, negative und zu grosse
+    Werte. subprocess.Popen
     wird trotzdem gefaked (Sicherheitsnetz), damit dieser Test auch VOR dem
     Fix (der noch keine Validierung macht) keinen echten Unterprozess
     startet - er beweist die fehlende Validierung ueber den Statuscode/Text,
@@ -843,10 +845,10 @@ def test_start_mit_ungueltigem_limit_zeigt_deutschen_fehler_und_startet_nichts(
         lambda *a, **k: (aufrufe.append(1), FakeProzess(1, True))[1])
 
     antwort = angemeldeter_client.post(
-        "/auftraege/neu", data={"kunde_dateiname": "test-kunde", "limit": "99"})
+        "/auftraege/neu", data={"kunde_dateiname": "test-kunde", "limit": "5000"})
 
     assert antwort.status_code == 400
-    assert "25" in antwort.text and "40" in antwort.text and "60" in antwort.text
+    assert "1 und 1000" in antwort.text
     assert aufrufe == []  # kein Unterprozess gestartet
 
 

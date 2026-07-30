@@ -191,6 +191,13 @@
       <button type="submit" name="action" value="approve" class="knopf-primaer">Ausgewählte bestätigen</button>
       <button type="submit" name="action" value="clear" class="knopf-sekundaer">Bestätigungen aufheben</button>
     </form>
+    {# Wholix-Modus (30.07.2026): ein Klick bestaetigt alle Mails aller
+       Empfaenger - bewusste Abkuerzung, mit Rueckfrage. #}
+    <form method="post" action="/pruefen/{{ slug }}/{{ ts }}/alle-bestaetigen" class="freigabe-alle-form"
+          onsubmit="return confirm('Alle Mails aller Empfänger auf einmal bestätigen — ohne Einzel-Lektüre?');">
+      <input type="hidden" name="revision" value="{{ revision }}">
+      <button type="submit" class="knopf-sekundaer">Alle bestätigen (Wholix-Stil)</button>
+    </form>
     <form method="post" action="/pruefen/{{ slug }}/{{ ts }}/freigeben">
       <button type="submit" class="knopf-primaer" id="freigeben-knopf"{% if not uebergabe_bereit %} disabled{% endif %}>Runde übergeben</button>
     </form>

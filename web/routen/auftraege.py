@@ -23,15 +23,19 @@ from web.routen.kunden import _kunden_dir, _zielgruppe_text
 
 router = APIRouter()
 
-LIMIT_OPTIONEN = [25, 40, 60]
-LIMIT_DEFAULT = 60
+# Wholix-Modus (Leonards Entscheidung 30.07.2026): groessere Pakete plus
+# freies Zahlenfeld statt der alten Kleinst-Stufen 25/40/60 - der Ablauf
+# soll wie Wholix ganze Listen verarbeiten koennen.
+LIMIT_OPTIONEN = [50, 100, 250]
+LIMIT_DEFAULT = 100
+LIMIT_MAX = 1000
 
 KEINE_KUNDEN_HINWEIS = (
     "Noch keine Angebote angelegt. Leg zuerst ein Angebot an, bevor E-Mails "
     "geschrieben werden können."
 )
 
-LIMIT_FEHLER = "Bitte einen der drei vorgegebenen Werte (25, 40 oder 60) wählen."
+LIMIT_FEHLER = "Bitte eine Anzahl zwischen 1 und 1000 wählen."
 
 
 def _manager(request: Request) -> Laufmanager:
@@ -122,15 +126,17 @@ def auftrag_neu_starten(
     request: Request,
     kunde_dateiname: str = Form(""),
     limit: str = Form(str(LIMIT_DEFAULT)),
+    limit_frei: str = Form(""),
 ):
     if not kunde_dateiname.strip():
         return _dialog_antwort(request, fehler=KEINE_KUNDEN_HINWEIS, status_code=400)
 
+    # Freies Zahlenfeld schlaegt die Voreinstellungs-Knoepfe (Wholix-Modus).
     try:
-        limit_zahl = int(limit)
+        limit_zahl = int(limit_frei.strip() or limit)
     except ValueError:
         limit_zahl = None
-    if limit_zahl not in LIMIT_OPTIONEN:
+    if limit_zahl is None or not (1 <= limit_zahl <= LIMIT_MAX):
         return _dialog_antwort(request, fehler=LIMIT_FEHLER, status_code=400)
 
     manager = _manager(request)

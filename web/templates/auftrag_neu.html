@@ -26,6 +26,9 @@
         </span>
       </label>
       {% endfor %}
+      <label class="auftrag-limit-option auftrag-limit-frei">
+        <input type="number" name="limit_frei" min="1" max="1000" placeholder="eigene Zahl" class="formular-eingabe">
+      </label>
     </div>
     <a href="/kunden/neu" class="auftrag-neuer-kunde">+ Neues Angebot anlegen</a>
 
@@ -37,6 +40,9 @@
         <span>{{ opt }}</span>
       </label>
       {% endfor %}
+      <label class="auftrag-limit-option auftrag-limit-frei">
+        <input type="number" name="limit_frei" min="1" max="1000" placeholder="eigene Zahl" class="formular-eingabe">
+      </label>
     </div>
 
     <div class="formular-fuss">

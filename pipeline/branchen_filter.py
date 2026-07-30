@@ -109,6 +109,51 @@ Antworte AUSSCHLIESSLICH mit:
 {"passt": true|false, "typ": "<kurze Einordnung>", "grund": "<ein Satz>"}"""
 
 
+WETTBEWERBER_SYSTEM = """Du prüfst EINE Frage: Bietet diese Firma selbst
+Automatisierung oder KI-Lösungen als Leistung an?
+
+Als Wettbewerber gilt, wer Folgendes anbietet oder damit wirbt:
+- Prozessautomatisierung, Workflow-Automation, Geschäftsprozess-
+  Automatisierung, RPA
+- KI-Lösungen, KI-Beratung, KI-Implementierung, KI-Integration,
+  "Prozesse intelligent automatisieren", KI-Agenten, Chatbots
+- Systemintegration/Schnittstellen ausdrücklich als Automations-Angebot
+- Digitalisierungs-Projekte mit Automatisierungs-Versprechen
+  ("Abläufe automatisieren", "Papierlose Prozesse", Workflow-Systeme)
+
+NICHT als Wettbewerber gilt reine IT-Betreuung: Managed Services,
+Support, Wartung, Netzwerk/Server-Betrieb, Hardware, Security-Betrieb,
+Backup, Cloud-Migration ohne Automations-Versprechen.
+
+Antworte AUSSCHLIESSLICH mit:
+{"wettbewerber": true|false, "belege": "<Zitat/Stichwort von der Seite
+oder leer>"}"""
+
+
+def ist_wettbewerber(firma: dict, webtext: str, ki) -> dict:
+    """Zweite, harte Pruefung (Olivers Fund 30.07.2026): Bietet die Firma
+    SELBST Automatisierung/KI an? Gibt {"wettbewerber", "belege"}.
+    Unlesbare Antworten gelten als Wettbewerber - wer nicht eindeutig
+    unbedenklich ist, wird nicht angeschrieben."""
+    kategorien = ", ".join(str(k) for k in firma.get("categories") or []) or "keine"
+    webseite_teil = (f"Text der Webseite (Auszug):\n{webtext[:3500]}"
+                     if webtext.strip() else
+                     "Kein Text von der Webseite verfügbar - urteile nur nach "
+                     "Name und Kategorien.")
+    prompt = (f"Firma: {firma.get('name', '')}\n"
+              f"Kategorien: {kategorien}\n\n{webseite_teil}")
+    antwort = ki.frage(WETTBEWERBER_SYSTEM, prompt)
+    treffer = re.search(r"\{.*\}", antwort or "", re.S)
+    if not treffer:
+        return {"wettbewerber": True, "belege": "KI-Antwort nicht lesbar"}
+    try:
+        daten = json.loads(treffer.group(0))
+    except ValueError:
+        return {"wettbewerber": True, "belege": "KI-Antwort nicht lesbar"}
+    return {"wettbewerber": bool(daten.get("wettbewerber")),
+            "belege": str(daten.get("belege") or "")}
+
+
 def firma_bewerten(firma: dict, webtext: str, ki, system=None) -> dict:
     """Bewertet EINE Firma. Gibt {"passt", "typ", "grund", "quelle"}.
     Mit system=ZWEITE_CHANCE_SYSTEM laeuft die Grenzfall-Nachpruefung."""

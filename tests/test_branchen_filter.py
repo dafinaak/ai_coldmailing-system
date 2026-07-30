@@ -151,3 +151,38 @@ def test_zweite_chance_fragt_nur_nach_fremd_it_betreuung():
     assert "IT ANDERER Unternehmen" in system
     assert "Automation" in system          # Wettbewerber bleiben ausgeschlossen
     assert "Managed Services" in system
+
+
+# Wettbewerber-Pruefung (Olivers Fund "Michael Wessel", 30.07.2026) -------
+# Der bisherige Filter fragte "betreut die Firma fremde IT?" - und liess
+# bei Ja durch, ohne zu pruefen, ob dieselbe Firma AUCH Automatisierung
+# oder KI anbietet. Genau daran ist Michael Wessel durchgerutscht
+# ("IT-Prozesse intelligent automatisieren - mit KI-Loesungen").
+
+def test_wettbewerber_pruefung_erkennt_automations_angebot():
+    from pipeline.branchen_filter import ist_wettbewerber, WETTBEWERBER_SYSTEM
+    ki = _FakeKI('{"wettbewerber": true, "belege": "IT-Prozesse intelligent '
+                 'automatisieren mit KI-Loesungen"}')
+    ergebnis = ist_wettbewerber(firma(), webtext="... automatisieren ...", ki=ki)
+    assert ergebnis["wettbewerber"] is True
+    assert "automatisieren" in ergebnis["belege"]
+    system, _ = ki.prompts[0]
+    for pflicht in ["Automatisierung", "KI", "RPA", "Workflow"]:
+        assert pflicht in system
+
+
+def test_reines_systemhaus_ist_kein_wettbewerber():
+    from pipeline.branchen_filter import ist_wettbewerber
+    ki = _FakeKI('{"wettbewerber": false, "belege": ""}')
+    ergebnis = ist_wettbewerber(firma(), webtext="Managed Services, Wartung",
+                                ki=ki)
+    assert ergebnis["wettbewerber"] is False
+
+
+def test_unlesbare_antwort_gilt_als_wettbewerber():
+    """Zuverlaessigkeit zuerst: Wer nicht eindeutig als unbedenklich
+    erkannt wird, wird nicht angeschrieben."""
+    from pipeline.branchen_filter import ist_wettbewerber
+    ergebnis = ist_wettbewerber(firma(), webtext="x", ki=_FakeKI("murks"))
+    assert ergebnis["wettbewerber"] is True
+    assert "nicht lesbar" in ergebnis["belege"].lower()

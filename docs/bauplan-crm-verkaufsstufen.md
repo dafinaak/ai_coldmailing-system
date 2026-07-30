@@ -113,5 +113,8 @@ Mail-Funktionen).
       Stufenwechsel je Zeile, "+ Hinzufügen"; Zufluss an den
       Postfach-Abruf angeschlossen; 641 Tests grün. Offen: Feinschliff
       der Optik gegen die Vorlage + Bildschirmfoto-Nachweis)
-- [ ] Schritt 4: Verbindung zu Postfach/Kampagne (Klick vom Kontakt
-      zum Antwort-Verlauf)
+- [x] Schritt 4: Verbindung zum Antworten-Bereich (30.07.: "Verlauf"-Link
+      je Kontaktzeile -> /postfach?kontakt=..., 2 Tests grün)
+
+**CRM-Bauplan damit vollständig umgesetzt.** Offen bleibt nur der
+Optik-Feinschliff gegen die Screenshots samt Bildschirmfoto-Nachweis.

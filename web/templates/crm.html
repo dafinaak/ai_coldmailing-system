@@ -55,7 +55,10 @@
     </div>
     {% for k in kontakte %}
     <div class="crm-zeile">
-      <div class="kontakte-name">{{ k.name or "—" }}</div>
+      <div class="kontakte-name">
+        {{ k.name or "—" }}
+        <a href="/postfach?kontakt={{ k.email | urlencode }}" class="crm-verlauf-link" title="Antwort-Verlauf öffnen">Verlauf</a>
+      </div>
       <div class="kamp-gedaempft">{{ k.firma or "—" }}</div>
       <div class="kontakte-mail">{{ k.email }}</div>
       <div class="kontakte-kampagne">{{ k.kampagne or "—" }}</div>

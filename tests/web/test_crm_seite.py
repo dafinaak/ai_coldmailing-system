@@ -117,3 +117,22 @@ def test_kontakt_von_hand_anlegen(daten_dir, angemeldeter_client):
     assert any(k["email"] == "neu@firma.de" for k in s.kontakte())
     ohne_mail = angemeldeter_client.post("/crm/anlegen", data={"email": "x"})
     assert ohne_mail.status_code == 400
+
+
+def test_jede_zeile_verlinkt_den_antwort_verlauf(daten_dir, angemeldeter_client):
+    # CRM-Bauplan Schritt 4: Vom Kontakt mit einem Klick zum zugehoerigen
+    # Verlauf im Antworten-Bereich - dort wird geantwortet, das CRM
+    # verdoppelt keine Mail-Funktionen.
+    _befuellen(daten_dir)
+    antwort = angemeldeter_client.get("/crm")
+    assert "/postfach?kontakt=m.ehlers%40itanix.de" in antwort.text
+    assert "/postfach?kontakt=s.braun%40marc-cain.com" in antwort.text
+
+
+def test_archiv_ansicht_verlinkt_keinen_verlauf(daten_dir, angemeldeter_client):
+    # Im Archiv (alle je Angeschriebenen) gibt es nicht zwingend einen
+    # Verlauf - dort bleibt die Zeile ohne Link.
+    _befuellen(daten_dir)
+    antwort = angemeldeter_client.get("/crm", params={"ansicht": "archiv"})
+    assert antwort.status_code == 200
+    assert "Alle Angeschriebenen" in antwort.text

@@ -2209,3 +2209,23 @@ h1 { margin: 0; font-size: 24px; }
 .crm-chip-archiv { margin-left: auto; }
 .nav-badge { background: var(--farbe-akzent); color: #fff; }
 .dash-randnotiz { font-size: 0.85rem; color: var(--farbe-gedaempft); margin: 4px 0 14px; }
+
+/* Fix 30.07.2026: Das freie Zahlenfeld im Auftrags-Formular (Wholix-Modus)
+   erbte die Radio-Regel (.auftrag-limit-option input -> absolut, unsichtbar)
+   und sprengte die Layout-Breite - beides hier zurechtgerueckt. */
+.auftrag-limit-liste { flex-wrap: wrap; align-items: center; }
+.auftrag-limit-frei { padding: 0; border: 0; background: none; }
+.auftrag-limit-frei input {
+  position: static; opacity: 1; pointer-events: auto;
+  width: 120px; max-width: 100%;
+}
+/* Sicherheitsnetz gegen seitliches Wegrutschen der ganzen Seite */
+.rahmen { max-width: 100vw; overflow-x: hidden; }
+.inhalt { min-width: 0; }
+.nav, .nav-fuss { min-width: 0; }
+.nav-eintrag, .nav-fuss-eintrag { overflow-wrap: anywhere; }
+.crm-verlauf-link {
+  font-size: 0.75rem; margin-left: 8px; color: var(--farbe-gedaempft);
+  text-decoration: none; border-bottom: 1px dotted currentColor;
+}
+.crm-verlauf-link:hover { color: var(--farbe-akzent); }

@@ -34,6 +34,7 @@ NAV_BEREICHE = [
     ("postfaecher", "/postfaecher", "Postfächer"),
     ("pruefen", "/pruefen", "Lesen & Freigeben"),
     ("kontakte", "/kontakte", "Kontakte"),
+    ("crm", "/crm", "CRM"),
     ("postfach", "/postfach", "Postfach"),
     ("domains", "/domains", "Gesperrte Domains"),
     ("kunden", "/kunden", "Angebote"),

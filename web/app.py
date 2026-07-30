@@ -22,6 +22,7 @@ from .routen import freigabe as freigabe_routen
 from .routen import kampagnen as kampagnen_routen
 from .routen import intro as intro_routen
 from .routen import kontakte as kontakte_routen
+from .routen import crm as crm_routen
 from .routen import kunden as kunden_routen
 from .routen import postfach as postfach_routen
 from .routen import postfaecher as postfaecher_routen
@@ -34,7 +35,7 @@ BASIS = Path(__file__).resolve().parent
 # eine Platzhalterseite, damit die Navigation nie ins Leere (404) laeuft.
 # Bereiche mit eigenem Routen-Modul werden unten aus dieser Liste
 # ausgenommen, sobald ihre echte Route registriert ist.
-BEREICHE_MIT_EIGENER_ROUTE = {"dashboard", "domains", "kunden", "pruefen", "kampagnen", "kontakte",
+BEREICHE_MIT_EIGENER_ROUTE = {"dashboard", "domains", "kunden", "pruefen", "kampagnen", "kontakte", "crm",
                                "postfach", "postfaecher", "so-funktionierts"}
 
 
@@ -79,6 +80,7 @@ def create_app(daten_dir: Path) -> FastAPI:
     app.include_router(freigabe_routen.router)
     app.include_router(kampagnen_routen.router)
     app.include_router(kontakte_routen.router)
+    app.include_router(crm_routen.router)
     app.include_router(postfach_routen.router)
     app.include_router(postfaecher_routen.router)
     app.include_router(dashboard_routen.router)

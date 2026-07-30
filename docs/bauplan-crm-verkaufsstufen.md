@@ -101,7 +101,17 @@ Mail-Funktionen).
 
 ## Fortschritt
 
-- [ ] Schritt 1: SQLite-Datenfundament
-- [ ] Schritt 2: Automatischer Zufluss (nur Antwortende)
-- [ ] Schritt 3: Kontakte-Seite im Wholix-Look
-- [ ] Schritt 4: Verbindung zu Postfach/Kampagne
+- [x] Schritt 1: SQLite-Datenfundament (29.07.: web/crm_speicher.py,
+      5 Tests grün — anlegen, Duplikat-Schutz, Stufenwechsel mit
+      Zeitstempel, Zähler/Filter je Kampagne, sechs deutsche Stufen)
+- [x] Schritt 2: Automatischer Zufluss (29.07.: web/crm_zufluss.py,
+      4 Tests grün — nur erhaltene Nachrichten erzeugen Kontakte,
+      keine Duplikate, Anreicherung aus lokalen Kontaktdaten,
+      Kampagnen-Zuordnung aus der Nachricht)
+- [x] Schritt 3: CRM-Seite gebaut (30.07.: Route /crm + Navigation,
+      Kampagnen-Brätter, Stufen-Leiste mit Zählern, Suche,
+      Stufenwechsel je Zeile, "+ Hinzufügen"; Zufluss an den
+      Postfach-Abruf angeschlossen; 641 Tests grün. Offen: Feinschliff
+      der Optik gegen die Vorlage + Bildschirmfoto-Nachweis)
+- [ ] Schritt 4: Verbindung zu Postfach/Kampagne (Klick vom Kontakt
+      zum Antwort-Verlauf)

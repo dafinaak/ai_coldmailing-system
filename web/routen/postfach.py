@@ -7,6 +7,7 @@ Versand an Kontakt und Mail-ID.
 """
 from __future__ import annotations
 
+from pathlib import Path
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, Form, Request
@@ -160,6 +161,23 @@ def _lade_postfach(request: Request, gewuenscht: str | None = None):
     stand_by_id = leser.emails_stand(campaign_ids)
     konversationen = konversationen_aus_email_stand(stand_by_id)
     live_stand_hinweis = kampagnen_routen._live_stand_hinweis(list(stand_by_id.values()))
+
+    # CRM-Zufluss (Bauplan CRM-Verkaufsstufen, Schritt 2+3): Antwortende
+    # werden beim Postfach-Abruf automatisch als CRM-Kontakt angelegt -
+    # nur Konversationen mit ERHALTENER Nachricht, je Adresse einmal
+    # (Duplikat-Schutz im Speicher). Fehler hier duerfen das Postfach
+    # nicht reissen - das CRM ist Beifang, nicht Zweck dieser Seite.
+    try:
+        from web.crm_speicher import KontakteSpeicher
+        from web.crm_zufluss import antwortende_uebernehmen
+        antwortende_uebernehmen(
+            KontakteSpeicher(Path(daten_dir) / "kontakte.db"),
+            konversationen,
+            kontakt_info=_kontakt_info_je_email(daten_dir),
+            kampagnen_namen={l["campaign_id"]: l["kunde_name"]
+                             for l in laeufe if l["campaign_id"]})
+    except Exception as fehler:
+        print(f"CRM-Zufluss übersprungen (Fehler): {fehler}")
 
     if gewuenscht is None:
         gewuenscht = request.query_params.get("kontakt") or ""

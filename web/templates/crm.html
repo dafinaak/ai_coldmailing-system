@@ -1,0 +1,72 @@
+{% extends "layout.html" %}
+{% block titel %}CRM{% endblock %}
+{% block inhalt %}
+<div class="seite">
+  <h1>CRM</h1>
+  <p class="seiten-hilfstext">Kontakte nach Verkaufsstufen. Hier landet automatisch, wer auf eine Kampagnen-Mail geantwortet hat.</p>
+
+  {# Kampagnen-Auswahl: ein Brett je Kampagne, plus Alle #}
+  <div class="crm-chips">
+    <a href="/crm" class="crm-chip {{ 'crm-chip-aktiv' if not aktive_kampagne }}">Alle Kampagnen</a>
+    {% for k in kampagnen %}
+    <a href="/crm?kampagne={{ k | urlencode }}" class="crm-chip {{ 'crm-chip-aktiv' if aktive_kampagne == k }}">{{ k }}</a>
+    {% endfor %}
+  </div>
+
+  {# Stufen-Leiste mit Zaehlern (Wholix-Vorlage: Chips ueber der Liste) #}
+  <div class="crm-chips crm-stufen">
+    <a href="/crm{{ '?kampagne=' + (aktive_kampagne | urlencode) if aktive_kampagne }}"
+       class="crm-chip {{ 'crm-chip-aktiv' if not aktive_stufe }}">Alle <span class="crm-zahl">{{ zaehler_alle }}</span></a>
+    {% for name, beschriftung, anzahl in stufen %}
+    <a href="/crm?stufe={{ name }}{{ '&kampagne=' + (aktive_kampagne | urlencode) if aktive_kampagne }}"
+       class="crm-chip {{ 'crm-chip-aktiv' if aktive_stufe == name }}">{{ beschriftung }} <span class="crm-zahl">{{ anzahl }}</span></a>
+    {% endfor %}
+  </div>
+
+  <form method="get" action="/crm" class="kontakte-suche-form">
+    {% if aktive_kampagne %}<input type="hidden" name="kampagne" value="{{ aktive_kampagne }}">{% endif %}
+    <input type="text" name="q" value="{{ suche }}" placeholder="Suchen: Name, Firma oder E-Mail-Adresse" class="formular-eingabe kontakte-suche-eingabe">
+    <button type="submit" class="knopf-sekundaer knopf-klein">Suchen</button>
+  </form>
+
+  <div class="kamp-tabelle">
+    <div class="crm-kopf">
+      <div>NAME</div><div>FIRMA</div><div>E-MAIL</div><div>KAMPAGNE</div><div>STUFE</div>
+    </div>
+    {% for k in kontakte %}
+    <div class="crm-zeile">
+      <div class="kontakte-name">{{ k.name or "—" }}</div>
+      <div class="kamp-gedaempft">{{ k.firma or "—" }}</div>
+      <div class="kontakte-mail">{{ k.email }}</div>
+      <div class="kontakte-kampagne">{{ k.kampagne or "—" }}</div>
+      <div>
+        <form method="post" action="/crm/stufe" class="crm-stufe-form">
+          <input type="hidden" name="email" value="{{ k.email }}">
+          <input type="hidden" name="zurueck" value="/crm{{ '?kampagne=' + (aktive_kampagne | urlencode) if aktive_kampagne }}">
+          <select name="stufe" class="formular-eingabe crm-stufe-wahl">
+            {% for name, beschriftung, _ in stufen %}
+            <option value="{{ name }}" {{ 'selected' if k.stufe == name }}>{{ beschriftung }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="knopf-sekundaer knopf-klein">Speichern</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+    {% if leer %}
+    <div class="kontakte-leer">Keine Kontakte{{ " in dieser Stufe" if aktive_stufe }}. Sobald jemand auf eine Kampagnen-Mail antwortet, erscheint er hier automatisch.</div>
+    {% endif %}
+  </div>
+
+  <details class="crm-anlegen">
+    <summary class="knopf-sekundaer knopf-klein">+ Hinzufügen</summary>
+    <form method="post" action="/crm/anlegen" class="crm-anlegen-form">
+      <input type="text" name="name" placeholder="Name" class="formular-eingabe">
+      <input type="text" name="firma" placeholder="Firma" class="formular-eingabe">
+      <input type="text" name="email" placeholder="E-Mail-Adresse (Pflicht)" class="formular-eingabe">
+      <input type="text" name="kampagne" placeholder="Kampagne (optional)" class="formular-eingabe">
+      <button type="submit" class="knopf-primaer knopf-klein">Anlegen</button>
+    </form>
+  </details>
+</div>
+{% endblock %}

@@ -2139,3 +2139,26 @@ h1 { margin: 0; font-size: 24px; }
 @media (prefers-reduced-motion: reduce) {
   .sperrliste-seite * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* CRM-Bereich (Bauplan CRM-Verkaufsstufen, Schritt 3): Chips-Leisten
+   nach Wholix-Vorlage (Stufen-Filter mit Zaehlern ueber der Liste). */
+.crm-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.crm-chip { padding: 6px 14px; border: 1px solid var(--linie, #ddd);
+  border-radius: 999px; text-decoration: none; color: inherit;
+  font-size: 0.9em; background: var(--flaeche, #fff); }
+.crm-chip-aktiv { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+.crm-zahl { opacity: 0.65; margin-left: 4px; }
+.crm-kopf, .crm-zeile { display: grid;
+  grid-template-columns: 1.2fr 1.2fr 1.6fr 1.2fr 1.4fr;
+  gap: 8px; align-items: center; }
+.crm-kopf { font-size: 0.75em; letter-spacing: 0.04em; opacity: 0.6;
+  padding: 8px 0; }
+.crm-zeile { padding: 8px 0; border-top: 1px solid var(--linie, #eee); }
+.crm-stufe-form { display: flex; gap: 6px; align-items: center; }
+.crm-stufe-wahl { max-width: 160px; }
+.crm-anlegen { margin-top: 16px; }
+.crm-anlegen-form { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+@media (max-width: 480px) {
+  .crm-kopf { display: none; }
+  .crm-zeile { grid-template-columns: 1fr; }
+}

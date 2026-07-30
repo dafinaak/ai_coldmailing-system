@@ -4,6 +4,7 @@ laeufe/ und sperrliste-global.yaml (letztere drei kommen erst in spaeteren
 Paketen dazu, dieses Paket legt nur das Geruest mit Anmeldung an)."""
 from __future__ import annotations
 
+import hashlib
 import os
 import threading
 from pathlib import Path
@@ -39,6 +40,17 @@ BEREICHE_MIT_EIGENER_ROUTE = {"dashboard", "domains", "kunden", "pruefen", "kamp
                                "postfach", "postfaecher", "so-funktionierts"}
 
 
+def stil_version(pfad=None) -> str:
+    """Kurze Kennung des Stylesheet-Inhalts fuer die Cache-Umgehung.
+    Fehlt die Datei, wird eine feste Ersatz-Kennung geliefert (die Seite
+    soll deswegen nicht abstuerzen)."""
+    pfad = Path(pfad) if pfad else BASIS / "static" / "stil.css"
+    try:
+        return hashlib.sha256(pfad.read_bytes()).hexdigest()[:10]
+    except OSError:
+        return "0000000000"
+
+
 def create_app(daten_dir: Path) -> FastAPI:
     daten_dir = Path(daten_dir)
     daten_dir.mkdir(parents=True, exist_ok=True)
@@ -70,6 +82,10 @@ def create_app(daten_dir: Path) -> FastAPI:
 
     app.mount("/static", StaticFiles(directory=str(BASIS / "static")), name="static")
     templates = Jinja2Templates(directory=str(BASIS / "templates"))
+    # Cache-Busting (Fund 30.07.2026): Cloudflare lieferte das alte
+    # stil.css nach einem Deployment noch Stunden weiter aus. Die
+    # Versions-Kennung haengt am Datei-Inhalt - neue Datei, neue Adresse.
+    templates.env.globals["stil_version"] = stil_version()
     app.state.templates = templates
 
     app.add_middleware(auth.AnmeldePflicht)

@@ -19,6 +19,7 @@ from fastapi.responses import RedirectResponse
 
 from web import auth
 from web.crm_speicher import KontakteSpeicher, STUFEN, STUFEN_BESCHRIFTUNG
+from web.kontakte import sammle_kontakte
 from web.nav import nav_kontext
 
 router = APIRouter()
@@ -33,13 +34,20 @@ def _speicher(request: Request) -> KontakteSpeicher:
 @router.get("/crm")
 async def crm_seite(request: Request):
     speicher = _speicher(request)
+    # Archiv-Ansicht (Struktur-Paket 30.07.2026): Das fruehere
+    # "Kontakte"-Verzeichnis (alle je Angeschriebenen, rein lesend) lebt
+    # jetzt als Ansicht IM CRM - ein Chip neben den Stufen.
+    archiv = request.query_params.get("ansicht", "") == "archiv"
     kampagne = request.query_params.get("kampagne", "").strip() or None
     stufe = request.query_params.get("stufe", "").strip() or None
     if stufe is not None and stufe not in STUFEN:
         raise HTTPException(status_code=400, detail="Unbekannte Stufe.")
     suche = request.query_params.get("q", "").strip()
 
-    kontakte = speicher.kontakte(kampagne=kampagne, stufe=stufe)
+    if archiv:
+        kontakte = sammle_kontakte(request.app.state.daten_dir)
+    else:
+        kontakte = speicher.kontakte(kampagne=kampagne, stufe=stufe)
     if suche:
         klein = suche.lower()
         kontakte = [k for k in kontakte if any(
@@ -58,6 +66,7 @@ async def crm_seite(request: Request):
             "stufen_beschriftung": STUFEN_BESCHRIFTUNG,
             "zaehler_alle": zaehler["alle"],
             "aktive_stufe": stufe or "",
+            "archiv": archiv,
             "suche": suche,
             "kontakte": kontakte,
             "leer": not kontakte,

@@ -13,7 +13,7 @@
   </div>
   {% endif %}
 
-  {% if kontoproblem or postfach_probleme %}
+  {% if kontoproblem %}
   <div class="dash-konto-liste">
     {% for k in kontoproblem %}
     <div class="dash-konto-zeile">
@@ -21,13 +21,15 @@
       <a href="/kampagnen/{{ k.slug }}/{{ k.ts }}" class="knopf-sekundaer knopf-klein">Ansehen</a>
     </div>
     {% endfor %}
-    {% for p in postfach_probleme %}
-    <div class="dash-konto-zeile">
-      <div class="dash-konto-info">Postfach-Problem bei <b>{{ p.email }}</b> — bitte in Instantly neu verbinden.</div>
-      <a href="/postfaecher" class="knopf-sekundaer knopf-klein">Ansehen</a>
-    </div>
-    {% endfor %}
   </div>
+  {% endif %}
+
+  {# Postfach-Verbindungsprobleme als ruhige Randnotiz statt rotem Alarm
+     (Struktur-Paket 30.07.2026): Stoerungen, die eine KAMPAGNE betreffen,
+     schreien bereits oben als Konto-Problem - diese Zeile betrifft nur
+     die uebrigen Postfaecher. #}
+  {% if postfach_probleme %}
+  <p class="dash-randnotiz">{{ postfach_probleme | length }} Postfach{{ "" if postfach_probleme | length == 1 else "er" }} ohne Verbindung ({{ postfach_probleme | map(attribute="email") | join(", ") }}) — <a href="/postfaecher">unter Absender ansehen</a>.</p>
   {% endif %}
 
   <div class="dash-kacheln">

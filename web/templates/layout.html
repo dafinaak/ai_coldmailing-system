@@ -19,13 +19,21 @@
       <div class="marke-untertitel">KI-KALTAKQUISE</div>
     </div>
     <nav class="nav">
-      {% for eintrag in nav %}
+      {% for gruppen_titel, eintraege in nav.gruppen %}
+      <div class="nav-gruppe-titel">{{ gruppen_titel }}</div>
+      {% for eintrag in eintraege %}
       <a href="{{ eintrag.url }}" class="nav-eintrag{% if eintrag.aktiv %} nav-eintrag--aktiv{% endif %}">
         <span>{{ eintrag.label }}</span>
         {% if eintrag.badge %}<span class="nav-badge">{{ eintrag.badge }}</span>{% endif %}
       </a>
       {% endfor %}
+      {% endfor %}
     </nav>
+    <div class="nav-fuss">
+      {% for eintrag in nav.fuss %}
+      <a href="{{ eintrag.url }}" class="nav-fuss-eintrag{% if eintrag.aktiv %} nav-eintrag--aktiv{% endif %}">{{ eintrag.label }}</a>
+      {% endfor %}
+    </div>
     <div class="nutzer-fuss">
       <div>
         <div class="nutzer-name">{{ nutzer }}</div>

@@ -2162,3 +2162,50 @@ h1 { margin: 0; font-size: 24px; }
   .crm-kopf { display: none; }
   .crm-zeile { grid-template-columns: 1fr; }
 }
+
+/* ===== Wholix-Optik (Struktur/Optik-Paket, Leonards Freigabe 30.07.2026)
+   Angleichung an die Vorlage (Ordner "wholix interface screenshots"):
+   weisse Seitenleiste mit Gruppen-Ueberschriften, helles Grau als
+   Hintergrund, Wholix-Orange als Akzent, weiche Karten und Pill-Chips.
+   Nur Variablen + gezielte Overrides - die Struktur der Basis-Stile
+   bleibt unangetastet. */
+:root {
+  --farbe-hintergrund: #F7F6F3;
+  --farbe-seitenleiste: #FFFFFF;
+  --farbe-akzent: #F29423;
+  --farbe-rand: #E8E6E1;
+  --farbe-gedaempft: #75726B;
+  --farbe-nav-inaktiv: #4B4943;
+}
+.seitenleiste { border-right: 1px solid var(--farbe-rand); }
+.nav-gruppe-titel {
+  font-size: 0.68rem; letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--farbe-gedaempft); margin: 18px 14px 6px;
+  font-family: var(--schrift-mono);
+}
+.nav-eintrag { border-radius: 10px; text-decoration: none; }
+.nav-eintrag--aktiv {
+  background: #FBF3DF; color: var(--farbe-text); font-weight: 600;
+  box-shadow: inset 0 0 0 1px #F0E3C2;
+}
+.nav-fuss {
+  margin-top: auto; padding: 10px 14px; display: flex; flex-direction: column;
+  gap: 4px; border-top: 1px solid var(--farbe-rand);
+}
+.nav-fuss-eintrag {
+  font-size: 0.82rem; color: var(--farbe-gedaempft); text-decoration: none;
+}
+.nav-fuss-eintrag:hover { color: var(--farbe-akzent); }
+.knopf-primaer, .knopf-primaer:hover {
+  background: var(--farbe-akzent); border-color: var(--farbe-akzent);
+  color: #fff;
+}
+.kamp-tabelle, .karte, .kachel {
+  background: var(--farbe-weiss); border-radius: 12px;
+  border: 1px solid var(--farbe-rand);
+}
+.crm-chip { background: var(--farbe-weiss); border-color: var(--farbe-rand); }
+.crm-chip-aktiv { background: #1C1B15; color: #fff; border-color: #1C1B15; }
+.crm-chip-archiv { margin-left: auto; }
+.nav-badge { background: var(--farbe-akzent); color: #fff; }
+.dash-randnotiz { font-size: 0.85rem; color: var(--farbe-gedaempft); margin: 4px 0 14px; }

@@ -316,7 +316,7 @@ def test_ohne_kontoproblem_keine_laute_zeile(angemeldeter_client, daten_dir):
 
 # Postfach-Problem-Zeile (Baustein 2) -----------------------------------------
 
-def test_postfach_problem_erscheint_als_laute_zeile(angemeldeter_client):
+def test_postfach_problem_erscheint_als_randnotiz(angemeldeter_client):
     app = angemeldeter_client.app
     app.state.instantly_leser = FakeInstantlyLeser({}, postfaecher_liste=[
         {"email": "kaputt@firma.de", "status": "verbindungsfehler", "warmup": "aus",
@@ -325,9 +325,13 @@ def test_postfach_problem_erscheint_als_laute_zeile(angemeldeter_client):
     antwort = angemeldeter_client.get("/")
     assert antwort.status_code == 200
     text = antwort.text
-    assert "Postfach-Problem bei" in text
+    # Struktur-Paket 30.07.2026: Verbindungsprobleme einzelner Postfaecher
+    # sind eine ruhige Randnotiz (Kampagnen-Stoerungen schreien weiterhin
+    # separat als Konto-Problem-Zeile).
+    assert "ohne Verbindung" in text
     assert "kaputt@firma.de" in text
     assert 'href="/postfaecher"' in text
+    assert "Postfach-Problem bei" not in text
 
 
 def test_ohne_postfach_problem_keine_laute_zeile(angemeldeter_client):

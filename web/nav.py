@@ -1,54 +1,72 @@
-"""Gemeinsame Navigation fuers Team-Interface: welche der sieben Bereiche
-es gibt, in welcher Reihenfolge, und wie der Kontext fuers Layout-Template
-aussieht. Eigenes Modul (statt in web.app verschachtelt), damit sowohl die
-Platzhalter-Routen als auch die einzelnen web.routen.*-Module (ab Task 2)
-dieselbe Liste verwenden - eine Seite taucht so nur an einer Stelle auf.
+"""Gemeinsame Navigation fuers Team-Interface.
 
-Seit Task 7 traegt der Badge-Platzhalter (aus Task 1) fuer "Lesen &
-Freigeben" die Anzahl wartender Freigaben - auf JEDER Seite, weil
-nav_kontext() von jeder Route aufgerufen wird. Die Zaehlung kommt aus
-web.wartende.wartende_anzahl (Dateisystem-only, siehe dort) statt hier neu
-gebaut zu werden.
+Struktur-Paket (30.07.2026, Leonards Freigabe): Die Leiste ist nach
+Wholix-Vorbild in GRUPPEN gegliedert und ausgeduennt:
 
-Copy-Rework (20.07.2026): "So funktioniert's" ist ein achter, bewusst
-unauffaelliger Eintrag unten in der Liste (eigene Route in
-web.routen.intro) - die "sieben Bereiche" im Docstring oben bleiben die
-fachlichen Kernbereiche, dieser Eintrag ist nur der jederzeit erreichbare
-Wieder-Einstieg in die Kurz-Erklaerung.
+- Gruppe "CRM": CRM und Antworten (vorher "Postfach" - umbenannt, weil
+  das Namenspaar Postfach/Postfaecher eine Verwechslungs-Falle war).
+- Gruppe "E-Mail-Kampagne": Dashboard, Kampagnen, Absender (vorher
+  "Postfaecher"), Gesperrte Domains - plus "Lesen & Freigeben" NUR,
+  wenn tatsaechlich etwas auf Freigabe wartet (der Use Case ruht
+  sonst; der Tab taucht mit Zaehler von selbst wieder auf).
+- Fusszeile (klein, bei Abmelden): Angebote, So funktioniert's -
+  Konfiguration und Anleitung, kein Tagesgeschaeft.
+- "Kontakte" (Archiv) ist aus der Leiste raus: Das Archiv ist jetzt
+  eine Ansicht IM CRM (Chip "Alle Angeschriebenen"); die alte Route
+  /kontakte bleibt erreichbar (Verweise/Lesezeichen brechen nicht).
 
-Baustein 2 (20.07.2026): "Postfächer" kommt als neunter Eintrag dazu,
-direkt nach "Kampagnen" (thematisch am naechsten: beide drehen sich um den
-Instantly-Versand) - rein lesende Uebersicht des Verbindungs-/Anwaerm-
-Status aller Sende-Postfaecher, siehe web.routen.postfaecher."""
+Der Badge fuer "Lesen & Freigeben" kommt weiterhin aus
+web.wartende.wartende_anzahl (Dateisystem-only) und wird auf jeder
+Seite berechnet, weil nav_kontext() von jeder Route aufgerufen wird.
+"""
 from __future__ import annotations
 
 from starlette.requests import Request
 
 from web.wartende import wartende_anzahl
 
-# Die sieben Bereiche der Seitenleiste, in dieser verbindlichen Reihenfolge
-# (siehe docs/text-leitfaden-interface.md).
+# Flache Liste aller Bereiche mit eigener Route (Schluessel, URL, Label) -
+# Quelle fuer Gruppen und Fusszeile; einzelne Eintraege erscheinen je nach
+# Zustand (siehe nav_kontext).
 NAV_BEREICHE = [
     ("dashboard", "/", "Dashboard"),
     ("kampagnen", "/kampagnen", "Kampagnen"),
-    ("postfaecher", "/postfaecher", "Postfächer"),
+    ("postfaecher", "/postfaecher", "Absender"),
     ("pruefen", "/pruefen", "Lesen & Freigeben"),
-    ("kontakte", "/kontakte", "Kontakte"),
+    ("kontakte", "/kontakte", "Alle Angeschriebenen"),
     ("crm", "/crm", "CRM"),
-    ("postfach", "/postfach", "Postfach"),
+    ("postfach", "/postfach", "Antworten"),
     ("domains", "/domains", "Gesperrte Domains"),
     ("kunden", "/kunden", "Angebote"),
     ("so-funktionierts", "/so-funktionierts", "So funktioniert's"),
 ]
 
+_GRUPPE_CRM = ("crm", "postfach")
+_GRUPPE_KAMPAGNE = ("dashboard", "kampagnen", "postfaecher", "domains")
+_FUSS = ("kunden", "so-funktionierts")
 
-def nav_kontext(request: Request) -> list[dict]:
+
+def _eintrag(key: str, request: Request, badge=None) -> dict:
+    _, url, label = next(b for b in NAV_BEREICHE if b[0] == key)
+    return {"url": url, "label": label, "aktiv": request.url.path == url,
+            "badge": badge}
+
+
+def nav_kontext(request: Request) -> dict:
+    """Baut den Navigations-Kontext fuers Layout: Gruppen mit Titel,
+    dazu die Fusszeilen-Eintraege. "Lesen & Freigeben" erscheint nur
+    mit wartenden Freigaben (dann mit Zaehler)."""
     daten_dir = getattr(request.app.state, "daten_dir", None)
     pruefen_badge = wartende_anzahl(daten_dir) if daten_dir is not None else 0
-    return [
-        {
-            "url": url, "label": label, "aktiv": request.url.path == url,
-            "badge": pruefen_badge if (key == "pruefen" and pruefen_badge) else None,
-        }
-        for key, url, label in NAV_BEREICHE
-    ]
+
+    kampagne = [_eintrag(k, request) for k in _GRUPPE_KAMPAGNE]
+    if pruefen_badge:
+        kampagne.insert(2, _eintrag("pruefen", request, badge=pruefen_badge))
+
+    return {
+        "gruppen": [
+            ("CRM", [_eintrag(k, request) for k in _GRUPPE_CRM]),
+            ("E-Mail-Kampagne", kampagne),
+        ],
+        "fuss": [_eintrag(k, request) for k in _FUSS],
+    }

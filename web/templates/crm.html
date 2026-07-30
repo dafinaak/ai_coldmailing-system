@@ -21,6 +21,7 @@
     <a href="/crm?stufe={{ name }}{{ '&kampagne=' + (aktive_kampagne | urlencode) if aktive_kampagne }}"
        class="crm-chip {{ 'crm-chip-aktiv' if aktive_stufe == name }}">{{ beschriftung }} <span class="crm-zahl">{{ anzahl }}</span></a>
     {% endfor %}
+    <a href="/crm?ansicht=archiv" class="crm-chip crm-chip-archiv {{ 'crm-chip-aktiv' if archiv }}">Alle Angeschriebenen</a>
   </div>
 
   <form method="get" action="/crm" class="kontakte-suche-form">
@@ -29,6 +30,25 @@
     <button type="submit" class="knopf-sekundaer knopf-klein">Suchen</button>
   </form>
 
+  {% if archiv %}
+  <div class="kamp-tabelle">
+    <div class="crm-kopf">
+      <div>NAME</div><div>FIRMA</div><div>E-MAIL</div><div>KAMPAGNE</div><div>ZULETZT</div>
+    </div>
+    {% for k in kontakte %}
+    <div class="crm-zeile">
+      <div class="kontakte-name">{{ k.name or "—" }}</div>
+      <div class="kamp-gedaempft">{{ k.firma or "—" }}</div>
+      <div class="kontakte-mail">{{ k.email }}</div>
+      <div class="kontakte-kampagne">{{ k.kampagne or "—" }}</div>
+      <div class="kamp-gedaempft">{{ k.zuletzt or "—" }}</div>
+    </div>
+    {% endfor %}
+    {% if leer %}
+    <div class="kontakte-leer">Noch niemand angeschrieben.</div>
+    {% endif %}
+  </div>
+  {% else %}
   <div class="kamp-tabelle">
     <div class="crm-kopf">
       <div>NAME</div><div>FIRMA</div><div>E-MAIL</div><div>KAMPAGNE</div><div>STUFE</div>
@@ -57,6 +77,7 @@
     <div class="kontakte-leer">Keine Kontakte{{ " in dieser Stufe" if aktive_stufe }}. Sobald jemand auf eine Kampagnen-Mail antwortet, erscheint er hier automatisch.</div>
     {% endif %}
   </div>
+  {% endif %}
 
   <details class="crm-anlegen">
     <summary class="knopf-sekundaer knopf-klein">+ Hinzufügen</summary>

@@ -30,14 +30,19 @@ class _FakeInstantlyLeser:
     def postfaecher(self):
         return {"postfaecher": [], "erreichbar": True, "stand": None}
 
+# Struktur-Paket 30.07.2026: gruppierte Leiste, "Lesen & Freigeben" nur
+# noch bei wartenden Freigaben sichtbar, "Kontakte" lebt als Archiv im CRM,
+# Postfach -> Antworten, Postfaecher -> Absender, Angebote/Anleitung in der
+# Fusszeile.
 SIEBEN_BEREICHE = [
     "Dashboard",
     "Kampagnen",
-    "Lesen &amp; Freigeben",  # Jinja escaped korrekt HTML-sicher; das "&" bleibt sichtbarer Text
-    "Kontakte",
-    "Postfach",
+    "CRM",
+    "Antworten",
+    "Absender",
     "Gesperrte Domains",
     "Angebote",
+    "So funktioniert&#39;s",
 ]
 
 

@@ -89,8 +89,29 @@ Im Zweifel passt = false. Sei streng: Nur klar erkennbare
 IT-Dienstleister mit Betreuungsgeschäft bekommen true."""
 
 
-def firma_bewerten(firma: dict, webtext: str, ki) -> dict:
-    """Bewertet EINE Firma. Gibt {"passt", "typ", "grund", "quelle"}."""
+ZWEITE_CHANCE_SYSTEM = """Du prüfst einen GRENZFALL nach. Diese Firma wurde
+zuvor als Software-Hersteller, Software-Entwickler oder als Berater ohne
+klaren Betreuungsfokus eingeordnet und deshalb ausgeschlossen. Jetzt
+zählt nur EINE Frage:
+
+Betreut diese Firma die IT ANDERER Unternehmen als Dienstleistung?
+Also: Managed Services, IT-Support, Wartung, Systembetreuung,
+Netzwerk-/Server-Betrieb, Hotline, Systemhaus-Leistungen - egal ob
+zusätzlich zu eigenen Softwareprodukten.
+
+passt = true, wenn solche Betreuungsleistungen erkennbar angeboten werden.
+passt = false, wenn die Firma ausschließlich eigene Produkte verkauft
+oder entwickelt, reiner Händler ist, oder wenn sie SELBST Automationen /
+Prozessautomatisierung / RPA / KI-Automatisierung anbietet
+(Wettbewerber), oder wenn nichts Belastbares erkennbar ist.
+
+Antworte AUSSCHLIESSLICH mit:
+{"passt": true|false, "typ": "<kurze Einordnung>", "grund": "<ein Satz>"}"""
+
+
+def firma_bewerten(firma: dict, webtext: str, ki, system=None) -> dict:
+    """Bewertet EINE Firma. Gibt {"passt", "typ", "grund", "quelle"}.
+    Mit system=ZWEITE_CHANCE_SYSTEM laeuft die Grenzfall-Nachpruefung."""
     grund = harter_ausschluss(firma)
     if grund:
         return {"passt": False, "typ": grund,
@@ -106,7 +127,7 @@ def firma_bewerten(firma: dict, webtext: str, ki) -> dict:
               f"Webseite: {firma.get('website') or 'keine'}\n\n"
               f"{webseite_teil}")
 
-    antwort = ki.frage(SYSTEM_PROMPT, prompt)
+    antwort = ki.frage(system or SYSTEM_PROMPT, prompt)
     treffer = re.search(r"\{.*\}", antwort or "", re.S)
     if not treffer:
         return {"passt": False, "typ": "unsicher",

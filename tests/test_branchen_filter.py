@@ -134,3 +134,20 @@ def test_olivers_beschwerdefaelle_fliegen_ohne_ki_raus(name, kategorien):
     ohne KI, ohne Netz, in Millisekunden."""
     grund = harter_ausschluss({"name": name, "categories": kategorien})
     assert grund in ("niederlassung", "branchenfremd"), f"{name} rutscht durch!"
+
+
+def test_zweite_chance_fragt_nur_nach_fremd_it_betreuung():
+    """Rueckgewinn-Lauf (30.07.2026): Grenzfaelle (Software-Hersteller,
+    Berater) werden mit EINER Frage nachgeprueft - betreut die Firma
+    fremde IT? Automations-Anbieter bleiben trotzdem draussen."""
+    from pipeline.branchen_filter import ZWEITE_CHANCE_SYSTEM
+    ki = _FakeKI('{"passt": true, "typ": "Softwarehaus mit Managed Services", '
+                 '"grund": "betreut zusaetzlich Kunden-IT"}')
+    ergebnis = firma_bewerten(firma(), webtext="Wir entwickeln Software und "
+                              "betreuen die IT unserer Kunden", ki=ki,
+                              system=ZWEITE_CHANCE_SYSTEM)
+    assert ergebnis["passt"] is True
+    system, _ = ki.prompts[0]
+    assert "IT ANDERER Unternehmen" in system
+    assert "Automation" in system          # Wettbewerber bleiben ausgeschlossen
+    assert "Managed Services" in system

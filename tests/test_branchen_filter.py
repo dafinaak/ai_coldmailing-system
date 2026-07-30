@@ -105,3 +105,32 @@ def test_harter_ausschluss_spart_den_ki_aufruf():
     assert ergebnis["passt"] is False
     assert ergebnis["typ"] in AUSSCHLUSS_GRUENDE
     assert ki.prompts == []          # keine KI-Kosten fuer klare Faelle
+
+
+# Regressions-Tests: Olivers echte Beschwerdefaelle vom 30.07.2026 -------
+# Jede dieser Firmen stand in der Liste, die an Oliver ging. Sie sind hier
+# namentlich festgenagelt, damit kein spaeterer Umbau des Filters sie
+# wieder durchlaesst.
+
+OLIVERS_BESCHWERDEFAELLE = [
+    ("CARE Vision Augenlasern & Lasik Hannover", ["Augenarzt"]),
+    ("Denns BioMarkt Hildesheim", ["Lebensmittelgeschäft"]),
+    ("SPIELZEUGKISTE - Spielwaren, Modellbahnen", ["Spielwarengeschäft"]),
+    ("Tina Voß GmbH Zeitarbeit", ["Zeitarbeit"]),
+    ("Alpha Immobilien Service GmbH", ["Immobilienagentur"]),
+    ("Interhyp Baufinanzierung", ["Baufinanzierung"]),
+    ("Clean-it-Narin Glas und Gebäudereinigung", ["IT-Berater", "Gebäudereinigung"]),
+    ("event it AG", ["Veranstaltungsservice", "Eventmanagement-Firma"]),
+    ("PC-COLLEGE Hannover", ["Berufsbildende Schulen", "Schulen"]),
+    ("GREEN IT Das Systemhaus GmbH Niederlassung Hannover", ["IT-Berater"]),
+    ("lmbit GmbH, Niederlassung Hannover", ["IT-Dienstleister / IT-Systemhaus"]),
+    ("Infinigate Deutschland GmbH, Niederlassung Hannover", ["IT-Berater"]),
+]
+
+
+@pytest.mark.parametrize("name,kategorien", OLIVERS_BESCHWERDEFAELLE)
+def test_olivers_beschwerdefaelle_fliegen_ohne_ki_raus(name, kategorien):
+    """Diese Firmen muessen schon von den harten Regeln erwischt werden -
+    ohne KI, ohne Netz, in Millisekunden."""
+    grund = harter_ausschluss({"name": name, "categories": kategorien})
+    assert grund in ("niederlassung", "branchenfremd"), f"{name} rutscht durch!"

@@ -33,20 +33,32 @@ def _schluessel(firma: dict) -> str:
 
 
 def paket_schnueren(firmen: list, namenslauf: dict, branchenpruefung: dict,
-                    groesse: int) -> tuple:
-    """Gibt (paket, bericht) zurueck. branchenpruefung darf nicht leer
-    sein - sonst UngepruefteListe."""
+                    groesse: int, *, gesperrt) -> tuple:
+    """Gibt (paket, bericht) zurueck.
+
+    branchenpruefung darf nicht leer sein - sonst UngepruefteListe.
+    gesperrt (Domains, die ein Mensch gestrichen hat) ist ein PFLICHT-
+    Argument, auch wenn es leer ist: Nach Olivers zweiter Beschwerde
+    (30.07.2026, "Die Unternehmen, welche ich aussortiert hatte, duerfen
+    nicht angeschrieben werden") darf die Sperrliste nicht vergessen
+    werden koennen. Eine Sperre schlaegt JEDES andere Urteil - auch ein
+    fachlich passendes Branchen-Ergebnis."""
     if not branchenpruefung:
         raise UngepruefteListe(
             "Keine Branchenprüfung vorhanden - es wird kein Paket gebaut. "
             "Bitte zuerst pipeline.branchen_filter über die Liste laufen "
             "lassen (Lehre aus Olivers Beschwerde vom 30.07.2026).")
 
+    gesperrte = {str(d).strip().lower() for d in (gesperrt or set())}
     kandidaten = []
     zaehler = {"ohne_namen": 0, "ohne_pruefung": 0,
-               "ausgeschlossen_branche": 0}
+               "ausgeschlossen_branche": 0, "gesperrt": 0}
     for firma in firmen:
         s = _schluessel(firma)
+        # Sperre zuerst: schlaegt jedes andere Urteil.
+        if (firma.get("domain") or "").strip().lower() in gesperrte:
+            zaehler["gesperrt"] += 1
+            continue
         namens_eintrag = namenslauf.get(s) or {}
         pruef_eintrag = branchenpruefung.get(s)
         if namens_eintrag.get("ausgang") != "namen":

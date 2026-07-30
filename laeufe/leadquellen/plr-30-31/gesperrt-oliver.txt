@@ -1,0 +1,15 @@
+# Von Oliver gestrichene Firmen - duerfen NIE angeschrieben werden.
+# (Seine Ansage 30.07.2026: "Die Unternehmen, welche ich aussortiert
+# hatte, duerfen nicht angeschrieben werden.")
+#
+# Eine Domain je Zeile, Kommentare mit #. Diese Datei ist die Quelle der
+# Wahrheit fuer alle kuenftigen Pakete: pipeline.paket_schnueren nimmt
+# sie als Pflicht-Argument, eine Sperre schlaegt jedes andere Urteil -
+# auch ein fachlich passendes Branchen-Ergebnis.
+#
+# STAND: unvollstaendig! Oliver hat weitere Firmen gestrichen, deren
+# Liste uns noch nicht vorliegt (er hat sie offenbar in seiner Fassung
+# der Excel markiert). Sobald seine Datei da ist, hier vollstaendig
+# nachtragen.
+
+michael-wessel.de   # von Oliver namentlich genannt, 30.07.2026

@@ -14,6 +14,11 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
 
 ## Aktueller Stand
 
+- Das Repo liegt seit dem 04.08.2026 auf GitHub:
+  https://github.com/kkrasnniqi-ket/ai-coldmailing-system (privat, Konto
+  von Keti). Push läuft über das aktive gh-Konto `kkrasnniqi-ket`;
+  Commit-Autor ist global auf Keti eingestellt. Schlüssel (.env),
+  users.yaml und HAR-Mitschnitte bleiben per .gitignore draußen.
 - Die erste Pipeline und das Team-Interface sind gebaut. Instantly wird
   weiter als Versand-Motor genutzt.
 - Phase 1 des Wholix-Nachbaus (Kampagnenübersicht und -detail) ist gebaut:

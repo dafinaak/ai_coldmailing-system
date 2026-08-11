@@ -215,6 +215,71 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
   500 Credits/Monat -> Adress-Bau in Monats-Paketen à ~450 Firmen
   (passt zu Olivers 20/Tag). Hunter frei: 50 Suchen + 100 Prüfungen.
   North Data gestrichen (hat keine E-Mails, nur Namen).
+- Endgültige Versandliste steht (11.08.2026): Oliver hatte seine
+  Streichungen im 450er-Paket FARBLICH markiert (rot) statt Zeilen zu
+  löschen — ein CSV-Export verliert diese Farben, deshalb braucht es
+  immer die .xlsx. 56 rote Firmen; 47 davon hatten wir am 30.07. schon
+  aussortiert (Einigkeit), 9 waren noch drin und sind jetzt raus.
+  Ergebnis: `laeufe/leadquellen/plr-30-31/paket-1/versandliste-endgueltig.xlsx`
+  mit 320 Zeilen / 317 Firmen (drei Firmen stehen doppelt mit zwei
+  Webseiten — CM Systemhaus, Veniris, S2-Datentechnik; welche URL gilt,
+  ist noch von Hand zu entscheiden). Werkzeuge dafür neu:
+  `pipeline/oliver_markierungen.py` (report / streichen / ungesehen) und
+  `pipeline/liste_als_json.py`.
+- Anrede: Werkzeug `pipeline/anrede_spalte.py` steht (Regel wie geplant,
+  lieber neutral als falsch). WICHTIG, am 11.08.2026 im Probelauf
+  gelernt: Die Anrede darf erst NACH dem Datenlauf gebaut werden. Wird
+  sie aus der Firmenliste gebaut, nimmt sie den ERSTEN im Impressum
+  genannten Chef - der Datenlauf erreicht aber oft einen anderen. Bei
+  20 Firmen hätten so 3 Kontakte den falschen Namen in der Anrede
+  gehabt (IKN: Giffhorn statt Kassebom, comNET: Peters statt Frings,
+  List + Lohr: List statt Lohr). Deshalb gilt der Modus
+  `anrede_spalte.py aus-lauf <ergebnisse.json>`; die Anrede-Spalte in
+  `versandliste-endgueltig.xlsx` ist nur ein Entwurf und wird ersetzt.
+- Voller Datenlauf FERTIG (11.08.2026): 317 Firmen, **214 persönliche
+  geprüfte Mails (67,5 %)**, 65 geprüfte info@, 23 info@ als nicht
+  zustellbar verworfen, 15 offen. Versandfertige Tabelle:
+  `paket-1/versandfertig-final.xlsx` (279 Kontakte, davon 214 mit
+  Anrede sofort versandfertig; Blatt "Zur Kontrolle" sammelt 115
+  Fälle für einen menschlichen Blick).
+  Die Quote liegt unter den 90 % des Probelaufs, und das ist echt, nicht
+  technisch: 10 Firmen ohne Treffer wurden gegengeprüft, indem sie
+  einzeln (alter Weg) noch einmal durch Dropcontact liefen - 0 von 10
+  lieferten auch dort etwas. Die ersten 20 waren die grossen Firmen der
+  alten kuratierten Liste; der Rest sind Ein-Personen-Betriebe, die
+  Dropcontact schlicht nicht kennt. Das Impressum-Lesen selbst lief
+  sauber: 261 von 263 Webseiten gaben einen Namen her.
+- Neuer Motor `pipeline/schnelllauf.py` (11.08.2026): gleiche Kaskade,
+  gleiche Prüfungen, aber Webseiten parallel und Dropcontact im Batch
+  (dessen API nimmt eine ganze Liste; wir haben sie immer mit genau
+  einem Namen benutzt). 263 Firmen in ~12 Minuten statt ~4 Stunden.
+  Credits bleiben gleich, weil je Runde nur der ERSTE Impressum-Name
+  gefragt wird und nur leer ausgegangene Firmen den zweiten kosten.
+  Zwei Lehren, beide mit Tests festgenagelt:
+  (1) Ein Batch ist bezahlt, sobald Dropcontact ihn annimmt. Das alte
+  2-Minuten-Fenster reichte für 100 Namen nicht, der Lauf warf einen
+  bezahlten Batch weg (per request_id von Hand zurückgeholt). Jetzt:
+  eigenes 15-Minuten-Fenster, request_id landet VOR dem Abholen auf der
+  Platte, und `zwischenstand.json` hält gelesene Webseiten, bezahlte
+  Adressen und offene Aufträge fest. Beim nächsten Start wurden so 103
+  Adressen gratis nachgeholt.
+  (2) Die Zuordnungs-Wache darf nicht zu eng sein: Dropcontact dreht
+  Vor- und Nachnamen ("Peter-Christoph Haider" -> "Haider
+  Peter-Christoph"). Abgebrochen wird nur, wenn WEDER Name NOCH Domain
+  passen; abweichende Namen werden als Hinweis am Kontakt vermerkt.
+- Hunter-Kontingent für diesen Abrechnungszeitraum ist aufgebraucht
+  (100 Verifikationen/Monat, HTTP 429). Betrifft nur info@-Adressen;
+  die 214 persönlichen Mails prüft Dropcontact selbst. Die 15 offenen
+  Firmen warten auf neues Kontingent - ungeprüft geht nichts raus.
+- Probelauf 20 Firmen aus der endgültigen Liste (11.08.2026):
+  18 persönliche geprüfte Mails (90 %), 2 geprüfte info@, keine Fehler.
+  Zwei Firmen brauchten einen zweiten Anlauf (Dropcontact antwortete
+  nicht rechtzeitig) - der Wiederaufnahme-Lauf holte beide nach.
+  Ergebnis unter `paket-1/probelauf-20/`, versandfertige Tabelle in
+  `probelauf-20/versandfertig-20.xlsx`.
+- Offen bei Oliver: 119 Firmen der Versandliste kamen nach seiner
+  Prüfung aus der Reserve dazu, er hat sie nie gesehen. Sie liegen für
+  ihn getrennt in `paket-1/fuer-oliver-neue-119.xlsx`.
 - Probelauf-Endstand (29.07.2026): 9 von 10 Firmen mit persönlicher,
   geprüfter Chef-Mail (90 %), 1 geprüfte info@. Kurzmeldungs-Baustein
   für Olivers tägliche Zahlen gebaut (`python -m pipeline.kurzmeldung`).

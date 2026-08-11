@@ -14,6 +14,14 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
 
 ## Aktueller Stand
 
+- Interface lokal starten (seit 11.08.2026): `./start-web.sh` im
+  Projektordner, dann http://127.0.0.1:8000. Das Skript liest die .env und
+  setzt DATEN_DIR auf den Projektordner. Hintergrund: web/main.py liest die
+  .env selbst NICHT (nur die Pipeline tut das über pipeline/env.py) — ohne
+  das Skript bricht uvicorn mit "Fehlende Umgebungsvariable" ab. In der .env
+  stehen dafür WEB_SECRET (Cookie-Signatur) und WEB_COOKIE_SECURE=0 (lokal
+  ohne HTTPS; auf dem Server gehört dort 1 hin). Anmeldung über users.yaml
+  im Projektordner (nicht im Repo).
 - Das Repo liegt seit dem 04.08.2026 auf GitHub:
   https://github.com/kkrasnniqi-ket/ai-coldmailing-system (privat, Konto
   von Keti). Push läuft über das aktive gh-Konto `kkrasnniqi-ket`;

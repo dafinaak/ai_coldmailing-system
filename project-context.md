@@ -267,6 +267,20 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
   Vor- und Nachnamen ("Peter-Christoph Haider" -> "Haider
   Peter-Christoph"). Abgebrochen wird nur, wenn WEDER Name NOCH Domain
   passen; abweichende Namen werden als Hinweis am Kontakt vermerkt.
+- Drei Entscheidungen zur Versandliste (Keti, 11.08.2026):
+  (1) Die 65 info@-Adressen werden angeschrieben, mit einer Anrede ohne
+  Namen. Das Mail-Muster steht fest als "Guten Tag {{anrede}}," - dort
+  passt "Sehr geehrte Damen und Herren" nicht hinein, "zusammen" schon.
+  Also `anrede = "zusammen"` -> "Guten Tag zusammen,".
+  (2) Die 36 abweichenden Mail-Domains werden ohne Handprüfung
+  akzeptiert. Sie stehen weiter im Blatt "Zur Kontrolle", falls später
+  doch jemand draufschauen will; auffällig sind vor allem
+  kleinert-pcservice (gmx.eu, Freemailer) und Bell (bell.net aus einem
+  falsch geteilten Namen).
+  (3) Die 119 Firmen, die Oliver nie gesehen hat, gehen NICHT vorab zu
+  ihm. 96 davon stehen in der Versandliste (78 mit persönlicher Mail) -
+  sie würden also ohne seine Freigabe angeschrieben. Vor der Aktivierung
+  ist das der Punkt, an dem es Leonard/Oliver auffallen kann.
 - Hunter-Kontingent für diesen Abrechnungszeitraum ist aufgebraucht
   (100 Verifikationen/Monat, HTTP 429). Betrifft nur info@-Adressen;
   die 214 persönlichen Mails prüft Dropcontact selbst. Die 15 offenen

@@ -48,6 +48,10 @@ WEIBLICH = {
 # Unisex or otherwise unclear - these always stay neutral.
 UNKLAR = {"alyx", "janis", "kay"}
 
+# Greeting for a collective address (info@) where no person is known.
+# Has to read correctly inside the fixed template "Guten Tag {{anrede}},".
+SAMMEL_ANREDE = "zusammen"
+
 # Whole words that show the cell holds a role or company, not a person.
 # Matched word by word - a substring check would wrongly hit real names
 # such as "Hagen" or "Nagel".
@@ -182,11 +186,13 @@ def aus_lauf(ergebnisse: Path, ziel: Path) -> None:
             if grund != "maennlich":
                 hinweise.append(grund)
         else:
-            # info@ without a person behind it: nobody can be greeted by
-            # name here. A human decides how these are addressed - the
-            # empty cell makes the upload refuse them until then.
-            anrede = ""
-            hinweise.append("BITTE ENTSCHEIDEN: Sammeladresse ohne Person")
+            # info@ without a person behind it. Decision of 11.08.2026:
+            # these do get written to, with a greeting that names nobody.
+            # The mail template is fixed as "Guten Tag {{anrede}}," so the
+            # value has to fit into that sentence - "Sehr geehrte Damen und
+            # Herren" cannot, "zusammen" can.
+            anrede = SAMMEL_ANREDE
+            hinweise.append("Sammeladresse info@ - Anrede ohne Namen")
 
         for notiz in lead.get("notizen") or []:
             hinweise.append(str(notiz))

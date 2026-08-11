@@ -15,3 +15,9 @@ users.yaml
 
 # Einmalige Versandfreigaben aus dem laufenden Datenverzeichnis
 postfach-antworten/
+
+# CRM-Datenbank: enthaelt echte Kontaktdaten, gehoert nicht ins Repo
+kontakte.db
+kontakte.db-journal
+kontakte.db-wal
+kontakte.db-shm

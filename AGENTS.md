@@ -4,6 +4,19 @@
 > core (four phases, the human decides, outward-impact brake). They
 > override it only where they explicitly say so.
 
+## Gjuha e punës: shqip (nga 11.08.2026)
+
+Të gjitha shpjegimet, pyetjet dhe përgjigjet ndaj njeriut bëhen në shqip,
+me fjalë të thjeshta të përditshme. Ky rregull tash vlen kudo, jo vetëm
+këtu — është shënuar edhe te rregullat e përgjithshme. Përjashtim mbetet
+Jira: aty shkruhet anglisht, që ta kuptojë tërë ekipi.
+
+Kjo vlen për bisedën dhe për dokumentet e reja. Për gjuhën e vetë kodit
+(emrat e funksioneve, komentet, tekstet në ekran) vlen ende vendimi i
+mëparshëm: kodi i ri shkruhet në anglisht, kodi i vjetër gjerman
+ndërrohet vetëm brenda fazave të rifreskimit — jo me një përkthim të
+madh njëherësh.
+
 ## Zuverlässigkeit zuerst
 
 Zuverlässigkeit hat in diesem Projekt höchste Priorität — vor

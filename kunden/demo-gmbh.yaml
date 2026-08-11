@@ -8,13 +8,14 @@ angebot: >-
   Vertrieb Zeit verloren geht, und bauen Automationen, die Routinearbeit
   übernehmen - von der Lead-Recherche bis zum Nachfassen.
 tonalitaet: ruhig, erklärend, keine Superlative, keine Ausrufezeichen
-absender: Leonard von Digital Diamonds
+absender: Dafina von Digital Diamonds
 # Für den Endnachweis verkürzt (statt 3/7), damit der Beweis schnell steht:
 follow_up_tage: [1, 2]
+# Adresat provë: vetëm te këto guxon programi të dërgojë. Ndryshuar më
+# 11.08.2026 — tash konfigurimet i mban Keti, jo Leonardi.
 test_empfaenger:
-  - leonardluzhnica7@gmail.com
-  - l.luzhnica@digitaldiamonds.agency
-  - l.luzhnica@polepositionsolutions.de
+  - d.keqmezi@digitaldiamonds.agency
+  - dafinakeqmezi@gmail.com
 
 # Lead-Beschaffung (Weg A): Google Maps -> Hunter (Entscheider finden) ->
 # Dropcontact (Mail bauen/prüfen) -> info@,

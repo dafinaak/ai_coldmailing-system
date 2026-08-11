@@ -13,8 +13,11 @@ angebot: >-
 tonalitaet: ruhig, erklärend, keine Superlative, keine Ausrufezeichen
 absender: Oliver Redschlag
 follow_up_tage: [7, 14]
+# Adresat provë: vetëm te këto guxon programi të dërgojë. Ndryshuar më
+# 11.08.2026 — tash konfigurimet i mban Keti, jo Leonardi.
 test_empfaenger:
-  - leonardluzhnica7@gmail.com
+  - d.keqmezi@digitaldiamonds.agency
+  - dafinakeqmezi@gmail.com
 maps_suche: "(Liste PLR 30+31)"
 kontakt_rollen: ["Geschäftsführer", "Inhaber"]
 anbieter_reihenfolge: ["impressum"]

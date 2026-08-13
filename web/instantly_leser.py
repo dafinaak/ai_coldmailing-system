@@ -138,6 +138,7 @@ from __future__ import annotations
 
 import os
 from datetime import datetime, timedelta
+from html.parser import HTMLParser
 
 import requests
 
@@ -246,6 +247,72 @@ def _richtung_und_kontakt(email: dict) -> tuple[str, str] | None:
     return ("gesendet", kontakt) if kontakt else None
 
 
+# Zeilenumbruch-Tags: alles, was im gelesenen Text eine neue Zeile ergeben
+# muss, damit aus "<p>Hallo</p><p>Gruss</p>" nicht "HalloGruss" wird.
+_HTML_UMBRUCH = {"br", "p", "div", "li", "tr", "h1", "h2", "h3", "h4", "blockquote"}
+# Inhalt dieser Tags ist kein Nachrichtentext, sondern Technik.
+_HTML_UEBERSPRINGEN = {"script", "style", "head", "title"}
+
+
+class _NurDerText(HTMLParser):
+    """Holt den lesbaren Text aus einem HTML-Mailbody.
+
+    Instantly liefert den Body je nach Postfach als 'text', als 'html' oder
+    als beides. Wird nur 'text' gelesen, bleibt der Nachrichtenbereich bei
+    HTML-Mails LEER - man sieht dann nur den Betreff und haelt ihn fuer die
+    ganze Nachricht (gefunden am 13.08.2026 an der eigenen Zustellprobe).
+
+    Bewusst nur Text, niemals HTML: die Nachricht kommt von aussen und wird
+    im Template als Text ausgegeben, nicht als Markup.
+    """
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self._teile: list[str] = []
+        self._stumm = 0
+
+    def handle_starttag(self, tag, attrs):
+        if tag in _HTML_UEBERSPRINGEN:
+            self._stumm += 1
+        elif tag in _HTML_UMBRUCH:
+            self._teile.append("\n")
+
+    def handle_endtag(self, tag):
+        if tag in _HTML_UEBERSPRINGEN:
+            self._stumm = max(0, self._stumm - 1)
+        elif tag in _HTML_UMBRUCH:
+            self._teile.append("\n")
+
+    def handle_data(self, daten):
+        if not self._stumm:
+            self._teile.append(daten)
+
+    def text(self) -> str:
+        roh = "".join(self._teile).replace("\xa0", " ")
+        # Leerzeichen je Zeile zusammenfassen, dann Leerzeilen auf hoechstens
+        # eine zusammenziehen - Mail-HTML ist voll von Einrueckungen.
+        zeilen = [" ".join(z.split()) for z in roh.split("\n")]
+        ergebnis: list[str] = []
+        for zeile in zeilen:
+            if zeile or (ergebnis and ergebnis[-1]):
+                ergebnis.append(zeile)
+        return "\n".join(ergebnis).strip()
+
+
+def _text_aus_html(roh: str) -> str:
+    """HTML-Mailbody -> lesbarer Text. Kaputtes HTML darf die Seite nicht
+    reissen (gleiches Prinzip wie _parse_zeit): dann lieber leer."""
+    if not roh:
+        return ""
+    parser = _NurDerText()
+    try:
+        parser.feed(roh)
+        parser.close()
+    except (ValueError, AssertionError):
+        return ""
+    return parser.text()
+
+
 def _nachricht_aus_email(
     email: dict, richtung: str, campaign_id: str | None = None
 ) -> dict | None:
@@ -257,7 +324,11 @@ def _nachricht_aus_email(
     if zeit is None:
         return None
     body = email.get("body") or {}
-    text = (body.get("text") or "").strip() or (email.get("content_preview") or "").strip()
+    text = (
+        (body.get("text") or "").strip()
+        or _text_aus_html(body.get("html") or "")
+        or (email.get("content_preview") or "").strip()
+    )
     return {
         "id": email.get("id"),
         "campaign_id": email.get("campaign_id") or campaign_id,

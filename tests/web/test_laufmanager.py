@@ -180,7 +180,10 @@ def test_starte_legt_pid_datei_sperre_und_meta_an(tmp_path, monkeypatch):
     lauf_dir = Laufmanager(daten_dir).starte(kunde_datei, 25)
 
     assert (lauf_dir / "pid").read_text(encoding="utf-8") == "4242"
-    assert (daten_dir / "laeufe" / "test-gmbh" / ".lauf-aktiv").read_text(encoding="utf-8") == "4242"
+    # Seit 13.08.2026 steht in der Sperrdatei nicht mehr nur die nackte
+    # Zahl, sondern auch der Startzeitpunkt (siehe test_laufmanager_sperre.py).
+    assert laufmanager._sperr_pid(
+        daten_dir / "laeufe" / "test-gmbh" / ".lauf-aktiv") == 4242
     meta = json.loads((lauf_dir / "auftrag_meta.json").read_text(encoding="utf-8"))
     assert meta == {"kunde_datei": kunde_datei, "limit": 25}
     assert (lauf_dir / "lauf.log").exists()
@@ -219,7 +222,8 @@ def test_starte_raeumt_verwaiste_sperre_auf_und_startet_neu(tmp_path, monkeypatc
 
     lauf_dir = Laufmanager(daten_dir).starte(kunde_datei, 10)
     assert lauf_dir.exists()
-    assert (daten_dir / "laeufe" / "test-gmbh" / ".lauf-aktiv").read_text() == "4242"
+    assert laufmanager._sperr_pid(
+        daten_dir / "laeufe" / "test-gmbh" / ".lauf-aktiv") == 4242
 
 
 def test_starte_ohne_bekannten_kunden_wirft_kundenichtgefunden(tmp_path):
@@ -270,7 +274,8 @@ def test_setze_fort_baut_korrekten_befehl_aus_gespeicherter_meta(tmp_path, monke
     assert aufrufe[0]["argv"][-6:] == [
         "lauf", "kunden/test-kunde.yaml", "--limit", "25", "--fortsetzen", str(lauf_dir)]
     assert (lauf_dir / "pid").read_text() == "99"
-    assert (daten_dir / "laeufe" / "test-gmbh" / ".lauf-aktiv").read_text() == "99"
+    assert laufmanager._sperr_pid(
+        daten_dir / "laeufe" / "test-gmbh" / ".lauf-aktiv") == 99
 
 
 def test_setze_fort_mit_neu_ab_haengt_flag_an(tmp_path, monkeypatch):
@@ -512,6 +517,8 @@ def test_dialog_listet_kunden_und_zeigt_leitfaden_text(angemeldeter_client, date
     antwort = angemeldeter_client.get("/auftraege/neu")
     assert antwort.status_code == 200
     assert "Test GmbH" in antwort.text
+    # Das alte Kurzformular behaelt seine Ueberschrift; umbenannt wurde am
+    # 13.08.2026 nur der Knopf auf der Kampagnen-Seite ("Add").
     assert "E-Mails schreiben lassen" in antwort.text
     assert "Versendet wird nichts" in antwort.text
 

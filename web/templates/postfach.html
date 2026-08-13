@@ -12,7 +12,7 @@
   {% if konversationen_leer %}
   <div class="leer-kasten">
     <div class="leer-kasten-titel">Noch keine Konversation</div>
-    <div>{{ keine_antworten_hinweis or "Sobald jemand antwortet, erscheint das Gespräch hier." }}</div>
+    <div>{{ kein_verlauf or keine_antworten_hinweis or "Sobald jemand antwortet, erscheint das Gespräch hier." }}</div>
   </div>
   {% else %}
   {% if keine_antworten_hinweis %}
@@ -54,7 +54,15 @@
             <span class="postfach-nachricht-zeit">{{ m.zeit }}</span>
           </div>
           <div class="postfach-nachricht-betreff">{{ m.betreff }}</div>
-          <div class="postfach-nachricht-text">{{ m.text }}</div>
+          {# Jede Zeile ein eigenes Element - NICHT ein Block mit \n und
+             white-space: pre-wrap. Die Browser-Uebersetzung (Chrome) ersetzt
+             einen Textknoten als Ganzes und gibt ihn ohne die Zeilenumbrueche
+             zurueck: die Mail wurde dann zu einer einzigen Textwand. Als
+             getrennte Elemente wird jede Zeile einzeln uebersetzt und behaelt
+             ihren Platz (gefunden am 13.08.2026). #}
+          <div class="postfach-nachricht-text">
+            {% for zeile in m.zeilen %}<div class="postfach-nachricht-zeile">{{ zeile }}</div>{% endfor %}
+          </div>
         </div>
         {% endfor %}
       </div>
@@ -98,6 +106,13 @@
         Für dieses Gespräch ist Antworten nur in Instantly möglich.
       </div>
       {% endif %}
+      {% elif kein_verlauf %}
+      <div class="postfach-nicht-gefunden" role="alert">
+        <div class="postfach-nicht-gefunden-titel">Nicht gefunden</div>
+        <div>{{ kein_verlauf }}</div>
+      </div>
+      {% else %}
+      <div class="postfach-detail-leer">Wähle links ein Gespräch aus.</div>
       {% endif %}
     </div>
   </div>

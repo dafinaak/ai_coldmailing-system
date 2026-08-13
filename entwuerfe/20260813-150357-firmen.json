@@ -1,0 +1,1043 @@
+[
+ {
+  "name": "HanovaTech GmbH",
+  "website": "https://hanovatech.de",
+  "domain": "hanovatech.de",
+  "address": "Spielhagenstr. 25, 30171 Hannover (Südstadt)",
+  "categories": [
+   "IT-Dienstleistungen",
+   "Computerservice",
+   "IT-Berater",
+   "Computerreparaturdienst",
+   "Computersupport und -dienste",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30171",
+  "telefon": "+4951151512490",
+  "vorhandene_email": "info@hanovatech.de",
+  "gf_name_liste": "Hashem Mahmoud; Henry Akmann",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps",
+   "alte_liste"
+  ],
+  "quelle": "gelbe_seiten+maps+alte_liste"
+ },
+ {
+  "name": "Excel/VBA Programmierung & Support %P002  Jörg Scheibe",
+  "website": "http://www.office-solution.de",
+  "domain": "office-solution.de",
+  "address": "Nordfeldstr. 16A, 30459 Hannover (Ricklingen)",
+  "categories": [
+   "Software",
+   "Softwareentwickler/-hersteller",
+   "IT-Berater"
+  ],
+  "plz": "30459",
+  "telefon": "+4951120308390",
+  "vorhandene_email": "Excel-Info@office-solution.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps"
+  ],
+  "quelle": "gelbe_seiten+maps"
+ },
+ {
+  "name": "Hellberg EDV-Beratung",
+  "website": "http://www.drhellberg.de",
+  "domain": "drhellberg.de",
+  "address": "Sonnenweg 7, 30171 Hannover (Südstadt)",
+  "categories": [
+   "Informationstechnologie",
+   "IT-Berater"
+  ],
+  "plz": "30171",
+  "telefon": "+495112882590",
+  "vorhandene_email": "info@drhellberg.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps"
+  ],
+  "quelle": "gelbe_seiten+maps"
+ },
+ {
+  "name": "IT-Hilfe Rusche & Osman GbR",
+  "website": "http://www.ithilfe-ro.de",
+  "domain": "ithilfe-ro.de",
+  "address": "Hans-Böcker-Allee 20, 30173 Hannover",
+  "categories": [
+   "IT-Beratung",
+   "IT-Berater",
+   "Computernetzwerk-Service",
+   "Computerreparaturdienst",
+   "Computerservice",
+   "Computersupport und -dienste"
+  ],
+  "plz": "30173",
+  "telefon": "+4951151544707",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps"
+  ],
+  "quelle": "gelbe_seiten+maps"
+ },
+ {
+  "name": "Synedat Group GmbH",
+  "website": "https://www.synedat.com",
+  "domain": "synedat.com",
+  "address": "Philipsbornstr. 2, 30165 Hannover",
+  "categories": [
+   "IT-Beratung",
+   "Softwareentwickler/-hersteller",
+   "IT-Berater",
+   "Computerservice",
+   "Computersupport und -dienste",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30165",
+  "telefon": "+49511546850",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps",
+   "alte_liste"
+  ],
+  "quelle": "gelbe_seiten+maps+alte_liste"
+ },
+ {
+  "name": "EXT IT GmbH",
+  "website": "https://www.ext-it.tech",
+  "domain": "ext-it.tech",
+  "address": "Vahrenwalder Str. 271, 30179 Hannover",
+  "categories": [
+   "Berufsbildende Schulen",
+   "Computer und Zubehör",
+   "Computer-Dienstleistungen",
+   "Datenerfassung",
+   "IT-Beratung",
+   "IT-Berater",
+   "Computernetzwerk-Service",
+   "Computerservice",
+   "Computersupport und -dienste",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30179",
+  "telefon": "+4951136056650",
+  "vorhandene_email": "info@ext-it.tech",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps",
+   "alte_liste"
+  ],
+  "quelle": "gelbe_seiten+maps+alte_liste"
+ },
+ {
+  "name": "Fujitsu Technology Solutions GmbH",
+  "website": "http://www.fujitsu.com",
+  "domain": "fujitsu.com",
+  "address": "Hildesheimer Str. 25, 30880 Laatzen (Alt-Laatzen)",
+  "categories": [
+   "Computer und Zubehör",
+   "IT-Berater",
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30880",
+  "telefon": "+4951184890",
+  "vorhandene_email": "Datenschutzbeauftragter@ts.fujitsu.com",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps"
+  ],
+  "quelle": "gelbe_seiten+maps"
+ },
+ {
+  "name": "codecivil Dr. Marco Kühnel ICT Services",
+  "website": "http://www.codecivil.de",
+  "domain": "codecivil.de",
+  "address": "Vechteweg 4, 30539 Hannover",
+  "categories": [
+   "Webdesign",
+   "IT-Berater"
+  ],
+  "plz": "30539",
+  "telefon": "+495114106738",
+  "vorhandene_email": "kuehnel@codecivil.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps"
+  ],
+  "quelle": "gelbe_seiten+maps"
+ },
+ {
+  "name": "AirITSystems GmbH",
+  "website": "http://www.airitsystems.de",
+  "domain": "airitsystems.de",
+  "address": "Benkendorffstr. 6, 30855 Langenhagen",
+  "categories": [
+   "IT-Dienstleistungen",
+   "IT-Berater",
+   "office=it",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30855",
+  "telefon": "+495119774000",
+  "vorhandene_email": "info@airitsystems.de",
+  "gf_name_liste": "Tim Cappelmann; Joachim Rommel; Juliane Schulz",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps",
+   "overpass",
+   "alte_liste"
+  ],
+  "quelle": "gelbe_seiten+maps+overpass+alte_liste"
+ },
+ {
+  "name": "Benjamin Burner IT & Marketing",
+  "website": "http://www.burner-it.de",
+  "domain": "burner-it.de",
+  "address": "Dorfstr., 30916 Isernhagen",
+  "categories": [
+   "IT-Dienstleistungen",
+   "IT-Berater"
+  ],
+  "plz": "30916",
+  "telefon": "+4951399529977",
+  "vorhandene_email": "info@burner-it.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps"
+  ],
+  "quelle": "gelbe_seiten+maps"
+ },
+ {
+  "name": "Patrick Peter Pryga - IT-Service Pryga -",
+  "website": "http://www.pryga.de",
+  "domain": "pryga.de",
+  "address": "Schützenstr. 8, 30161 Hannover (List)",
+  "categories": [
+   "Webdesign",
+   "IT-Berater",
+   "Computerreparaturdienst",
+   "Computersicherheitsdienst",
+   "Computerservice"
+  ],
+  "plz": "30161",
+  "telefon": "+4951137380906",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps"
+  ],
+  "quelle": "gelbe_seiten+maps"
+ },
+ {
+  "name": "Engineering Data GmbH CAD Software Service",
+  "website": "http://www.eng-data.de",
+  "domain": "eng-data.de",
+  "address": "Walsroder Str. 78, 30853 Langenhagen",
+  "categories": [
+   "Software",
+   "Softwareentwickler/-hersteller",
+   "IT-Berater"
+  ],
+  "plz": "30853",
+  "telefon": "+495116765580",
+  "vorhandene_email": "ed@eng-data.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps"
+  ],
+  "quelle": "gelbe_seiten+maps"
+ },
+ {
+  "name": "axxeo GmbH",
+  "website": "http://www.axxeo.de",
+  "domain": "axxeo.de",
+  "address": "Gustav-Adolf-Str. 8, 30167 Hannover (Nordstadt)",
+  "categories": [
+   "Netzwerktechnik",
+   "IT-Berater"
+  ],
+  "plz": "30167",
+  "telefon": "+4951112341236",
+  "vorhandene_email": "kontakt@axxeo.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps"
+  ],
+  "quelle": "gelbe_seiten+maps"
+ },
+ {
+  "name": "Henning Wessels - TraSer - Trade & Service",
+  "website": "http://traser.de",
+  "domain": "traser.de",
+  "address": "Wackenroderstr. 18, 30559 Hannover (Misburg-Süd)",
+  "categories": [
+   "IT-Beratung",
+   "IT-Berater",
+   "Computerservice"
+  ],
+  "plz": "30559",
+  "telefon": "+4951180608396",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps"
+  ],
+  "quelle": "gelbe_seiten+maps"
+ },
+ {
+  "name": "Axians Networks & Solutions GmbH",
+  "website": "http://www.axians.de",
+  "domain": "axians.de",
+  "address": "Günther-Wagner-Allee 7, 30177 Hannover (List)",
+  "categories": [
+   "Netzwerktechnik",
+   "Softwareentwickler/-hersteller",
+   "IT-Berater"
+  ],
+  "plz": "30177",
+  "telefon": "+495112156460",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps"
+  ],
+  "quelle": "gelbe_seiten+maps"
+ },
+ {
+  "name": "IT-Nunweiler",
+  "website": "https://it-nunweiler.de/",
+  "domain": "it-nunweiler.de",
+  "address": "Grambartstr. 21, 30165 Hannover (Hainholz)",
+  "categories": [
+   "Computer und Zubehör",
+   "IT-Berater",
+   "Computersupport und -dienste",
+   "Hersteller von Computerhardware",
+   "Computernetzwerk-Service",
+   "Computerreparaturdienst",
+   "Computersicherheitsdienst",
+   "Computerservice",
+   "Telekommunikationsunternehmen",
+   "Telekommunikationsausrüster",
+   "Telekommunikationsanbieter",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30165",
+  "telefon": "+4951151516914",
+  "vorhandene_email": "info@it-nunweiler.de",
+  "gf_name_liste": "Marcel Nunweiler",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps",
+   "alte_liste"
+  ],
+  "quelle": "gelbe_seiten+maps+alte_liste"
+ },
+ {
+  "name": "SoftNet, Inh. Mario Sauermilch IT- und PC-Technik",
+  "website": "https://www.kavandee.de",
+  "domain": "kavandee.de",
+  "address": "Friedrich-Ebert-Str. 11, 30851 Langenhagen",
+  "categories": [
+   "Computer und Zubehör",
+   "Computersupport und -dienste",
+   "IT-Berater",
+   "Computerservice",
+   "Internetladen"
+  ],
+  "plz": "30851",
+  "telefon": "+4951135779373",
+  "vorhandene_email": "Info@KaVanDee.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps"
+  ],
+  "quelle": "gelbe_seiten+maps"
+ },
+ {
+  "name": "Assmann-IT IT-Dienstleistungen",
+  "website": "http://www.assmann-it.net",
+  "domain": "assmann-it.net",
+  "address": "Krugstr. 9, 30900 Wedemark",
+  "categories": [
+   "Computerreparaturen",
+   "Computersupport und -dienste",
+   "IT-Berater",
+   "Computerreparaturdienst",
+   "Computerservice",
+   "Computergeschäft",
+   "Reparaturservice"
+  ],
+  "plz": "30900",
+  "telefon": "+4951306090259",
+  "vorhandene_email": "info@assmann-it.net",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps"
+  ],
+  "quelle": "gelbe_seiten+maps"
+ },
+ {
+  "name": "Support-4-IT GmbH",
+  "website": "http://www.support-4-it.com",
+  "domain": "support-4-it.com",
+  "address": "Gleiwitzer Str. 3, 30855 Langenhagen (Godshorn)",
+  "categories": [
+   "Computer und Zubehör",
+   "IT-Berater",
+   "Computerreparaturdienst",
+   "Computersicherheitsdienst",
+   "Computerservice",
+   "Computersupport und -dienste"
+  ],
+  "plz": "30855",
+  "telefon": "+4951167668980",
+  "vorhandene_email": "info@support-4-it.com",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps"
+  ],
+  "quelle": "gelbe_seiten+maps"
+ },
+ {
+  "name": "NK Informationstechnik GmbH",
+  "website": "https://www.nkit-gmbh.de",
+  "domain": "nkit-gmbh.de",
+  "address": "Kruppstr. 8, 31135 Hildesheim (Drispenstedt)",
+  "categories": [
+   "IT-Beratung",
+   "IT-Berater",
+   "Geschäft für Computerzubehör",
+   "Computernetzwerk-Service",
+   "Computerreparaturdienst",
+   "Computersicherheitsdienst",
+   "Computerservice",
+   "Computersupport und -dienste",
+   "Softwareentwickler/-hersteller",
+   "Telekommunikationsunternehmen",
+   "Telekommunikationsausrüster",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "31135",
+  "telefon": "+495121606960",
+  "vorhandene_email": "info@nkit-gmbh.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps",
+   "alte_liste"
+  ],
+  "quelle": "gelbe_seiten+maps+alte_liste"
+ },
+ {
+  "name": "VITFOX GmbH",
+  "website": "https://www.vitfox.de",
+  "domain": "vitfox.de",
+  "address": "Richthofenstr. 29, 31137 Hildesheim (Nord)",
+  "categories": [
+   "Computer und Zubehör",
+   "IT-Berater"
+  ],
+  "plz": "31137",
+  "telefon": "+495121708600",
+  "vorhandene_email": "buero@vitfox.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps"
+  ],
+  "quelle": "gelbe_seiten+maps"
+ },
+ {
+  "name": "Isermeyer IT-Service",
+  "website": "http://www.zu5.de",
+  "domain": "zu5.de",
+  "address": "Neidenburger Str. 15, 31141 Hildesheim (Marienburger Höhe)",
+  "categories": [
+   "Computer und Zubehör",
+   "IT-Berater",
+   "Computerservice",
+   "Computernetzwerk-Service",
+   "Computersupport und -dienste"
+  ],
+  "plz": "31141",
+  "telefon": "+495121877261",
+  "vorhandene_email": "it@zu5.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps"
+  ],
+  "quelle": "gelbe_seiten+maps"
+ },
+ {
+  "name": "HCT GmbH",
+  "website": "http://www.hct-gmbh.de",
+  "domain": "hct-gmbh.de",
+  "address": "Am Flugplatz 7, 31137 Hildesheim (Nord)",
+  "categories": [
+   "Computer und Zubehör",
+   "Computernetzwerk-Service",
+   "IT-Berater",
+   "Computersupport und -dienste",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "31137",
+  "telefon": "+49512178220",
+  "vorhandene_email": "info@hct-gmbh.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps",
+   "alte_liste"
+  ],
+  "quelle": "gelbe_seiten+maps+alte_liste"
+ },
+ {
+  "name": "AM-Systems Computer IT GmbH",
+  "website": "https://www.pcspezialist.de/hildesheim.html",
+  "domain": "pcspezialist.de",
+  "address": "Zingel 8, 31134 Hildesheim (Mitte)",
+  "categories": [
+   "Computer und Zubehör",
+   "Computerreparaturdienst",
+   "Computergeschäft",
+   "Computersupport und -dienste",
+   "IT-Berater",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "31134",
+  "telefon": "+495121750750",
+  "vorhandene_email": "suchantke@am-systems.com",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps",
+   "alte_liste"
+  ],
+  "quelle": "gelbe_seiten+maps+alte_liste"
+ },
+ {
+  "name": "EDV.de Systemhaus GmbH & Co. KG",
+  "website": "https://www.edv.de/",
+  "domain": "edv.de",
+  "address": "Ramlinger Str. 17a, 31303 Burgdorf-Ehlershausen, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Computerservice",
+   "Computersupport und -dienste",
+   "office=it",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "31303",
+  "telefon": "+49 511 1322330",
+  "vorhandene_email": "info@edv.de",
+  "gf_name_liste": "Nico Röbbelen",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps",
+   "overpass",
+   "alte_liste"
+  ],
+  "quelle": "maps+overpass+alte_liste"
+ },
+ {
+  "name": "Boernecke IT Services",
+  "website": "http://boernecke-it-services.de/",
+  "domain": "boernecke-it-services.de",
+  "address": "Ramlinger Str. 11, 31303 Burgdorf, Deutschland",
+  "categories": [
+   "IT-Berater"
+  ],
+  "plz": "31303",
+  "telefon": "+49 176 34282600",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "GREEN IT Das Systemhaus GmbH Niederlassung Hannover",
+  "website": "https://www.greenit.systems/",
+  "domain": "greenit.systems",
+  "address": "Wohlenbergstraße 6, 30179 Nord, Deutschland",
+  "categories": [
+   "IT-Berater"
+  ],
+  "plz": "30179",
+  "telefon": "+49 511 2284800",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "FREDERIX Systemhaus GmbH",
+  "website": "https://www.frederix-systemhaus.de/",
+  "domain": "frederix-systemhaus.de",
+  "address": "Podbielskistraße 200, 30177 Hannover-Vahrenwald-List, Deutschland",
+  "categories": [
+   "IT-Berater"
+  ],
+  "plz": "30177",
+  "telefon": "+49 511 212460",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Baensch IT UG (haftungsbeschränkt)",
+  "website": "https://www.baensch-it.net/",
+  "domain": "baensch-it.net",
+  "address": "Beekeweg 9, 30900 Wedemark-Elze, Deutschland",
+  "categories": [
+   "Computerservice",
+   "IT-Berater",
+   "office=it"
+  ],
+  "plz": "30900",
+  "telefon": "+49 5130 925182",
+  "vorhandene_email": "office@baensch-it.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps",
+   "overpass"
+  ],
+  "quelle": "maps+overpass"
+ },
+ {
+  "name": "IT-Service von Korff",
+  "website": "http://it-service-von-korff.de/",
+  "domain": "it-service-von-korff.de",
+  "address": null,
+  "categories": [
+   "IT-Berater",
+   "Service establishment"
+  ],
+  "plz": "",
+  "telefon": "+49 5073 1554",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "seydel-it",
+  "website": "http://www.seydel-it.de/",
+  "domain": "seydel-it.de",
+  "address": "Achumer Wiese 40, 31675 Bückeburg-Achum, Deutschland",
+  "categories": [
+   "Computerservice",
+   "IT-Berater",
+   "Computerreparaturdienst",
+   "Computersupport und -dienste"
+  ],
+  "plz": "31675",
+  "telefon": "+49 5722 90211",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Bültstein-IT",
+  "website": "https://bueltstein-it.de/",
+  "domain": "bueltstein-it.de",
+  "address": "Möllerweg 3, 31675 Bückeburg, Deutschland",
+  "categories": [
+   "IT-Berater"
+  ],
+  "plz": "31675",
+  "telefon": "+49 173 2905913",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "ltit",
+  "website": "http://www.ltit.de/",
+  "domain": "ltit.de",
+  "address": "Dorfstraße 14, 31712 Niedernwöhren, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller",
+   "IT-Berater"
+  ],
+  "plz": "31712",
+  "telefon": "+49 160 97536242",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "ICSS IT-Dienstleistungen GmbH",
+  "website": "http://icss-it.de/",
+  "domain": "icss-it.de",
+  "address": "Kramerstraße 8, 31542 Bad Nenndorf, Deutschland",
+  "categories": [
+   "IT-Berater"
+  ],
+  "plz": "31542",
+  "telefon": "+49 5723 7988922",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Meiser-IT",
+  "website": "http://www.meiser-it.de/",
+  "domain": "meiser-it.de",
+  "address": "Alte Poststraße 21, 31547 Rehburg-Loccum-Bad Rehburg, Deutschland",
+  "categories": [
+   "IT-Berater"
+  ],
+  "plz": "31547",
+  "telefon": "+49 5037 98482",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "MBAG · IT-Services aus Niedersachsen",
+  "website": "https://www.mbag-online.com/",
+  "domain": "mbag-online.com",
+  "address": "Im Seefeld 9, 31552 Rodenberg, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Computersupport und -dienste",
+   "Webdesigner"
+  ],
+  "plz": "31552",
+  "telefon": "+49 5723 94440",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Computerservice Schaumburg",
+  "website": "http://www.computerservice-schaumburg.de/",
+  "domain": "computerservice-schaumburg.de",
+  "address": "Röserheide 4, 31683 Obernkirchen, Deutschland",
+  "categories": [
+   "Computerservice",
+   "Computerreparaturdienst",
+   "Computersicherheitsdienst",
+   "Computersupport und -dienste",
+   "IT-Berater"
+  ],
+  "plz": "31683",
+  "telefon": "+49 174 4764589",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "DRALLE electronics",
+  "website": "http://www.dralle-electronics.de/",
+  "domain": "dralle-electronics.de",
+  "address": "Sülbeckerbrand 27, 31688 Nienstädt-Liekwegen, Deutschland",
+  "categories": [
+   "Computersupport und -dienste",
+   "IT-Berater",
+   "Computerreparaturdienst",
+   "Computergeschäft"
+  ],
+  "plz": "31688",
+  "telefon": "+49 5724 407890",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Joachim Unger IT-Beratung",
+  "website": "http://www.unger-it-beratung.de/",
+  "domain": "unger-it-beratung.de",
+  "address": "Am Schleplingsbach 28, 31655 Stadthagen-Langenbruch, Deutschland",
+  "categories": [
+   "IT-Berater"
+  ],
+  "plz": "31655",
+  "telefon": "+49 5721 993702",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Behnsen.IT - Sascha Behnsen",
+  "website": "https://www.behnsen.net/",
+  "domain": "behnsen.net",
+  "address": "Schwefelweg 37, 31542 Bad Nenndorf, Deutschland",
+  "categories": [
+   "IT-Berater"
+  ],
+  "plz": "31542",
+  "telefon": "+49 5031 9189999",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Bechtle PLM Deutschland",
+  "website": "https://www.bechtle-plm.com/",
+  "domain": "bechtle-plm.com",
+  "address": "Bahnhofstraße 66, 31655 Stadthagen, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Geschäft für Computerzubehör",
+   "Hersteller von Computerhardware",
+   "Computersicherheitsdienst",
+   "Computerservice",
+   "Softwarehändler",
+   "Computersupport und -dienste",
+   "Computer-Großhändler",
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "31655",
+  "telefon": "+49 2777 81180",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "BG&H-IT GmbH",
+  "website": "https://www.bgh-it.de/",
+  "domain": "bgh-it.de",
+  "address": "Mardorfer Str. 1, 31547 Rehburg-Loccum-Rehburg, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Videoüberwachung",
+   "Computernetzwerk-Service",
+   "Computersupport und -dienste",
+   "Installateur von Sicherheitssystemen",
+   "Anbieter von Sicherheitssystemen",
+   "Telekommunikationsausrüster"
+  ],
+  "plz": "31547",
+  "telefon": "+49 421 64855290",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "VINEROTEC - Ihr Computer- und Telefon-Partner",
+  "website": "http://www.vinerotec.de/",
+  "domain": "vinerotec.de",
+  "address": "Bleichenstraße 48, 31515 Wunstorf-Steinhude, Deutschland",
+  "categories": [
+   "Computerservice",
+   "Mobiltelefongeschäft",
+   "IT-Berater",
+   "Computerreparaturdienst",
+   "Computergeschäft",
+   "Telekommunikationsausrüster",
+   "Webdesigner"
+  ],
+  "plz": "31515",
+  "telefon": "+49 5033 2255",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Thomas Büte IT-Beratung & Projektmanagement",
+  "website": "https://buete-online.de/",
+  "domain": "buete-online.de",
+  "address": "Feldstraße 26, 31542 Bad Nenndorf-Waltringhausen, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Computerservice"
+  ],
+  "plz": "31542",
+  "telefon": "+49 1517 0175775",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "K&K IT",
+  "website": "http://www.kk-it.net/",
+  "domain": "kk-it.net",
+  "address": "Erlengrundstraße 12, 31542 Bad Nenndorf, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Computergeschäft"
+  ],
+  "plz": "31542",
+  "telefon": "+49 5105 6080100",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Oliver Schmidt - IT-Consultant und Developer for DataWareHouse & Business Intelligence",
+  "website": "https://www.freelancermap.de/freelancer-verzeichnis/profile/entwicklung/373554-profil-oliver-schmidt-sen-it-consultant-business-intelligence-dwh-architektur-und-datenintegration-etl-aus-hagenburg.html",
+  "domain": "freelancermap.de",
+  "address": "Feldend 1, 31558 Hagenburg-Altenhagen, Deutschland",
+  "categories": [
+   "IT-Berater"
+  ],
+  "plz": "31558",
+  "telefon": "+49 15678 136038",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "GvL-IT Consulting",
+  "website": "https://www.von-lerchendorff.de/",
+  "domain": "von-lerchendorff.de",
+  "address": "GvL-IT Consulting, Lindenstraße 20, 31867 Pohle, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "31867",
+  "telefon": "+49 5043 4345324",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "SNC GmbH",
+  "website": "http://ireport-app.com/",
+  "domain": "ireport-app.com",
+  "address": "Am Breiten Graben 31, 31558 Hagenburg, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller",
+   "IT-Berater",
+   "Computersupport und -dienste"
+  ],
+  "plz": "31558",
+  "telefon": "+49 5033 96320",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ }
+]

@@ -1,0 +1,26 @@
+name: Digital diamonds
+webseite: https://app.wholix.ai/companies
+angebot: '- aus der Webseite nicht erkennbar: Die Webseite enthält keine Informationen
+  über spezifische Alleinstellungsmerkmale.'
+tonalitaet: ruhig, erklärend, keine Superlative, keine Ausrufezeichen
+absender: o.redschlag@poleposition-automation.info
+zielgruppe:
+  titel:
+  - Geschäftsführer
+  - Inhaber
+  region:
+  - Deutschland
+  firmengroesse:
+  - alle
+follow_up_tage:
+- 7
+- 14
+test_empfaenger:
+- o.redschlag@poleposition-automation.info
+maps_suche: (Assistent 20260813-150357)
+kontakt_rollen:
+- Geschäftsführer
+- Inhaber
+anbieter_reihenfolge:
+- impressum
+anweisungen: ''

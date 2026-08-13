@@ -520,7 +520,7 @@ def test_liste_zeigt_anschreiben_erstellen_lassen_knopf(angemeldeter_client):
     # statt in das alte Kurzformular unter /auftraege/neu.
     antwort = angemeldeter_client.get("/kampagnen")
     assert antwort.status_code == 200
-    assert "E-Mails schreiben lassen" in antwort.text
+    assert "Add" in antwort.text
     assert "/assistent" in antwort.text
 
 

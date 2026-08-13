@@ -81,9 +81,12 @@ def test_falsches_passwort_zeigt_deutschen_fehlertext(client):
 
 
 def test_login_seite_zeigt_leitfaden_satz(client):
+    # Seit 13.08.2026 ist die Anmeldeseite auf Englisch (Wunsch Keti):
+    # Titel, Ueberschrift, Knopf und dieser Satz.
     antwort = client.get("/login")
     assert antwort.status_code == 200
-    assert "Melde dich an, um weiterzumachen." in antwort.text
+    assert "Log in to continue." in antwort.text
+    assert ">Log in</button>" in antwort.text
 
 
 def test_secure_cookie_per_default_gesetzt(daten_dir, monkeypatch):

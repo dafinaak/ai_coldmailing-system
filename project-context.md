@@ -281,6 +281,46 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
   ihm. 96 davon stehen in der Versandliste (78 mit persönlicher Mail) -
   sie würden also ohne seine Freigabe angeschrieben. Vor der Aktivierung
   ist das der Punkt, an dem es Leonard/Oliver auffallen kann.
+- Kontakte in Instantly geladen (13.08.2026): Die 279 Kontakte aus
+  `paket-1/versandfertig-final.xlsx` liegen in der Kampagne
+  `e9f33e56-d753-49ce-92c8-b6915808e969`. Sie heißt jetzt
+  "Partnerschafts-Anfrage IT-Dienstleister PLR 30-31" (vorher 30-39 -
+  der Name stammte noch aus der alten 319er-Liste). Die Kampagne war
+  leer und ist weiterhin **Status 0, also schlafend**; es wurde nichts
+  versendet. Instantly hat aus den 279 hochgeladenen Zeilen **277**
+  gemacht: die beiden doppelten Adressen (bergemann@nexave.de und
+  maik.bandolie@kesolutions.gmbh, je zwei Firmen) hat es selbst
+  zusammengeführt - niemand bekommt zwei Mails. Alle 277 tragen eine
+  gefüllte {{anrede}}.
+  Nächste Schritte vor dem Aktivieren: fünf Beispiel-Mails ansehen,
+  echte Testmail an ein eigenes Postfach, Text-Wache laufen lassen,
+  danach Freigabe durch Leonard/Oliver.
+- Kontrollierte Zustellprobe (13.08.2026): Eine eigene Test-Kampagne
+  `7924e36f-e80d-4772-8bd6-e74c19832065` ("[TEST] Zustellprobe PLR
+  30-31") mit EINEM Empfänger (d.keqmezi@digitaldiamonds.agency), einem
+  Schritt und Tageslimit 1 hat um 11:23 Uhr eine echte Mail von
+  `email@poleposition-automation.online` verschickt - Betreff und
+  Anrede von Instantly korrekt zusammengesetzt. Direkt danach pausiert
+  (Status 2). Die echte Kampagne blieb dabei unberührt und schlafend.
+  Vorher lief die Text-Wache gegen `laeufe/plr30-39/kampagne-referenz.json`:
+  keine Abweichungen.
+- Sperre gegen Doppel-Läufe repariert (13.08.2026): Prozessnummern
+  werden vom Betriebssystem wiederverwendet - eine Sperrdatei trug die
+  Nummer 802, die inzwischen Notion gehörte, und hätte diesen Kunden
+  dauerhaft blockiert. `_pid_lebt()` prüft jetzt zusätzlich, ob unter
+  der Nummer wirklich ein "python -m pipeline"-Lauf steckt; die
+  Sperrdatei notiert außerdem den Startzeitpunkt (alte Dateien mit
+  nackter Zahl bleiben lesbar). Betraf nicht nur den Assistenten,
+  sondern jeden Lauf und auch die Status-Anzeige.
+- Hunter-Kontingent: **stellt sich am 02.09.2026 von selbst zurück**
+  (Free-Plan, am 13.08. geprüft: 50/50 Suchen und 100/100 Prüfungen
+  verbraucht). Es blockiert NICHTS am Versand - die 277 Kontakte in
+  Instantly sind alle geprüft. Betroffen sind nur 15 Firmen, die
+  ausschließlich eine selbst geratene info@-Adresse hätten; die warten
+  bis September oder gehen dauerhaft auf die Anruf/Brief-Liste.
+  Dropcontact kann das nicht ersetzen: es beantwortet "wie lautet die
+  Adresse dieser Person", nicht "existiert diese Adresse" (am 13.08.
+  gegengeprüft - für eine der 15 Firmen lieferte es gar nichts).
 - Hunter-Kontingent für diesen Abrechnungszeitraum ist aufgebraucht
   (100 Verifikationen/Monat, HTTP 429). Betrifft nur info@-Adressen;
   die 214 persönlichen Mails prüft Dropcontact selbst. Die 15 offenen

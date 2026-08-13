@@ -1,0 +1,52 @@
+{
+ "kennung": "20260812-135603",
+ "angelegt": "2026-08-12T13:56:03",
+ "schritt": 3,
+ "hoechster_schritt": 3,
+ "daten": {
+  "name": "Probe Assistent",
+  "sprache": "de",
+  "anzahl_leads": 25,
+  "beschreibung": "",
+  "verkaeufer_url": "https://digitaldiamonds.agency",
+  "absender_email": "d.keqmezi@digitaldiamonds.agency",
+  "referenz_1": "",
+  "referenz_2": "",
+  "anweisungen": "",
+  "usp": [
+   {
+    "titel": "Integration in bestehende Workflows",
+    "erklaerung": "Die Agentur arbeitet nahtlos mit den Arbeitsprozessen der Kunden zusammen."
+   },
+   {
+    "titel": "Flexible Stundenkontingente",
+    "erklaerung": "Kontingente passen sich dem Projektfluss des Kunden an."
+   },
+   {
+    "titel": "Direkte Kommunikation ohne Zwischenhändler",
+    "erklaerung": "Kunden sprechen direkt mit der Agentur ohne Vermittler."
+   },
+   {
+    "titel": "Arbeiten innerhalb europäischer Geschäftszeiten",
+    "erklaerung": "Kooperation in Zeitzonen mit realer Verfügbarkeit für Kunden."
+   },
+   {
+    "titel": "100% Inhouse-Team in Europa mit deutscher Führung",
+    "erklaerung": "Designleistungen komplett intern und kontrolliert im europäischen Raum."
+   }
+  ],
+  "icp": {
+   "firmografisch": "Kreativagenturen in Europa, die Design- und Motion-Graphics-Unterstützung benötigen",
+   "technografisch": "Einsatz von modernen Apple-Hardware und aktueller Software, keine Outsourcing-Systeme",
+   "verhalten": "Engpässe bei Kapazität oder nahende Deadlines im Designteam",
+   "entscheider": "Agenturleiter, Kreativdirektoren oder Projektmanager in Agenturen"
+  },
+  "ort": "Hannover",
+  "radius_km": 30,
+  "dienste": [
+   "IT-Berater"
+  ],
+  "ohne_ort_mitnehmen": false
+ },
+ "geaendert": "2026-08-12T13:56:09"
+}

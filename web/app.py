@@ -17,6 +17,7 @@ from itsdangerous import URLSafeTimedSerializer
 
 from . import auth
 from .nav import NAV_BEREICHE, nav_kontext
+from .routen import assistent as assistent_routen
 from .routen import auftraege as auftraege_routen
 from .routen import dashboard as dashboard_routen
 from .routen import freigabe as freigabe_routen
@@ -92,6 +93,7 @@ def create_app(daten_dir: Path) -> FastAPI:
 
     app.include_router(sperrliste_routen.router)
     app.include_router(kunden_routen.router)
+    app.include_router(assistent_routen.router)
     app.include_router(auftraege_routen.router)
     app.include_router(freigabe_routen.router)
     app.include_router(kampagnen_routen.router)

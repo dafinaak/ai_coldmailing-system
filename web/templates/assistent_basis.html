@@ -1,0 +1,54 @@
+{% extends "layout.html" %}
+{% block titel %}{{ schritte[schritt - 1][0] }}{% endblock %}
+{% block inhalt %}
+{#
+  Aufbau nach den Wholix-Bildschirmfotos: Kopfzeile, links die Leiste
+  mit den sechs nummerierten Schritten, rechts der Inhalt, unten Zurueck
+  und Weiter. Farben und Schrift sind unsere, damit der Assistent nicht
+  wie ein fremdes Fenster im Werkzeug sitzt.
+#}
+<div class="assi">
+
+  <div class="assi-kopf">
+    <div class="assi-kopf-titel">
+      <span class="assi-kopf-symbol" aria-hidden="true">✈</span>
+      E-Mail-Kampagne · Neue Kampagne
+    </div>
+    <form method="post" action="/assistent/{{ entwurf.kennung }}/abbrechen"
+          class="assi-kopf-aktionen"
+          onsubmit="return confirm('Diesen Entwurf verwerfen?');">
+      <button type="submit" class="knopf-sekundaer knopf-klein">Verwerfen</button>
+    </form>
+  </div>
+
+  <div class="assi-koerper">
+
+    <ol class="assi-leiste">
+      {% for name, unterzeile in schritte %}
+      {% set nummer = loop.index %}
+      {% set erledigt = nummer < hoechster_schritt %}
+      <li class="assi-stufe
+                 {% if nummer == schritt %}assi-stufe--aktiv{% endif %}
+                 {% if erledigt %}assi-stufe--fertig{% endif %}">
+        {% if erledigt and nummer != schritt %}
+        <a href="/assistent/{{ entwurf.kennung }}/{{ nummer }}" class="assi-stufe-link">
+        {% endif %}
+          <span class="assi-stufe-zahl">{% if erledigt %}✓{% else %}{{ nummer }}{% endif %}</span>
+          <span class="assi-stufe-text">
+            <span class="assi-stufe-name">{{ name }}</span>
+            <span class="assi-stufe-unterzeile">{{ unterzeile }}</span>
+          </span>
+        {% if erledigt and nummer != schritt %}</a>{% endif %}
+      </li>
+      {% endfor %}
+    </ol>
+
+    <div class="assi-inhalt">
+      {% if fehler %}<div class="formular-fehler">{{ fehler }}</div>{% endif %}
+      {% if hinweis %}<div class="assi-hinweis">{{ hinweis }}</div>{% endif %}
+      {% block schritt_inhalt %}{% endblock %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

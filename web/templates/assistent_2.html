@@ -1,0 +1,44 @@
+{% extends "assistent_basis.html" %}
+{% block schritt_inhalt %}
+<form method="post" action="/assistent/{{ entwurf.kennung }}/2" class="assi-form">
+
+  <div class="assi-block">
+    <h2 class="assi-block-titel">USP — warum bei Ihnen gekauft wird</h2>
+    <p class="formular-hilfstext">Vorschlag der KI aus Ihrer Webseite. Bitte
+      prüfen: was hier steht, trägt später jede E-Mail.</p>
+
+    {% set eintraege = d.usp or [{}, {}, {}, {}, {}] %}
+    {% for eintrag in eintraege %}
+    <div class="assi-usp">
+      <input class="formular-eingabe assi-usp-titel" name="usp_titel_{{ loop.index0 }}"
+             value="{{ eintrag.titel or '' }}" placeholder="Kurz und konkret">
+      <textarea class="formular-textarea assi-usp-text" name="usp_text_{{ loop.index0 }}"
+                rows="2" placeholder="Ein erklärender Satz">{{ eintrag.erklaerung or '' }}</textarea>
+    </div>
+    {% endfor %}
+    <p class="formular-hilfstext">Leere Zeilen werden verworfen.</p>
+  </div>
+
+  <div class="assi-block">
+    <h2 class="assi-block-titel">ICP — wer angeschrieben werden soll</h2>
+    {% set gruppen = [
+      ("firmografisch", "Firma", "Branche, Größe, Region"),
+      ("technografisch", "Technik", "Eingesetzte Systeme"),
+      ("verhalten", "Anlass", "Wann so ein Kunde sucht"),
+      ("entscheider", "Entscheider", "Wer im Zielunternehmen entscheidet")
+    ] %}
+    {% for schluessel, beschriftung, hilfe in gruppen %}
+    <div class="formular-feld">
+      <label class="formular-label" for="icp_{{ schluessel }}">{{ beschriftung }}</label>
+      <textarea class="formular-textarea" id="icp_{{ schluessel }}" name="icp_{{ schluessel }}"
+                rows="2" placeholder="{{ hilfe }}">{{ (d.icp or {}).get(schluessel, '') }}</textarea>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="assi-fuss">
+    <a href="/assistent/{{ entwurf.kennung }}/1" class="knopf-sekundaer">← Zurück</a>
+    <button type="submit" class="knopf-primaer">Weiter →</button>
+  </div>
+</form>
+{% endblock %}

@@ -2,6 +2,18 @@ import pytest
 from pipeline.sources.dropcontact import DropcontactSource, ENRICH_URL
 
 
+@pytest.fixture(autouse=True)
+def _kein_guthaben_leck(tmp_path, monkeypatch):
+    """Der gemerkte Guthabenstand darf nie aus einem Test stammen.
+
+    Die Fake-Antworten hier tragen "credits_left": 25. Ohne eigenes
+    Arbeitsverzeichnis landet diese erfundene Zahl in der echten
+    dropcontact-guthaben.json des Projekts - und der Assistent zeigt
+    sie dann als gemeldeten Stand an (genau so passiert am 13.08.2026).
+    """
+    monkeypatch.chdir(tmp_path)
+
+
 class FakeResponse:
     def __init__(self, status_code, payload, text=""):
         self.status_code, self._payload, self.text = status_code, payload, text

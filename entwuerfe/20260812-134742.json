@@ -1,0 +1,121 @@
+{
+ "kennung": "20260812-134742",
+ "angelegt": "2026-08-12T13:47:42",
+ "schritt": 5,
+ "hoechster_schritt": 5,
+ "daten": {
+  "name": "Lena Hartmann",
+  "sprache": "de",
+  "anzahl_leads": 50,
+  "beschreibung": "",
+  "verkaeufer_url": "https://app.wholix.ai/companies",
+  "absender_email": "email@poleposition-seo-top.online",
+  "referenz_1": "",
+  "referenz_2": "",
+  "anweisungen": "",
+  "usp": [
+   {
+    "titel": "aus der Webseite nicht erkennbar",
+    "erklaerung": "Keine Informationen zum Angebot oder besonderen Vorteilen vorhanden."
+   },
+   {
+    "titel": "aus der Webseite nicht erkennbar",
+    "erklaerung": "Keine Informationen zum Angebot oder besonderen Vorteilen vorhanden."
+   },
+   {
+    "titel": "aus der Webseite nicht erkennbar",
+    "erklaerung": "Keine Informationen zum Angebot oder besonderen Vorteilen vorhanden."
+   },
+   {
+    "titel": "aus der Webseite nicht erkennbar",
+    "erklaerung": "Keine Informationen zum Angebot oder besonderen Vorteilen vorhanden."
+   },
+   {
+    "titel": "aus der Webseite nicht erkennbar",
+    "erklaerung": "Keine Informationen zum Angebot oder besonderen Vorteilen vorhanden."
+   }
+  ],
+  "icp": {
+   "firmografisch": "aus der Webseite nicht erkennbar",
+   "technografisch": "aus der Webseite nicht erkennbar",
+   "verhalten": "aus der Webseite nicht erkennbar",
+   "entscheider": "aus der Webseite nicht erkennbar"
+  },
+  "ort": "",
+  "radius_km": 50,
+  "dienste": [],
+  "ohne_ort_mitnehmen": false,
+  "abgewaehlt": [],
+  "firmen_domains": [
+   "bundesweit.digital",
+   "hanovatech.de",
+   "schaper-software.de",
+   "luis.uni-hannover.de",
+   "quant-x-sec.com",
+   "torutec.com",
+   "bfwkom.de",
+   "viorado.de",
+   "bitkollegen.de",
+   "incremental.plus",
+   "atelios.de",
+   "supplyo.de",
+   "cse-it.net",
+   "schauerte-edv-service.business.site",
+   "mollat.de",
+   "ferchau.com",
+   "followerhit.de",
+   "mystical-host.de",
+   "pcservicehannoverdavenstedtmickusschrörder.de",
+   "tutanota.com",
+   "office-solution.de",
+   "innomaticservices.de",
+   "drhellberg.de",
+   "ithilfe-ro.de",
+   "kommunity.net",
+   "synedat.com",
+   "basement.de",
+   "tk-technologies.de",
+   "ext-it.tech",
+   "i-mbu.com",
+   "bsse.eu",
+   "tasteone.eu",
+   "4dview.de",
+   "milsch.de",
+   "sorglos-marketing.de",
+   "mbublitz.de",
+   "it-mod.de",
+   "fujitsu.com",
+   "spirgatis-ms.com",
+   "codecivil.de",
+   "randstad.de",
+   "hannomax.de",
+   "tina-voss.de",
+   "airitsystems.de",
+   "blankk.it",
+   "itbn-gmbh.de",
+   "burner-it.de",
+   "fourinone-consulting.de",
+   "pryga.de",
+   "wv-s.com"
+  ],
+  "kunde_datei": "kunden/lena-hartmann.yaml",
+  "lauf_slug": "lena-hartmann",
+  "lauf_ts": "20260812-163528",
+  "firmen_anzahl": 50,
+  "versand_postfach": "email@poleposition-seo-top.online",
+  "tageslimit": 20,
+  "zeit_von": "08:00",
+  "zeit_bis": "19:00",
+  "wochentage": [
+   "mo",
+   "di",
+   "mi",
+   "do",
+   "fr"
+  ],
+  "abstand_1_2": 7,
+  "abstand_2_3": 7,
+  "signatur": ""
+ },
+ "geaendert": "2026-08-12T16:36:16"
+}

@@ -1,0 +1,616 @@
+"""The six-step campaign wizard ("E-Mails schreiben lassen").
+
+Rebuilt after the Wholix screens, with our own engine underneath. The
+two steps that differ are the ones our data cannot serve the same way:
+
+  Step 3  Wholix filters a bought contact database by job title,
+          seniority and installed software. We filter the companies we
+          collected ourselves, and can only offer what those sources
+          actually deliver: where a company sits, what it was listed
+          under, and the blocklist.
+  Step 4  Wholix answers instantly because it looks up ready-made
+          contacts. We answer instantly too - but only about COMPANIES,
+          which are already on disk. The e-mail addresses are built
+          afterwards, in the background, while step 5 is being filled
+          in. That is the whole reason the waiting is not visible.
+
+Every step writes its values to a draft file the moment it is
+submitted, so a closed tab costs nothing.
+
+The wizard stops at the approval table. It never talks to Instantly and
+never sends: the existing approval route does that, with its own
+guards, after a human has read every text.
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from fastapi import APIRouter, Form, Request
+from fastapi.responses import RedirectResponse
+
+from pipeline import assistent_entwurf as entwuerfe
+from pipeline.config import lade_globale_sperrlisten_eintraege
+from pipeline.firmen_filter import dienste_vorschlagen, filtern
+from web import auth
+from web.nav import nav_kontext
+
+router = APIRouter()
+
+SCHRITTE = [
+    ("Campaign Setup", "Grunddaten der Kampagne"),
+    ("USP & ICP prüfen", "Angebot und Zielkunde bestätigen"),
+    ("Firmen-Filter", "Umkreis und Leistung wählen"),
+    ("Suchergebnis", "Gefundene Firmen prüfen"),
+    ("Versand-Einstellungen", "Postfach, Menge, Zeiten"),
+    ("E-Mails erzeugen", "Texte schreiben lassen"),
+]
+SPRACHEN = [("de", "Deutsch"), ("en", "English (US)")]
+RADIUS_STUFEN = [10, 25, 50, 100, 250]
+WOCHENTAGE = [("mo", "Mo"), ("di", "Di"), ("mi", "Mi"), ("do", "Do"),
+              ("fr", "Fr"), ("sa", "Sa"), ("so", "So")]
+
+
+def _daten_dir(request: Request) -> Path:
+    return Path(request.app.state.daten_dir)
+
+
+def _firmen_bestand(daten_dir: Path) -> list:
+    """Every company we have already collected, across all lead sources.
+
+    Deliberately reads what is on disk instead of scraping: this is the
+    half of the work that is already paid for and finished.
+    """
+    bestand, gesehen = [], set()
+    wurzel = daten_dir / "laeufe" / "leadquellen"
+    for pfad in sorted(wurzel.glob("*/firmen.json")) if wurzel.exists() else []:
+        try:
+            firmen = json.loads(pfad.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        for firma in firmen if isinstance(firmen, list) else []:
+            schluessel = (firma.get("domain") or firma.get("name") or "").lower()
+            if schluessel and schluessel not in gesehen:
+                gesehen.add(schluessel)
+                bestand.append(firma)
+    return bestand
+
+
+def _entwurf_oder_start(request: Request, kennung: str):
+    entwurf = entwuerfe.laden(_daten_dir(request), kennung)
+    if entwurf is None:
+        return None, RedirectResponse("/assistent", status_code=303)
+    return entwurf, None
+
+
+def _seite(request: Request, entwurf: dict, schritt: int, extra: dict | None = None,
+           fehler: str | None = None, status_code: int = 200):
+    inhalt = {
+        "nutzer": auth.aktueller_nutzer(request),
+        "nav": nav_kontext(request),
+        "entwurf": entwurf,
+        "d": entwurf["daten"],
+        "schritt": schritt,
+        "schritte": SCHRITTE,
+        "hoechster_schritt": entwurf.get("hoechster_schritt", 1),
+        "fehler": fehler,
+    }
+    inhalt.update(extra or {})
+    return request.app.state.templates.TemplateResponse(
+        request, f"assistent_{schritt}.html", inhalt, status_code=status_code)
+
+
+def _weiter(kennung: str, schritt: int) -> RedirectResponse:
+    return RedirectResponse(f"/assistent/{kennung}/{schritt}", status_code=303)
+
+
+@router.get("/assistent")
+def starten(request: Request):
+    """Always begins a fresh draft - the campaign list offers old ones."""
+    entwurf = entwuerfe.anlegen(_daten_dir(request))
+    return _weiter(entwurf["kennung"], 1)
+
+
+@router.post("/assistent/{kennung}/abbrechen")
+def abbrechen(request: Request, kennung: str):
+    entwuerfe.loeschen(_daten_dir(request), kennung)
+    return RedirectResponse("/kampagnen", status_code=303)
+
+
+# ---------------------------------------------------------------- Schritt 1
+
+@router.get("/assistent/{kennung}/1")
+def schritt_1(request: Request, kennung: str):
+    entwurf, umleitung = _entwurf_oder_start(request, kennung)
+    if umleitung:
+        return umleitung
+    return _seite(request, entwurf, 1,
+                  {"sprachen": SPRACHEN, "postfaecher": _postfaecher(request)})
+
+
+@router.post("/assistent/{kennung}/1")
+def schritt_1_speichern(
+        request: Request, kennung: str,
+        name: str = Form(""), sprache: str = Form("de"),
+        anzahl_leads: str = Form("50"), beschreibung: str = Form(""),
+        verkaeufer_url: str = Form(""), absender_email: str = Form(""),
+        referenz_1: str = Form(""), referenz_2: str = Form(""),
+        anweisungen: str = Form("")):
+    entwurf, umleitung = _entwurf_oder_start(request, kennung)
+    if umleitung:
+        return umleitung
+
+    fehlend = [beschriftung for wert, beschriftung in (
+        (name, "Kampagnen-Name"), (verkaeufer_url, "Verkäufer-Webseite"),
+        (absender_email, "Absender-Adresse")) if not wert.strip()]
+    if fehlend:
+        entwurf["daten"].update(_werte_1(locals()))
+        return _seite(request, entwurf, 1,
+                      {"sprachen": SPRACHEN, "postfaecher": _postfaecher(request)},
+                      fehler=f"Bitte ausfüllen: {', '.join(fehlend)}.",
+                      status_code=400)
+
+    entwuerfe.schritt_speichern(_daten_dir(request), kennung, 1, _werte_1(locals()))
+    return _weiter(kennung, 2)
+
+
+def _werte_1(w: dict) -> dict:
+    try:
+        anzahl = max(1, min(2000, int(str(w["anzahl_leads"]).strip() or 50)))
+    except ValueError:
+        anzahl = 50
+    return {
+        "name": w["name"].strip(), "sprache": w["sprache"],
+        "anzahl_leads": anzahl, "beschreibung": w["beschreibung"].strip(),
+        "verkaeufer_url": _mit_schema(w["verkaeufer_url"]),
+        "absender_email": w["absender_email"].strip(),
+        "referenz_1": _mit_schema(w["referenz_1"]),
+        "referenz_2": _mit_schema(w["referenz_2"]),
+        "anweisungen": w["anweisungen"].strip(),
+    }
+
+
+def _mit_schema(url: str) -> str:
+    wert = str(url or "").strip()
+    if wert and not wert.startswith(("http://", "https://")):
+        return "https://" + wert
+    return wert
+
+
+# ---------------------------------------------------------------- Schritt 2
+
+@router.get("/assistent/{kennung}/2")
+def schritt_2(request: Request, kennung: str):
+    entwurf, umleitung = _entwurf_oder_start(request, kennung)
+    if umleitung:
+        return umleitung
+
+    hinweis = None
+    if not entwurf["daten"].get("usp"):
+        vorschlag, hinweis = _usp_icp_vorschlag(entwurf["daten"].get("verkaeufer_url"))
+        if vorschlag:
+            entwurf = entwuerfe.schritt_speichern(
+                _daten_dir(request), kennung, 2, vorschlag)
+    return _seite(request, entwurf, 2, {"hinweis": hinweis})
+
+
+@router.post("/assistent/{kennung}/2")
+async def schritt_2_speichern(request: Request, kennung: str):
+    entwurf, umleitung = _entwurf_oder_start(request, kennung)
+    if umleitung:
+        return umleitung
+
+    formular = await request.form()
+    usp = []
+    for nummer in range(20):
+        titel = str(formular.get(f"usp_titel_{nummer}") or "").strip()
+        if titel:
+            usp.append({
+                "titel": titel,
+                "erklaerung": str(formular.get(f"usp_text_{nummer}") or "").strip(),
+            })
+    icp = {gruppe: str(formular.get(f"icp_{gruppe}") or "").strip()
+           for gruppe in ("firmografisch", "technografisch", "verhalten",
+                          "entscheider")}
+
+    if not usp:
+        entwurf["daten"]["icp"] = icp
+        return _seite(request, entwurf, 2,
+                      fehler="Bitte mindestens einen USP eintragen - er trägt "
+                             "die spätere E-Mail.", status_code=400)
+
+    entwuerfe.schritt_speichern(_daten_dir(request), kennung, 2,
+                                {"usp": usp, "icp": icp})
+    return _weiter(kennung, 3)
+
+
+def _usp_icp_vorschlag(url: str | None):
+    """Let the AI read the seller's page. Failure is a hint, not a wall."""
+    if not url:
+        return None, ("Ohne Verkäufer-Webseite kann nichts vorgeschlagen "
+                      "werden - bitte von Hand ausfüllen.")
+    try:
+        from pipeline.ki import KI
+        from pipeline.offer import draft_usp_icp
+        from pipeline.website import fetch_text
+
+        text = fetch_text(url)
+        if not text:
+            return None, (f"Die Seite {url} war nicht lesbar - bitte von Hand "
+                          f"ausfüllen.")
+        return draft_usp_icp(text, KI()), None
+    except Exception as fehler:      # noqa: BLE001
+        # Kein erfundener Inhalt: lieber leere Felder und ein ehrlicher
+        # Hinweis als ein Vorschlag, den niemand geprueft hat.
+        return None, (f"Der Vorschlag hat nicht geklappt ({fehler}). Bitte von "
+                      f"Hand ausfüllen.")
+
+
+# ---------------------------------------------------------------- Schritt 3
+
+@router.get("/assistent/{kennung}/3")
+def schritt_3(request: Request, kennung: str):
+    entwurf, umleitung = _entwurf_oder_start(request, kennung)
+    if umleitung:
+        return umleitung
+    bestand = _firmen_bestand(_daten_dir(request))
+    return _seite(request, entwurf, 3, {
+        "dienste_vorschlaege": dienste_vorschlagen(bestand),
+        "radius_stufen": RADIUS_STUFEN,
+        "bestand_gesamt": len(bestand),
+    })
+
+
+@router.post("/assistent/{kennung}/3")
+async def schritt_3_speichern(request: Request, kennung: str):
+    entwurf, umleitung = _entwurf_oder_start(request, kennung)
+    if umleitung:
+        return umleitung
+
+    formular = await request.form()
+    ort = str(formular.get("ort") or "").strip()
+    dienste = [d.strip() for d in formular.getlist("dienste") if d.strip()]
+    eigene = str(formular.get("dienst_eigen") or "").strip()
+    if eigene:
+        dienste += [t.strip() for t in eigene.split(",") if t.strip()]
+    try:
+        radius = int(str(formular.get("radius_km") or "50"))
+    except ValueError:
+        radius = 50
+
+    werte = {"ort": ort, "radius_km": radius, "dienste": dienste,
+             "ohne_ort_mitnehmen": bool(formular.get("ohne_ort_mitnehmen"))}
+    entwuerfe.schritt_speichern(_daten_dir(request), kennung, 3, werte)
+    return _weiter(kennung, 4)
+
+
+# ---------------------------------------------------------------- Schritt 4
+
+@router.get("/assistent/{kennung}/4")
+def schritt_4(request: Request, kennung: str):
+    entwurf, umleitung = _entwurf_oder_start(request, kennung)
+    if umleitung:
+        return umleitung
+
+    daten_dir = _daten_dir(request)
+    bestand = _firmen_bestand(daten_dir)
+    try:
+        ergebnis = filtern(
+            bestand,
+            ort=entwurf["daten"].get("ort", ""),
+            radius_km=entwurf["daten"].get("radius_km"),
+            dienste=entwurf["daten"].get("dienste") or [],
+            gesperrte_domains=_gesperrte(daten_dir))
+    except ValueError as fehler:
+        return _seite(request, entwurf, 3, {
+            "dienste_vorschlaege": dienste_vorschlagen(bestand),
+            "radius_stufen": RADIUS_STUFEN,
+            "bestand_gesamt": len(bestand),
+        }, fehler=str(fehler), status_code=400)
+
+    gewuenscht = int(entwurf["daten"].get("anzahl_leads") or 50)
+    auswahl = list(ergebnis["treffer"])
+    if entwurf["daten"].get("ohne_ort_mitnehmen"):
+        auswahl += ergebnis["ohne_ort"]
+    abgewaehlt = set(entwurf["daten"].get("abgewaehlt") or [])
+
+    from pipeline.guthaben import stand as guthaben_stand
+
+    return _seite(request, entwurf, 4, {
+        "zahlen": ergebnis["zahlen"],
+        "gewuenscht": gewuenscht,
+        "firmen": auswahl[:gewuenscht],
+        "ohne_ort": ergebnis["ohne_ort"],
+        "abgewaehlt": abgewaehlt,
+        "bestand_gesamt": len(bestand),
+        "guthaben": guthaben_stand(daten_dir),
+    })
+
+
+@router.post("/assistent/{kennung}/4")
+async def schritt_4_speichern(request: Request, kennung: str):
+    entwurf, umleitung = _entwurf_oder_start(request, kennung)
+    if umleitung:
+        return umleitung
+
+    formular = await request.form()
+    abgewaehlt = set(str(w) for w in formular.getlist("abgewaehlt"))
+    gewaehlt = [str(w) for w in formular.getlist("firma") if w not in abgewaehlt]
+    if not gewaehlt:
+        return RedirectResponse(f"/assistent/{kennung}/4?leer=1", status_code=303)
+
+    daten_dir = _daten_dir(request)
+    entwurf = entwuerfe.schritt_speichern(daten_dir, kennung, 4, {
+        "abgewaehlt": sorted(abgewaehlt),
+        "firmen_domains": gewaehlt,
+    })
+
+    # Ab hier laeuft die Adress-Suche im Hintergrund weiter, waehrend
+    # Schritt 5 ausgefuellt wird - das ist der ganze Trick, mit dem die
+    # Minuten Wartezeit unsichtbar werden.
+    fehler = _lauf_starten(request, entwurf, gewaehlt)
+    if fehler:
+        return _seite(request, entwurf, 4, _schritt_4_inhalt(request, entwurf),
+                      fehler=fehler, status_code=400)
+    return _weiter(kennung, 5)
+
+
+def _lauf_starten(request: Request, entwurf: dict, domains: list) -> str | None:
+    """Write customer file + company list, then start the normal pipeline.
+
+    Deliberately the SAME subprocess the old route starts. The wizard
+    only prepares its input; every guard downstream (blocklist, test
+    recipients, approval before handover) stays exactly where it is.
+    """
+    from web.laufmanager import Laufmanager, LaufBereitsAktiv, LaufmanagerFehler
+
+    daten_dir = _daten_dir(request)
+    daten = entwurf["daten"]
+    gewuenscht = set(domains)
+    firmen = [f for f in _firmen_bestand(daten_dir)
+              if (f.get("domain") or f.get("name")) in gewuenscht]
+
+    firmen_pfad = daten_dir / "entwuerfe" / f"{entwurf['kennung']}-firmen.json"
+    firmen_pfad.write_text(json.dumps(firmen, ensure_ascii=False, indent=1),
+                           encoding="utf-8")
+    kunde_datei = _kunde_schreiben(daten_dir, entwurf)
+
+    try:
+        lauf_dir = Laufmanager(daten_dir).starte(
+            kunde_datei, len(firmen),
+            firmen_datei=str(firmen_pfad.relative_to(daten_dir)))
+    except LaufBereitsAktiv:
+        return ("Für diesen Kunden läuft schon eine Suche. Bitte warten, bis "
+                "sie fertig ist.")
+    except LaufmanagerFehler as fehler:
+        return str(fehler)
+
+    entwuerfe.schritt_speichern(daten_dir, entwurf["kennung"], 4, {
+        "kunde_datei": kunde_datei,
+        "lauf_slug": lauf_dir.parent.name,
+        "lauf_ts": lauf_dir.name,
+        "firmen_anzahl": len(firmen),
+    })
+    return None
+
+
+def _kunde_schreiben(daten_dir: Path, entwurf: dict) -> str:
+    """Turn the wizard's answers into a normal customer file.
+
+    Nothing wizard-specific is invented here: the same fields the rest
+    of the pipeline already reads, so a campaign made in the wizard is
+    indistinguishable from one made by hand.
+    """
+    import re
+
+    import yaml
+
+    daten = entwurf["daten"]
+    usp_text = "\n".join(
+        f"- {u['titel']}: {u.get('erklaerung', '')}".rstrip(": ")
+        for u in daten.get("usp") or [])
+    icp = daten.get("icp") or {}
+
+    inhalt = {
+        "name": daten.get("name") or f"Kampagne {entwurf['kennung']}",
+        "webseite": daten.get("verkaeufer_url", ""),
+        "angebot": usp_text or daten.get("beschreibung", ""),
+        "tonalitaet": "ruhig, erklärend, keine Superlative, keine Ausrufezeichen",
+        "absender": daten.get("versand_postfach") or daten.get("absender_email", ""),
+        "zielgruppe": {
+            "titel": ["Geschäftsführer", "Inhaber"],
+            "region": [daten.get("ort") or "Deutschland"],
+            "firmengroesse": ["alle"],
+        },
+        # Schritt 5 fragt ABSTAENDE ("nach Mail 1 sieben Tage warten, dann
+        # noch einmal sieben"), die Kundendatei will die Tage AB START
+        # (Tag 7, Tag 14). Also aufaddieren - sonst steht dort [7, 7] und
+        # der Lauf bricht ab, weil die Liste aufsteigend sein muss.
+        "follow_up_tage": [
+            daten.get("abstand_1_2", 7),
+            daten.get("abstand_1_2", 7) + daten.get("abstand_2_3", 7),
+        ],
+        # Sicherheitsnetz: bis jemand echte Testempfaenger eintraegt, darf
+        # dieser Kunde nur an die eigene Absenderadresse senden.
+        "test_empfaenger": [daten.get("absender_email")] if daten.get("absender_email") else [],
+        "maps_suche": f"(Assistent {entwurf['kennung']})",
+        "kontakt_rollen": ["Geschäftsführer", "Inhaber"],
+        "anbieter_reihenfolge": ["impressum"],
+        "anweisungen": daten.get("anweisungen", ""),
+    }
+
+    ordner = daten_dir / "kunden"
+    ordner.mkdir(parents=True, exist_ok=True)
+    slug = re.sub(r"[^a-z0-9]+", "-", str(inhalt["name"]).casefold()).strip("-")
+    slug = slug or entwurf["kennung"]
+    # Eine bestehende Kundendatei wird NIE ueberschrieben: zwei Kampagnen
+    # duerfen denselben Namen tragen, aber "Demo GmbH" im Assistenten darf
+    # nicht die gepflegte kunden/demo-gmbh.yaml zerschiessen.
+    dateiname = f"kunden/{slug}.yaml"
+    if (daten_dir / dateiname).exists():
+        dateiname = f"kunden/{slug}-{entwurf['kennung']}.yaml"
+    (daten_dir / dateiname).write_text(
+        yaml.safe_dump(inhalt, allow_unicode=True, sort_keys=False),
+        encoding="utf-8")
+    return dateiname
+
+
+def _schritt_4_inhalt(request: Request, entwurf: dict) -> dict:
+    """Rebuild step 4's view data after a failed start."""
+    bestand = _firmen_bestand(_daten_dir(request))
+    ergebnis = filtern(bestand, ort=entwurf["daten"].get("ort", ""),
+                       radius_km=entwurf["daten"].get("radius_km"),
+                       dienste=entwurf["daten"].get("dienste") or [],
+                       gesperrte_domains=_gesperrte(_daten_dir(request)))
+    gewuenscht = int(entwurf["daten"].get("anzahl_leads") or 50)
+    auswahl = list(ergebnis["treffer"])
+    if entwurf["daten"].get("ohne_ort_mitnehmen"):
+        auswahl += ergebnis["ohne_ort"]
+    return {"zahlen": ergebnis["zahlen"], "gewuenscht": gewuenscht,
+            "firmen": auswahl[:gewuenscht], "ohne_ort": ergebnis["ohne_ort"],
+            "abgewaehlt": set(entwurf["daten"].get("abgewaehlt") or []),
+            "bestand_gesamt": len(bestand)}
+
+
+def _gesperrte(daten_dir: Path) -> list:
+    eintraege = lade_globale_sperrlisten_eintraege(daten_dir) or []
+    domains = []
+    for eintrag in eintraege:
+        domains.append(eintrag.get("domain") if isinstance(eintrag, dict)
+                       else eintrag)
+    return [d for d in domains if d]
+
+
+def _postfaecher(request: Request) -> list:
+    """Sender mailboxes from Instantly - empty list means 'type it in'."""
+    leser = getattr(request.app.state, "instantly_leser", None)
+    if leser is None:
+        return []
+    try:
+        stand = leser.postfaecher() or {}
+    except Exception:      # noqa: BLE001 - a dead API must not block the wizard
+        return []
+    eintraege = stand.get("postfaecher") if isinstance(stand, dict) else stand
+    adressen = []
+    for eintrag in eintraege or []:
+        adresse = (eintrag or {}).get("email") if isinstance(eintrag, dict) else eintrag
+        if adresse:
+            adressen.append(str(adresse))
+    return adressen
+
+
+# ---------------------------------------------------------------- Schritt 5
+
+@router.get("/assistent/{kennung}/5")
+def schritt_5(request: Request, kennung: str):
+    entwurf, umleitung = _entwurf_oder_start(request, kennung)
+    if umleitung:
+        return umleitung
+    return _seite(request, entwurf, 5, {
+        "postfaecher": _postfaecher(request),
+        "wochentage": WOCHENTAGE,
+    })
+
+
+@router.post("/assistent/{kennung}/5")
+async def schritt_5_speichern(request: Request, kennung: str):
+    entwurf, umleitung = _entwurf_oder_start(request, kennung)
+    if umleitung:
+        return umleitung
+
+    formular = await request.form()
+
+    def zahl(feld, standard, kleinste, groesste):
+        try:
+            return max(kleinste, min(groesste, int(str(formular.get(feld) or standard))))
+        except ValueError:
+            return standard
+
+    tage = [k for k, _ in WOCHENTAGE if formular.get(f"tag_{k}")]
+    werte = {
+        "versand_postfach": str(formular.get("versand_postfach") or "").strip(),
+        "tageslimit": zahl("tageslimit", 20, 1, 500),
+        "zeit_von": str(formular.get("zeit_von") or "08:00"),
+        "zeit_bis": str(formular.get("zeit_bis") or "19:00"),
+        "wochentage": tage or ["mo", "di", "mi", "do", "fr"],
+        "abstand_1_2": zahl("abstand_1_2", 7, 1, 60),
+        "abstand_2_3": zahl("abstand_2_3", 7, 1, 60),
+        "signatur": str(formular.get("signatur") or "").strip(),
+    }
+    if not werte["versand_postfach"]:
+        entwurf["daten"].update(werte)
+        return _seite(request, entwurf, 5,
+                      {"postfaecher": _postfaecher(request),
+                       "wochentage": WOCHENTAGE},
+                      fehler="Bitte ein Absender-Postfach wählen.",
+                      status_code=400)
+
+    entwuerfe.schritt_speichern(_daten_dir(request), kennung, 5, werte)
+    return _weiter(kennung, 6)
+
+
+# ---------------------------------------------------------------- Schritt 6
+
+@router.get("/assistent/{kennung}/6")
+def schritt_6(request: Request, kennung: str):
+    entwurf, umleitung = _entwurf_oder_start(request, kennung)
+    if umleitung:
+        return umleitung
+    daten = entwurf["daten"]
+    slug, ts = daten.get("lauf_slug"), daten.get("lauf_ts")
+    return _seite(request, entwurf, 6, {
+        "anzahl_firmen": daten.get("firmen_anzahl")
+                         or len(daten.get("firmen_domains") or []),
+        "lauf_slug": slug,
+        "lauf_ts": ts,
+        # Der Lauf laeuft schon seit Schritt 4; hier wird nur sein Stand
+        # gezeigt. Dieselbe Status-Datei wie die alte Fortschritts-Seite.
+        "status_url": f"/auftraege/{slug}/{ts}/status.json" if slug and ts else None,
+        "freigabe_url": f"/pruefen/{slug}/{ts}" if slug and ts else None,
+        "excel_url": f"/assistent/{kennung}/kontakte.xlsx" if slug and ts else None,
+    })
+
+
+@router.get("/assistent/{kennung}/kontakte.xlsx")
+def kontakte_excel(request: Request, kennung: str):
+    """Die fertigen Kontakte als Excel-Datei zum Herunterladen.
+
+    Wird bei jedem Abruf frisch aus dem Laufordner gebaut, nicht
+    zwischengespeichert: eine Datei von gestern neben einem Lauf von
+    heute waere schlimmer als gar keine.
+    """
+    import io
+
+    from fastapi.responses import Response
+
+    from pipeline.kontakte_excel import mappe_bauen
+
+    entwurf, umleitung = _entwurf_oder_start(request, kennung)
+    if umleitung:
+        return umleitung
+
+    daten = entwurf["daten"]
+    slug, ts = daten.get("lauf_slug"), daten.get("lauf_ts")
+    if not (slug and ts):
+        return _seite(request, entwurf, 6, {
+            "anzahl_firmen": 0, "lauf_slug": None, "lauf_ts": None,
+            "status_url": None, "freigabe_url": None, "excel_url": None},
+            fehler="Für diesen Entwurf wurde noch keine Suche gestartet.",
+            status_code=400)
+
+    lauf_dir = _daten_dir(request) / "laeufe" / slug / ts
+    if not lauf_dir.exists():
+        return _seite(request, entwurf, 6, {
+            "anzahl_firmen": 0, "lauf_slug": slug, "lauf_ts": ts,
+            "status_url": None, "freigabe_url": None, "excel_url": None},
+            fehler="Der Laufordner wurde nicht gefunden.", status_code=404)
+
+    puffer = io.BytesIO()
+    mappe_bauen(lauf_dir).save(puffer)
+    dateiname = f"kontakte-{slug}-{ts}.xlsx"
+    return Response(
+        puffer.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument."
+                   "spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{dateiname}"'})

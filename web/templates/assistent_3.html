@@ -1,0 +1,64 @@
+{% extends "assistent_basis.html" %}
+{% block schritt_inhalt %}
+<form method="post" action="/assistent/{{ entwurf.kennung }}/3" class="assi-form">
+
+  <p class="assi-hinweis">
+    Gesucht wird in {{ bestand_gesamt }} bereits gesammelten Firmen. Anders als
+    bei Wholix filtern wir keinen gekauften Adressbestand, sondern unseren
+    eigenen — deshalb gibt es hier Umkreis und Leistung statt Jobtitel und
+    eingesetzter Software.
+  </p>
+
+  <div class="assi-block">
+    <h2 class="assi-block-titel">Wo</h2>
+    <div class="assi-reihe">
+      <div class="formular-feld">
+        <label class="formular-label" for="ort">Mittelpunkt</label>
+        <input class="formular-eingabe" id="ort" name="ort" value="{{ d.ort or '' }}"
+               placeholder="Hannover oder 30159">
+        <p class="formular-hilfstext">Ortsname oder Postleitzahl. Leer lassen
+          heißt: ganz Deutschland.</p>
+      </div>
+      <div class="formular-feld">
+        <label class="formular-label" for="radius_km">Umkreis</label>
+        <select class="formular-eingabe" id="radius_km" name="radius_km">
+          {% for stufe in radius_stufen %}
+          <option value="{{ stufe }}" {% if (d.radius_km or 50) == stufe %}selected{% endif %}>{{ stufe }} km</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <label class="assi-kasten">
+      <input type="checkbox" name="ohne_ort_mitnehmen" {% if d.ohne_ort_mitnehmen %}checked{% endif %}>
+      Firmen ohne bekannte Postleitzahl mitnehmen
+      <span class="formular-hilfstext">Bei ihnen lässt sich der Umkreis nicht
+        prüfen. Sie werden im nächsten Schritt getrennt aufgeführt.</span>
+    </label>
+  </div>
+
+  <div class="assi-block">
+    <h2 class="assi-block-titel">Welche Leistung</h2>
+    <p class="formular-hilfstext">Diese Einträge kommen aus dem echten Bestand —
+      es ist also keiner dabei, der nichts findet.</p>
+    <div class="assi-chips">
+      {% for dienst in dienste_vorschlaege %}
+      <label class="assi-chip">
+        <input type="checkbox" name="dienste" value="{{ dienst }}"
+               {% if dienst in (d.dienste or []) %}checked{% endif %}>
+        <span>{{ dienst }}</span>
+      </label>
+      {% endfor %}
+    </div>
+    <div class="formular-feld formular-feld--mitabstand">
+      <label class="formular-label" for="dienst_eigen">Eigene Stichwörter</label>
+      <input class="formular-eingabe" id="dienst_eigen" name="dienst_eigen"
+             placeholder="Systemhaus, Managed Services — mit Komma trennen">
+    </div>
+  </div>
+
+  <div class="assi-fuss">
+    <a href="/assistent/{{ entwurf.kennung }}/2" class="knopf-sekundaer">← Zurück</a>
+    <button type="submit" class="knopf-primaer">Firmen suchen →</button>
+  </div>
+</form>
+{% endblock %}

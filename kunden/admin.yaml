@@ -1,0 +1,26 @@
+name: admin
+webseite: https://app.wholix.ai/companies
+angebot: '- aus der Webseite nicht erkennbar: Die Webseite enthält keine Informationen
+  über die besonderen Leistungen der Firma.'
+tonalitaet: ruhig, erklärend, keine Superlative, keine Ausrufezeichen
+absender: o.redschlag@poleposition-automation.cloud
+zielgruppe:
+  titel:
+  - Geschäftsführer
+  - Inhaber
+  region:
+  - Deutschland
+  firmengroesse:
+  - alle
+follow_up_tage:
+- 7
+- 14
+test_empfaenger:
+- o.redschlag@poleposition-automation.cloud
+maps_suche: (Assistent 20260812-163704)
+kontakt_rollen:
+- Geschäftsführer
+- Inhaber
+anbieter_reihenfolge:
+- impressum
+anweisungen: ''

@@ -1,0 +1,96 @@
+{% extends "assistent_basis.html" %}
+{% block schritt_inhalt %}
+<form method="post" action="/assistent/{{ entwurf.kennung }}/5" class="assi-form">
+
+  <p class="assi-hinweis">
+    Während Sie das hier ausfüllen, werden im Hintergrund die E-Mail-Adressen
+    der ausgewählten Firmen gesucht. Deshalb liegt dieser Schritt vor dem
+    Erzeugen der Texte.
+  </p>
+
+  <div class="assi-block">
+    <h2 class="assi-block-titel">Wer sendet</h2>
+    <div class="formular-feld">
+      <label class="formular-label" for="versand_postfach">Absender-Postfach</label>
+      {% if postfaecher %}
+      <select class="formular-eingabe" id="versand_postfach" name="versand_postfach" required>
+        <option value="">Bitte wählen</option>
+        {% for adresse in postfaecher %}
+        <option value="{{ adresse }}"
+          {% if (d.versand_postfach or d.absender_email) == adresse %}selected{% endif %}>{{ adresse }}</option>
+        {% endfor %}
+      </select>
+      {% else %}
+      <input class="formular-eingabe" id="versand_postfach" name="versand_postfach" type="email"
+             value="{{ d.versand_postfach or d.absender_email or '' }}" required>
+      {% endif %}
+    </div>
+    <div class="formular-feld">
+      <label class="formular-label" for="tageslimit">E-Mails pro Tag</label>
+      <input class="formular-eingabe" id="tageslimit" name="tageslimit" type="number"
+             min="1" max="500" value="{{ d.tageslimit or 20 }}">
+      <p class="formular-hilfstext">Niedrig anfangen schützt den Ruf des
+        Postfachs. 20 am Tag ist der bisherige Wert.</p>
+    </div>
+  </div>
+
+  <div class="assi-block">
+    <h2 class="assi-block-titel">Wann</h2>
+    <div class="assi-reihe">
+      <div class="formular-feld">
+        <label class="formular-label" for="zeit_von">Ab</label>
+        <input class="formular-eingabe" id="zeit_von" name="zeit_von" type="time"
+               value="{{ d.zeit_von or '08:00' }}">
+      </div>
+      <div class="formular-feld">
+        <label class="formular-label" for="zeit_bis">Bis</label>
+        <input class="formular-eingabe" id="zeit_bis" name="zeit_bis" type="time"
+               value="{{ d.zeit_bis or '19:00' }}">
+      </div>
+    </div>
+    <div class="formular-feld">
+      <span class="formular-label">Wochentage</span>
+      <div class="assi-chips">
+        {% set gewaehlt = d.wochentage or ['mo', 'di', 'mi', 'do', 'fr'] %}
+        {% for kuerzel, beschriftung in wochentage %}
+        <label class="assi-chip">
+          <input type="checkbox" name="tag_{{ kuerzel }}" {% if kuerzel in gewaehlt %}checked{% endif %}>
+          <span>{{ beschriftung }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="assi-block">
+    <h2 class="assi-block-titel">Abstände der Nachfass-Mails</h2>
+    <div class="assi-reihe">
+      <div class="formular-feld">
+        <label class="formular-label" for="abstand_1_2">Nach Mail 1 warten</label>
+        <input class="formular-eingabe" id="abstand_1_2" name="abstand_1_2" type="number"
+               min="1" max="60" value="{{ d.abstand_1_2 or 7 }}">
+        <p class="formular-hilfstext">Tage bis Mail 2</p>
+      </div>
+      <div class="formular-feld">
+        <label class="formular-label" for="abstand_2_3">Nach Mail 2 warten</label>
+        <input class="formular-eingabe" id="abstand_2_3" name="abstand_2_3" type="number"
+               min="1" max="60" value="{{ d.abstand_2_3 or 7 }}">
+        <p class="formular-hilfstext">Tage bis Mail 3</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="assi-block">
+    <h2 class="assi-block-titel">Signatur</h2>
+    <div class="formular-feld">
+      <textarea class="formular-textarea" name="signatur" rows="4"
+                placeholder="Name, Firma, Telefon">{{ d.signatur or '' }}</textarea>
+    </div>
+  </div>
+
+  <div class="assi-fuss">
+    <a href="/assistent/{{ entwurf.kennung }}/4" class="knopf-sekundaer">← Zurück</a>
+    <button type="submit" class="knopf-primaer">Weiter →</button>
+  </div>
+</form>
+{% endblock %}

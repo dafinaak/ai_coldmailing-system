@@ -1,4 +1,4 @@
-import argparse, os, sys
+import argparse, json, os, sys
 from collections import Counter
 from pathlib import Path
 from pipeline.config import load_kunde, lade_globale_sperrliste
@@ -40,7 +40,17 @@ def _setze_schritte_zurueck(store, ab_schritt: str):
 
 _LEERE_DECKUNG = {"firmen_gesamt": 0, "firmen_mit_kontakt": 0, "quote_prozent": 0.0}
 
-def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None = None):
+def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None = None,
+         firmen_datei: str | None = None):
+    """Ein vollstaendiger Lauf.
+
+    `firmen_datei` ist der Weg des Kampagnen-Assistenten: die Firmen
+    stehen dann schon fest (im Assistenten von Hand ausgewaehlt), also
+    wird die Suchstufe uebersprungen und die fertige Liste eingespeist.
+    Alles danach - Entscheider-Suche, Sperrlisten, Personalisierung,
+    Freigabe-Ordner - laeuft unveraendert weiter, damit der Assistent
+    keine zweite, schwaecher gepruefte Strecke aufmacht.
+    """
     # Reihenfolge folgt den Stufen der Lead-Beschaffung (Kaskade, siehe
     # pipeline.sourcing): Apify (Firmen) -> Anbieter-Stufen laut
     # Kunde.anbieter_reihenfolge (Standard: Hunter findet Entscheider,
@@ -49,7 +59,11 @@ def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None
     # wird VOR den Env-Checks geladen, weil erst seine anbieter_reihenfolge
     # entscheidet, ob PROSPEO_API_KEY Pflicht ist.
     kunde = load_kunde(kunde_pfad)
-    _brauche_env("APIFY_API_KEY")
+    # Ohne Suchstufe kein Apify-Schluessel: eine fertige Firmenliste
+    # braucht ihn nicht, und ein Pflichtfeld fuer etwas Ungenutztes
+    # wuerde den Assistenten grundlos blockieren.
+    if not firmen_datei:
+        _brauche_env("APIFY_API_KEY")
     _brauche_env("HUNTER_API_KEY")
     _brauche_env("DROPCONTACT_API_KEY")
     prospeo_noetig = "prospeo" in (kunde.anbieter_reihenfolge or [])
@@ -67,8 +81,21 @@ def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None
         # so bleibt der Aufruf fuer den Standardfall unveraendert.
         zusatz = ({"prospeo_key": os.environ["PROSPEO_API_KEY"]}
                   if prospeo_noetig else {})
+        if firmen_datei:
+            from pipeline.grosslauf import ListenQuelle
+            vorgegeben = json.loads(
+                Path(firmen_datei).read_text(encoding="utf-8"))
+            print(f"Feste Firmenliste: {len(vorgegeben)} Firmen aus {firmen_datei}")
+            zusatz["apify_source"] = ListenQuelle(vorgegeben)
+        # Die Impressum-Stufe braucht den KI-Baustein. Bisher reichte ihn nur
+        # pipeline.grosslauf durch, weshalb ein Lauf ueber diesen Einstieg mit
+        # "impressum" in der Reihenfolge sofort abbrach (echter Probelauf
+        # 12.08.2026). Seit Prospeo tot ist, ist das unsere HAUPT-Stufe.
+        if "impressum" in (kunde.anbieter_reihenfolge or []):
+            from pipeline.sources.impressum import ImpressumQuelle
+            zusatz["impressum_quelle"] = ImpressumQuelle(KI())
         gefunden, deckung, firmen_mit_ausgang = source_leads(
-            kunde, limit, os.environ["APIFY_API_KEY"],
+            kunde, limit, os.environ.get("APIFY_API_KEY", ""),
             os.environ["HUNTER_API_KEY"], os.environ["DROPCONTACT_API_KEY"],
             **zusatz)
         store.save_step("leads", {"leads": [l.__dict__ for l in gefunden], "deckung": deckung})
@@ -256,6 +283,10 @@ def main():
     p_lauf.add_argument("kunde")
     p_lauf.add_argument("--limit", type=int, default=10)
     p_lauf.add_argument("--fortsetzen", default=None)
+    p_lauf.add_argument("--firmen", dest="firmen_datei", default=None,
+                        help="JSON mit einer fertigen Firmenliste - dann wird "
+                             "nicht gesucht, sondern genau diese Liste benutzt "
+                             "(Weg des Kampagnen-Assistenten).")
     p_lauf.add_argument("--neu-ab", dest="neu_ab", default=None,
                         choices=["leads", "dedupe", "personalisierung"],
                         help="Nur zusammen mit --fortsetzen: verwirft diesen Schritt und "
@@ -265,7 +296,8 @@ def main():
         p.add_argument("laufordner")
     args = parser.parse_args()
     if args.befehl == "lauf":
-        lauf(args.kunde, args.limit, args.fortsetzen, args.neu_ab)
+        lauf(args.kunde, args.limit, args.fortsetzen, args.neu_ab,
+             args.firmen_datei)
     elif args.befehl == "freigeben":
         freigeben(args.laufordner)
     else:

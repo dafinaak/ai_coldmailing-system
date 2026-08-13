@@ -59,6 +59,22 @@ def _beste_email(email_liste: list):
     return None
 
 
+def _guthaben_merken(antwort: dict) -> None:
+    """Note the credit count Dropcontact just reported.
+
+    The provider sends "credits_left" with every accepted request, so
+    the number is a free by-product of work we are doing anyway. It is
+    only ever recorded, never asked for separately.
+    """
+    if "credits_left" not in (antwort or {}):
+        return
+    try:
+        from pipeline.guthaben import merken
+        merken(antwort["credits_left"])
+    except Exception:      # noqa: BLE001 - eine Notiz darf nie einen Lauf kosten
+        pass
+
+
 def _vergleichbar(wert) -> str:
     """Names as Dropcontact echoes them back differ in case and spacing."""
     return " ".join(str(wert or "").split()).casefold()
@@ -218,6 +234,7 @@ class DropcontactSource:
         if daten.get("error") or not daten.get("request_id"):
             grund = daten.get("reason") or daten.get("error") or "unbekannt"
             raise RuntimeError(f"Dropcontact lehnt den Batch ab: {grund}")
+        _guthaben_merken(daten)
         return daten["request_id"], gesendet
 
     def batch_abholen(self, request_id: str, gesendet: list,
@@ -282,6 +299,7 @@ class DropcontactSource:
         if daten.get("error") or not daten.get("request_id"):
             grund = daten.get("reason") or daten.get("error") or "unbekannt"
             raise RuntimeError(f"Dropcontact lehnt den Batch ab: {grund}")
+        _guthaben_merken(daten)
         return daten["request_id"]
 
     def _ergebnis_holen(self, request_id: str) -> dict | None:

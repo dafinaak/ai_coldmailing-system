@@ -1,0 +1,91 @@
+{% extends "assistent_basis.html" %}
+{% block schritt_inhalt %}
+<form method="post" action="/assistent/{{ entwurf.kennung }}/4" class="assi-form">
+
+  {# Zahlenreihe wie im Wholix-Bildschirmfoto - hier aber ueber unserem
+     eigenen Bestand, und deshalb sofort da statt nach Minuten. #}
+  <div class="assi-zahlen">
+    <div class="assi-zahl"><span class="assi-zahl-wert">{{ gewuenscht }}</span>
+      <span class="assi-zahl-text">gewünscht</span></div>
+    <div class="assi-zahl"><span class="assi-zahl-wert assi-zahl--gut">{{ firmen | length }}</span>
+      <span class="assi-zahl-text">übernommen</span></div>
+    <div class="assi-zahl"><span class="assi-zahl-wert">{{ zahlen.raus_umkreis }}</span>
+      <span class="assi-zahl-text">außerhalb</span></div>
+    <div class="assi-zahl"><span class="assi-zahl-wert">{{ zahlen.raus_gesperrt }}</span>
+      <span class="assi-zahl-text">gesperrt</span></div>
+    <div class="assi-zahl"><span class="assi-zahl-wert">{{ zahlen.treffer }}</span>
+      <span class="assi-zahl-text">passen insgesamt</span></div>
+  </div>
+
+  <p class="assi-filter-zeile">
+    {% if d.ort %}<span class="assi-chip-still">{{ d.ort }} · {{ d.radius_km }} km</span>{% endif %}
+    {% for dienst in d.dienste or [] %}<span class="assi-chip-still">{{ dienst }}</span>{% endfor %}
+    {% if not d.ort and not d.dienste %}<span class="assi-chip-still">kein Filter gesetzt</span>{% endif %}
+  </p>
+
+  {# Was der naechste Klick kostet - vor dem Klick, nicht danach. #}
+  <div class="assi-kosten">
+    <strong>{{ firmen | length }}</strong> Firmen gehen bei „Weiter" an
+    Dropcontact — je eine Abfrage, also etwa {{ firmen | length }} Credits.
+    {% if guthaben %}
+      Zuletzt gemeldet: <strong>{{ guthaben.credits_left }} Credits</strong>
+      (Stand {{ guthaben.stand_text }}).
+      {% if guthaben.credits_left < (firmen | length) %}
+      <span class="assi-kosten-warnung">Das reicht nicht für alle — der Lauf
+        bricht ab, wenn das Guthaben leer ist. Bereits Gefundenes bleibt
+        erhalten.</span>
+      {% endif %}
+    {% else %}
+      Der Guthabenstand ist hier noch nicht bekannt — er wird beim nächsten
+      Lauf von Dropcontact mitgeteilt und dann angezeigt. Bis dahin im
+      Dropcontact-Konto nachsehen.
+    {% endif %}
+  </div>
+
+  {% if zahlen.ohne_ort and not d.ohne_ort_mitnehmen %}
+  <p class="assi-hinweis">
+    {{ zahlen.ohne_ort }} weitere Firmen passen zur Leistung, aber ihre
+    Postleitzahl fehlt — der Umkreis lässt sich bei ihnen nicht prüfen. Sie
+    sind hier NICHT enthalten. Über „Zurück" können sie mitgenommen werden.
+  </p>
+  {% endif %}
+
+  {% if firmen %}
+  <table class="tabelle assi-tabelle">
+    <thead>
+      <tr><th>Firma</th><th>Ort</th><th>Entfernung</th><th>Webseite</th>
+          <th>Telefon</th><th class="assi-spalte-raus">raus</th></tr>
+    </thead>
+    <tbody>
+      {% for firma in firmen %}
+      {% set kennung = firma.domain or firma.name %}
+      <tr>
+        <td>{{ firma.name }}<input type="hidden" name="firma" value="{{ kennung }}"></td>
+        <td>{{ firma.plz or '—' }}</td>
+        <td>{% if firma.entfernung_km is defined %}{{ firma.entfernung_km }} km{% else %}—{% endif %}</td>
+        <td><a href="{{ firma.website }}" target="_blank" rel="noopener">{{ firma.domain or firma.website }}</a></td>
+        <td>{{ firma.telefon or '—' }}</td>
+        <td class="assi-spalte-raus">
+          <input type="checkbox" name="abgewaehlt" value="{{ kennung }}"
+                 {% if kennung in abgewaehlt %}checked{% endif %}
+                 aria-label="{{ firma.name }} nicht anschreiben">
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="assi-hinweis">
+    Zu diesen Filtern passt keine Firma. Über „Zurück" den Umkreis vergrößern
+    oder weniger Leistungen ankreuzen.
+  </p>
+  {% endif %}
+
+  <div class="assi-fuss">
+    <a href="/assistent/{{ entwurf.kennung }}/3" class="knopf-sekundaer">← Zurück</a>
+    {% if firmen %}
+    <button type="submit" class="knopf-primaer">Weiter →</button>
+    {% endif %}
+  </div>
+</form>
+{% endblock %}

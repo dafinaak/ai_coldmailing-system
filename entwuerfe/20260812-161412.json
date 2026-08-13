@@ -1,0 +1,74 @@
+{
+ "kennung": "20260812-161412",
+ "angelegt": "2026-08-12T16:14:12",
+ "schritt": 4,
+ "hoechster_schritt": 5,
+ "daten": {
+  "name": "ECHTE PROBE 3 Firmen",
+  "sprache": "de",
+  "anzahl_leads": 3,
+  "beschreibung": "Kontrollierte Probe des Assistenten",
+  "verkaeufer_url": "https://digitaldiamonds.agency",
+  "absender_email": "d.keqmezi@digitaldiamonds.agency",
+  "referenz_1": "",
+  "referenz_2": "",
+  "anweisungen": "Ruhig und erklaerend, keine Superlative.",
+  "usp": [
+   {
+    "titel": "Integration in bestehende Workflows",
+    "erklaerung": "Die Agentur integriert sich nahtlos in die Arbeitsprozesse ihrer Kunden."
+   },
+   {
+    "titel": "Flexible Stundenkontingente",
+    "erklaerung": "Stundenpakete passen sich an den Projektbedarf der Kunden an."
+   },
+   {
+    "titel": "Deutsche Management- und Qualitätsstandards",
+    "erklaerung": "Management aus Deutschland sorgt für präzise und strukturierte Abläufe."
+   },
+   {
+    "titel": "Europäisches Inhouse-Team ohne Outsourcing",
+    "erklaerung": "Alle Arbeiten werden innerhalb Europas und ohne Auslagerungen gefertigt."
+   },
+   {
+    "titel": "Transparente Preisgestaltung ohne versteckte Kosten",
+    "erklaerung": "Kunden erhalten klare Preise und vermeiden überraschende Zusatzgebühren."
+   }
+  ],
+  "icp": {
+   "firmografisch": "Werbeagenturen in Europa, die grafische oder Motion Design Leistungen benötigen",
+   "technografisch": "aus der Webseite nicht erkennbar",
+   "verhalten": "Suche bei hoher Auslastung oder Bedarf nach fristgerechter Designunterstützung",
+   "entscheider": "Kreativ- und Art-Direktoren sowie Projektleiter in Marketingagenturen"
+  },
+  "ort": "Hannover",
+  "radius_km": 25,
+  "dienste": [
+   "IT-Systemhaus"
+  ],
+  "ohne_ort_mitnehmen": false,
+  "abgewaehlt": [],
+  "firmen_domains": [
+   "torutec.com",
+   "kommunity.net",
+   "blueteam.de"
+  ],
+  "versand_postfach": "d.keqmezi@digitaldiamonds.agency",
+  "tageslimit": 20,
+  "zeit_von": "08:00",
+  "zeit_bis": "19:00",
+  "wochentage": [
+   "mo",
+   "di",
+   "mi"
+  ],
+  "abstand_1_2": 7,
+  "abstand_2_3": 7,
+  "signatur": "Digital Diamonds",
+  "kunde_datei": "kunden/echte-probe-3-firmen-20260812-161412.yaml",
+  "lauf_slug": "echte-probe-3-firmen",
+  "lauf_ts": "20260812-161835",
+  "firmen_anzahl": 3
+ },
+ "geaendert": "2026-08-12T16:18:35"
+}

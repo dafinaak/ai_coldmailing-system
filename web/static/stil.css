@@ -2229,3 +2229,140 @@ h1 { margin: 0; font-size: 24px; }
   text-decoration: none; border-bottom: 1px dotted currentColor;
 }
 .crm-verlauf-link:hover { color: var(--farbe-akzent); }
+
+/* =====================================================================
+   Kampagnen-Assistent ("E-Mails schreiben lassen")
+   Aufbau nach den Wholix-Bildschirmfotos: Kopfzeile, nummerierte Leiste
+   links, Inhalt rechts. Farben bleiben unsere - ein dunkles Fenster in
+   einem hellen Werkzeug saehe aus wie zwei Programme.
+   ===================================================================== */
+.assi { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+.assi-kopf {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 14px 18px; background: var(--farbe-weiss);
+  border: 1px solid var(--farbe-rand); border-radius: 10px;
+}
+.assi-kopf-titel {
+  display: flex; align-items: center; gap: 9px;
+  font-weight: 600; color: var(--farbe-text);
+}
+.assi-kopf-symbol { color: var(--farbe-akzent); }
+.assi-kopf-aktionen { margin: 0; }
+
+.assi-koerper { display: flex; gap: 18px; align-items: flex-start; min-width: 0; }
+
+.assi-leiste {
+  list-style: none; margin: 0; padding: 18px 14px; flex: 0 0 232px;
+  background: var(--farbe-weiss); border: 1px solid var(--farbe-rand);
+  border-radius: 10px;
+}
+.assi-stufe { display: flex; gap: 11px; padding: 9px 4px; position: relative; }
+.assi-stufe + .assi-stufe { margin-top: 2px; }
+/* Verbindungslinie zwischen den Stufen wie in der Vorlage */
+.assi-stufe:not(:last-child)::after {
+  content: ""; position: absolute; left: 17px; top: 40px; bottom: -2px;
+  width: 1px; background: var(--farbe-rand);
+}
+.assi-stufe-link {
+  display: flex; gap: 11px; text-decoration: none; color: inherit; width: 100%;
+}
+.assi-stufe-zahl {
+  flex: 0 0 27px; height: 27px; border-radius: 8px; display: grid;
+  place-items: center; font-size: 0.82rem; font-weight: 600; z-index: 1;
+  background: var(--farbe-seitenleiste); color: var(--farbe-gedaempft);
+  border: 1px solid var(--farbe-rand);
+}
+.assi-stufe--aktiv .assi-stufe-zahl {
+  background: #F5A000; color: #FFFFFF; border-color: #F5A000;
+}
+.assi-stufe--fertig .assi-stufe-zahl {
+  background: #E9F3EB; color: #2F7A46; border-color: #C7E2CF;
+}
+.assi-stufe-text { display: flex; flex-direction: column; min-width: 0; }
+.assi-stufe-name { font-size: 0.87rem; font-weight: 600; color: var(--farbe-text); }
+.assi-stufe--aktiv .assi-stufe-name { color: var(--farbe-akzent); }
+.assi-stufe-unterzeile { font-size: 0.74rem; color: var(--farbe-gedaempft); }
+
+.assi-inhalt {
+  flex: 1 1 auto; min-width: 0; padding: 22px;
+  background: var(--farbe-weiss); border: 1px solid var(--farbe-rand);
+  border-radius: 10px;
+}
+.assi-form { display: flex; flex-direction: column; gap: 18px; }
+.assi-reihe { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.assi-reihe--drei { grid-template-columns: 2fr 1fr 1fr; }
+
+.assi-block {
+  padding: 16px; border: 1px solid var(--farbe-rand); border-radius: 9px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.assi-block-titel { margin: 0; font-size: 0.95rem; font-weight: 600; }
+.assi-pflicht { color: var(--farbe-akzent); }
+
+.assi-hinweis {
+  padding: 11px 13px; border-radius: 8px; font-size: 0.85rem;
+  background: #F8EFD8; border: 1px solid #E8D5A8; color: #6B5320;
+}
+
+.assi-usp { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; }
+
+.assi-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.assi-chip {
+  display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+  padding: 6px 11px; border-radius: 999px; font-size: 0.83rem;
+  background: var(--farbe-seitenleiste); border: 1px solid var(--farbe-rand);
+}
+.assi-chip:has(input:checked) {
+  background: #F8EFD8; border-color: #F5A000; color: #6B5320;
+}
+.assi-chip-still {
+  display: inline-block; padding: 4px 10px; margin: 0 6px 6px 0;
+  border-radius: 999px; font-size: 0.78rem;
+  background: var(--farbe-seitenleiste); border: 1px solid var(--farbe-rand);
+}
+.assi-filter-zeile { margin: 0; }
+.assi-kosten {
+  padding: 11px 13px; border-radius: 8px; font-size: 0.85rem;
+  background: var(--farbe-seitenleiste); border: 1px solid var(--farbe-rand);
+}
+.assi-kosten-warnung { display: block; margin-top: 5px; color: #7A2416; }
+.assi-kasten {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  font-size: 0.85rem; cursor: pointer;
+}
+.assi-kasten .formular-hilfstext { flex-basis: 100%; margin: 0; }
+
+.assi-zahlen { display: flex; flex-wrap: wrap; gap: 12px; }
+.assi-zahl {
+  flex: 1 1 120px; padding: 14px; border-radius: 9px; text-align: center;
+  background: var(--farbe-seitenleiste); border: 1px solid var(--farbe-rand);
+}
+.assi-zahl-wert { display: block; font-size: 1.5rem; font-weight: 600; }
+.assi-zahl--gut { color: #2F7A46; }
+.assi-zahl-text { font-size: 0.75rem; color: var(--farbe-gedaempft); }
+
+.assi-tabelle { width: 100%; }
+.assi-spalte-raus { text-align: center; width: 52px; }
+.assi-uebersicht th { text-align: left; width: 34%; color: var(--farbe-gedaempft); }
+.assi-ablauf { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.assi-noch-nicht { font-size: 0.83rem; color: var(--farbe-gedaempft); }
+
+.assi-fuss {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 12px; padding-top: 6px;
+}
+
+/* Schmale Fenster: Leiste nach oben, Spalten untereinander. Nur die
+   Tabelle darf seitlich scrollen, nie die ganze Seite. */
+@media (max-width: 860px) {
+  .assi-koerper { flex-direction: column; }
+  .assi-leiste { flex: 1 1 auto; width: 100%; display: flex;
+                 flex-wrap: wrap; gap: 6px; }
+  .assi-stufe { padding: 6px; }
+  .assi-stufe:not(:last-child)::after { display: none; }
+  .assi-stufe-unterzeile { display: none; }
+  .assi-reihe, .assi-reihe--drei, .assi-usp { grid-template-columns: 1fr; }
+  .assi-inhalt { padding: 16px; }
+  .assi-tabelle { display: block; overflow-x: auto; }
+}

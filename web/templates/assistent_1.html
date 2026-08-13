@@ -1,0 +1,82 @@
+{% extends "assistent_basis.html" %}
+{% block schritt_inhalt %}
+<form method="post" action="/assistent/{{ entwurf.kennung }}/1" class="assi-form">
+
+  <div class="assi-reihe assi-reihe--drei">
+    <div class="formular-feld">
+      <label class="formular-label" for="name">Kampagnen-Name <span class="assi-pflicht">*</span></label>
+      <input class="formular-eingabe" id="name" name="name" value="{{ d.name or '' }}"
+             placeholder="z. B. IT-Partner Hannover" required>
+    </div>
+    <div class="formular-feld">
+      <label class="formular-label" for="sprache">Sprache der E-Mails</label>
+      <select class="formular-eingabe" id="sprache" name="sprache">
+        {% for kuerzel, beschriftung in sprachen %}
+        <option value="{{ kuerzel }}" {% if d.sprache == kuerzel %}selected{% endif %}>{{ beschriftung }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="formular-feld">
+      <label class="formular-label" for="anzahl_leads">Anzahl Kontakte</label>
+      <input class="formular-eingabe" id="anzahl_leads" name="anzahl_leads" type="number"
+             min="1" max="2000" value="{{ d.anzahl_leads or 50 }}">
+    </div>
+  </div>
+
+  <div class="formular-feld">
+    <label class="formular-label" for="beschreibung">Beschreibung</label>
+    <textarea class="formular-textarea" id="beschreibung" name="beschreibung"
+              rows="2" placeholder="Wofür ist diese Kampagne?">{{ d.beschreibung or '' }}</textarea>
+  </div>
+
+  <div class="assi-reihe">
+    <div class="formular-feld">
+      <label class="formular-label" for="verkaeufer_url">Verkäufer-Webseite <span class="assi-pflicht">*</span></label>
+      <input class="formular-eingabe" id="verkaeufer_url" name="verkaeufer_url"
+             value="{{ d.verkaeufer_url or '' }}" placeholder="ihre-firma.de" required>
+      <p class="formular-hilfstext">Von dieser Seite liest die KI im nächsten
+        Schritt USP und Zielkunde ab.</p>
+    </div>
+    <div class="formular-feld">
+      <label class="formular-label" for="absender_email">Absender-Adresse <span class="assi-pflicht">*</span></label>
+      {% if postfaecher %}
+      <select class="formular-eingabe" id="absender_email" name="absender_email" required>
+        <option value="">Bitte wählen</option>
+        {% for adresse in postfaecher %}
+        <option value="{{ adresse }}" {% if d.absender_email == adresse %}selected{% endif %}>{{ adresse }}</option>
+        {% endfor %}
+      </select>
+      {% else %}
+      <input class="formular-eingabe" id="absender_email" name="absender_email" type="email"
+             value="{{ d.absender_email or '' }}" placeholder="name@firma.de" required>
+      <p class="formular-hilfstext">Es sind keine Postfächer aus Instantly
+        abrufbar. Adresse bitte von Hand eintragen.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="assi-reihe">
+    <div class="formular-feld">
+      <label class="formular-label" for="referenz_1">Referenz-Kunde 1</label>
+      <input class="formular-eingabe" id="referenz_1" name="referenz_1"
+             value="{{ d.referenz_1 or '' }}" placeholder="kunde.de">
+    </div>
+    <div class="formular-feld">
+      <label class="formular-label" for="referenz_2">Referenz-Kunde 2</label>
+      <input class="formular-eingabe" id="referenz_2" name="referenz_2"
+             value="{{ d.referenz_2 or '' }}" placeholder="kunde.de">
+    </div>
+  </div>
+
+  <div class="formular-feld">
+    <label class="formular-label" for="anweisungen">Hinweise für die Texte</label>
+    <textarea class="formular-textarea" id="anweisungen" name="anweisungen" rows="4"
+              placeholder="Worauf soll beim Schreiben geachtet werden?">{{ d.anweisungen or '' }}</textarea>
+  </div>
+
+  <div class="assi-fuss">
+    <a href="/kampagnen" class="knopf-sekundaer">Schließen</a>
+    <button type="submit" class="knopf-primaer">Weiter →</button>
+  </div>
+</form>
+{% endblock %}

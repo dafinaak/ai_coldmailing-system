@@ -6,9 +6,11 @@ from pipeline.website import fetch_text
 from pipeline.ki import KI
 
 PROMPT_DATEI = Path(__file__).parent.parent / "prompts" / "angebot.md"
+USP_PROMPT_DATEI = Path(__file__).parent.parent / "prompts" / "usp_icp.md"
 SYSTEM = ("Du analysierst Firmen-Webseiten und formulierst "
           "Angebots-Beschreibungen. Antworte nur mit JSON.")
 FELDER = ["angebot", "tonalitaet"]
+ICP_GRUPPEN = ["firmografisch", "technografisch", "verhalten", "entscheider"]
 
 def draft_offer(website_text: str, ki) -> dict:
     prompt = PROMPT_DATEI.read_text(encoding="utf-8").format(
@@ -22,6 +24,40 @@ def draft_offer(website_text: str, ki) -> dict:
     if any(not daten.get(k) for k in FELDER):
         raise ValueError("KI-Entwurf unvollständig")
     return {k: daten[k] for k in FELDER}
+
+def draft_usp_icp(website_text: str, ki) -> dict:
+    """Read a seller's own website and draft its USP list and ICP groups.
+
+    Step 2 of the campaign wizard shows this as a proposal, never as a
+    fact - a human corrects it before anything is sent. Where the page
+    says nothing about a point, the prompt asks for an honest "not
+    recognisable" rather than an invention, so nobody later builds a
+    campaign on a sentence the AI made up.
+    """
+    prompt = USP_PROMPT_DATEI.read_text(encoding="utf-8").format(
+        webseiten_text=website_text or "(leer)")
+    roh = ki.frage(SYSTEM, prompt)
+    treffer = re.search(r"\{.*\}", roh, re.DOTALL)
+    try:
+        daten = json.loads(treffer.group(0)) if treffer else {}
+    except ValueError:
+        daten = {}
+
+    usp = []
+    for eintrag in daten.get("usp") or []:
+        titel = str((eintrag or {}).get("titel") or "").strip()
+        if titel:
+            usp.append({
+                "titel": titel,
+                "erklaerung": str(eintrag.get("erklaerung") or "").strip(),
+            })
+    icp = {g: str((daten.get("icp") or {}).get(g) or "").strip()
+           for g in ICP_GRUPPEN}
+
+    if not usp or not any(icp.values()):
+        raise ValueError("KI-Entwurf unvollständig")
+    return {"usp": usp, "icp": icp}
+
 
 def uebernehmen(kunde_pfad, entwurf: dict):
     pfad = Path(kunde_pfad)

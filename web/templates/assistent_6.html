@@ -1,0 +1,97 @@
+{% extends "assistent_basis.html" %}
+{% block schritt_inhalt %}
+
+<div class="assi-block">
+  <h2 class="assi-block-titel">Das steht jetzt bereit</h2>
+  <table class="tabelle assi-uebersicht">
+    <tbody>
+      <tr><th>Kampagne</th><td>{{ d.name }}</td></tr>
+      <tr><th>Absender</th><td>{{ d.versand_postfach or d.absender_email }}</td></tr>
+      <tr><th>Firmen</th><td>{{ anzahl_firmen }}</td></tr>
+      <tr><th>Umkreis</th>
+          <td>{% if d.ort %}{{ d.ort }} · {{ d.radius_km }} km{% else %}ganz Deutschland{% endif %}</td></tr>
+      <tr><th>Leistung</th><td>{{ (d.dienste or []) | join(', ') or '—' }}</td></tr>
+      <tr><th>Pro Tag</th><td>{{ d.tageslimit }} E-Mails, {{ d.zeit_von }}–{{ d.zeit_bis }} Uhr</td></tr>
+      <tr><th>Nachfassen</th><td>nach {{ d.abstand_1_2 }} und {{ d.abstand_2_3 }} Tagen</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="assi-block">
+  <h2 class="assi-block-titel">Stand der Arbeit</h2>
+  {% if status_url %}
+  <p id="assi-stand" class="assi-stand" data-status="{{ status_url }}">
+    Wird geladen …
+  </p>
+  <ol class="assi-ablauf">
+    <li>Für die {{ anzahl_firmen }} Firmen werden die E-Mail-Adressen gesucht
+      und geprüft. <em>Läuft seit Schritt 4 im Hintergrund.</em></li>
+    <li>Aus USP, Zielkunde und Ihren Hinweisen werden die drei Mail-Stufen
+      geschrieben.</li>
+    <li>Alles landet in der <strong>Freigabe-Tabelle</strong> — dort lesen Sie
+      jede Mail einzeln.</li>
+  </ol>
+  <p class="assi-abschluss">
+    <a id="assi-freigabe" class="knopf-primaer" href="{{ freigabe_url }}"
+       hidden>Zur Freigabe-Tabelle →</a>
+    <a id="assi-excel" class="knopf-sekundaer" href="{{ excel_url }}"
+       hidden>Kontakte als Excel herunterladen</a>
+  </p>
+  {% else %}
+  <p class="assi-hinweis">
+    Für diesen Entwurf wurde noch keine Suche gestartet. Bitte über „Zurück"
+    zu Schritt 4 gehen und die Firmenauswahl bestätigen.
+  </p>
+  {% endif %}
+  <p class="assi-hinweis">
+    Der Assistent sendet nichts und legt nichts in Instantly an. Das passiert
+    erst, wenn Sie in der Freigabe jede Stufe bestätigt haben.
+  </p>
+</div>
+
+<div class="assi-fuss">
+  <a href="/assistent/{{ entwurf.kennung }}/5" class="knopf-sekundaer">← Zurück</a>
+  <a href="/kampagnen" class="knopf-sekundaer">Schließen — läuft weiter</a>
+</div>
+
+{% if status_url %}
+{# Gleiches Muster wie die alte Fortschritts-Seite: fragen statt raten.
+   Ohne JavaScript laedt die Seite alle 10 Sekunden neu. #}
+<noscript><meta http-equiv="refresh" content="10"></noscript>
+<script>
+(function () {
+  var anzeige = document.getElementById("assi-stand");
+  var knopf = document.getElementById("assi-freigabe");
+  var excel = document.getElementById("assi-excel");
+  // Die Zustaende kommen woertlich aus Laufmanager.status() - hier nur
+  // uebersetzt. "wartet_auf_freigabe" ist das Ziel: dann liegen die
+  // Texte bereit und die Freigabe-Tabelle kann gelesen werden.
+  var TEXTE = {
+    laeuft: "Adressen werden gesucht und Texte geschrieben …",
+    wartet_auf_freigabe: "Fertig — die Mails warten auf Ihre Freigabe.",
+    freigegeben: "Freigegeben. Instantly verschickt nach Zeitplan.",
+    uebergeben: "Alles versendet.",
+    angehalten: "Angehalten. Bitte im Auftrag nachsehen.",
+    abgelehnt: "Abgelehnt."
+  };
+  var FERTIG = ["wartet_auf_freigabe", "freigegeben", "uebergeben"];
+  function fragen() {
+    fetch(anzeige.dataset.status)
+      .then(function (r) { return r.json(); })
+      .then(function (stand) {
+        var zustand = stand.zustand || "laeuft";
+        anzeige.textContent = TEXTE[zustand] || zustand;
+        if (FERTIG.indexOf(zustand) !== -1) {
+          knopf.hidden = false;
+          excel.hidden = false;
+        } else if (zustand === "laeuft") {
+          setTimeout(fragen, 5000);
+        }
+      })
+      .catch(function () { setTimeout(fragen, 10000); });
+  }
+  fragen();
+})();
+</script>
+{% endif %}
+{% endblock %}

@@ -516,10 +516,12 @@ def test_liste_zeigt_vorbereitung_fuer_wartende_und_angehaltene_auftraege(angeme
 
 
 def test_liste_zeigt_anschreiben_erstellen_lassen_knopf(angemeldeter_client):
+    # Seit 12.08.2026 fuehrt der Knopf in den sechsstufigen Assistenten
+    # statt in das alte Kurzformular unter /auftraege/neu.
     antwort = angemeldeter_client.get("/kampagnen")
     assert antwort.status_code == 200
     assert "E-Mails schreiben lassen" in antwort.text
-    assert "/auftraege/neu" in antwort.text
+    assert "/assistent" in antwort.text
 
 
 def test_liste_zeigt_konto_problem_chip_statt_pausiert(angemeldeter_client, daten_dir):

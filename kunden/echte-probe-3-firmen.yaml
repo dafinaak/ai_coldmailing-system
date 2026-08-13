@@ -1,0 +1,38 @@
+name: ECHTE PROBE 3 Firmen
+webseite: https://digitaldiamonds.agency
+angebot: '- Integration in bestehende Workflows: Die Agentur integriert sich nahtlos
+  in die Arbeitsprozesse ihrer Kunden.
+
+  - Flexible Stundenkontingente: Stundenpakete passen sich an den Projektbedarf der
+  Kunden an.
+
+  - Deutsche Management- und Qualitätsstandards: Management aus Deutschland sorgt
+  für präzise und strukturierte Abläufe.
+
+  - Europäisches Inhouse-Team ohne Outsourcing: Alle Arbeiten werden innerhalb Europas
+  und ohne Auslagerungen gefertigt.
+
+  - Transparente Preisgestaltung ohne versteckte Kosten: Kunden erhalten klare Preise
+  und vermeiden überraschende Zusatzgebühren.'
+tonalitaet: ruhig, erklärend, keine Superlative, keine Ausrufezeichen
+absender: d.keqmezi@digitaldiamonds.agency
+zielgruppe:
+  titel:
+  - Geschäftsführer
+  - Inhaber
+  region:
+  - Hannover
+  firmengroesse:
+  - alle
+follow_up_tage:
+- 7
+- 7
+test_empfaenger:
+- d.keqmezi@digitaldiamonds.agency
+maps_suche: (Assistent 20260812-161412)
+kontakt_rollen:
+- Geschäftsführer
+- Inhaber
+anbieter_reihenfolge:
+- impressum
+anweisungen: Ruhig und erklaerend, keine Superlative.

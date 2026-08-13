@@ -12,6 +12,13 @@ from tests.test_dropcontact import FakeResponse, FakeSession, abgegeben, \
     noch_nicht_fertig, email
 
 
+@pytest.fixture(autouse=True)
+def _kein_guthaben_leck(tmp_path, monkeypatch):
+    """Siehe tests/test_dropcontact.py: erfundene Credit-Zahlen aus Tests
+    duerfen nicht in der echten Guthaben-Datei des Projekts landen."""
+    monkeypatch.chdir(tmp_path)
+
+
 def zeile(vorname, nachname, *emails):
     return {"first_name": vorname, "last_name": nachname, "email": list(emails)}
 

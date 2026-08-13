@@ -1,0 +1,66 @@
+[
+ {
+  "name": "TORUTEC GmbH",
+  "website": "https://torutec.com/it-dienstleister/hannover/",
+  "domain": "torutec.com",
+  "address": "Nikolaistr. 14, 30159 Hannover (Mitte)",
+  "categories": [
+   "IT-Dienstleistungen",
+   "IT-Berater",
+   "Computerservice",
+   "Computersupport und -dienste",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30159",
+  "telefon": "+49511592910",
+  "vorhandene_email": "kontakt@torutec.com",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps",
+   "alte_liste"
+  ],
+  "quelle": "gelbe_seiten+maps+alte_liste"
+ },
+ {
+  "name": "kommunity GmbH & Co. KG mac+net solutions, IT-Dienstleistung",
+  "website": "http://www.kommunity.net",
+  "domain": "kommunity.net",
+  "address": "Goseriede 4, 30159 Hannover (Mitte)",
+  "categories": [
+   "Computer und Zubehör",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30159",
+  "telefon": "+495118072580",
+  "vorhandene_email": "info@kommunity.net",
+  "gf_name_liste": "Tom Müller-Kortkamp",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "alte_liste"
+  ],
+  "quelle": "gelbe_seiten+alte_liste"
+ },
+ {
+  "name": "Blueteam GmbH - SOC & IT-Sicherheit",
+  "website": "https://www.blueteam.de/",
+  "domain": "blueteam.de",
+  "address": "Georgstraße 36, 30159 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 87456456",
+  "vorhandene_email": "b2b@blueteam.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps",
+   "alte_liste"
+  ],
+  "quelle": "maps+alte_liste"
+ }
+]

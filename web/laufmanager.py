@@ -145,10 +145,37 @@ class KundeNichtGefunden(LaufmanagerFehler):
     """Die angegebene Kunden-Datei existiert nicht oder ist ungueltig."""
 
 
+def _ist_zombie(pid: int) -> bool:
+    """True, wenn der Prozess fertig ist und nur noch auf sein Ende wartet.
+
+    Ein beendetes Kind bleibt als "Zombie" in der Prozessliste stehen, bis
+    der Elternprozess es abholt. Der Web-Server startet die Laeufe zwar,
+    holt sie aber nie ab - er lebt weiter und bedient Anfragen. os.kill(pid, 0)
+    sagt bei einem Zombie trotzdem "da", weshalb ein fertiger Lauf sonst
+    fuer immer als "laeuft" gilt (gefunden im echten Probelauf 12.08.2026:
+    Lauf fertig, Freigabe-Tabelle gefuellt, Uebersicht trotzdem leer).
+    """
+    try:
+        ergebnis = subprocess.run(
+            ["ps", "-o", "state=", "-p", str(pid)],
+            capture_output=True, text=True, timeout=5)
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return ergebnis.stdout.strip().startswith("Z")
+
+
 def _pid_lebt(pid: int) -> bool:
     """True, wenn unter dieser PID ein Prozess laeuft. Eigene Funktion (statt
     inline), damit Tests sie leicht durch eine Fake-Funktion ersetzen koennen,
     ohne echte Prozesse starten/toeten zu muessen."""
+    # Eigene, schon beendete Kinder hier einsammeln - dann verschwindet der
+    # Zombie und die naechste Abfrage ist ohnehin eindeutig.
+    try:
+        fertig, _ = os.waitpid(pid, os.WNOHANG)
+        if fertig == pid:
+            return False
+    except (ChildProcessError, OSError):
+        pass  # nicht unser Kind (anderer Arbeiter, Neustart) - unten weiter
     try:
         os.kill(pid, 0)
     except ProcessLookupError:
@@ -157,7 +184,7 @@ def _pid_lebt(pid: int) -> bool:
         return True  # existiert, gehoert nur jemand anderem
     except OSError:
         return False
-    return True
+    return not _ist_zombie(pid)
 
 
 def _lade_json_sicher(pfad: Path):
@@ -292,10 +319,14 @@ class Laufmanager:
 
     # Oeffentliche Schnittstelle --------------------------------------------
 
-    def starte(self, kunde_datei: str, limit: int) -> Path:
+    def starte(self, kunde_datei: str, limit: int,
+               firmen_datei: str | None = None) -> Path:
         """Startet 'python -m pipeline lauf <kunde_datei> --limit <limit>'
         als Unterprozess MIT cwd=self.daten_dir (PFLICHT, siehe Modul-Kommentar
-        oben) und liefert den entstandenen Laufordner zurueck."""
+        oben) und liefert den entstandenen Laufordner zurueck.
+
+        `firmen_datei` (Weg des Kampagnen-Assistenten) reicht eine schon
+        ausgewaehlte Firmenliste durch; der Lauf sucht dann nicht selbst."""
         kunde_voller_pfad = self.daten_dir / kunde_datei
         if not kunde_voller_pfad.exists():
             raise KundeNichtGefunden(f"Angebots-Datei nicht gefunden: {kunde_datei}")
@@ -315,6 +346,8 @@ class Laufmanager:
         vorher = {p.name for p in kunden_ordner.iterdir() if p.is_dir()}
 
         argv = self.befehl + ["lauf", kunde_datei, "--limit", str(limit)]
+        if firmen_datei:
+            argv += ["--firmen", firmen_datei]
         temp_log_pfad = kunden_ordner / f".start-{os.getpid()}-{int(time.time() * 1000)}.log"
         log_datei = open(temp_log_pfad, "wb")
         try:
@@ -342,8 +375,11 @@ class Laufmanager:
         temp_log_pfad.replace(ziel_log_pfad)
 
         (lauf_dir / "pid").write_text(str(prozess.pid), encoding="utf-8")
+        meta = {"kunde_datei": kunde_datei, "limit": limit}
+        if firmen_datei:
+            meta["firmen_datei"] = firmen_datei
         (lauf_dir / "auftrag_meta.json").write_text(
-            json.dumps({"kunde_datei": kunde_datei, "limit": limit}), encoding="utf-8")
+            json.dumps(meta), encoding="utf-8")
         sperr_pfad.write_text(str(prozess.pid), encoding="utf-8")
 
         return lauf_dir

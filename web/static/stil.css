@@ -1562,6 +1562,31 @@ h1 { margin: 0; font-size: 24px; }
   background: #FFF0F0;
   border: 1px solid #EFC4C4;
 }
+/* Probe oder echter Versand (Schritt 5). Die Wahl traegt Folgen fuer echte
+   Menschen, deshalb zwei grosse Flaechen statt eines unscheinbaren Hakens -
+   und die scharfe Option sichtbar abgesetzt. */
+.assi-versandart {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border: 1px solid var(--farbe-rand);
+  border-radius: 9px;
+  margin-top: 8px;
+  cursor: pointer;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.assi-versandart:has(input:checked) {
+  border-color: var(--farbe-akzent, #D98324);
+  background: #FDF6EE;
+}
+.assi-versandart--echt:has(input:checked) {
+  border-color: #C9843A;
+  background: #FBF0E2;
+}
+.assi-versandart input { margin-top: 3px; }
+
 /* Angefragter Kontakt ohne Verlauf: steht rot IM Detailbereich, dort wo
    sonst der Schriftwechsel stuende - ein grauer Hinweis oben wurde
    uebersehen, und der leere weisse Kasten sah nach Ladefehler aus. */

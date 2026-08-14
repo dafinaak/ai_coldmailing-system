@@ -1,0 +1,41 @@
+name: TEST Webdesign Hannover
+webseite: https://polepositionautomation.de
+angebot: '- Maßgeschneiderte Automations-Infrastrukturen: Die Firma entwickelt individuelle
+  Automationslösungen aus einem Guss.
+
+  - Integration vorhandener Systeme: Bestehende IT-Systeme wie CRM und ERP werden
+  integriert, nicht ersetzt.
+
+  - Hosting und Datenmanagement in Deutschland: Daten werden sicher in Deutschland
+  gespeichert, wahlweise auch im Kundenunternehmen.
+
+  - Compliance mit Datenschutz und Normen: Automationen erfüllen Anforderungen wie
+  DSGVO, ISO 27001 und ISO 9001.
+
+  - Automation-as-a-Service Betreuung: Hosting, Management, Monitoring, Updates und
+  Support werden vollumfänglich übernommen.'
+tonalitaet: ruhig, erklärend, keine Superlative, keine Ausrufezeichen
+absender: email@seo-poleposition.online
+zielgruppe:
+  titel:
+  - Geschäftsführer
+  - Inhaber
+  region:
+  - Hannover
+  firmengroesse:
+  - alle
+follow_up_tage:
+- 7
+- 14
+# 14.08.2026: fuer die Uebergabe-Probe waren hier kurz die zwei echten
+# Empfaenger eingetragen. Kampagne wurde angelegt, angesehen und wieder
+# geloescht (nie aktiviert, nie versendet) - Liste danach zurueckgesetzt.
+test_empfaenger:
+- email@seo-poleposition.online
+maps_suche: (Assistent 20260814-105550)
+kontakt_rollen:
+- Geschäftsführer
+- Inhaber
+anbieter_reihenfolge:
+- impressum
+anweisungen: Ruhig und erklärend. Keine Superlative, keine Ausrufezeichen.

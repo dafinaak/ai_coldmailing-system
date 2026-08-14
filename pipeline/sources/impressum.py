@@ -25,11 +25,18 @@ Die Pflicht-Sonderfaelle aus den Messlaeufen vom 23./27.07.2026:
 import json
 import re
 import subprocess
+import threading
 import html as html_modul
 from urllib.parse import urljoin, urlparse
 
 STANDARD_PFADE = ("/impressum", "/impressum/", "/impressum.html",
                   "/de/impressum", "/imprint", "/legal")
+# Wartezeit je Seitenabruf. Bis 14.08.2026 standen hier 20 Sekunden - bei bis
+# zu sieben Versuchen pro Firma warf eine einzige tote Webseite damit ueber
+# zwei Minuten weg, und das mal 50 Firmen nacheinander. Eine erreichbare
+# Seite antwortet in unter zwei Sekunden; wer nach sechs nicht geantwortet
+# hat, antwortet auch nach zwanzig nicht brauchbar.
+SEITEN_TIMEOUT = 6
 # Kuerzere Texte sind praktisch immer JavaScript-Huellen oder Fehlerseiten.
 MIN_TEXTLAENGE = 300
 # Woerter, die einen "Namen" als Firma statt Person entlarven (Kleinschreibung).
@@ -76,7 +83,12 @@ def _chrome_rendern(url: str) -> str | None:
         lauf = subprocess.run(
             [CHROME_PFAD, "--headless", "--disable-gpu", "--dump-dom",
              "--virtual-time-budget=8000", url],
-            capture_output=True, text=True, timeout=45)
+            # 20 statt 45 Sekunden (14.08.2026): seit die Firmen gleichzeitig
+            # bearbeitet werden, koennen mehrere dieser Browser parallel
+            # laufen - ein einzelner darf dann nicht dreiviertel Minuten
+            # blockieren. Das Zeitbudget der Seite selbst sind ohnehin nur
+            # 8 Sekunden; wer danach noch nichts geliefert hat, liefert nichts.
+            capture_output=True, text=True, timeout=20)
         return _html_zu_text(lauf.stdout) if lauf.returncode == 0 else None
     except Exception:
         return None
@@ -96,22 +108,47 @@ def _ist_personenname(vorname: str, nachname: str) -> bool:
 
 class ImpressumQuelle:
     def __init__(self, ki, session=None, renderer=None):
-        import requests
         self.ki = ki
-        self.session = session or requests.Session()
+        # Seit dem 14.08.2026 bearbeitet pipeline.sourcing mehrere Firmen
+        # GLEICHZEITIG - dieselbe Quelle wird also von mehreren Threads
+        # benutzt. requests.Session ist dafuer nicht ausdruecklich freigegeben
+        # (gemeinsamer Cookie-Speicher), deshalb bekommt jeder Thread seine
+        # eigene. Eine ausdruecklich uebergebene Session (Tests) bleibt
+        # unangetastet.
+        self._feste_session = session
+        self._lokal = threading.local()
         # renderer ist injizierbar (Tests); Standard: headless Chrome.
         self.renderer = renderer if renderer is not None else _chrome_rendern
 
+    @property
+    def session(self):
+        if self._feste_session is not None:
+            return self._feste_session
+        eigene = getattr(self._lokal, "session", None)
+        if eigene is None:
+            import requests
+            eigene = requests.Session()
+            self._lokal.session = eigene
+        return eigene
+
     def _seite_holen(self, url: str) -> str:
+        text, _ = self._seite_holen_mit_grund(url)
+        return text
+
+    def _seite_holen_mit_grund(self, url: str) -> tuple[str, str | None]:
+        """Text der Seite, plus ein Wort dazu, WARUM es nichts wurde:
+        "unerreichbar" (der Server meldet sich gar nicht) oder "status"
+        (er antwortet, aber mit einem Fehler). Der Unterschied entscheidet,
+        ob es sich lohnt, die naechste Adresse desselben Hosts zu probieren."""
         try:
             antwort = self.session.get(
                 url, headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"},
-                timeout=20)
+                timeout=SEITEN_TIMEOUT)
         except Exception:
-            return ""
+            return "", "unerreichbar"
         if antwort.status_code >= 400:
-            return ""
-        return getattr(antwort, "text", "") or ""
+            return "", "status"
+        return (getattr(antwort, "text", "") or ""), None
 
     def _kandidaten(self, website: str):
         basis = website.rstrip("/")
@@ -131,11 +168,25 @@ class ImpressumQuelle:
             return None
         zu_kurze = []
         gesehen = set()
+        # Antwortet ein Server ueberhaupt nicht, antwortet er auch auf die
+        # naechste Adresse nicht. Vorher liefen trotzdem alle sieben
+        # Kandidaten durch - eine tote Webseite kostete damit das Siebenfache
+        # der Wartezeit, und das bei jeder solchen Firma (14.08.2026).
+        # Zwei Fehlschlaege in Folge reichen als Beweis; einer koennte auch
+        # ein einzelner Aussetzer sein.
+        unerreichbar_in_folge = 0
         for url in self._kandidaten(website):
             if url in gesehen:
                 continue
             gesehen.add(url)
-            text = _html_zu_text(self._seite_holen(url))
+            roh, grund = self._seite_holen_mit_grund(url)
+            if grund == "unerreichbar":
+                unerreichbar_in_folge += 1
+                if unerreichbar_in_folge >= 2:
+                    return None
+                continue
+            unerreichbar_in_folge = 0
+            text = _html_zu_text(roh)
             if not text:
                 continue
             if len(text) >= MIN_TEXTLAENGE and "impressum" in text.lower():

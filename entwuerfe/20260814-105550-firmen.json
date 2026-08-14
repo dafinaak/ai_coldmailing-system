@@ -1,0 +1,111 @@
+[
+ {
+  "name": "Applikationswerk GmbH",
+  "website": "https://www.applikationswerk.de/",
+  "domain": "applikationswerk.de",
+  "address": "Seestraße 25, 30171 Hannover-Südstadt-Bult, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller",
+   "Grafikdesigner",
+   "Online-Marketing-Unternehmen",
+   "Webdesigner"
+  ],
+  "plz": "30171",
+  "telefon": "+49 511 64695220",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Ai-Lo Computer & Service GmbH",
+  "website": "https://www.ai-lo.de/",
+  "domain": "ai-lo.de",
+  "address": "Hildesheimer Str. 88, 30169 Hannover, Deutschland",
+  "categories": [
+   "Computergeschäft",
+   "IT-Berater",
+   "Computerreparaturdienst",
+   "Computerservice",
+   "Softwarehändler",
+   "Computersupport und -dienste",
+   "Softwareentwickler/-hersteller",
+   "Geschäft für Second-Hand-Computer",
+   "Webdesigner"
+  ],
+  "plz": "30169",
+  "telefon": "+49 511 45000199",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "SXG Design & Solutions",
+  "website": "https://www.sxg-solutions.de/",
+  "domain": "sxg-solutions.de",
+  "address": "Herrenstraße, 30159 Hannover, Deutschland",
+  "categories": [
+   "Webdesigner",
+   "Unternehmensberater"
+  ],
+  "plz": "30159",
+  "telefon": "+49 162 1993879",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Smart Concept GmbH",
+  "website": "https://media.smart.com/eu/de/der-vielseitigste-smart-aller-zeiten-smart-concept-5/",
+  "domain": "media.smart.com",
+  "address": "Wedekindstraße 5, 30161 Hannover, Deutschland",
+  "categories": [
+   "PR-Agentur",
+   "Werbeagentur",
+   "IT-Berater",
+   "Eventmanagement-Firma",
+   "Webdesigner"
+  ],
+  "plz": "30161",
+  "telefon": "+49 511 12312834",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Webdesign Haas",
+  "website": "http://www.webdesign-haas.de/",
+  "domain": "webdesign-haas.de",
+  "address": "Flüggestraße 14, 30161 Hannover, Deutschland",
+  "categories": [
+   "Webdesigner",
+   "Werbeagentur",
+   "Grafikdesigner",
+   "Marketingbüro"
+  ],
+  "plz": "30161",
+  "telefon": "+49 162 9575407",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ }
+]

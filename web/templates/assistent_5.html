@@ -88,6 +88,30 @@
     </div>
   </div>
 
+  {# Probe oder echter Versand. Steht bewusst ganz unten, direkt ueber dem
+     Knopf: es ist die folgenreichste Angabe des ganzen Formulars, und man
+     soll sie sehen, kurz bevor man weitergeht. Vorgabe ist immer Probe -
+     "echt" muss jemand ausdruecklich anklicken. #}
+  <div class="assi-block assi-block--versandart">
+    <h2 class="assi-block-titel">An wen wird gesendet</h2>
+    <label class="assi-versandart">
+      <input type="radio" name="versand_modus" value="test"
+             {% if d.versand_modus != "echt" %}checked{% endif %}>
+      <span>
+        <strong>Probe</strong> — nur an die eigenen Test-Adressen.
+        Die gefundenen Firmen bekommen nichts.
+      </span>
+    </label>
+    <label class="assi-versandart assi-versandart--echt">
+      <input type="radio" name="versand_modus" value="echt"
+             {% if d.versand_modus == "echt" %}checked{% endif %}>
+      <span>
+        <strong>Echter Versand</strong> — an die gefundenen Firmen.
+        Jede einzelne E-Mail muss vorher trotzdem freigegeben werden.
+      </span>
+    </label>
+  </div>
+
   <div class="assi-fuss">
     <a href="/assistent/{{ entwurf.kennung }}/4" class="knopf-sekundaer">← Zurück</a>
     <button type="submit" class="knopf-primaer">Weiter →</button>

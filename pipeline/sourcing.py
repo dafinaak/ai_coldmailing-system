@@ -46,7 +46,10 @@ Lead-Qualitaets-Fix (Probe-Lauf-Funde, siehe Auftrag):
    _firmenname_saeubern() unten - genutzt wird der Name aber nur als
    Rueckfallebene, bevorzugt wird Apollos kanonischer Organisationsname
    (ergebnis["name"]), wenn Apollo die Organisation gefunden hat."""
+import os
 import re
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 from pipeline.models import Lead
 from pipeline.sources.apify_maps import ApifyMapsSource
 from pipeline.sources.hunter import HunterSource
@@ -412,6 +415,67 @@ def _stufen_bauen(kunde, hunter, dropcontact, prospeo_key, prospeo_source,
     return stufen
 
 
+# Ein erschoepftes Pruef-Kontingent ist KEIN Suchfehler, den man gleich
+# noch einmal versuchen sollte - es hilft erst nach dem Zuruecksetzen des
+# Kontingents wieder. Stand am 14.08.2026 als "Fehler bei der Suche (später
+# erneut versuchen)" auf der Anruf-Liste: wer danach anruft, versucht es
+# stattdessen sinnlos noch einmal.
+_KONTINGENT_ZEICHEN = ("429", "too_many_requests", "limit for the number",
+                        "reached the limit", "quota", "kontingent")
+
+# Wie viele Firmen gleichzeitig gesucht werden. Bewusst massvoll: die
+# Anbieter dahinter (Dropcontact, Hunter, die KI) haben eigene Grenzen, und
+# ein Sturm von Anfragen bringt 429er statt Tempo. Ueber die Umgebung
+# einstellbar, falls ein Anbieter enger oder weiter kann.
+GLEICHZEITIG = max(1, int(os.environ.get("SUCHE_GLEICHZEITIG", "8")))
+
+
+class KontingentLeer(Exception):
+    """Das Pruef-Kontingent des Anbieters ist fuer diesen Abrechnungszeitraum
+    aufgebraucht - kein Versuch in diesem Lauf kann daran noch etwas aendern."""
+
+
+def _mit_kontingent_stopp(pruefer):
+    """Nach dem ERSTEN "Kontingent leer" nicht mehr beim Anbieter anfragen.
+
+    Ein erschoepftes Monats-Kontingent kommt innerhalb eines Laufs nicht
+    zurueck. Trotzdem wurde jede weitere Firma erneut gefragt - und weil der
+    Anbieter-Client 429 fuer einen Ueberlast-Fehler haelt, versuchte er es je
+    Firma auch noch dreimal mit Wartezeit dazwischen. Am 14.08.2026 waren das
+    zehn Firmen in einem Lauf, die nacheinander dieselbe schon bekannte
+    Absage einholten.
+
+    Der Grund fuer die Firma bleibt derselbe - nur gefragt wird nicht mehr.
+    """
+    if pruefer is None:
+        return None
+    zustand = {"leer": False}
+
+    def pruefen(email):
+        if zustand["leer"]:
+            raise KontingentLeer(
+                "Prüf-Kontingent bereits in diesem Lauf als erschöpft erkannt - "
+                "nicht erneut angefragt.")
+        try:
+            return pruefer(email)
+        except Exception as fehler:
+            if any(z in str(fehler).casefold() for z in _KONTINGENT_ZEICHEN):
+                zustand["leer"] = True
+            raise
+
+    return pruefen
+
+
+def fehler_satz(fehler: object) -> str:
+    """Kurzer, ehrlicher Grund fuer die Anruf-/Brief-Liste."""
+    text = str(fehler).casefold()
+    if any(zeichen in text for zeichen in _KONTINGENT_ZEICHEN):
+        return ("Prüf-Kontingent erschöpft - die Adresse konnte nicht geprüft "
+                "werden und ging deshalb nicht in den Versand. Erneut möglich, "
+                "sobald das Kontingent zurückgesetzt ist.")
+    return "Fehler bei der Suche (später erneut versuchen)"
+
+
 def source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
                   apify_source=None, hunter_source=None, dropcontact_source=None,
                   prospeo_key=None, prospeo_source=None,
@@ -455,21 +519,43 @@ def source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
     # info@-Pruefer: Hunters Email Verifier, wenn die (ggf. gefakte) Quelle
     # ihn anbietet. Aeltere Test-Fakes ohne email_pruefen behalten das alte
     # Verhalten (info@ ungeprueft uebernehmen) - Rueckwaerts-Kompatibilitaet.
-    email_pruefer = getattr(hunter, "email_pruefen", None)
+    email_pruefer = _mit_kontingent_stopp(getattr(hunter, "email_pruefen", None))
 
     firmen = apify.search(kunde.maps_suche, limit)
     leads, firmen_mit_kontakt, firmen_mit_ausgang = [], 0, []
     je_stufe = {name: 0 for name, _ in stufen}
     je_stufe["info@"] = 0
-    for firma in firmen:
-        try:
-            kontakte, liefernde_stufe = [], None
-            for name, kontakt_funktion in stufen:
-                kontakte = kontakt_funktion(firma)
-                if kontakte:
-                    liefernde_stufe = name
-                    break
-        except Exception as fehler:
+
+    def _suchen(firma: dict) -> tuple:
+        """Die Sucharbeit EINER Firma - ohne gemeinsamen Zustand, damit
+        mehrere Firmen gleichzeitig laufen koennen."""
+        for name, kontakt_funktion in stufen:
+            kontakte = kontakt_funktion(firma)
+            if kontakte:
+                return kontakte, name
+        return [], None
+
+    # Mehrere Firmen gleichzeitig. Die Arbeit ist fast reines Warten auf
+    # fremde Server: gemessen am 14.08.2026 brauchte ein Lauf ueber 50 Firmen
+    # rund elf Minuten und verbrauchte dabei 1,9 Sekunden Rechenzeit - 99,7 %
+    # der Zeit stand das Programm still und wartete. Nacheinander zu warten
+    # ist da reine Verschwendung.
+    #
+    # Die Reihenfolge bleibt die der Firmenliste (Ergebnisse werden nach dem
+    # Sammeln der Reihe nach ausgewertet), damit Berichte und Tests
+    # vorhersagbar bleiben.
+    ergebnisse = [None] * len(firmen)
+    with ThreadPoolExecutor(max_workers=min(GLEICHZEITIG, max(1, len(firmen)))) as pool:
+        auftraege = {pool.submit(_suchen, firma): i for i, firma in enumerate(firmen)}
+        for auftrag in as_completed(auftraege):
+            i = auftraege[auftrag]
+            try:
+                ergebnisse[i] = (auftrag.result(), None)
+            except Exception as fehler:      # noqa: BLE001
+                ergebnisse[i] = (None, fehler)
+
+    for firma, (treffer, such_fehler) in zip(firmen, ergebnisse):
+        if such_fehler is not None:
             # Eine einzelne fehlerhafte Firma (ein Anbieter dauerhaft 4xx/5xx,
             # oder Dropcontact lehnt den Batch ab - z.B. leere Credits) darf
             # bei ~50 Firmen pro Lauf nicht den ganzen Lauf mitreissen: sonst
@@ -479,9 +565,11 @@ def source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
             # Die Fehlermeldungen enthalten keine Secrets (API-Key steht im
             # Header bzw. Query, nicht im geloggten Text).
             print(f"Firma '{firma.get('name') or firma.get('domain') or '?'}' "
-                  f"übersprungen (Fehler bei der Entscheider-Suche): {fehler}")
-            firmen_mit_ausgang.append({**firma, "ausgang": "fehler"})
+                  f"übersprungen (Fehler bei der Entscheider-Suche): {such_fehler}")
+            firmen_mit_ausgang.append({**firma, "ausgang": "fehler",
+                                        "fehler_grund": fehler_satz(such_fehler)})
             continue
+        kontakte, liefernde_stufe = treffer
 
         firmenname = _firmenname_saeubern(firma.get("name", ""), kunde.maps_suche)
 
@@ -514,7 +602,8 @@ def source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
                     # pruefen, geht sie NICHT in den Versand.
                     print(f"Firma '{firma.get('name') or firma.get('domain')}' "
                           f"übersprungen (Fehler bei der info@-Prüfung): {fehler}")
-                    firmen_mit_ausgang.append({**firma, "ausgang": "fehler"})
+                    firmen_mit_ausgang.append({**firma, "ausgang": "fehler",
+                                                "fehler_grund": fehler_satz(fehler)})
                     continue
             if pruefstatus is not None:
                 zusatz["info_pruefstatus"] = pruefstatus

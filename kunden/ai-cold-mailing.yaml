@@ -1,0 +1,50 @@
+name: AI_Cold_Mailing
+webseite: https://polepositionautomation.de
+angebot: '- Maßgeschneiderte Automations-Infrastruktur aus einem Guss: Die Firma entwickelt
+  integrierte Automationslösungen statt einzelner Tools.
+
+  - Integration bestehender IT-Systeme ohne Ersatz: Bestehende CRM- und ERP-Systeme
+  werden eingebunden, nicht ersetzt.
+
+  - Hosting und Datensicherheit in Deutschland: Automationen werden auf sicheren Servern
+  mit deutschem Datenschutz gehostet.
+
+  - Übernahme von Betrieb und Wartung der Automationen: Die Firma bietet Automation-as-a-Service
+  inklusive Management und Updates.
+
+  - Einhaltung von DSGVO und relevanten Zertifizierungen: Automationen erfüllen gesetzliche
+  Vorgaben und Zertifizierungsanforderungen.'
+tonalitaet: ruhig, erklärend, keine Superlative, keine Ausrufezeichen
+absender: email@poleposition-seo.online
+zielgruppe:
+  titel:
+  - Geschäftsführer
+  - Inhaber
+  region:
+  - Hannover
+  firmengroesse:
+  - alle
+follow_up_tage:
+- 7
+- 14
+test_empfaenger:
+- email@poleposition-seo.online
+versand_postfach: ''
+tageslimit: 20
+zeit_von: 08:00
+zeit_bis: '19:00'
+wochentage:
+- mo
+- di
+- mi
+- do
+- fr
+signatur: ''
+versand_modus: test
+maps_suche: (Assistent 20260814-145833)
+kontakt_rollen:
+- Geschäftsführer
+- Inhaber
+anbieter_reihenfolge:
+- impressum
+anweisungen: ''

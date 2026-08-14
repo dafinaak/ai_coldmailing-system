@@ -1,0 +1,983 @@
+[
+ {
+  "name": "HanovaTech GmbH",
+  "website": "https://hanovatech.de",
+  "domain": "hanovatech.de",
+  "address": "Spielhagenstr. 25, 30171 Hannover (Südstadt)",
+  "categories": [
+   "IT-Dienstleistungen",
+   "Computerservice",
+   "IT-Berater",
+   "Computerreparaturdienst",
+   "Computersupport und -dienste",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30171",
+  "telefon": "+4951151512490",
+  "vorhandene_email": "info@hanovatech.de",
+  "gf_name_liste": "Hashem Mahmoud; Henry Akmann",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps",
+   "alte_liste"
+  ],
+  "quelle": "gelbe_seiten+maps+alte_liste"
+ },
+ {
+  "name": "TORUTEC GmbH",
+  "website": "https://torutec.com/it-dienstleister/hannover/",
+  "domain": "torutec.com",
+  "address": "Nikolaistr. 14, 30159 Hannover (Mitte)",
+  "categories": [
+   "IT-Dienstleistungen",
+   "IT-Berater",
+   "Computerservice",
+   "Computersupport und -dienste",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30159",
+  "telefon": "+49511592910",
+  "vorhandene_email": "kontakt@torutec.com",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps",
+   "alte_liste"
+  ],
+  "quelle": "gelbe_seiten+maps+alte_liste"
+ },
+ {
+  "name": "BitKollegen GmbH",
+  "website": "https://bitkollegen.de",
+  "domain": "bitkollegen.de",
+  "address": "Drostestr. 16, 30161 Hannover (List)",
+  "categories": [
+   "IT-Dienstleistungen",
+   "IT-Berater",
+   "Softwareentwickler/-hersteller",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30161",
+  "telefon": "+4951151532063",
+  "vorhandene_email": "info@bitkollegen.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps",
+   "alte_liste"
+  ],
+  "quelle": "gelbe_seiten+maps+alte_liste"
+ },
+ {
+  "name": "Hellberg EDV-Beratung",
+  "website": "http://www.drhellberg.de",
+  "domain": "drhellberg.de",
+  "address": "Sonnenweg 7, 30171 Hannover (Südstadt)",
+  "categories": [
+   "Informationstechnologie",
+   "IT-Berater"
+  ],
+  "plz": "30171",
+  "telefon": "+495112882590",
+  "vorhandene_email": "info@drhellberg.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps"
+  ],
+  "quelle": "gelbe_seiten+maps"
+ },
+ {
+  "name": "Patrick Peter Pryga - IT-Service Pryga -",
+  "website": "http://www.pryga.de",
+  "domain": "pryga.de",
+  "address": "Schützenstr. 8, 30161 Hannover (List)",
+  "categories": [
+   "Webdesign",
+   "IT-Berater",
+   "Computerreparaturdienst",
+   "Computersicherheitsdienst",
+   "Computerservice"
+  ],
+  "plz": "30161",
+  "telefon": "+4951137380906",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps"
+  ],
+  "quelle": "gelbe_seiten+maps"
+ },
+ {
+  "name": "comNET GmbH",
+  "website": "https://www.comnet-solutions.de/",
+  "domain": "comnet-solutions.de",
+  "address": "Wöhlerstraße 42, 30163 Hannover-Vahrenwald-List, Deutschland",
+  "categories": [
+   "Business-to-Business-Dienst",
+   "IT-Berater",
+   "Computernetzwerk-Service",
+   "office=it",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30163",
+  "telefon": "+49 511 358650",
+  "vorhandene_email": "kontakt@comnet-solutions.de",
+  "gf_name_liste": "Marc Peters; Sven Frings; Christian Rinne",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps",
+   "overpass",
+   "alte_liste"
+  ],
+  "quelle": "maps+overpass+alte_liste"
+ },
+ {
+  "name": "tecmax GmbH",
+  "website": "https://www.tecmax.de/",
+  "domain": "tecmax.de",
+  "address": "Lange Laube 7, 30159 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 51528860",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Denk IT GmbH",
+  "website": "https://www.denkit.com/",
+  "domain": "denkit.com",
+  "address": "Bahnhofstraße 8, 30159 Hannover, Deutschland",
+  "categories": [
+   "Computersupport und -dienste",
+   "Computersicherheitsdienst",
+   "Computerservice",
+   "IT-Berater",
+   "Informationsservice"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 93639449",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Ai-Lo Computer & Service GmbH",
+  "website": "https://www.ai-lo.de/",
+  "domain": "ai-lo.de",
+  "address": "Hildesheimer Str. 88, 30169 Hannover, Deutschland",
+  "categories": [
+   "Computergeschäft",
+   "IT-Berater",
+   "Computerreparaturdienst",
+   "Computerservice",
+   "Softwarehändler",
+   "Computersupport und -dienste",
+   "Softwareentwickler/-hersteller",
+   "Geschäft für Second-Hand-Computer",
+   "Webdesigner"
+  ],
+  "plz": "30169",
+  "telefon": "+49 511 45000199",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "novaCapta GmbH",
+  "website": "http://www.novacapta.de/",
+  "domain": "novacapta.de",
+  "address": "Heiligerstraße 7, 30159 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 786430",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Nordwind IT Solutions GmbH",
+  "website": "https://www.nordwind.team/",
+  "domain": "nordwind.team",
+  "address": "Osterstraße 38, 30159 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 93678636",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "bustani consulting GmbH",
+  "website": "https://www.bustani-consulting.de/",
+  "domain": "bustani-consulting.de",
+  "address": "Am Graswege 6, 30169 Hannover-Südstadt-Bult, Deutschland",
+  "categories": [
+   "Computersupport und -dienste",
+   "IT-Berater",
+   "Schulungszentrum",
+   "Technischer Berater"
+  ],
+  "plz": "30169",
+  "telefon": "+49 511 64667970",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "medsolve - IT Dienstleister Hannover: Beratung & Lösungen für Ärzte, Praxen & MVZ",
+  "website": "https://www.medsolve.de/standorte/hannover",
+  "domain": "medsolve.de",
+  "address": "Bahnhofstraße 8, 30159 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 95733112",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Itelligence Global Managed Services GmbH",
+  "website": "https://itelligencegroup.com/de/",
+  "domain": "itelligencegroup.com",
+  "address": "Bahnhofstraße 8, 30159 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater"
+  ],
+  "plz": "30159",
+  "telefon": "+49 3591 2150",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "PROFI Engineering Systems AG",
+  "website": "http://www.profi-ag.de/",
+  "domain": "profi-ag.de",
+  "address": "Marienstraße 43, 30171 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater"
+  ],
+  "plz": "30171",
+  "telefon": "+49 511 6768850",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "MoBa Consulting UG",
+  "website": "https://www.mobaconsulting.de/",
+  "domain": "mobaconsulting.de",
+  "address": "Georgstraße 38, 30159 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater"
+  ],
+  "plz": "30159",
+  "telefon": "",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "pelo IT GmbH",
+  "website": "https://www.pelo-it.com/",
+  "domain": "pelo-it.com",
+  "address": "Bahnhofstraße 1, 30159 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 84897730",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Blueteam GmbH - SOC & IT-Sicherheit",
+  "website": "https://www.blueteam.de/",
+  "domain": "blueteam.de",
+  "address": "Georgstraße 36, 30159 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 87456456",
+  "vorhandene_email": "b2b@blueteam.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps",
+   "alte_liste"
+  ],
+  "quelle": "maps+alte_liste"
+ },
+ {
+  "name": "Magrathea Informatik GmbH",
+  "website": "http://www.magrathea.eu/",
+  "domain": "magrathea.eu",
+  "address": "Goseriede 1-5, 30159 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller",
+   "IT-Berater",
+   "Ordnungscoach"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 543880",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Sybit GmbH | Experten für Customer Experience mit SAP CX Solutions",
+  "website": "https://www.sybit.com/?utm_source=googlemybusiness&utm_medium=hannover&utm_campaign=profil",
+  "domain": "sybit.com",
+  "address": "Bahnhofstraße 8 Regus Center, 30159 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30159",
+  "telefon": "+49 7732 95080",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "mediaTest digital GmbH",
+  "website": "https://www.appvisory.com/",
+  "domain": "appvisory.com",
+  "address": "Karmarschstraße 16, 30159 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Business-to-Business-Dienst"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 35399422",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "success-solutions GmbH & Co.KG",
+  "website": "https://www.success-solutions.de/",
+  "domain": "success-solutions.de",
+  "address": "Windmühlenstraße 3, 30159 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 76350690",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Informatikheld - Daniel Pomella",
+  "website": "https://informatikheld.de/",
+  "domain": "informatikheld.de",
+  "address": "Kommandanturstraße 14, 30169 Hannover, Deutschland",
+  "categories": [
+   "Computerservice",
+   "IT-Berater"
+  ],
+  "plz": "30169",
+  "telefon": "+49 15678 531463",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "L3 Consulting GmbH",
+  "website": "https://l3consulting.de/",
+  "domain": "l3consulting.de",
+  "address": "Akazienstraße 7A, 30169 Hannover-Südstadt-Bult, Deutschland",
+  "categories": [
+   "IT-Berater"
+  ],
+  "plz": "30169",
+  "telefon": "+49 511 54450885",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "MAT3",
+  "website": "https://www.mat3.de/",
+  "domain": "mat3.de",
+  "address": "Prinzenstraße 4, 30159 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater"
+  ],
+  "plz": "30159",
+  "telefon": "",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Thomas Heine",
+  "website": "https://thcc.de/",
+  "domain": "thcc.de",
+  "address": "Nordfelder Reihe 13/Eingang im Hinterhof, 30159 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 16581890",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Avsar Test Engineering GmbH",
+  "website": "https://www.avsar-te.de/",
+  "domain": "avsar-te.de",
+  "address": "Georgstraße 38, 30159 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 26021575",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "AMNAU GmbH",
+  "website": "https://amnau.de/",
+  "domain": "amnau.de",
+  "address": "Kronenstraße 13, 30161 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater"
+  ],
+  "plz": "30161",
+  "telefon": "+49 511 515454560",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Smart Concept GmbH",
+  "website": "https://media.smart.com/eu/de/der-vielseitigste-smart-aller-zeiten-smart-concept-5/",
+  "domain": "media.smart.com",
+  "address": "Wedekindstraße 5, 30161 Hannover, Deutschland",
+  "categories": [
+   "PR-Agentur",
+   "Werbeagentur",
+   "IT-Berater",
+   "Eventmanagement-Firma",
+   "Webdesigner"
+  ],
+  "plz": "30161",
+  "telefon": "+49 511 12312834",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "IOT Data Systems",
+  "website": "https://iotdata.systems/",
+  "domain": "iotdata.systems",
+  "address": "Kleine Düwelstraße 14, 30171 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater"
+  ],
+  "plz": "30171",
+  "telefon": "",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "CIPHRON GmbH",
+  "website": "https://www.ciphron.de/",
+  "domain": "ciphron.de",
+  "address": "Bödekerstraße 60, 30161 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater"
+  ],
+  "plz": "30161",
+  "telefon": "+49 511 5151330",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "JRC Training",
+  "website": "http://www.jrc-training.com/",
+  "domain": "jrc-training.com",
+  "address": "Walter-Gieseking-Straße 14, 30159 Hannover-Südstadt-Bult, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Personal Trainer",
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 4751841",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Ventr Gruppe | Strategie-Beratung, Technology & Company Builder",
+  "website": "https://ventr.de/",
+  "domain": "ventr.de",
+  "address": "Kleine Düwelstraße 21, 30171 Hannover, Deutschland",
+  "categories": [
+   "Unternehmensberater",
+   "IT-Berater",
+   "Holdinggesellschaft"
+  ],
+  "plz": "30171",
+  "telefon": "+49 511 91160951",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "KITech Software",
+  "website": "https://kitech-software.de/",
+  "domain": "kitech-software.de",
+  "address": "Wedekindstraße 14, 30161 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater"
+  ],
+  "plz": "30161",
+  "telefon": "+49 1516 4682544",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "TechBase GmbH",
+  "website": "https://www.techbase.digital/",
+  "domain": "techbase.digital",
+  "address": "Hohenzollernstraße 13, 30161 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "office=it"
+  ],
+  "plz": "30161",
+  "telefon": "+49 511 93665921",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps",
+   "overpass"
+  ],
+  "quelle": "maps+overpass"
+ },
+ {
+  "name": "Digitalisierer24®",
+  "website": "https://digitalisierer24.de/",
+  "domain": "digitalisierer24.de",
+  "address": "Georgstraße 38, 30159 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Luftbildfotograf",
+   "Medienunternehmen"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 33098660",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Die AI Berater",
+  "website": "https://www.dieaiberater.de/",
+  "domain": "dieaiberater.de",
+  "address": "Rolandstraße 2-3, 30161 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller",
+   "IT-Berater",
+   "Marketingberater"
+  ],
+  "plz": "30161",
+  "telefon": "+49 15678 818489",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "SYSCREST GmbH",
+  "website": "http://www.syscrest.de/",
+  "domain": "syscrest.de",
+  "address": "Fernroder Str. 9, 30161 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30161",
+  "telefon": "+49 511 8745740",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Akkodis Hannover",
+  "website": "https://www.akkodis.com/de",
+  "domain": "akkodis.com",
+  "address": "Lange Laube 14, 30159 Hannover, Deutschland",
+  "categories": [
+   "Technischer Berater",
+   "IT-Berater"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 33612740",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Conscia Deutschland GmbH - Geschäftsstelle Hannover",
+  "website": "https://www.conscia.de/",
+  "domain": "conscia.de",
+  "address": "Herschelstraße 30, 30159 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 7635690",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "lifecon GmbH, Niederlassung Hannover",
+  "website": "http://www.lifecon.net/",
+  "domain": "lifecon.net",
+  "address": "Herschelstraße 30, 30159 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 47396030",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "netea GmbH",
+  "website": "http://www.netea.de/",
+  "domain": "netea.de",
+  "address": "Am Klagesmarkt 10, 30159 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 12356000",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "KontextWork",
+  "website": "https://kontextwork.de/",
+  "domain": "kontextwork.de",
+  "address": "Herrenstraße 13, 30159 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller",
+   "IT-Berater"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 26091180",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Thömel Consulting",
+  "website": "http://thoemel-consulting.de/",
+  "domain": "thoemel-consulting.de",
+  "address": "Lavesstraße 12, 30159 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Berater"
+  ],
+  "plz": "30159",
+  "telefon": "+49 176 22684520",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "compl3te GmbH Hannover",
+  "website": "https://compl3te.com/",
+  "domain": "compl3te.com",
+  "address": "Dieterichsstraße 6, 30159 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30159",
+  "telefon": "+49 341 97458330",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Graitec",
+  "website": "https://www.graitec.de/",
+  "domain": "graitec.de",
+  "address": "Aegidientorpl. 2b, 30159 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Softwareentwickler/-hersteller",
+   "Schulungszentrum"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 410270",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "WERTBAR // Digitale Lösungen",
+  "website": "http://www.wertbar.com/",
+  "domain": "wertbar.com",
+  "address": "Meterstraße 17, 30169 Hannover-Südstadt-Bult, Deutschland",
+  "categories": [
+   "Online-Marketing-Unternehmen",
+   "IT-Berater",
+   "Technischer Berater",
+   "Marketingberater"
+  ],
+  "plz": "30169",
+  "telefon": "+49 511 8076818",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "1A Infosysteme GmbH",
+  "website": "https://www.1a-infosysteme.de/",
+  "domain": "1a-infosysteme.de",
+  "address": "Lavesstraße 80, 30159 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 4508990",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "LeaseBase GmbH",
+  "website": "https://www.leasebase.de/",
+  "domain": "leasebase.de",
+  "address": "Georgstraße 38, 30159 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater"
+  ],
+  "plz": "30159",
+  "telefon": "",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Vodafone Business Hannover",
+  "website": "https://outlook.office.com/book/VodafoneBusiness@vodafone-nord.de",
+  "domain": "outlook.office.com",
+  "address": "Kurt-Schumacher-Straße 30, 30159 Hannover, Deutschland",
+  "categories": [
+   "Telekommunikationsanbieter",
+   "IT-Berater",
+   "Berater",
+   "Telefongesellschaft"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 51510400",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ }
+]

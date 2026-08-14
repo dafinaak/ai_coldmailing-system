@@ -145,7 +145,13 @@ def _blatt_anruf_brief(wb: openpyxl.Workbook, firmen: list) -> None:
         ausgang = firma.get("ausgang")
         if ausgang in (None, "mit_entscheider", "info_fallback"):
             continue
-        blatt.append([firma.get("name"), AUSGANG_TEXT.get(ausgang, ausgang),
+        # Der genaue Grund des Laufs gewinnt ueber den Sammelbegriff: bei
+        # "fehler" stand hier sonst "später erneut versuchen", auch wenn in
+        # Wahrheit das Pruef-Kontingent leer war - dann versucht es die
+        # Person am Telefon vergeblich noch einmal (siehe
+        # pipeline.sourcing.fehler_satz).
+        grund = firma.get("fehler_grund") or AUSGANG_TEXT.get(ausgang, ausgang)
+        blatt.append([firma.get("name"), grund,
                       firma.get("telefon"), firma.get("plz"),
                       firma.get("website")])
 

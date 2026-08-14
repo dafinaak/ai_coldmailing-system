@@ -25,7 +25,7 @@ def draft_offer(website_text: str, ki) -> dict:
         raise ValueError("KI-Entwurf unvollständig")
     return {k: daten[k] for k in FELDER}
 
-def draft_usp_icp(website_text: str, ki) -> dict:
+def draft_usp_icp(website_text: str, ki, kampagnen_zweck: str = "") -> dict:
     """Read a seller's own website and draft its USP list and ICP groups.
 
     Step 2 of the campaign wizard shows this as a proposal, never as a
@@ -33,9 +33,18 @@ def draft_usp_icp(website_text: str, ki) -> dict:
     says nothing about a point, the prompt asks for an honest "not
     recognisable" rather than an invention, so nobody later builds a
     campaign on a sentence the AI made up.
+
+    kampagnen_zweck carries what step 1 was told the campaign is for.
+    Without it the model only ever sees the seller's own page, so it
+    describes that seller's usual END customer - which is wrong whenever
+    the campaign writes to partners who resell the offer. That happened on
+    14.08.2026: a partner campaign came back described as "mid-sized
+    companies looking for automation", and every generated email would
+    have addressed the reader as the buyer instead of the partner.
     """
     prompt = USP_PROMPT_DATEI.read_text(encoding="utf-8").format(
-        webseiten_text=website_text or "(leer)")
+        webseiten_text=website_text or "(leer)",
+        kampagnen_zweck=(kampagnen_zweck or "").strip() or "(nichts angegeben)")
     roh = ki.frage(SYSTEM, prompt)
     treffer = re.search(r"\{.*\}", roh, re.DOTALL)
     try:

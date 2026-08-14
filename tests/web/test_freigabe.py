@@ -27,6 +27,11 @@ from web.laufmanager import Laufmanager
 PWD_CONTEXT = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 KUNDE_NAME = "Test GmbH"
+# Die Kundendateien dieser Tests nennen keinen versand_modus, gelten also
+# als Probe-Versand - und eine Probe-Kampagne traegt in Instantly die
+# [TEST]-Vorsilbe (so war es auch vorher schon, nur hat der Fake den Namen
+# damals gar nicht mitbekommen). Der echte Versand legt sie ohne Vorsilbe an.
+KAMPAGNE_PROBE = f"[TEST] {KUNDE_NAME}"
 KUNDE_SLUG = "test-gmbh"
 ABSENDER = "Jonas Wilde"
 
@@ -78,10 +83,16 @@ class FakeInstantly:
         self.leads_importiert = []
         self.fehler_bei = fehler_bei
 
-    def create_campaign(self, kunde) -> str:
+    # Gleiche Signatur wie InstantlySender.create_campaign: seit dem
+    # 14.08.2026 gibt die Uebergabe den Kampagnennamen mit (im Probe-Modus
+    # mit [TEST]-Vorsilbe) und das Absender-Postfach zieht der echte Sender
+    # aus der Kundendatei. Ein Fake, der das nicht annimmt, testet die
+    # Uebergabe nicht mehr.
+    def create_campaign(self, kunde, name=None, absender_emails=None,
+                         betreffs=None) -> str:
         if self.fehler_bei == "create_campaign":
             raise RuntimeError("Instantly antwortet mit 500 auf /campaigns: Server-Fehler")
-        self.campaigns_erstellt.append(kunde.name)
+        self.campaigns_erstellt.append(name or kunde.name)
         return "camp-123"
 
     def import_leads(self, campaign_id, texte_pro_lead):
@@ -699,7 +710,7 @@ def test_freigeben_vollstaendig_setzt_freigabe_und_sendet(angemeldeter_client, d
     freigabe_inhalt = (lauf_dir / "FREIGABE.txt").read_text(encoding="utf-8")
     assert "Lena Hartmann" in freigabe_inhalt
 
-    assert fake.campaigns_erstellt == [KUNDE_NAME]
+    assert fake.campaigns_erstellt == [KAMPAGNE_PROBE]
     assert len(fake.leads_importiert) == 1
     campaign_id, texte = fake.leads_importiert[0]
     assert campaign_id == "camp-123"
@@ -808,10 +819,13 @@ def test_zwei_gleichzeitige_freigaben_erzeugen_nur_eine_kampagne_und_einen_audit
             self.angekommen = threading.Event()
             self.weiter = threading.Event()
 
-        def create_campaign(self, kunde):
+        def create_campaign(self, kunde, name=None, absender_emails=None,
+                             betreffs=None):
             self.angekommen.set()
             assert self.weiter.wait(timeout=5)
-            return super().create_campaign(kunde)
+            return super().create_campaign(kunde, name=name,
+                                            absender_emails=absender_emails,
+                                            betreffs=betreffs)
 
     nutzer = yaml.safe_load((daten_dir / "users.yaml").read_text(encoding="utf-8"))
     nutzer.append({"name": "Max Beispiel", "passwort_hash": PWD_CONTEXT.hash("richtig123")})
@@ -836,7 +850,7 @@ def test_zwei_gleichzeitige_freigaben_erzeugen_nur_eine_kampagne_und_einen_audit
         antworten = [erste.result(timeout=5), zweite.result(timeout=5)]
 
     assert sorted(a.status_code for a in antworten) == [200, 400]
-    assert fake.campaigns_erstellt == [KUNDE_NAME]
+    assert fake.campaigns_erstellt == [KAMPAGNE_PROBE]
     assert len(fake.leads_importiert) == 1
     audit = (lauf_dir / "FREIGABE.txt").read_text(encoding="utf-8")
     assert "Lena Hartmann" in audit
@@ -853,7 +867,8 @@ def test_freigeben_laesst_programmierfehler_durch_statt_ihn_zu_verschlucken(
     # RequestException, plus OSError/KeyError fuer _kunde_fuer) - ein
     # TypeError muss sichtbar bleiben.
     class KaputterSenderProgrammierfehler:
-        def create_campaign(self, kunde):
+        def create_campaign(self, kunde, name=None, absender_emails=None,
+                             betreffs=None):
             raise TypeError("das ist ein Programmierfehler, kein erwarteter Instantly-Fehler")
 
     app = angemeldeter_client.app
@@ -883,13 +898,13 @@ def test_senden_erneut_doppelklick_legt_nur_eine_kampagne_an(angemeldeter_client
 
     erste = angemeldeter_client.post(f"/pruefen/{KUNDE_SLUG}/20260717-090000/senden-erneut")
     assert erste.status_code == 200
-    assert fake.campaigns_erstellt == [KUNDE_NAME]
+    assert fake.campaigns_erstellt == [KAMPAGNE_PROBE]
 
     zweite = angemeldeter_client.post(f"/pruefen/{KUNDE_SLUG}/20260717-090000/senden-erneut")
     assert zweite.status_code == 200
     # Zweiter Klick nimmt den "bereits angelegt"-Pfad (versand_komplett ist
     # nach dem ersten Klick schon da) - keine zweite Kampagne.
-    assert fake.campaigns_erstellt == [KUNDE_NAME]
+    assert fake.campaigns_erstellt == [KAMPAGNE_PROBE]
     assert len(fake.leads_importiert) == 1
     assert "bereits angelegt" in zweite.text
 

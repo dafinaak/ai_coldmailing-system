@@ -53,6 +53,13 @@ def _subprozess_umgebung() -> dict:
     bisherige = umgebung.get("PYTHONPATH", "")
     teile = [str(_PROJEKT_WURZEL)] + ([bisherige] if bisherige else [])
     umgebung["PYTHONPATH"] = os.pathsep.join(teile)
+    # Ohne das schreibt Python seine Ausgabe erst, wenn ein paar Kilobyte
+    # zusammengekommen sind - in eine Datei umgeleitet ist die Ausgabe naemlich
+    # bloeckweise gepuffert. Am 14.08.2026 lief ein Lauf ueber zehn Minuten mit
+    # einem KOMPLETT LEEREN lauf.log: weder der Nutzer noch wir konnten sehen,
+    # ob er arbeitet oder haengt. Fortschritt zu sehen ist bei einer Aufgabe,
+    # die Minuten dauert, kein Luxus.
+    umgebung["PYTHONUNBUFFERED"] = "1"
     return umgebung
 
 # Die fuenf Arbeitsschritte in "Wird vorbereitet" (Laiensprache), wortwoertlich

@@ -719,7 +719,7 @@ def test_freigeben_vollstaendig_setzt_freigabe_und_sendet(angemeldeter_client, d
     assert Laufmanager(daten_dir).status(lauf_dir)["zustand"] == "uebergeben"
     assert "pausiert" in antwort.text
     assert "Lena Hartmann" in antwort.text
-    assert "app.instantly.ai/app/campaign/camp-123" in antwort.text
+    assert "app.instantly.ai/app/campaign/camp-123/analytics" in antwort.text
 
 
 def test_freigeben_fremder_empfaenger_zeigt_fehler_ohne_versand(angemeldeter_client, daten_dir):

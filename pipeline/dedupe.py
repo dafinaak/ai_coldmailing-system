@@ -24,6 +24,15 @@ def _bekannte_emails(kunde_laeufe_dir, ausser=None, alle_kampagnen_dir=None) -> 
     Bewusst ein ausdruecklicher Parameter statt "eine Ebene hoeher raten":
     beim Raten griff der Suchlauf in Tests in fremde Ordner (erster Versuch
     genau daran gescheitert).
+
+    ZAEHLEN TUT NUR, WAS AUCH RAUSGING. Ein Laufordner belegt erst dann,
+    dass jemand angeschrieben wurde, wenn er als Kampagne uebergeben wurde
+    (versand_komplett.json). Vorher hiess "steht in leads.json" schon
+    "angeschrieben" - und weil das Formular beim Ausprobieren laufend neue
+    Laeufe erzeugt, sperrte jeder Probelauf seine Firmen dauerhaft fuer
+    alle spaeteren Kampagnen. Am 17.08.2026 kam ein Lauf so mit 23
+    gefundenen Kontakten und NULL uebrigen heraus: alle 23 waren in
+    frueheren Probelaeufen schon einmal gefunden - angeschrieben aber nie.
     """
     dateien = set(Path(kunde_laeufe_dir).glob("*/leads.json"))
     if alle_kampagnen_dir:
@@ -33,6 +42,8 @@ def _bekannte_emails(kunde_laeufe_dir, ausser=None, alle_kampagnen_dir=None) -> 
     for datei in sorted(dateien):
         if ausser is not None and datei.parent == Path(ausser):
             continue  # eigener, gerade laufender Lauf zaehlt nicht als "frueher"
+        if not (datei.parent / "versand_komplett.json").exists():
+            continue  # gefunden, aber nie uebergeben - also nie angeschrieben
         try:
             daten = json.loads(datei.read_text(encoding="utf-8"))
         except (OSError, ValueError):

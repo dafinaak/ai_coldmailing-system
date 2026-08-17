@@ -395,6 +395,11 @@ def _lauf_starten(request: Request, entwurf: dict, domains: list) -> str | None:
     firmen_pfad.write_text(json.dumps(firmen, ensure_ascii=False, indent=1),
                            encoding="utf-8")
     kunde_datei = _kunde_schreiben(daten_dir, entwurf)
+    # Merken, WELCHE Kundendatei zu diesem Entwurf gehoert: Schritt 5 kommt
+    # erst NACH diesem Punkt und muss seine Antworten nachtragen koennen
+    # (siehe _versand_einstellungen_nachtragen).
+    entwuerfe.schritt_speichern(daten_dir, entwurf["kennung"], 4,
+                                {"kunde_datei": kunde_datei})
 
     try:
         lauf_dir = Laufmanager(daten_dir).starte(
@@ -519,7 +524,20 @@ def _gesperrte(daten_dir: Path) -> list:
 
 
 def _postfaecher(request: Request) -> list:
-    """Sender mailboxes from Instantly - empty list means 'type it in'."""
+    """Absender-Postfaecher aus Instantly - leere Liste heisst "von Hand".
+
+    Postfaecher mit ausgeschaltetem Warmup stehen HINTEN und tragen einen
+    Warnhinweis. Grund (gemessen am 17.08.2026): Von den Postfaechern mit
+    Warmup kam eine Antwort aus einem echten Outlook an, von denen ohne
+    Warmup nicht - und zwar auf DERSELBEN Domain. Warmup laeuft nur, wenn
+    ein Postfach auch empfangen kann; ist es aus, ist das Postfach oft nur
+    zum Senden eingerichtet. Wer so eines waehlt, verliert jede Antwort
+    lautlos - genau das ist der echten Kampagne mit 277 Empfaengern
+    passiert.
+
+    Bewusst kein Ausblenden: welches Postfach benutzt wird, entscheidet der
+    Mensch. Er soll es nur sehen.
+    """
     leser = getattr(request.app.state, "instantly_leser", None)
     if leser is None:
         return []
@@ -528,12 +546,23 @@ def _postfaecher(request: Request) -> list:
     except Exception:      # noqa: BLE001 - a dead API must not block the wizard
         return []
     eintraege = stand.get("postfaecher") if isinstance(stand, dict) else stand
-    adressen = []
+    gut, fraglich = [], []
     for eintrag in eintraege or []:
-        adresse = (eintrag or {}).get("email") if isinstance(eintrag, dict) else eintrag
-        if adresse:
-            adressen.append(str(adresse))
-    return adressen
+        if not isinstance(eintrag, dict):
+            if eintrag:
+                gut.append({"adresse": str(eintrag), "hinweis": ""})
+            continue
+        adresse = eintrag.get("email")
+        if not adresse:
+            continue
+        if eintrag.get("warmup") == "an" and eintrag.get("status") == "verbunden":
+            gut.append({"adresse": str(adresse), "hinweis": ""})
+        else:
+            fraglich.append({
+                "adresse": str(adresse),
+                "hinweis": "Warmup aus - empfängt vermutlich keine Antworten",
+            })
+    return gut + fraglich
 
 
 # ---------------------------------------------------------------- Schritt 5
@@ -590,7 +619,48 @@ async def schritt_5_speichern(request: Request, kennung: str):
                       status_code=400)
 
     entwuerfe.schritt_speichern(_daten_dir(request), kennung, 5, werte)
+    _versand_einstellungen_nachtragen(_daten_dir(request), entwurf, werte)
     return _weiter(kennung, 6)
+
+
+def _versand_einstellungen_nachtragen(daten_dir: Path, entwurf: dict,
+                                       werte: dict) -> None:
+    """Schritt 5 in die schon geschriebene Kundendatei nachtragen.
+
+    Die Kundendatei entsteht in Schritt 4, weil dort die Suche startet -
+    Schritt 5 wird erst DANACH ausgefuellt. Ohne dieses Nachtragen standen
+    Postfach, Signatur und Versandart also leer in der Datei, obwohl sie im
+    Formular beantwortet waren: die Kampagne wurde wieder ohne Absender
+    angelegt, und "Echter Versand" konnte gar nicht ankommen (gefunden am
+    17.08.2026 an einer echten Kampagne mit 17 Empfaengern).
+
+    Nur diese Felder werden angefasst; alles andere in der Datei bleibt, wie
+    es ist. Fehlt die Datei, passiert nichts - dann gibt es auch keinen Lauf.
+    """
+    import yaml
+
+    pfad = daten_dir / str(entwurf["daten"].get("kunde_datei") or "")
+    if not entwurf["daten"].get("kunde_datei") or not pfad.is_file():
+        return
+    try:
+        inhalt = yaml.safe_load(pfad.read_text(encoding="utf-8")) or {}
+    except (OSError, yaml.YAMLError):
+        return
+
+    inhalt["versand_postfach"] = werte.get("versand_postfach", "")
+    inhalt["tageslimit"] = werte.get("tageslimit", 20)
+    inhalt["zeit_von"] = werte.get("zeit_von", "08:00")
+    inhalt["zeit_bis"] = werte.get("zeit_bis", "19:00")
+    inhalt["wochentage"] = werte.get("wochentage") or ["mo", "di", "mi", "do", "fr"]
+    inhalt["signatur"] = werte.get("signatur", "")
+    inhalt["versand_modus"] = "echt" if werte.get("versand_modus") == "echt" else "test"
+    # Der Name unter den Mails: erste Zeile der Signatur, sonst das Postfach.
+    name = (str(werte.get("signatur") or "").strip().splitlines() or [""])[0]
+    if name or werte.get("versand_postfach"):
+        inhalt["absender"] = name or werte["versand_postfach"]
+
+    pfad.write_text(yaml.safe_dump(inhalt, allow_unicode=True, sort_keys=False),
+                    encoding="utf-8")
 
 
 # ---------------------------------------------------------------- Schritt 6

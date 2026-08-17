@@ -16,10 +16,16 @@ def _lead(email):
                 title="Geschäftsführer", website="https://c.de", source="test")
 
 
-def _lauf_mit_leads(ordner, *emails):
+def _lauf_mit_leads(ordner, *emails, uebergeben=True):
+    """uebergeben=True heisst: dieser Lauf wurde als Kampagne uebergeben,
+    die Adressen gelten also als angeschrieben. Ohne das ist es ein blosser
+    Probelauf - gefunden, aber nie jemandem geschrieben."""
     ordner.mkdir(parents=True, exist_ok=True)
     (ordner / "leads.json").write_text(
         json.dumps({"leads": [{"email": e} for e in emails]}), encoding="utf-8")
+    if uebergeben:
+        (ordner / "versand_komplett.json").write_text(
+            json.dumps({"campaign_id": "camp-1"}), encoding="utf-8")
     return ordner
 
 
@@ -64,6 +70,25 @@ def test_der_eigene_laufende_ordner_zaehlt_nicht_als_frueher(tmp_path):
 def test_unbekannte_adresse_bleibt(tmp_path):
     laeufe = tmp_path / "laeufe"
     _lauf_mit_leads(laeufe / "kampagne-a" / "20260701", "jemand@anders.de")
+    neu = laeufe / "kampagne-b" / "20260814"
+    neu.mkdir(parents=True)
+
+    behalten, verworfen = dedupe([_lead("chef@firma.de")],
+                                 laeufe / "kampagne-b", aktueller_lauf=neu,
+                                 alle_kampagnen_dir=laeufe)
+
+    assert [l.email for l in behalten] == ["chef@firma.de"]
+    assert verworfen == []
+
+
+def test_ein_blosser_probelauf_sperrt_die_firmen_nicht(tmp_path):
+    # Gefunden am 17.08.2026: Ein Lauf kam mit 23 gefundenen Kontakten und
+    # NULL uebrigen heraus. Alle 23 standen in frueheren Probelaeufen -
+    # angeschrieben wurde nie jemand. Ausprobieren darf den Vorrat nicht
+    # verbrennen.
+    laeufe = tmp_path / "laeufe"
+    _lauf_mit_leads(laeufe / "probe" / "20260701", "chef@firma.de",
+                    uebergeben=False)
     neu = laeufe / "kampagne-b" / "20260814"
     neu.mkdir(parents=True)
 

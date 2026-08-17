@@ -616,7 +616,7 @@ def test_detail_zeigt_schritte_mit_echten_tagen_und_wer_wann(angemeldeter_client
     assert "Erste E-Mail (geht sofort raus)" in text
     assert "Freigegeben von Lena Hartmann am" in text
     assert "3 versendet · — geöffnet" in text
-    assert "app.instantly.ai/app/campaign/camp-a" in text
+    assert "app.instantly.ai/app/campaign/camp-a/analytics" in text
 
 
 def test_detail_zeigt_warteschlange_sendefenster_und_tageslimit(angemeldeter_client, daten_dir):
@@ -993,7 +993,7 @@ def test_detail_zeigt_konto_problem_hinweis_statt_pausiert_saetze(angemeldeter_c
     assert "An den Texten und Empfängern hat sich nichts geändert" in text
     assert "liegt pausiert in Instantly" not in text
     assert "das ist Absicht" not in text
-    assert "app.instantly.ai/app/campaign/camp-a" in text
+    assert "app.instantly.ai/app/campaign/camp-a/analytics" in text
 
 
 def test_detail_ohne_kampagne_404(angemeldeter_client, daten_dir):

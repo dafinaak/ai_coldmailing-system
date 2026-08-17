@@ -17,6 +17,28 @@ mëparshëm: kodi i ri shkruhet në anglisht, kodi i vjetër gjerman
 ndërrohet vetëm brenda fazave të rifreskimit — jo me një përkthim të
 madh njëherësh.
 
+## Asnjë fushatë nuk niset pa fjalën e Dafinës (nga 17.08.2026)
+
+Asnjë fushatë nuk aktivizohet dhe asnjë email nuk niset pa e thënë
+Dafina shprehimisht, çdo herë veç e veç. Kjo vlen për këdo dhe për çdo
+mjet: mjetin tonë, Instantly-n drejtpërdrejt, skriptet, gjithçka.
+
+Miratimi i teksteve te tabela nuk është leje për nisje. Dorëzimi i një
+fushate te Instantly nuk është nisje — fushata mbetet e fjetur derisa
+Dafina të thotë "nise".
+
+Pse u shkrua: më 17.08.2026 doli se fushata "IT-Dienstleister –
+Anschreiben" ishte **aktive** dhe kishte dërguar 25 email te firma të
+vërteta që nga 14 gushti, pa e ditur askush se ishte nisur. 203 nga
+kontaktet e saj ishin të njëjtat me fushatën tonë kryesore — pra ata
+njerëz do të kishin marrë të njëjtën ofertë dy herë. U ndal me urdhër
+të Dafinës.
+
+Nëse gjendet një fushatë aktive që nuk e ka miratuar ajo: **thuaje
+menjëherë** dhe pyet a duhet ndaluar. Mos e nis kurrë vetë; ndalja
+bëhet vetëm me fjalën e saj, sepse mund ta ketë nisur dikush tjetër me
+qëllim.
+
 ## Zuverlässigkeit zuerst
 
 Zuverlässigkeit hat in diesem Projekt höchste Priorität — vor

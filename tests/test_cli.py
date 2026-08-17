@@ -280,6 +280,13 @@ def test_lauf_personalisiert_end_zu_ende_und_dedupe_greift_erst_im_naechsten_lau
     assert ("Firmen-Ausgang: 2 mit persönlichem Entscheider, 0 nur über info@, "
             "0 ohne Webseite, 0 kein Entscheider-Treffer, 0 Fehler") in bericht
 
+    # Der erste Lauf wird als Kampagne uebergeben. Seit 17.08.2026 zaehlt
+    # ein Lauf naemlich erst dann als "angeschrieben", wenn er auch
+    # rausging - vorher sperrte jeder blosse Probelauf seine Firmen fuer
+    # immer (siehe pipeline.dedupe._bekannte_emails).
+    (erster_lauf / "versand_komplett.json").write_text(
+        json.dumps({"campaign_id": "camp-1"}), encoding="utf-8")
+
     # Zweiter, frischer Lauf: jetzt muessen beide Leads aus dem ersten Lauf
     # als "bereits in früherem Lauf angeschrieben" verworfen werden - das
     # beweist, dass Dedupe ueber Laeufe hinweg weiterhin greift.

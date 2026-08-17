@@ -24,8 +24,14 @@ def antwortende_uebernehmen(speicher, konversationen, kontakt_info=None,
     kampagnen_namen = kampagnen_namen or {}
     neu = 0
     for konversation in konversationen:
+        # "empfangen", nicht "erhalten": so nennt web.instantly_leser die
+        # Richtung (siehe _richtung_und_kontakt), und nur so heisst sie in
+        # den Daten. Mit dem falschen Wort war diese Liste IMMER leer - der
+        # CRM-Zufluss hat seit dem ersten Tag keinen einzigen Kontakt
+        # angelegt, ohne dass irgendetwas nach Fehler aussah (gefunden am
+        # 17.08.2026, weil eine echte Antwort im CRM fehlte).
         erhaltene = [n for n in konversation.get("nachrichten") or []
-                     if n.get("richtung") == "erhalten"]
+                     if n.get("richtung") == "empfangen"]
         if not erhaltene:
             continue
         email = (konversation.get("kontakt_email") or "").strip().lower()

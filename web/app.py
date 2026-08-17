@@ -52,6 +52,21 @@ def stil_version(pfad=None) -> str:
         return "0000000000"
 
 
+# Adresse einer Kampagne in der Instantly-Oberflaeche. Die Endung
+# "/analytics" gehoert dazu - ohne sie antwortet Instantly mit 404 (am
+# 17.08.2026 an einer echten Kampagne nachgesehen; vorher stand die Adresse
+# ohne diese Endung an ZWEI Stellen im Code und war an beiden falsch, weil
+# sie aus der Design-Skizze uebernommen und nie geoeffnet worden war).
+#
+# Bewusst nur EINE Definition, die beide Vorlagen benutzen: zwei Kopien
+# waren genau der Grund, warum der Fehler doppelt dastand.
+INSTANTLY_KAMPAGNE_BASIS = "https://app.instantly.ai/app/campaign"
+
+
+def instantly_kampagne_url(campaign_id) -> str:
+    return f"{INSTANTLY_KAMPAGNE_BASIS}/{campaign_id}/analytics"
+
+
 def create_app(daten_dir: Path) -> FastAPI:
     daten_dir = Path(daten_dir)
     daten_dir.mkdir(parents=True, exist_ok=True)
@@ -87,6 +102,7 @@ def create_app(daten_dir: Path) -> FastAPI:
     # stil.css nach einem Deployment noch Stunden weiter aus. Die
     # Versions-Kennung haengt am Datei-Inhalt - neue Datei, neue Adresse.
     templates.env.globals["stil_version"] = stil_version()
+    templates.env.globals["instantly_kampagne_url"] = instantly_kampagne_url
     app.state.templates = templates
 
     app.add_middleware(auth.AnmeldePflicht)

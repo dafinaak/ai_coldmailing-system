@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Anmelden · Poleposition</title>
+<title>Log in · Poleposition</title>
 <link rel="stylesheet" href="{{ url_for('static', path='stil.css') }}?v={{ stil_version }}">
 </head>
 <body class="login-hintergrund">
@@ -14,8 +14,8 @@
     </span>
     <span class="marke-name">Poleposition</span>
   </div>
-  <h1>Anmelden</h1>
-  <p class="login-hinweis">Melde dich an, um weiterzumachen.</p>
+  <h1>Log in</h1>
+  <p class="login-hinweis">Log in to continue.</p>
   {% if fehler %}
   <p class="login-fehler">{{ fehler }}</p>
   {% endif %}
@@ -24,7 +24,7 @@
     <input type="text" id="name" name="name" required autofocus>
     <label for="passwort">Passwort</label>
     <input type="password" id="passwort" name="passwort" required>
-    <button type="submit">Anmelden</button>
+    <button type="submit">Log in</button>
   </form>
 </main>
 </body>

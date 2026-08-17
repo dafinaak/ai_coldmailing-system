@@ -1,0 +1,953 @@
+[
+ {
+  "name": "BitKollegen GmbH",
+  "website": "https://bitkollegen.de",
+  "domain": "bitkollegen.de",
+  "address": "Drostestr. 16, 30161 Hannover (List)",
+  "categories": [
+   "IT-Dienstleistungen",
+   "IT-Berater",
+   "Softwareentwickler/-hersteller",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30161",
+  "telefon": "+4951151532063",
+  "vorhandene_email": "info@bitkollegen.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps",
+   "alte_liste"
+  ],
+  "quelle": "gelbe_seiten+maps+alte_liste"
+ },
+ {
+  "name": "Applikationswerk GmbH",
+  "website": "https://www.applikationswerk.de/",
+  "domain": "applikationswerk.de",
+  "address": "Seestraße 25, 30171 Hannover-Südstadt-Bult, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller",
+   "Grafikdesigner",
+   "Online-Marketing-Unternehmen",
+   "Webdesigner"
+  ],
+  "plz": "30171",
+  "telefon": "+49 511 64695220",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Benjamin Nowak | IT-Solutions",
+  "website": "http://www.nowak-solutions.de/kontakt/",
+  "domain": "nowak-solutions.de",
+  "address": "Detmoldstraße 16, 30171 Hannover-Südstadt-Bult, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30171",
+  "telefon": "+49 162 9451233",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Ai-Lo Computer & Service GmbH",
+  "website": "https://www.ai-lo.de/",
+  "domain": "ai-lo.de",
+  "address": "Hildesheimer Str. 88, 30169 Hannover, Deutschland",
+  "categories": [
+   "Computergeschäft",
+   "IT-Berater",
+   "Computerreparaturdienst",
+   "Computerservice",
+   "Softwarehändler",
+   "Computersupport und -dienste",
+   "Softwareentwickler/-hersteller",
+   "Geschäft für Second-Hand-Computer",
+   "Webdesigner"
+  ],
+  "plz": "30169",
+  "telefon": "+49 511 45000199",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "netopTV Netopsie Technologies GmbH",
+  "website": "https://www.netoptv.de/",
+  "domain": "netoptv.de",
+  "address": "Lister Damm 2, 30163 Hannover-Vahrenwald-List, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller",
+   "Computernetzwerk-Service",
+   "Computersupport und -dienste",
+   "Online-Marketing-Unternehmen",
+   "Internetanbieter"
+  ],
+  "plz": "30163",
+  "telefon": "+49 511 93687200",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Smart IT Alliance GmbH",
+  "website": "https://www.smarte-ki.de/",
+  "domain": "smarte-ki.de",
+  "address": "Georgstraße 38, 30159 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 51512940",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "IT FORT",
+  "website": "http://itfort.de/",
+  "domain": "itfort.de",
+  "address": "Georgstraße 48, 30159 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 357356",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Magrathea Informatik GmbH",
+  "website": "http://www.magrathea.eu/",
+  "domain": "magrathea.eu",
+  "address": "Goseriede 1-5, 30159 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller",
+   "IT-Berater",
+   "Ordnungscoach"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 543880",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Sybit GmbH | Experten für Customer Experience mit SAP CX Solutions",
+  "website": "https://www.sybit.com/?utm_source=googlemybusiness&utm_medium=hannover&utm_campaign=profil",
+  "domain": "sybit.com",
+  "address": "Bahnhofstraße 8 Regus Center, 30159 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30159",
+  "telefon": "+49 7732 95080",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Smart IT Innovation GmbH",
+  "website": "https://www.operativeklarheit.de/",
+  "domain": "operativeklarheit.de",
+  "address": "Georgstraße 38, 30159 Hannover, Deutschland",
+  "categories": [
+   "Unternehmensberater",
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 51512941",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Qimia GmbH",
+  "website": "https://qimia.io/",
+  "domain": "qimia.io",
+  "address": "Lavesstraße 80, 30159 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30159",
+  "telefon": "",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "HIS Hochschul-Informations-System eG",
+  "website": "http://www.his.de/",
+  "domain": "his.de",
+  "address": "Goseriede 9, 30159 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller",
+   "Hochschule",
+   "office=it"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 12200",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps",
+   "overpass"
+  ],
+  "quelle": "maps+overpass"
+ },
+ {
+  "name": "isp-insoft Gesellschaft für Entwicklung und Vertrieb individueller Software mbH",
+  "website": "https://www.isp-insoft.de/",
+  "domain": "isp-insoft.de",
+  "address": "Lemförder Str. 2-4, 30169 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30169",
+  "telefon": "+49 511 3579510",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "H3IT GmbH",
+  "website": "http://bauleiter-guenther.de/",
+  "domain": "bauleiter-guenther.de",
+  "address": "Thielenplatz 3, 30159 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30159",
+  "telefon": "+49 4951 369183000",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "TAIFUN Software GmbH",
+  "website": "https://www.taifun-software.de/?utm_source=my-business",
+  "domain": "taifun-software.de",
+  "address": "Joachimstraße 2, 30159 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 943880",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "smartsteuer",
+  "website": "https://www.smartsteuer.de/",
+  "domain": "smartsteuer.de",
+  "address": "Drostestraße 16, 30161 Hannover-Vahrenwald-List, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller",
+   "office=it"
+  ],
+  "plz": "30161",
+  "telefon": "+49 800 7238222",
+  "vorhandene_email": "hilfe@smartsteuer.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps",
+   "overpass"
+  ],
+  "quelle": "maps+overpass"
+ },
+ {
+  "name": "coders.win",
+  "website": "https://coders.win/",
+  "domain": "coders.win",
+  "address": "Striehlstraße 10, 30159 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller",
+   "E-Commerce-Agentur",
+   "E-Commerce-Dienst",
+   "Informationsservice"
+  ],
+  "plz": "30159",
+  "telefon": "+49 15678 624492",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Avsar Test Engineering GmbH",
+  "website": "https://www.avsar-te.de/",
+  "domain": "avsar-te.de",
+  "address": "Georgstraße 38, 30159 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 26021575",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "aldebaran Programmierung & IT- Lösungen GmbH",
+  "website": "https://www.aldebaran.de/",
+  "domain": "aldebaran.de",
+  "address": "Gretchenstraße 7, 30161 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30161",
+  "telefon": "+49 511 2704160",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Lauth IT GmbH",
+  "website": "http://www.lauth-it.de/",
+  "domain": "lauth-it.de",
+  "address": "Große Düwelstraße 28, 30171 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30171",
+  "telefon": "+49 511 37460060",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "QNX Software Systems GmbH",
+  "website": "https://blackberry.qnx.com/en",
+  "domain": "blackberry.qnx.com",
+  "address": "Hohenzollernstraße 26, 30161 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller",
+   "Computergeschäft"
+  ],
+  "plz": "30161",
+  "telefon": "+49 511 940910",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "tec connect GmbH",
+  "website": "https://www.tec-connect.eu/",
+  "domain": "tec-connect.eu",
+  "address": "Kleine Düwelstraße 21, 30171 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30171",
+  "telefon": "",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "VIER GmbH",
+  "website": "https://www.vier.ai/",
+  "domain": "vier.ai",
+  "address": "Hamburger Allee 23, 30161 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30161",
+  "telefon": "+49 511 9573951000",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "SENCURY AG",
+  "website": "https://www.sencury.com/",
+  "domain": "sencury.com",
+  "address": "Postkamp 6, 30159 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 51565438",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "heinekingmedia GmbH",
+  "website": "http://www.heinekingmedia.de/",
+  "domain": "heinekingmedia.de",
+  "address": "Hamburger Allee 2-4, 30161 Hannover, Deutschland",
+  "categories": [
+   "Medienunternehmen",
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30161",
+  "telefon": "+49 511 675190",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "JRC Training",
+  "website": "http://www.jrc-training.com/",
+  "domain": "jrc-training.com",
+  "address": "Walter-Gieseking-Straße 14, 30159 Hannover-Südstadt-Bult, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Personal Trainer",
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 4751841",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Die AI Berater",
+  "website": "https://www.dieaiberater.de/",
+  "domain": "dieaiberater.de",
+  "address": "Rolandstraße 2-3, 30161 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller",
+   "IT-Berater",
+   "Marketingberater"
+  ],
+  "plz": "30161",
+  "telefon": "+49 15678 818489",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Bytediver GmbH",
+  "website": "https://www.bytediver.com/",
+  "domain": "bytediver.com",
+  "address": "Große Barlinge 70c, 30171 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30171",
+  "telefon": "+49 511 51525640",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "ColorGATE Digital Output Solutions GmbH",
+  "website": "https://www.colorgate.com/",
+  "domain": "colorgate.com",
+  "address": "Große Düwelstraße 1, 30171 Hannover-Südstadt-Bult, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30171",
+  "telefon": "+49 511 942930",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "GLASER Programmsysteme GmbH",
+  "website": "https://www.glasercad.de/",
+  "domain": "glasercad.de",
+  "address": "Krausenstraße 50, 30171 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30171",
+  "telefon": "+49 511 5929310",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "C & H Informationstechnologie GmbH",
+  "website": "http://www.cundh.com/",
+  "domain": "cundh.com",
+  "address": "Große Düwelstraße 28, 30171 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30171",
+  "telefon": "+49 511 47536240",
+  "vorhandene_email": "info@cundh.com",
+  "gf_name_liste": "Christoph Ingenhaag; Holger Flößer",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps",
+   "alte_liste"
+  ],
+  "quelle": "maps+alte_liste"
+ },
+ {
+  "name": "SYSCREST GmbH",
+  "website": "http://www.syscrest.de/",
+  "domain": "syscrest.de",
+  "address": "Fernroder Str. 9, 30161 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30161",
+  "telefon": "+49 511 8745740",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "KontextWork",
+  "website": "https://kontextwork.de/",
+  "domain": "kontextwork.de",
+  "address": "Herrenstraße 13, 30159 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller",
+   "IT-Berater"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 26091180",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Link Innovation GmbH",
+  "website": "http://www.link-innovation.de/",
+  "domain": "link-innovation.de",
+  "address": "Große Düwelstraße 28, 30171 Hannover-Südstadt-Bult, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30171",
+  "telefon": "+49 5371 588950",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "compl3te GmbH Hannover",
+  "website": "https://compl3te.com/",
+  "domain": "compl3te.com",
+  "address": "Dieterichsstraße 6, 30159 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30159",
+  "telefon": "+49 341 97458330",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Graitec",
+  "website": "https://www.graitec.de/",
+  "domain": "graitec.de",
+  "address": "Aegidientorpl. 2b, 30159 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Softwareentwickler/-hersteller",
+   "Schulungszentrum"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 410270",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "wissenswerft GmbH",
+  "website": "http://www.wissenswerft.net/",
+  "domain": "wissenswerft.net",
+  "address": "Hohenzollernstraße 26, 30161 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30161",
+  "telefon": "+49 511 220616770",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "RGC Manager GmbH & Co. KG",
+  "website": "https://rgc-manager.de/",
+  "domain": "rgc-manager.de",
+  "address": "Drostestraße 16, 30161 Hannover-Vahrenwald-List, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30161",
+  "telefon": "+49 511 53899973",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "iXenso AG",
+  "website": "http://www.ixenso.com/",
+  "domain": "ixenso.com",
+  "address": "Kriegerstraße 40, 30161 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30161",
+  "telefon": "+49 511 96159190",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "newcubator GmbH",
+  "website": "https://newcubator.com/",
+  "domain": "newcubator.com",
+  "address": "Bödekerstraße 22, 30161 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller",
+   "office=it"
+  ],
+  "plz": "30161",
+  "telefon": "+49 511 95731300",
+  "vorhandene_email": "hannover@newcubator.com",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps",
+   "overpass"
+  ],
+  "quelle": "maps+overpass"
+ },
+ {
+  "name": "VRTX Labs GmbH",
+  "website": "http://www.vrtxlabs.com/",
+  "domain": "vrtxlabs.com",
+  "address": "Kriegerstraße 40, 30161 Hannover-Vahrenwald-List, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30161",
+  "telefon": "+49 176 26139595",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "ATMINA Solutions GmbH",
+  "website": "https://atmina.de/",
+  "domain": "atmina.de",
+  "address": "Theaterstraße 8, 30159 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller",
+   "office=it"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 31014100",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps",
+   "overpass"
+  ],
+  "quelle": "maps+overpass"
+ },
+ {
+  "name": "menio GmbH",
+  "website": "http://www.menio.com/",
+  "domain": "menio.com",
+  "address": "Alexanderstraße 3, 30159 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 1658990",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "ID.on GmbH",
+  "website": "https://www.id-on.de/",
+  "domain": "id-on.de",
+  "address": "Prinzenstraße 6, 30159 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 3003450",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "versdiagnose GmbH",
+  "website": "http://versdiagnose.info/",
+  "domain": "versdiagnose.info",
+  "address": "Prinzenstraße 16, 30159 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 35771740",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "fb research GmbH",
+  "website": "https://www.fb-research.de/",
+  "domain": "fb-research.de",
+  "address": "Prinzenstraße 16, 30159 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 35771700",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "PDV GmbH - Niederlassung Hannover",
+  "website": "https://www.pdv.de/",
+  "domain": "pdv.de",
+  "address": "Joachimstraße 1, 30159 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller",
+   "Geschäftsstelle"
+  ],
+  "plz": "30159",
+  "telefon": "",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "io Services",
+  "website": "https://io-services.de/",
+  "domain": "io-services.de",
+  "address": "Georgstraße 50B, 30159 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30159",
+  "telefon": "",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "8thsense",
+  "website": "https://8thsense.de/",
+  "domain": "8thsense.de",
+  "address": "Nordfelder Reihe 4a, 30159 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30159",
+  "telefon": "+49 177 3201144",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "NetzExpert",
+  "website": "https://www.netzexpert.com/",
+  "domain": "netzexpert.com",
+  "address": "Herschelstraße 17, 30159 Hannover, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30159",
+  "telefon": "+49 177 6738774",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ }
+]

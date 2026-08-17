@@ -13,10 +13,24 @@ import subprocess
 import sys
 import time
 
+import pytest
+
 from web.laufmanager import _ist_zombie, _pid_lebt
 
 
-def test_laufender_prozess_gilt_als_lebendig():
+@pytest.fixture
+def als_unser_lauf(monkeypatch):
+    """Tut so, als steckte hinter jeder PID einer unserer Laeufe.
+
+    Hier geht es nur um Zombies. Ob die PID wirklich zu uns gehoert,
+    ist eine zweite, eigene Frage - die steht in
+    tests/web/test_laufmanager_sperre.py.
+    """
+    monkeypatch.setattr("web.laufmanager._prozess_befehl",
+                        lambda pid: f"{sys.executable} -m pipeline lauf k.yaml")
+
+
+def test_laufender_prozess_gilt_als_lebendig(als_unser_lauf):
     prozess = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
     try:
         assert _pid_lebt(prozess.pid) is True
@@ -25,7 +39,7 @@ def test_laufender_prozess_gilt_als_lebendig():
         prozess.wait()
 
 
-def test_beendetes_kind_gilt_als_tot_und_nicht_als_zombie():
+def test_beendetes_kind_gilt_als_tot_und_nicht_als_zombie(als_unser_lauf):
     # Genau der Fall aus dem Probelauf: Kind fertig, Elternteil holt es
     # nie ab. Ohne die Reparatur meldet _pid_lebt hier True.
     prozess = subprocess.Popen([sys.executable, "-c", "pass"])
@@ -46,5 +60,7 @@ def test_niemals_vergebene_pid_gilt_als_tot():
     assert _pid_lebt(999999) is False
 
 
-def test_eigener_prozess_gilt_als_lebendig():
-    assert _pid_lebt(os.getpid()) is True
+def test_ein_fremdes_programm_gilt_nicht_als_unser_lauf():
+    # Der eigene Test-Prozess lebt, ist aber kein Pipeline-Lauf. Genau so
+    # sah der Notion-Fall vom 12.08.2026 aus.
+    assert _pid_lebt(os.getpid()) is False

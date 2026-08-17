@@ -25,6 +25,7 @@ import os
 import subprocess
 import sys
 import time
+from datetime import datetime
 from pathlib import Path
 
 from pipeline.config import load_kunde
@@ -52,6 +53,13 @@ def _subprozess_umgebung() -> dict:
     bisherige = umgebung.get("PYTHONPATH", "")
     teile = [str(_PROJEKT_WURZEL)] + ([bisherige] if bisherige else [])
     umgebung["PYTHONPATH"] = os.pathsep.join(teile)
+    # Ohne das schreibt Python seine Ausgabe erst, wenn ein paar Kilobyte
+    # zusammengekommen sind - in eine Datei umgeleitet ist die Ausgabe naemlich
+    # bloeckweise gepuffert. Am 14.08.2026 lief ein Lauf ueber zehn Minuten mit
+    # einem KOMPLETT LEEREN lauf.log: weder der Nutzer noch wir konnten sehen,
+    # ob er arbeitet oder haengt. Fortschritt zu sehen ist bei einer Aufgabe,
+    # die Minuten dauert, kein Luxus.
+    umgebung["PYTHONUNBUFFERED"] = "1"
     return umgebung
 
 # Die fuenf Arbeitsschritte in "Wird vorbereitet" (Laiensprache), wortwoertlich
@@ -164,6 +172,62 @@ def _ist_zombie(pid: int) -> bool:
     return ergebnis.stdout.strip().startswith("Z")
 
 
+def _sperr_pid(sperr_pfad: Path) -> int | None:
+    """Die PID aus einer Sperrdatei - egal ob altes oder neues Format.
+
+    Frueher stand dort nur die nackte Zahl. Neu wird zusaetzlich der
+    Startzeitpunkt notiert, damit sich eine alte Sperre auch von Hand
+    einordnen laesst. Alte Dateien muessen weiter lesbar bleiben.
+    """
+    try:
+        inhalt = sperr_pfad.read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    if inhalt.isdigit():
+        return int(inhalt)
+    try:
+        daten = json.loads(inhalt)
+    except json.JSONDecodeError:
+        return None
+    pid = daten.get("pid") if isinstance(daten, dict) else None
+    return int(pid) if isinstance(pid, int) else None
+
+
+def _sperre_schreiben(sperr_pfad: Path, pid: int) -> None:
+    sperr_pfad.write_text(json.dumps({
+        "pid": pid,
+        "gestartet": datetime.now().isoformat(timespec="seconds"),
+    }), encoding="utf-8")
+
+
+def _prozess_befehl(pid: int) -> str:
+    """Die Befehlszeile eines Prozesses - leer, wenn nicht ermittelbar."""
+    try:
+        ergebnis = subprocess.run(["ps", "-o", "command=", "-p", str(pid)],
+                                  capture_output=True, text=True, timeout=5)
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    return ergebnis.stdout.strip()
+
+
+def _ist_unser_lauf(pid: int) -> bool:
+    """True, wenn unter dieser PID wirklich einer UNSERER Laeufe steckt.
+
+    Prozessnummern werden vom Betriebssystem wiederverwendet. Am
+    12.08.2026 trug eine Sperrdatei die Nummer 802 - die gehoerte
+    inzwischen Notion. Die Sperre galt damit als aktiv, und fuer diesen
+    Kunden haette nie wieder ein Lauf starten koennen.
+
+    Ein Lauf von uns ist immer "python -m pipeline ...". Passt die
+    Befehlszeile nicht dazu, ist es ein fremder Prozess, der zufaellig
+    dieselbe Nummer bekommen hat - die Sperre ist verwaist.
+    """
+    befehl = _prozess_befehl(pid)
+    if not befehl:
+        return False
+    return "pipeline" in befehl
+
+
 def _pid_lebt(pid: int) -> bool:
     """True, wenn unter dieser PID ein Prozess laeuft. Eigene Funktion (statt
     inline), damit Tests sie leicht durch eine Fake-Funktion ersetzen koennen,
@@ -181,10 +245,16 @@ def _pid_lebt(pid: int) -> bool:
     except ProcessLookupError:
         return False
     except PermissionError:
-        return True  # existiert, gehoert nur jemand anderem
+        return False  # fremder Prozess - dann ist es nicht unser Lauf
     except OSError:
         return False
-    return not _ist_zombie(pid)
+    if _ist_zombie(pid):
+        return False
+    # Letzte Frage: ist es ueberhaupt unser Lauf? Prozessnummern werden
+    # wiederverwendet, und eine Nummer, die inzwischen einem fremden
+    # Programm gehoert, darf weder eine Sperre halten noch einen laengst
+    # fertigen Lauf als "laeuft" ausweisen.
+    return _ist_unser_lauf(pid)
 
 
 def _lade_json_sicher(pfad: Path):
@@ -249,12 +319,11 @@ class Laufmanager:
         schreiben kann."""
         sperr_pfad = self._sperr_pfad(slug)
         if sperr_pfad.exists():
-            inhalt = sperr_pfad.read_text(encoding="utf-8").strip()
-            alte_pid = int(inhalt) if inhalt.isdigit() else None
+            alte_pid = _sperr_pid(sperr_pfad)
             if alte_pid is not None and _pid_lebt(alte_pid):
                 raise LaufBereitsAktiv(
                     "Für dieses Angebot läuft gerade schon eine E-Mail-Runde.")
-            sperr_pfad.unlink()  # verwaiste Sperre (Prozess tot) - aufraeumen
+            sperr_pfad.unlink()  # verwaiste Sperre - aufraeumen
         return sperr_pfad
 
     def _sperre_loesen(self, slug: str, nur_wenn_pid: int | None = None) -> None:
@@ -271,10 +340,8 @@ class Laufmanager:
         sperr_pfad = self._sperr_pfad(slug)
         if not sperr_pfad.exists():
             return
-        if nur_wenn_pid is not None:
-            inhalt = sperr_pfad.read_text(encoding="utf-8").strip()
-            if inhalt != str(nur_wenn_pid):
-                return
+        if nur_wenn_pid is not None and _sperr_pid(sperr_pfad) != nur_wenn_pid:
+            return
         sperr_pfad.unlink()
 
     def _warte_auf_lauf_dir(self, kunden_ordner: Path, vorher: set,
@@ -380,7 +447,7 @@ class Laufmanager:
             meta["firmen_datei"] = firmen_datei
         (lauf_dir / "auftrag_meta.json").write_text(
             json.dumps(meta), encoding="utf-8")
-        sperr_pfad.write_text(str(prozess.pid), encoding="utf-8")
+        _sperre_schreiben(sperr_pfad, prozess.pid)
 
         return lauf_dir
 
@@ -406,7 +473,7 @@ class Laufmanager:
         log_datei.close()
 
         (lauf_dir / "pid").write_text(str(prozess.pid), encoding="utf-8")
-        sperr_pfad.write_text(str(prozess.pid), encoding="utf-8")
+        _sperre_schreiben(sperr_pfad, prozess.pid)
 
         return lauf_dir
 

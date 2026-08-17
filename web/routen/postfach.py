@@ -120,6 +120,11 @@ def _nachrichten_zeilen(nachrichten: list[dict], kontakt_name: str) -> list[dict
             "zeit": _format_zeit(m["zeit"]),
             "betreff": m["betreff"],
             "text": m["text"],
+            # Jede Zeile einzeln, damit das Template je Zeile ein eigenes
+            # Element ausgeben kann - siehe Kommentar im Template: ein
+            # einzelner Textblock mit \n ueberlebt die Browser-Uebersetzung
+            # nicht, die Absaetze klebten danach zu einer Wand zusammen.
+            "zeilen": (m["text"] or "").split("\n"),
         }
         for m in nachrichten
     ]
@@ -183,7 +188,18 @@ def _lade_postfach(request: Request, gewuenscht: str | None = None):
         gewuenscht = request.query_params.get("kontakt") or ""
     gewuenscht = gewuenscht.strip().casefold()
     treffer = next((k for k in konversationen if k["kontakt_email"] == gewuenscht), None)
-    ausgewaehlt = treffer or (konversationen[0] if konversationen else None)
+    # Wer ueber "Verlauf" aus dem CRM kommt, will GENAU diesen Verlauf sehen.
+    # Faellt die Seite dann still auf das erste Gespraech zurueck, liest man
+    # den Verlauf eines Fremden und haelt ihn fuer den eigenen. Lieber leer
+    # und ehrlich (gefunden am 13.08.2026 mit einem CRM-Testkontakt).
+    kein_verlauf = None
+    if gewuenscht and treffer is None:
+        kein_verlauf = (
+            f"Für {gewuenscht} gibt es hier noch keinen Verlauf - der Kontakt "
+            f"hat auf keine Kampagnen-Mail geantwortet.")
+        ausgewaehlt = None
+    else:
+        ausgewaehlt = treffer or (konversationen[0] if konversationen else None)
     return (
         daten_dir,
         campaign_ids,
@@ -191,6 +207,7 @@ def _lade_postfach(request: Request, gewuenscht: str | None = None):
         konversationen,
         live_stand_hinweis,
         ausgewaehlt,
+        kein_verlauf,
     )
 
 
@@ -206,6 +223,7 @@ def _render_postfach(
     antwort_text: str = "",
     antwort_fehler: str | None = None,
     antwort_unsicher: bool = False,
+    kein_verlauf: str | None = None,
 ):
     kontakt_info = _kontakt_info_je_email(daten_dir)
     zeilen = _konversations_zeilen(
@@ -258,6 +276,12 @@ def _render_postfach(
             "keine_antworten_hinweis": (
                 KEINE_ANTWORTEN_HINWEIS
                 if (campaign_ids and not live_stand_hinweis and not zeilen) else None),
+            # Eigene Variable statt in keine_antworten_hinweis gefaltet: der
+            # Satz gehoert in den leeren Detailbereich rechts (rot, als
+            # Warnung), genau dort, wo sonst der Verlauf stuende. Oben als
+            # grauer Hinweis war er zu leicht zu uebersehen, und der weisse
+            # Kasten daneben sah aus wie eine halb geladene Seite.
+            "kein_verlauf": kein_verlauf,
             "live_stand_hinweis": live_stand_hinweis,
             "detail": detail,
             "instantly_link": INSTANTLY_LINK,
@@ -281,6 +305,7 @@ def postfach(request: Request):
         konversationen,
         live_stand_hinweis,
         ausgewaehlt,
+        kein_verlauf,
     ) = _lade_postfach(request)
     return _render_postfach(
         request,
@@ -289,6 +314,7 @@ def postfach(request: Request):
         konversationen=konversationen,
         live_stand_hinweis=live_stand_hinweis,
         ausgewaehlt=ausgewaehlt,
+        kein_verlauf=kein_verlauf,
     )
 
 
@@ -307,6 +333,7 @@ def postfach_antworten(
         konversationen,
         live_stand_hinweis,
         ausgewaehlt,
+        kein_verlauf,
     ) = _lade_postfach(request, kontakt)
 
     def fehler_anzeigen(
@@ -319,6 +346,7 @@ def postfach_antworten(
             konversationen=konversationen,
             live_stand_hinweis=live_stand_hinweis,
             ausgewaehlt=ausgewaehlt,
+        kein_verlauf=kein_verlauf,
             status_code=status_code,
             antwort_text=text,
             antwort_fehler=meldung,

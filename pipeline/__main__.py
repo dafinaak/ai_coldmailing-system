@@ -125,8 +125,12 @@ def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None
         # wie der Rest der CLI schon cwd-relativ arbeitet (siehe LAEUFE oben).
         globale_sperrliste = lade_globale_sperrliste(Path("."))
         sperrliste = list(set(kunde.sperrliste) | set(globale_sperrliste))
+        # alle_kampagnen_dir = laeufe/ (eine Ebene ueber der Kunden-Mappe):
+        # ein Empfaenger soll dasselbe Angebot nicht zweimal von uns
+        # bekommen, auch nicht aus zwei verschiedenen Kampagnen.
         behalten, verworfen = dedupe_leads(leads, store.run_dir.parent, sperrliste,
-                                           aktueller_lauf=store.run_dir)
+                                           aktueller_lauf=store.run_dir,
+                                           alle_kampagnen_dir=store.run_dir.parent.parent)
         store.save_step("dedupe", {"behalten": [l.__dict__ for l in behalten],
                                    "verworfen": verworfen})
     stand = store.load_step("dedupe")
@@ -241,10 +245,23 @@ def _versand_ausfuehren(store, sender, kunde=None) -> str:
     if kunde is None:
         kunde = load_kunde(store.load_step("kunde_pfad")["pfad"])
     texte = store.load_step("pruefung_ok")
-    erlaubt = {e.strip().lower() for e in kunde.test_empfaenger}
-    fremde = [t["email"] for t in texte if t["email"] not in erlaubt]
-    if fremde:
-        raise SendenFehler(f"Abbruch: Empfänger nicht in Test-Empfänger-Liste: {fremde}")
+    # Test-Modus (Vorgabe): nur an die eigenen Test-Adressen. Echt-Modus:
+    # an die gefundenen Empfaenger. Der Modus steht in der Kundendatei und
+    # wird in Schritt 5 des Formulars bewusst gesetzt - fehlt das Feld,
+    # gilt "test" (siehe pipeline.config.Kunde.versand_modus).
+    #
+    # Vorher gab es diese Unterscheidung nicht: die Liste galt IMMER. Eine
+    # im Formular gebaute Kampagne konnte damit nie uebergeben werden, denn
+    # man haette jede einzelne Empfaengeradresse von Hand in die Testliste
+    # schreiben muessen (gefunden am 14.08.2026 an einer echten Probe).
+    if getattr(kunde, "versand_modus", "test") != "echt":
+        erlaubt = {e.strip().lower() for e in kunde.test_empfaenger}
+        fremde = [t["email"] for t in texte if t["email"].strip().lower() not in erlaubt]
+        if fremde:
+            raise SendenFehler(
+                f"Abbruch: Empfänger nicht in Test-Empfänger-Liste: {fremde}. "
+                f"Diese Kampagne steht auf Probe-Versand. Für den echten "
+                f"Versand in Schritt 5 des Formulars »Echter Versand« wählen.")
     if not texte:
         raise SendenFehler("Abbruch: keine freigegebenen Texte zum Versenden.")
 
@@ -257,7 +274,15 @@ def _versand_ausfuehren(store, sender, kunde=None) -> str:
         # Teilfehler Leads doppeln.
         campaign_id = store.load_step("versand")["campaign_id"]
     else:
-        campaign_id = sender.create_campaign(kunde)
+        # Name und Absender-Postfach MUESSEN mit: ohne email_list legt
+        # Instantly die Kampagne ohne Absender an - sie kann dann gar nicht
+        # senden, und jemand muss das Postfach von Hand nachtragen (gefunden
+        # am 14.08.2026). Das Postfach zieht create_campaign selbst aus der
+        # Kundendatei; hier bleibt der Name, der im Probe-Modus die alte
+        # [TEST]-Vorsilbe behaelt.
+        echt = getattr(kunde, "versand_modus", "test") == "echt"
+        campaign_id = sender.create_campaign(
+            kunde, name=kunde.name if echt else f"[TEST] {kunde.name}")
         store.save_step("versand", {"campaign_id": campaign_id})
 
     sender.import_leads(campaign_id, texte)

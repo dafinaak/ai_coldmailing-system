@@ -188,7 +188,9 @@ def schritt_2(request: Request, kennung: str):
 
     hinweis = None
     if not entwurf["daten"].get("usp"):
-        vorschlag, hinweis = _usp_icp_vorschlag(entwurf["daten"].get("verkaeufer_url"))
+        vorschlag, hinweis = _usp_icp_vorschlag(
+            entwurf["daten"].get("verkaeufer_url"),
+            _kampagnen_zweck(entwurf["daten"]))
         if vorschlag:
             entwurf = entwuerfe.schritt_speichern(
                 _daten_dir(request), kennung, 2, vorschlag)
@@ -225,7 +227,25 @@ async def schritt_2_speichern(request: Request, kennung: str):
     return _weiter(kennung, 3)
 
 
-def _usp_icp_vorschlag(url: str | None):
+def _kampagnen_zweck(daten: dict) -> str:
+    """Was in Schritt 1 ueber Zweck und Ton gesagt wurde, als ein Text.
+
+    Ohne das sieht die KI beim USP/ICP-Vorschlag NUR die Verkaeufer-Seite
+    und beschreibt deren gewoehnlichen Endkunden. Bei einer Partner-
+    Kampagne ist das der falsche Empfaenger - der Zielkunde kam am
+    14.08.2026 als "mittelständische Unternehmen, die Automation suchen"
+    zurueck, obwohl angeschrieben werden sollten die IT-Dienstleister, die
+    das Angebot ihren eigenen Kunden weitergeben.
+    """
+    teile = [
+        (daten.get("name") or "").strip(),
+        (daten.get("beschreibung") or "").strip(),
+        (daten.get("anweisungen") or "").strip(),
+    ]
+    return "\n".join(t for t in teile if t)
+
+
+def _usp_icp_vorschlag(url: str | None, kampagnen_zweck: str = ""):
     """Let the AI read the seller's page. Failure is a hint, not a wall."""
     if not url:
         return None, ("Ohne Verkäufer-Webseite kann nichts vorgeschlagen "
@@ -239,7 +259,7 @@ def _usp_icp_vorschlag(url: str | None):
         if not text:
             return None, (f"Die Seite {url} war nicht lesbar - bitte von Hand "
                           f"ausfüllen.")
-        return draft_usp_icp(text, KI()), None
+        return draft_usp_icp(text, KI(), kampagnen_zweck), None
     except Exception as fehler:      # noqa: BLE001
         # Kein erfundener Inhalt: lieber leere Felder und ein ehrlicher
         # Hinweis als ein Vorschlag, den niemand geprueft hat.
@@ -417,7 +437,13 @@ def _kunde_schreiben(daten_dir: Path, entwurf: dict) -> str:
         "webseite": daten.get("verkaeufer_url", ""),
         "angebot": usp_text or daten.get("beschreibung", ""),
         "tonalitaet": "ruhig, erklärend, keine Superlative, keine Ausrufezeichen",
-        "absender": daten.get("versand_postfach") or daten.get("absender_email", ""),
+        # "absender" ist der NAME, der unter den Mails steht - er geht in die
+        # Textgenerierung. Hier stand vorher die Postfach-Adresse, die Mails
+        # waren damit mit einer E-Mail-Adresse statt mit einem Menschen
+        # unterschrieben. Erste Zeile der Signatur aus Schritt 5 ist der Name;
+        # ohne Signatur bleibt als Notnagel die Adresse.
+        "absender": (str(daten.get("signatur") or "").strip().splitlines() or [""])[0]
+                    or daten.get("versand_postfach") or daten.get("absender_email", ""),
         "zielgruppe": {
             "titel": ["Geschäftsführer", "Inhaber"],
             "region": [daten.get("ort") or "Deutschland"],
@@ -431,9 +457,19 @@ def _kunde_schreiben(daten_dir: Path, entwurf: dict) -> str:
             daten.get("abstand_1_2", 7),
             daten.get("abstand_1_2", 7) + daten.get("abstand_2_3", 7),
         ],
-        # Sicherheitsnetz: bis jemand echte Testempfaenger eintraegt, darf
-        # dieser Kunde nur an die eigene Absenderadresse senden.
+        # Sicherheitsnetz fuer den Probe-Versand: solange versand_modus auf
+        # "test" steht, darf diese Kampagne nur an die eigene Adresse gehen.
         "test_empfaenger": [daten.get("absender_email")] if daten.get("absender_email") else [],
+        # Schritt 5 (14.08.2026). Vorher blieben diese Antworten im Entwurf
+        # liegen und kamen nie bei Instantly an - die Kampagne wurde ohne
+        # Absender-Postfach und mit fest eingebautem Zeitplan angelegt.
+        "versand_postfach": daten.get("versand_postfach", ""),
+        "tageslimit": daten.get("tageslimit", 20),
+        "zeit_von": daten.get("zeit_von", "08:00"),
+        "zeit_bis": daten.get("zeit_bis", "19:00"),
+        "wochentage": daten.get("wochentage") or ["mo", "di", "mi", "do", "fr"],
+        "signatur": daten.get("signatur", ""),
+        "versand_modus": "echt" if daten.get("versand_modus") == "echt" else "test",
         "maps_suche": f"(Assistent {entwurf['kennung']})",
         "kontakt_rollen": ["Geschäftsführer", "Inhaber"],
         "anbieter_reihenfolge": ["impressum"],
@@ -537,6 +573,13 @@ async def schritt_5_speichern(request: Request, kennung: str):
         "abstand_1_2": zahl("abstand_1_2", 7, 1, 60),
         "abstand_2_3": zahl("abstand_2_3", 7, 1, 60),
         "signatur": str(formular.get("signatur") or "").strip(),
+        # Probe oder echter Versand (14.08.2026). Bewusst so herum geprueft:
+        # NUR das genaue Wort "echt" oeffnet den Versand an die gefundenen
+        # Firmen, alles andere - auch ein fehlendes Feld oder ein Tippfehler
+        # - bleibt Probe. Ein verlorener Formularwert darf niemals als
+        # "an alle senden" gelesen werden.
+        "versand_modus": ("echt" if str(formular.get("versand_modus") or "").strip()
+                          == "echt" else "test"),
     }
     if not werte["versand_postfach"]:
         entwurf["daten"].update(werte)

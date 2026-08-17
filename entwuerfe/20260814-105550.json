@@ -1,0 +1,78 @@
+{
+ "kennung": "20260814-105550",
+ "angelegt": "2026-08-14T10:55:50",
+ "schritt": 5,
+ "hoechster_schritt": 5,
+ "daten": {
+  "name": "TEST Webdesign Hannover",
+  "sprache": "de",
+  "anzahl_leads": 5,
+  "beschreibung": "Probe des Formulars mit echten Daten. Kein Versand.",
+  "verkaeufer_url": "https://polepositionautomation.de",
+  "absender_email": "email@seo-poleposition.online",
+  "referenz_1": "",
+  "referenz_2": "",
+  "anweisungen": "Ruhig und erklärend. Keine Superlative, keine Ausrufezeichen.",
+  "usp": [
+   {
+    "titel": "Maßgeschneiderte Automations-Infrastrukturen",
+    "erklaerung": "Die Firma entwickelt individuelle Automationslösungen aus einem Guss."
+   },
+   {
+    "titel": "Integration vorhandener Systeme",
+    "erklaerung": "Bestehende IT-Systeme wie CRM und ERP werden integriert, nicht ersetzt."
+   },
+   {
+    "titel": "Hosting und Datenmanagement in Deutschland",
+    "erklaerung": "Daten werden sicher in Deutschland gespeichert, wahlweise auch im Kundenunternehmen."
+   },
+   {
+    "titel": "Compliance mit Datenschutz und Normen",
+    "erklaerung": "Automationen erfüllen Anforderungen wie DSGVO, ISO 27001 und ISO 9001."
+   },
+   {
+    "titel": "Automation-as-a-Service Betreuung",
+    "erklaerung": "Hosting, Management, Monitoring, Updates und Support werden vollumfänglich übernommen."
+   }
+  ],
+  "icp": {
+   "firmografisch": "IT-Dienstleister, IT-Systemhäuser und Webdesign-Agenturen in Deutschland.",
+   "technografisch": "Betreuen eigene Kunden mit IT, Web und Support. Für individuelle\r\nAutomationen fehlen eigene Entwickler oder sie sind ausgelastet.",
+   "verhalten": "Kunden fragen Automationen an, die das eigene Team nicht liefern kann -\r\nund wandern sonst zum Wettbewerb ab.",
+   "entscheider": "Geschäftsführer oder Inhaber."
+  },
+  "ort": "Hannover",
+  "radius_km": 10,
+  "dienste": [
+   "Webdesigner"
+  ],
+  "ohne_ort_mitnehmen": false,
+  "abgewaehlt": [],
+  "firmen_domains": [
+   "sxg-solutions.de",
+   "applikationswerk.de",
+   "media.smart.com",
+   "webdesign-haas.de",
+   "ai-lo.de"
+  ],
+  "kunde_datei": "kunden/test-webdesign-hannover.yaml",
+  "lauf_slug": "test-webdesign-hannover",
+  "lauf_ts": "20260814-132310",
+  "firmen_anzahl": 5,
+  "versand_postfach": "email@seo-poleposition.online",
+  "tageslimit": 20,
+  "zeit_von": "08:00",
+  "zeit_bis": "19:00",
+  "wochentage": [
+   "mo",
+   "di",
+   "mi",
+   "do",
+   "fr"
+  ],
+  "abstand_1_2": 7,
+  "abstand_2_3": 7,
+  "signatur": "Oliver Redschlag\r\nPolePosition Automation\r\n– Geschäftsführer/CEO –"
+ },
+ "geaendert": "2026-08-14T13:26:15"
+}

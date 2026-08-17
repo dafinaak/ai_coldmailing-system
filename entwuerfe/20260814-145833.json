@@ -1,0 +1,124 @@
+{
+ "kennung": "20260814-145833",
+ "angelegt": "2026-08-14T14:58:33",
+ "schritt": 5,
+ "hoechster_schritt": 5,
+ "daten": {
+  "name": "AI_Cold_Mailing",
+  "sprache": "en",
+  "anzahl_leads": 50,
+  "beschreibung": "",
+  "verkaeufer_url": "https://polepositionautomation.de",
+  "absender_email": "email@poleposition-seo.online",
+  "referenz_1": "",
+  "referenz_2": "",
+  "anweisungen": "",
+  "usp": [
+   {
+    "titel": "Maßgeschneiderte Automations-Infrastruktur aus einem Guss",
+    "erklaerung": "Die Firma entwickelt integrierte Automationslösungen statt einzelner Tools."
+   },
+   {
+    "titel": "Integration bestehender IT-Systeme ohne Ersatz",
+    "erklaerung": "Bestehende CRM- und ERP-Systeme werden eingebunden, nicht ersetzt."
+   },
+   {
+    "titel": "Hosting und Datensicherheit in Deutschland",
+    "erklaerung": "Automationen werden auf sicheren Servern mit deutschem Datenschutz gehostet."
+   },
+   {
+    "titel": "Übernahme von Betrieb und Wartung der Automationen",
+    "erklaerung": "Die Firma bietet Automation-as-a-Service inklusive Management und Updates."
+   },
+   {
+    "titel": "Einhaltung von DSGVO und relevanten Zertifizierungen",
+    "erklaerung": "Automationen erfüllen gesetzliche Vorgaben und Zertifizierungsanforderungen."
+   }
+  ],
+  "icp": {
+   "firmografisch": "Unternehmen verschiedener Branchen in Deutschland, meist mittelgroß bis groß.",
+   "technografisch": "Nutzung von CRM-, ERP-Systemen; Interesse an KI-Unterstützung und Automationssoftware.",
+   "verhalten": "Suchen Automationslösungen bei Effizienzverlusten, Kostendruck oder Digitalisierungsvorhaben.",
+   "entscheider": "IT-Leiter, Digitalisierungsbeauftragte, Geschäftsführer oder Prozessverantwortliche."
+  },
+  "ort": "Hannover",
+  "radius_km": 50,
+  "dienste": [
+   "Softwareentwickler/-hersteller"
+  ],
+  "ohne_ort_mitnehmen": false,
+  "abgewaehlt": [],
+  "firmen_domains": [
+   "smarte-ki.de",
+   "itfort.de",
+   "magrathea.eu",
+   "sybit.com",
+   "operativeklarheit.de",
+   "qimia.io",
+   "his.de",
+   "bauleiter-guenther.de",
+   "taifun-software.de",
+   "coders.win",
+   "avsar-te.de",
+   "sencury.com",
+   "jrc-training.com",
+   "kontextwork.de",
+   "compl3te.com",
+   "graitec.de",
+   "atmina.de",
+   "menio.com",
+   "id-on.de",
+   "versdiagnose.info",
+   "fb-research.de",
+   "pdv.de",
+   "io-services.de",
+   "8thsense.de",
+   "netzexpert.com",
+   "applikationswerk.de",
+   "nowak-solutions.de",
+   "lauth-it.de",
+   "tec-connect.eu",
+   "bytediver.com",
+   "colorgate.com",
+   "glasercad.de",
+   "cundh.com",
+   "link-innovation.de",
+   "bitkollegen.de",
+   "smartsteuer.de",
+   "aldebaran.de",
+   "blackberry.qnx.com",
+   "vier.ai",
+   "heinekingmedia.de",
+   "dieaiberater.de",
+   "syscrest.de",
+   "wissenswerft.net",
+   "rgc-manager.de",
+   "ixenso.com",
+   "newcubator.com",
+   "vrtxlabs.com",
+   "ai-lo.de",
+   "isp-insoft.de",
+   "netoptv.de"
+  ],
+  "kunde_datei": "kunden/ai-cold-mailing.yaml",
+  "lauf_slug": "ai-cold-mailing",
+  "lauf_ts": "20260814-145946",
+  "firmen_anzahl": 50,
+  "versand_postfach": "email@poleposition-seo.online",
+  "tageslimit": 20,
+  "zeit_von": "08:00",
+  "zeit_bis": "19:00",
+  "wochentage": [
+   "mo",
+   "di",
+   "mi",
+   "do",
+   "fr"
+  ],
+  "abstand_1_2": 7,
+  "abstand_2_3": 7,
+  "signatur": "",
+  "versand_modus": "test"
+ },
+ "geaendert": "2026-08-14T15:00:09"
+}

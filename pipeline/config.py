@@ -41,6 +41,35 @@ class Kunde:
     # bis der Anbieter-Vergleich die Reihenfolge festgelegt hat). Gueltige
     # Stufennamen prueft pipeline.sourcing.source_leads() mit klarem Fehler.
     anbieter_reihenfolge: list = field(default_factory=list)
+    # Versand-Einstellungen (14.08.2026). Vorher fragte das Formular in
+    # Schritt 5 nach Postfach, Tageslimit, Zeitfenster und Wochentagen -
+    # und KEINE dieser Antworten kam je bei Instantly an: die Kampagne
+    # wurde ohne Absender-Postfach angelegt (konnte also gar nicht
+    # senden), mit fest eingebautem Zeitplan. Die Felder stehen deshalb
+    # jetzt in der Kundendatei und werden bei der Uebergabe mitgegeben.
+    #
+    # Alle optional mit sicheren Vorgaben, damit bestehende Kundendateien
+    # unveraendert weiterladen (gleiches Prinzip wie die Felder darueber).
+    versand_postfach: str = ""      # Absender-Postfach in Instantly (email_list)
+    tageslimit: int = 20            # Mails pro Tag, Kampagnen-Ebene
+    zeit_von: str = "08:00"
+    zeit_bis: str = "19:00"
+    # Kuerzel wie in der Oberflaeche: mo di mi do fr sa so.
+    wochentage: list = field(default_factory=lambda: ["mo", "di", "mi", "do", "fr"])
+    signatur: str = ""
+    # "test": nur an test_empfaenger senden (Vorgabe, siehe
+    # pipeline.__main__._versand_ausfuehren). "echt": an die gefundenen
+    # Empfaenger. Fehlt das Feld, gilt "test" - eine alte Kundendatei darf
+    # durch das blosse Vorhandensein dieses Codes nicht scharf werden.
+    versand_modus: str = "test"
+
+# Wochentag-Kuerzel -> Instantly-Tagesnummer (0=Sonntag ... 6=Samstag,
+# live verifiziert, siehe pipeline.senders.instantly).
+WOCHENTAG_NUMMER = {"so": "0", "mo": "1", "di": "2", "mi": "3",
+                    "do": "4", "fr": "5", "sa": "6"}
+
+VERSAND_MODI = ("test", "echt")
+
 
 def load_kunde(path) -> Kunde:
     with open(path, encoding="utf-8") as f:
@@ -76,13 +105,41 @@ def load_kunde(path) -> Kunde:
                 f"sperrliste in {path} muss, wenn vorhanden, eine Liste sein, "
                 f"gefunden: {daten['sperrliste']!r}")
 
+    modus = str(daten.get("versand_modus") or "test").strip().lower()
+    if modus not in VERSAND_MODI:
+        raise ValueError(
+            f"versand_modus in {path} muss '{VERSAND_MODI[0]}' oder "
+            f"'{VERSAND_MODI[1]}' sein, gefunden: {daten.get('versand_modus')!r}. "
+            f"'test' schickt nur an test_empfaenger, 'echt' an die gefundenen "
+            f"Empfaenger.")
+
+    tage = daten.get("wochentage")
+    if tage is not None:
+        if not isinstance(tage, list) or not tage:
+            raise ValueError(
+                f"wochentage in {path} muss, wenn vorhanden, eine nicht-leere "
+                f"Liste sein, gefunden: {tage!r}")
+        unbekannt = [t for t in tage if str(t).strip().lower() not in WOCHENTAG_NUMMER]
+        if unbekannt:
+            raise ValueError(
+                f"wochentage in {path} kennt nur {', '.join(WOCHENTAG_NUMMER)} - "
+                f"unbekannt: {unbekannt!r}")
+
     return Kunde(**{k: daten[k] for k in PFLICHTFELDER},
                  sperrliste=daten.get("sperrliste") or [],
                  webseite=daten.get("webseite") or "",
                  maps_suche=daten.get("maps_suche") or "",
                  kontakt_rollen=daten.get("kontakt_rollen") or [],
                  max_kontakte_pro_firma=daten.get("max_kontakte_pro_firma") or 1,
-                 anbieter_reihenfolge=daten.get("anbieter_reihenfolge") or [])
+                 anbieter_reihenfolge=daten.get("anbieter_reihenfolge") or [],
+                 versand_postfach=daten.get("versand_postfach") or "",
+                 tageslimit=int(daten.get("tageslimit") or 20),
+                 zeit_von=str(daten.get("zeit_von") or "08:00"),
+                 zeit_bis=str(daten.get("zeit_bis") or "19:00"),
+                 wochentage=[str(t).strip().lower() for t in (tage or
+                             ["mo", "di", "mi", "do", "fr"])],
+                 signatur=daten.get("signatur") or "",
+                 versand_modus=modus)
 
 def lade_globale_sperrlisten_eintraege(daten_dir) -> list[dict]:
     """Liest alte Zeichenketten und neue strukturierte Sperrlisten-Eintraege."""

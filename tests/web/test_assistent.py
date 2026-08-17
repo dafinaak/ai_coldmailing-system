@@ -77,7 +77,7 @@ def test_seite_verlangt_anmeldung(client):
 def test_kampagnenseite_fuehrt_zum_assistenten(angemeldet):
     seite = angemeldet.get("/kampagnen").text
     assert 'href="/assistent"' in seite
-    assert "E-Mails schreiben lassen" in seite
+    assert "Add" in seite
 
 
 def test_start_legt_entwurf_an_und_zeigt_schritt_1(angemeldet, daten_dir):

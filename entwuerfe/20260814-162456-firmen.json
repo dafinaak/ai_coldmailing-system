@@ -1,0 +1,605 @@
+[
+ {
+  "name": "IT-Dienstleister Hannover - Ihre Helden GmbH",
+  "website": "https://www.ihre-helden.de/it-dienstleister-hannover",
+  "domain": "ihre-helden.de",
+  "address": "Kopernikusstraße 14, 30167 Nord, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Unternehmensberater",
+   "Computerservice"
+  ],
+  "plz": "30167",
+  "telefon": "+49 511 64726900",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Unternehmensberatung für EDV-Systeme GUTERMUTH",
+  "website": "https://www.gutermuth.de/",
+  "domain": "gutermuth.de",
+  "address": "Groß-Buchholzer Straße 30B, 30655 Hannover-Buchholz-Kleefeld, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Unternehmensberater",
+   "Computerreparaturdienst",
+   "Computersicherheitsdienst",
+   "Computerservice",
+   "Computergeschäft",
+   "Computersupport und -dienste",
+   "Computerschule",
+   "Datenrettungsdienst",
+   "Webdesigner"
+  ],
+  "plz": "30655",
+  "telefon": "+49 511 22032793",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "infinitas GmbH",
+  "website": "http://www.infinitas.de/",
+  "domain": "infinitas.de",
+  "address": "Berliner Allee 9-11, 30175 Hannover, Deutschland",
+  "categories": [
+   "Computersupport und -dienste",
+   "Unternehmensberater"
+  ],
+  "plz": "30175",
+  "telefon": "+49 511 3365150",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "ecoservice Odoo Dienstleister",
+  "website": "https://www.ecoservice.de/",
+  "domain": "ecoservice.de",
+  "address": "Karl-Kellner-Straße 105J, 30853 Langenhagen, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Unternehmensberater",
+   "Softwareentwickler/-hersteller",
+   "Schulungszentrum"
+  ],
+  "plz": "30853",
+  "telefon": "+49 511 51566740",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Smart IT Innovation GmbH",
+  "website": "https://www.operativeklarheit.de/",
+  "domain": "operativeklarheit.de",
+  "address": "Georgstraße 38, 30159 Hannover, Deutschland",
+  "categories": [
+   "Unternehmensberater",
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 51512941",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "flinked - KI driven IT",
+  "website": "https://www.flinked.de/",
+  "domain": "flinked.de",
+  "address": "Freundallee 23, 30173 Hannover-Südstadt-Bult, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Unternehmensberater"
+  ],
+  "plz": "30173",
+  "telefon": "+49 511 99979245",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Helden Consulting GmbH",
+  "website": "https://www.heldenconsulting.com/",
+  "domain": "heldenconsulting.com",
+  "address": "Kopernikusstraße 14, 30167 Nord, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Unternehmensberater"
+  ],
+  "plz": "30167",
+  "telefon": "+49 511 98247047",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "IMS Individual Medical Services",
+  "website": "https://www.individualmedical.de/",
+  "domain": "individualmedical.de",
+  "address": "Calenberger Esplanade 1, 30169 Hannover, Deutschland",
+  "categories": [
+   "Schulungszentrum",
+   "Unternehmensberater",
+   "Forschungsinstitut"
+  ],
+  "plz": "30169",
+  "telefon": "",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Einfach Digital GmbH",
+  "website": "https://einfach-digital.de/",
+  "domain": "einfach-digital.de",
+  "address": "An d. Strangriede 54a, 30167 Nord, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Unternehmensberater",
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30167",
+  "telefon": "+49 511 93688222",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "DeinConsultant GmbH",
+  "website": "https://deinconsultant.de/",
+  "domain": "deinconsultant.de",
+  "address": "Vahrenwalder Str. 213, 30165 Hannover-Vahrenwald-List, Deutschland",
+  "categories": [
+   "Unternehmensberater",
+   "E-Commerce-Dienst",
+   "Softwareentwickler/-hersteller",
+   "Webdesigner"
+  ],
+  "plz": "30165",
+  "telefon": "+49 511 51518510",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "COPERTE",
+  "website": "https://coperte.de/",
+  "domain": "coperte.de",
+  "address": "Kopernikusstraße 14, 30167 Nord, Deutschland",
+  "categories": [
+   "Unternehmensberater",
+   "Werbeagentur",
+   "Online-Marketing-Unternehmen"
+  ],
+  "plz": "30167",
+  "telefon": "+49 511 51524160",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "interev GmbH",
+  "website": "https://www.interev.de/",
+  "domain": "interev.de",
+  "address": "Robert-Koch-Straße 55, 30853 Langenhagen, Deutschland",
+  "categories": [
+   "Rechtsdienstleistungen",
+   "Unternehmensberater",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30853",
+  "telefon": "+49 511 89798410",
+  "vorhandene_email": "info@interev.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps",
+   "alte_liste"
+  ],
+  "quelle": "maps+alte_liste"
+ },
+ {
+  "name": "LOSY GmbH - Software Engineering",
+  "website": "http://www.losy-gmbh.de/",
+  "domain": "losy-gmbh.de",
+  "address": "Constantinstraße 74, 30177 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Unternehmensberater",
+   "Softwareentwickler/-hersteller",
+   "Computerservice",
+   "Webdesigner"
+  ],
+  "plz": "30177",
+  "telefon": "+49 511 22005122",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Nexxus Business & IT.Consulting GbR (aka. NEXXCON24)",
+  "website": "https://www.linkedin.com/in/nexxcon/",
+  "domain": "linkedin.com",
+  "address": "Wülferoder Str. 43, 30880 Laatzen, Deutschland",
+  "categories": [
+   "Unternehmensberater",
+   "Bauberater",
+   "Business-Banking-Service",
+   "Business-Development-Beratung",
+   "Business-Networking-Unternehmen",
+   "IT-Berater",
+   "Life Coach",
+   "Immobilienagentur",
+   "Fotovoltaik-Solarstromanlage",
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30880",
+  "telefon": "+49 5176 9200915",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Bankberatung Organisations- und IT-Beratung für Banken AG",
+  "website": "http://www.bankberatung.com/",
+  "domain": "bankberatung.com",
+  "address": "Karl-Wiechert-Allee 1, 30625 Hannover-Buchholz-Kleefeld, Deutschland",
+  "categories": [
+   "Unternehmensberater"
+  ],
+  "plz": "30625",
+  "telefon": "+49 511 8986680",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Capgemini",
+  "website": "https://www.capgemini.com/de-de/",
+  "domain": "capgemini.com",
+  "address": "Podbielskistraße 386, 30659 Hannover, Deutschland",
+  "categories": [
+   "Geschäftsstelle",
+   "Unternehmensberater",
+   "IT-Berater",
+   "Berater"
+  ],
+  "plz": "30659",
+  "telefon": "+49 511 676920",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Althammer & Kill GmbH & Co. KG",
+  "website": "https://www.althammer-kill.de/",
+  "domain": "althammer-kill.de",
+  "address": "Roscherstraße 7, 30161 Hannover, Deutschland",
+  "categories": [
+   "Unternehmensberater",
+   "Datenrettungsdienst",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30161",
+  "telefon": "+49 511 3306030",
+  "vorhandene_email": "info@althammer-kill.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps",
+   "alte_liste"
+  ],
+  "quelle": "maps+alte_liste"
+ },
+ {
+  "name": "SXG Design & Solutions",
+  "website": "https://www.sxg-solutions.de/",
+  "domain": "sxg-solutions.de",
+  "address": "Herrenstraße, 30159 Hannover, Deutschland",
+  "categories": [
+   "Webdesigner",
+   "Unternehmensberater"
+  ],
+  "plz": "30159",
+  "telefon": "+49 162 1993879",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "SK Consult Hannover GmbH",
+  "website": "https://www.skhoch3-consult.de/",
+  "domain": "skhoch3-consult.de",
+  "address": "Podbielskistraße 166, 30177 Hannover, Deutschland",
+  "categories": [
+   "Unternehmensberater",
+   "IT-Berater",
+   "Berater",
+   "Wirtschaftsberater",
+   "Finanzberater",
+   "Personalberatung"
+  ],
+  "plz": "30177",
+  "telefon": "+49 511 283510",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Dr. Bittner Group GmbH",
+  "website": "https://www.drbg.de/",
+  "domain": "drbg.de",
+  "address": "Podbielskistraße 386, 30659 Hannover, Deutschland",
+  "categories": [
+   "Unternehmensberater",
+   "IT-Berater",
+   "Computersicherheitsdienst",
+   "Berater"
+  ],
+  "plz": "30659",
+  "telefon": "+49 800 88446688",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Digital Mindset GmbH",
+  "website": "https://www.digitalmindset.de/",
+  "domain": "digitalmindset.de",
+  "address": "Plathnerstraße 4B, 30175 Hannover, Deutschland",
+  "categories": [
+   "Unternehmensberater",
+   "IT-Berater",
+   "Personalberatung"
+  ],
+  "plz": "30175",
+  "telefon": "+49 511 80908888",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Ventr Gruppe | Strategie-Beratung, Technology & Company Builder",
+  "website": "https://ventr.de/",
+  "domain": "ventr.de",
+  "address": "Kleine Düwelstraße 21, 30171 Hannover, Deutschland",
+  "categories": [
+   "Unternehmensberater",
+   "IT-Berater",
+   "Holdinggesellschaft"
+  ],
+  "plz": "30171",
+  "telefon": "+49 511 91160951",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Lomavis | Social Media Tools",
+  "website": "https://lomavis.com/",
+  "domain": "lomavis.com",
+  "address": "Walderseestraße 7, 30163 Hannover, Deutschland",
+  "categories": [
+   "Online-Marketing-Unternehmen",
+   "Werbeagentur",
+   "Unternehmensberater",
+   "Business-to-Business-Dienst",
+   "Designagentur",
+   "Grafikdesigner",
+   "Marketingbüro",
+   "Marketingberater",
+   "Softwareentwickler/-hersteller",
+   "Webdesigner"
+  ],
+  "plz": "30163",
+  "telefon": "+49 511 91160080",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "JMZ Business Optimierung",
+  "website": "https://jmz-consulting.de/",
+  "domain": "jmz-consulting.de",
+  "address": "Rotenburger Str. 20, 30659 Hannover, Deutschland",
+  "categories": [
+   "Unternehmensberater"
+  ],
+  "plz": "30659",
+  "telefon": "",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Zühlke Engineering GmbH",
+  "website": "https://www.zuehlke.com/de",
+  "domain": "zuehlke.com",
+  "address": "Design Offices, Philipsbornstraße 2, 30165 Hannover, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Unternehmensberater",
+   "Softwareentwickler/-hersteller",
+   "office=it"
+  ],
+  "plz": "30165",
+  "telefon": "+49 511 9368620",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps",
+   "overpass"
+  ],
+  "quelle": "maps+overpass"
+ },
+ {
+  "name": "All for One OSC BX GmbH",
+  "website": "http://www.osc-bx.de/",
+  "domain": "osc-bx.de",
+  "address": "Werftstraße 15, 30163 Hannover-Vahrenwald-List, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Unternehmensberater",
+   "Anbieter von Sicherheitssystemen",
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30163",
+  "telefon": "+49 511 51516750",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "3rd opinion GmbH",
+  "website": "http://www.3rd-opinion.de/",
+  "domain": "3rd-opinion.de",
+  "address": "Martinstraße 7a, 30659 Hannover-Bothfeld-Vahrenheide, Deutschland",
+  "categories": [
+   "Softwareentwickler/-hersteller",
+   "Unternehmensberater"
+  ],
+  "plz": "30659",
+  "telefon": "+49 511 8993874",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "sympacon TS GmbH",
+  "website": "http://www.sympacon-ts.de/",
+  "domain": "sympacon-ts.de",
+  "address": "Göttinger Ch 115, 30459 Hannover-Ricklingen, Deutschland",
+  "categories": [
+   "Berater",
+   "Unternehmensberater",
+   "Technischer Berater"
+  ],
+  "plz": "30459",
+  "telefon": "+49 511 47322123",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "DSBtech Datenschutz GmbH",
+  "website": "http://dsbtech.de/",
+  "domain": "dsbtech.de",
+  "address": "Hamburger Allee 61, 30161 Hannover, Deutschland",
+  "categories": [
+   "Unternehmensberater"
+  ],
+  "plz": "30161",
+  "telefon": "+49 511 51527412",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ }
+]

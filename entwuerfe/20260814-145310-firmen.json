@@ -1,0 +1,1001 @@
+[
+ {
+  "name": "bundesweit.digital GmbH",
+  "website": "http://bundesweit.digital",
+  "domain": "bundesweit.digital",
+  "address": "Rolandstr. 2-3, 30161 Hannover (Vahrenwald)",
+  "categories": [
+   "IT-Dienstleistungen"
+  ],
+  "plz": "30161",
+  "telefon": "+4951112367321",
+  "vorhandene_email": "info@bundesweit.digital",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten"
+  ],
+  "quelle": "gelbe_seiten"
+ },
+ {
+  "name": "HanovaTech GmbH",
+  "website": "https://hanovatech.de",
+  "domain": "hanovatech.de",
+  "address": "Spielhagenstr. 25, 30171 Hannover (Südstadt)",
+  "categories": [
+   "IT-Dienstleistungen",
+   "Computerservice",
+   "IT-Berater",
+   "Computerreparaturdienst",
+   "Computersupport und -dienste",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30171",
+  "telefon": "+4951151512490",
+  "vorhandene_email": "info@hanovatech.de",
+  "gf_name_liste": "Hashem Mahmoud; Henry Akmann",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps",
+   "alte_liste"
+  ],
+  "quelle": "gelbe_seiten+maps+alte_liste"
+ },
+ {
+  "name": "Hendrik Schaper Schaper Software",
+  "website": "http://www.schaper-software.de",
+  "domain": "schaper-software.de",
+  "address": "Bandelstr. 28, 30171 Hannover (Südstadt)",
+  "categories": [
+   "IT-Dienstleistungen"
+  ],
+  "plz": "30171",
+  "telefon": "+4951165395466",
+  "vorhandene_email": "info@schaper-software.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten"
+  ],
+  "quelle": "gelbe_seiten"
+ },
+ {
+  "name": "Leibniz Universität IT Services",
+  "website": "http://www.luis.uni-hannover.de",
+  "domain": "luis.uni-hannover.de",
+  "address": "Schloßwender Str. 5, 30159 Hannover (Nordstadt)",
+  "categories": [
+   "IT-Dienstleistungen",
+   "Universität"
+  ],
+  "plz": "30159",
+  "telefon": "+495117622883",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps"
+  ],
+  "quelle": "gelbe_seiten+maps"
+ },
+ {
+  "name": "Quant-X Security & Coding GmbH",
+  "website": "http://www.quant-x-sec.com",
+  "domain": "quant-x-sec.com",
+  "address": "Engelbosteler Damm 15, 30167 Hannover (Nordstadt)",
+  "categories": [
+   "IT-Dienstleistungen",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30167",
+  "telefon": "+4951165512771",
+  "vorhandene_email": "xb@quant-x-sec.com",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "alte_liste"
+  ],
+  "quelle": "gelbe_seiten+alte_liste"
+ },
+ {
+  "name": "TORUTEC GmbH",
+  "website": "https://torutec.com/it-dienstleister/hannover/",
+  "domain": "torutec.com",
+  "address": "Nikolaistr. 14, 30159 Hannover (Mitte)",
+  "categories": [
+   "IT-Dienstleistungen",
+   "IT-Berater",
+   "Computerservice",
+   "Computersupport und -dienste",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30159",
+  "telefon": "+49511592910",
+  "vorhandene_email": "kontakt@torutec.com",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps",
+   "alte_liste"
+  ],
+  "quelle": "gelbe_seiten+maps+alte_liste"
+ },
+ {
+  "name": "BFW Kommunikationssysteme GmbH",
+  "website": "http://www.bfwkom.de",
+  "domain": "bfwkom.de",
+  "address": "Berliner Allee 41, 30855 Langenhagen (Godshorn)",
+  "categories": [
+   "Telekommunikationsanlagen und -geräte",
+   "IT-Dienstleistungen",
+   "Kommunikationstechnik",
+   "Netzwerktechnik",
+   "Telefonanlagen",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30855",
+  "telefon": "+49511786940",
+  "vorhandene_email": "info@bfwkom.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "alte_liste"
+  ],
+  "quelle": "gelbe_seiten+alte_liste"
+ },
+ {
+  "name": "Viorado GmbH",
+  "website": "http://www.viorado.de",
+  "domain": "viorado.de",
+  "address": "Bischofsholer Damm 20, 30173 Hannover (Bult)",
+  "categories": [
+   "IT-Dienstleistungen"
+  ],
+  "plz": "30173",
+  "telefon": "+4917657793148",
+  "vorhandene_email": "info@viorado.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten"
+  ],
+  "quelle": "gelbe_seiten"
+ },
+ {
+  "name": "BitKollegen GmbH",
+  "website": "https://bitkollegen.de",
+  "domain": "bitkollegen.de",
+  "address": "Drostestr. 16, 30161 Hannover (List)",
+  "categories": [
+   "IT-Dienstleistungen",
+   "IT-Berater",
+   "Softwareentwickler/-hersteller",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30161",
+  "telefon": "+4951151532063",
+  "vorhandene_email": "info@bitkollegen.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps",
+   "alte_liste"
+  ],
+  "quelle": "gelbe_seiten+maps+alte_liste"
+ },
+ {
+  "name": "Björn Lilleike incremental+",
+  "website": "http://incremental.plus",
+  "domain": "incremental.plus",
+  "address": "Erna-Blencke-Weg 6, 30559 Hannover (Kirchrode)",
+  "categories": [
+   "IT-Dienstleistungen"
+  ],
+  "plz": "30559",
+  "telefon": "+495116429089",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten"
+  ],
+  "quelle": "gelbe_seiten"
+ },
+ {
+  "name": "Atelios Communication Systems GmbH",
+  "website": "http://www.atelios.de",
+  "domain": "atelios.de",
+  "address": "Lister Damm 1, 30163 Hannover (List)",
+  "categories": [
+   "IT-Dienstleistungen"
+  ],
+  "plz": "30163",
+  "telefon": "+495116555580",
+  "vorhandene_email": "info@atelios.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten"
+  ],
+  "quelle": "gelbe_seiten"
+ },
+ {
+  "name": "Supplyo GmbH",
+  "website": "http://supplyo.de",
+  "domain": "supplyo.de",
+  "address": "Groß-Buchholzer Str. 11, 30655 Hannover (Groß Buchholz)",
+  "categories": [
+   "IT-Dienstleistungen"
+  ],
+  "plz": "30655",
+  "telefon": "+4951195573346",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten"
+  ],
+  "quelle": "gelbe_seiten"
+ },
+ {
+  "name": "CSE GmbH",
+  "website": "http://www.cse-it.net",
+  "domain": "cse-it.net",
+  "address": "Alter Flughafen 14, 30179 Hannover (Vahrenheide)",
+  "categories": [
+   "IT-Dienstleistungen"
+  ],
+  "plz": "30179",
+  "telefon": "+495119368680",
+  "vorhandene_email": "info@cse-it.net",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten"
+  ],
+  "quelle": "gelbe_seiten"
+ },
+ {
+  "name": "Daniel-Arnd Schauerte EDV-Service",
+  "website": "http://schauerte-edv-service.business.site",
+  "domain": "schauerte-edv-service.business.site",
+  "address": "Matzdorfer Weg 6, 30966 Hemmingen (Westerfeld)",
+  "categories": [
+   "IT-Dienstleistungen"
+  ],
+  "plz": "30966",
+  "telefon": "+4951137360100",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten"
+  ],
+  "quelle": "gelbe_seiten"
+ },
+ {
+  "name": "Hansa Datentechnik UG (haftungsbeschränkt)",
+  "website": "http://mollat.de",
+  "domain": "mollat.de",
+  "address": "Golternstr. 35A, 30455 Hannover (Davenstedt)",
+  "categories": [
+   "IT-Dienstleistungen"
+  ],
+  "plz": "30455",
+  "telefon": "+495115152600",
+  "vorhandene_email": "information@untitled.tld",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten"
+  ],
+  "quelle": "gelbe_seiten"
+ },
+ {
+  "name": "FERCHAU GmbH",
+  "website": "https://www.ferchau.com/de/de/ueber-uns/niederlassungen/hannover/hannover-contract-571",
+  "domain": "ferchau.com",
+  "address": "Georgsplatz 10, 30159 Hannover",
+  "categories": [
+   "Arbeitsagenturen",
+   "Finanzdienstleistungen",
+   "IT-Dienstleistungen",
+   "Ingenieurbüros",
+   "Jobvermittlung",
+   "Maschinenbau",
+   "Personalvermittlung"
+  ],
+  "plz": "30159",
+  "telefon": "+495113539710",
+  "vorhandene_email": "h-contract@ferchau.com",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten"
+  ],
+  "quelle": "gelbe_seiten"
+ },
+ {
+  "name": "Followerhit",
+  "website": "https://followerhit.de/",
+  "domain": "followerhit.de",
+  "address": "Kampsriede 6a, 30659 Hannover (Lahe)",
+  "categories": [
+   "IT-Dienstleistungen"
+  ],
+  "plz": "30659",
+  "telefon": "+4951151532770",
+  "vorhandene_email": "info@followerhit.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten"
+  ],
+  "quelle": "gelbe_seiten"
+ },
+ {
+  "name": "Mystical-Host",
+  "website": "https://www.mystical-host.de",
+  "domain": "mystical-host.de",
+  "address": "Theodor-Heuss-Ring 13, 30627 Hannover",
+  "categories": [
+   "IT-Dienstleistungen"
+  ],
+  "plz": "30627",
+  "telefon": "+4951151512960",
+  "vorhandene_email": "info@mystical-host.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten"
+  ],
+  "quelle": "gelbe_seiten"
+ },
+ {
+  "name": "Pc-Service-Hannover-Davenstedt-Mickus Schrörder",
+  "website": "http://pcservicehannoverdavenstedtmickusschrörder.de",
+  "domain": "pcservicehannoverdavenstedtmickusschrörder.de",
+  "address": "Kruschhof 1, 30455 Hannover",
+  "categories": [
+   "IT-Dienstleistungen"
+  ],
+  "plz": "30455",
+  "telefon": "+4915252770692",
+  "vorhandene_email": "pcservicehannoverdavenstedt@gmail.com",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten"
+  ],
+  "quelle": "gelbe_seiten"
+ },
+ {
+  "name": "Tutao GmbH",
+  "website": "http://www.tutanota.com",
+  "domain": "tutanota.com",
+  "address": "Deisterstr. 17A, 30449 Hannover (Linden-Süd)",
+  "categories": [
+   "Software",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30449",
+  "telefon": "+495112028010",
+  "vorhandene_email": "hello@tutao.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "alte_liste"
+  ],
+  "quelle": "gelbe_seiten+alte_liste"
+ },
+ {
+  "name": "Excel/VBA Programmierung & Support %P002  Jörg Scheibe",
+  "website": "http://www.office-solution.de",
+  "domain": "office-solution.de",
+  "address": "Nordfeldstr. 16A, 30459 Hannover (Ricklingen)",
+  "categories": [
+   "Software",
+   "Softwareentwickler/-hersteller",
+   "IT-Berater"
+  ],
+  "plz": "30459",
+  "telefon": "+4951120308390",
+  "vorhandene_email": "Excel-Info@office-solution.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps"
+  ],
+  "quelle": "gelbe_seiten+maps"
+ },
+ {
+  "name": "InnoMaticServices UG",
+  "website": "http://Www.InnoMaticServices.de",
+  "domain": "innomaticservices.de",
+  "address": "Weberstr. 2, 30916 Isernhagen (Kirchhorst)",
+  "categories": [
+   "IT-Dienstleistungen"
+  ],
+  "plz": "30916",
+  "telefon": "+4951151525281",
+  "vorhandene_email": "InnoMaticServices@aol.com",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten"
+  ],
+  "quelle": "gelbe_seiten"
+ },
+ {
+  "name": "Hellberg EDV-Beratung",
+  "website": "http://www.drhellberg.de",
+  "domain": "drhellberg.de",
+  "address": "Sonnenweg 7, 30171 Hannover (Südstadt)",
+  "categories": [
+   "Informationstechnologie",
+   "IT-Berater"
+  ],
+  "plz": "30171",
+  "telefon": "+495112882590",
+  "vorhandene_email": "info@drhellberg.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps"
+  ],
+  "quelle": "gelbe_seiten+maps"
+ },
+ {
+  "name": "IT-Hilfe Rusche & Osman GbR",
+  "website": "http://www.ithilfe-ro.de",
+  "domain": "ithilfe-ro.de",
+  "address": "Hans-Böcker-Allee 20, 30173 Hannover",
+  "categories": [
+   "IT-Beratung",
+   "IT-Berater",
+   "Computernetzwerk-Service",
+   "Computerreparaturdienst",
+   "Computerservice",
+   "Computersupport und -dienste"
+  ],
+  "plz": "30173",
+  "telefon": "+4951151544707",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps"
+  ],
+  "quelle": "gelbe_seiten+maps"
+ },
+ {
+  "name": "kommunity GmbH & Co. KG mac+net solutions, IT-Dienstleistung",
+  "website": "http://www.kommunity.net",
+  "domain": "kommunity.net",
+  "address": "Goseriede 4, 30159 Hannover (Mitte)",
+  "categories": [
+   "Computer und Zubehör",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30159",
+  "telefon": "+495118072580",
+  "vorhandene_email": "info@kommunity.net",
+  "gf_name_liste": "Tom Müller-Kortkamp",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "alte_liste"
+  ],
+  "quelle": "gelbe_seiten+alte_liste"
+ },
+ {
+  "name": "Synedat Group GmbH",
+  "website": "https://www.synedat.com",
+  "domain": "synedat.com",
+  "address": "Philipsbornstr. 2, 30165 Hannover",
+  "categories": [
+   "IT-Beratung",
+   "Softwareentwickler/-hersteller",
+   "IT-Berater",
+   "Computerservice",
+   "Computersupport und -dienste",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30165",
+  "telefon": "+49511546850",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps",
+   "alte_liste"
+  ],
+  "quelle": "gelbe_seiten+maps+alte_liste"
+ },
+ {
+  "name": "Basement Software GmbH",
+  "website": "http://www.basement.de",
+  "domain": "basement.de",
+  "address": "Tiergartenstr. 158, 30559 Hannover (Kirchrode)",
+  "categories": [
+   "Software"
+  ],
+  "plz": "30559",
+  "telefon": "+495119525932",
+  "vorhandene_email": "mail@basement.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten"
+  ],
+  "quelle": "gelbe_seiten"
+ },
+ {
+  "name": "TK Technologies GmbH",
+  "website": "http://www.tk-technologies.de",
+  "domain": "tk-technologies.de",
+  "address": "Mailänder Str. 2, 30539 Hannover (Mittelfeld)",
+  "categories": [
+   "Informationstechnologie",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30539",
+  "telefon": "+4951159097830",
+  "vorhandene_email": "info@tk-technologies.de",
+  "gf_name_liste": "Jens Krieger",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "alte_liste"
+  ],
+  "quelle": "gelbe_seiten+alte_liste"
+ },
+ {
+  "name": "EXT IT GmbH",
+  "website": "https://www.ext-it.tech",
+  "domain": "ext-it.tech",
+  "address": "Vahrenwalder Str. 271, 30179 Hannover",
+  "categories": [
+   "Berufsbildende Schulen",
+   "Computer und Zubehör",
+   "Computer-Dienstleistungen",
+   "Datenerfassung",
+   "IT-Beratung",
+   "IT-Berater",
+   "Computernetzwerk-Service",
+   "Computerservice",
+   "Computersupport und -dienste",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30179",
+  "telefon": "+4951136056650",
+  "vorhandene_email": "info@ext-it.tech",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps",
+   "alte_liste"
+  ],
+  "quelle": "gelbe_seiten+maps+alte_liste"
+ },
+ {
+  "name": "iMbu On-Demand IT Solutions GmbH",
+  "website": "http://www.i-mbu.com",
+  "domain": "i-mbu.com",
+  "address": "Sokelantstr. 23, 30165 Hannover (Hainholz)",
+  "categories": [
+   "Software",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30165",
+  "telefon": "+4951194010798",
+  "vorhandene_email": "info@i-mbu.com",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "alte_liste"
+  ],
+  "quelle": "gelbe_seiten+alte_liste"
+ },
+ {
+  "name": "SRT GmbH",
+  "website": "http://www.bsse.eu",
+  "domain": "bsse.eu",
+  "address": "Hans-Böckler-Allee 20, 30173 Hannover (Bult)",
+  "categories": [
+   "Software"
+  ],
+  "plz": "30173",
+  "telefon": "+4951151549500",
+  "vorhandene_email": "info@srtgmbh.com",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten"
+  ],
+  "quelle": "gelbe_seiten"
+ },
+ {
+  "name": "TASTEONE AV- & IT-Solutions GmbH",
+  "website": "https://www.tasteone.eu",
+  "domain": "tasteone.eu",
+  "address": "Hohenzollernstr. 13, 30161 Hannover (Oststadt)",
+  "categories": [
+   "Mediengestaltung und -entwicklung",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30161",
+  "telefon": "+4951195733158",
+  "vorhandene_email": "hannover@tasteone.eu",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "alte_liste"
+  ],
+  "quelle": "gelbe_seiten+alte_liste"
+ },
+ {
+  "name": "Grafex",
+  "website": "http://www.4dview.de",
+  "domain": "4dview.de",
+  "address": "Ziegeleistr. 63, 30855 Langenhagen (Godshorn)",
+  "categories": [
+   "Software"
+  ],
+  "plz": "30855",
+  "telefon": "+49511780570",
+  "vorhandene_email": "info@grafex.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten"
+  ],
+  "quelle": "gelbe_seiten"
+ },
+ {
+  "name": "Milsch Michael",
+  "website": "http://www.milsch.de",
+  "domain": "milsch.de",
+  "address": "Beekestr. 103, 30459 Hannover (Ricklingen)",
+  "categories": [
+   "Internetservice"
+  ],
+  "plz": "30459",
+  "telefon": "+495117248703",
+  "vorhandene_email": "michael@milsch.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten"
+  ],
+  "quelle": "gelbe_seiten"
+ },
+ {
+  "name": "Sorglos Marketing",
+  "website": "https://sorglos-marketing.de",
+  "domain": "sorglos-marketing.de",
+  "address": "Kleestr. 3, 30625 Hannover (Kleefeld)",
+  "categories": [
+   "Webdesign"
+  ],
+  "plz": "30625",
+  "telefon": "+4951195733220",
+  "vorhandene_email": "support@sorglos-marketing.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten"
+  ],
+  "quelle": "gelbe_seiten"
+ },
+ {
+  "name": "Bublitz Telekommunikation Telefonanlagen & Service",
+  "website": "http://www.mbublitz.de",
+  "domain": "mbublitz.de",
+  "address": "Herforder Str. 24, 30459 Hannover (Oberricklingen)",
+  "categories": [
+   "Telekommunikationsunternehmen",
+   "Telekommunikationsanlagen und -geräte"
+  ],
+  "plz": "30459",
+  "telefon": "+4951141089691",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten"
+  ],
+  "quelle": "gelbe_seiten"
+ },
+ {
+  "name": "mod IT Services GmbH",
+  "website": "http://www.it-mod.de",
+  "domain": "it-mod.de",
+  "address": "Karlsruher Str. 2C, 30519 Hannover (Mittelfeld)",
+  "categories": [
+   "Computer und Zubehör",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30519",
+  "telefon": "+49511902850",
+  "vorhandene_email": "info@it-mod.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "alte_liste"
+  ],
+  "quelle": "gelbe_seiten+alte_liste"
+ },
+ {
+  "name": "Fujitsu Technology Solutions GmbH",
+  "website": "http://www.fujitsu.com",
+  "domain": "fujitsu.com",
+  "address": "Hildesheimer Str. 25, 30880 Laatzen (Alt-Laatzen)",
+  "categories": [
+   "Computer und Zubehör",
+   "IT-Berater",
+   "Softwareentwickler/-hersteller"
+  ],
+  "plz": "30880",
+  "telefon": "+4951184890",
+  "vorhandene_email": "Datenschutzbeauftragter@ts.fujitsu.com",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps"
+  ],
+  "quelle": "gelbe_seiten+maps"
+ },
+ {
+  "name": "Spirgatis & Company Management Support GmbH",
+  "website": "http://www.spirgatis-ms.com",
+  "domain": "spirgatis-ms.com",
+  "address": "Podbielskistr. 333, 30659 Hannover (Bothfeld)",
+  "categories": [
+   "Unternehmensberatung"
+  ],
+  "plz": "30659",
+  "telefon": "+495115412320",
+  "vorhandene_email": "info@spirgatis-ms.com",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten"
+  ],
+  "quelle": "gelbe_seiten"
+ },
+ {
+  "name": "codecivil Dr. Marco Kühnel ICT Services",
+  "website": "http://www.codecivil.de",
+  "domain": "codecivil.de",
+  "address": "Vechteweg 4, 30539 Hannover",
+  "categories": [
+   "Webdesign",
+   "IT-Berater"
+  ],
+  "plz": "30539",
+  "telefon": "+495114106738",
+  "vorhandene_email": "kuehnel@codecivil.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps"
+  ],
+  "quelle": "gelbe_seiten+maps"
+ },
+ {
+  "name": "Randstad Hannover",
+  "website": "https://www.randstad.de/standorte/randstad-hannover_3541/",
+  "domain": "randstad.de",
+  "address": "Lister Meile 50, 30161 Hannover",
+  "categories": [
+   "Personalvermittlung",
+   "Wirtschaftsberatung",
+   "Arbeitsagenturen",
+   "Arbeitsvermittlung",
+   "Leihpersonal"
+  ],
+  "plz": "30161",
+  "telefon": "+495112287770",
+  "vorhandene_email": "nl-030@randstad.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten"
+  ],
+  "quelle": "gelbe_seiten"
+ },
+ {
+  "name": "HannoMax GmbH",
+  "website": "https://www.hannomax.de",
+  "domain": "hannomax.de",
+  "address": "Bürgermeister Fink Str. 45, 30169 Hannover (Südstadt)",
+  "categories": [
+   "Softwareentwicklung"
+  ],
+  "plz": "30169",
+  "telefon": "+4951121940274",
+  "vorhandene_email": "info@hannomax.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten"
+  ],
+  "quelle": "gelbe_seiten"
+ },
+ {
+  "name": "Tina Voß GmbH Zeitarbeit",
+  "website": "http://www.tina-voss.de",
+  "domain": "tina-voss.de",
+  "address": "Tintengraben 8-9, 30177 Hannover (List)",
+  "categories": [
+   "Zeitarbeit"
+  ],
+  "plz": "30177",
+  "telefon": "+495116968480",
+  "vorhandene_email": "info@tina-voss.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten"
+  ],
+  "quelle": "gelbe_seiten"
+ },
+ {
+  "name": "AirITSystems GmbH",
+  "website": "http://www.airitsystems.de",
+  "domain": "airitsystems.de",
+  "address": "Benkendorffstr. 6, 30855 Langenhagen",
+  "categories": [
+   "IT-Dienstleistungen",
+   "IT-Berater",
+   "office=it",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30855",
+  "telefon": "+495119774000",
+  "vorhandene_email": "info@airitsystems.de",
+  "gf_name_liste": "Tim Cappelmann; Joachim Rommel; Juliane Schulz",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps",
+   "overpass",
+   "alte_liste"
+  ],
+  "quelle": "gelbe_seiten+maps+overpass+alte_liste"
+ },
+ {
+  "name": "Sebastian Blank Blankk-IT",
+  "website": "http://www.blankk.it",
+  "domain": "blankk.it",
+  "address": "Weberkolkwiesen 34, 30855 Langenhagen (Kaltenweide)",
+  "categories": [
+   "IT-Dienstleistungen"
+  ],
+  "plz": "30855",
+  "telefon": "+4915758265758",
+  "vorhandene_email": "info@blankk.it",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten"
+  ],
+  "quelle": "gelbe_seiten"
+ },
+ {
+  "name": "ITBN-Business Network GmbH",
+  "website": "http://www.itbn-gmbh.de",
+  "domain": "itbn-gmbh.de",
+  "address": "Ernst-Grote-Str. 23A, 30916 Isernhagen (Altwarmbüchen)",
+  "categories": [
+   "IT-Dienstleistungen"
+  ],
+  "plz": "30916",
+  "telefon": "+495118207030",
+  "vorhandene_email": "mail@service4success.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten"
+  ],
+  "quelle": "gelbe_seiten"
+ },
+ {
+  "name": "Benjamin Burner IT & Marketing",
+  "website": "http://www.burner-it.de",
+  "domain": "burner-it.de",
+  "address": "Dorfstr., 30916 Isernhagen",
+  "categories": [
+   "IT-Dienstleistungen",
+   "IT-Berater"
+  ],
+  "plz": "30916",
+  "telefon": "+4951399529977",
+  "vorhandene_email": "info@burner-it.de",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps"
+  ],
+  "quelle": "gelbe_seiten+maps"
+ },
+ {
+  "name": "Four in one Hannover IT-Service",
+  "website": "http://www.fourinone-consulting.de",
+  "domain": "fourinone-consulting.de",
+  "address": "Am Graswege 6, 30169 Hannover (Südstadt)",
+  "categories": [
+   "Computer und Zubehör"
+  ],
+  "plz": "30169",
+  "telefon": "+4951164667970",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten"
+  ],
+  "quelle": "gelbe_seiten"
+ },
+ {
+  "name": "Patrick Peter Pryga - IT-Service Pryga -",
+  "website": "http://www.pryga.de",
+  "domain": "pryga.de",
+  "address": "Schützenstr. 8, 30161 Hannover (List)",
+  "categories": [
+   "Webdesign",
+   "IT-Berater",
+   "Computerreparaturdienst",
+   "Computersicherheitsdienst",
+   "Computerservice"
+  ],
+  "plz": "30161",
+  "telefon": "+4951137380906",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps"
+  ],
+  "quelle": "gelbe_seiten+maps"
+ },
+ {
+  "name": "WV-S // Wolfgang Völker Systemlösungen",
+  "website": "http://www.WV-S.com",
+  "domain": "wv-s.com",
+  "address": "Bachstr. 3, 30167 Hannover",
+  "categories": [
+   "Netzwerktechnik",
+   "IT-Sicherheit"
+  ],
+  "plz": "30167",
+  "telefon": "+49511700870",
+  "vorhandene_email": "anfrage@WV-S.com",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten"
+  ],
+  "quelle": "gelbe_seiten"
+ }
+]

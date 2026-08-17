@@ -1510,7 +1510,12 @@ h1 { margin: 0; font-size: 24px; }
 .postfach-nachricht--empfangen .postfach-nachricht-wer { color: var(--farbe-akzent); }
 .postfach-nachricht-zeit { font-family: var(--schrift-mono); font-size: 10.5px; color: var(--farbe-gedaempft); }
 .postfach-nachricht-betreff { font-size: 12px; color: var(--farbe-gedaempft); margin-top: 4px; }
-.postfach-nachricht-text { white-space: pre-wrap; font-size: 13.5px; line-height: 1.6; margin-top: 6px; }
+.postfach-nachricht-text { font-size: 13.5px; line-height: 1.6; margin-top: 6px; }
+/* Eine Zeile der Mail = ein Element (siehe Kommentar in postfach.html).
+   Leere Zeilen sind die Absatz-Abstaende der Mail - sie haben keinen Text,
+   brauchen also eine eigene Hoehe, sonst faellt der Absatz zusammen. */
+.postfach-nachricht-zeile { overflow-wrap: anywhere; }
+.postfach-nachricht-zeile:empty { height: 0.7em; }
 .postfach-antwort-form,
 .postfach-antwort-entwurf {
   margin-top: 20px;
@@ -1556,6 +1561,52 @@ h1 { margin: 0; font-size: 24px; }
   color: #8A2F2F;
   background: #FFF0F0;
   border: 1px solid #EFC4C4;
+}
+/* Probe oder echter Versand (Schritt 5). Die Wahl traegt Folgen fuer echte
+   Menschen, deshalb zwei grosse Flaechen statt eines unscheinbaren Hakens -
+   und die scharfe Option sichtbar abgesetzt. */
+.assi-versandart {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border: 1px solid var(--farbe-rand);
+  border-radius: 9px;
+  margin-top: 8px;
+  cursor: pointer;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.assi-versandart:has(input:checked) {
+  border-color: var(--farbe-akzent, #D98324);
+  background: #FDF6EE;
+}
+.assi-versandart--echt:has(input:checked) {
+  border-color: #C9843A;
+  background: #FBF0E2;
+}
+.assi-versandart input { margin-top: 3px; }
+
+/* Angefragter Kontakt ohne Verlauf: steht rot IM Detailbereich, dort wo
+   sonst der Schriftwechsel stuende - ein grauer Hinweis oben wurde
+   uebersehen, und der leere weisse Kasten sah nach Ladefehler aus. */
+.postfach-nicht-gefunden {
+  color: #8A2F2F;
+  background: #FFF0F0;
+  border: 1px solid #EFC4C4;
+  border-radius: 9px;
+  padding: 14px 16px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.postfach-nicht-gefunden-titel {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.postfach-detail-leer {
+  color: var(--farbe-text-gedaempft, #6B6B6B);
+  font-size: 13px;
+  padding: 14px 16px;
 }
 .postfach-antwort-entwurf-text {
   white-space: pre-wrap;

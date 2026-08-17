@@ -1,0 +1,124 @@
+{
+ "kennung": "20260814-154502",
+ "angelegt": "2026-08-14T15:45:02",
+ "schritt": 5,
+ "hoechster_schritt": 5,
+ "daten": {
+  "name": "coldmailing system",
+  "sprache": "de",
+  "anzahl_leads": 50,
+  "beschreibung": "",
+  "verkaeufer_url": "https://polepositionautomation.de",
+  "absender_email": "o.redschlag@poleposition-automation.email",
+  "referenz_1": "",
+  "referenz_2": "",
+  "anweisungen": "",
+  "usp": [
+   {
+    "titel": "Maßgeschneiderte Automationsinfrastruktur aus einer Hand",
+    "erklaerung": "Die Firma entwickelt individuelle Automationslösungen, keine Standardtools."
+   },
+   {
+    "titel": "Integration bestehender Systeme ohne Ersatz",
+    "erklaerung": "Bestehende IT-Systeme wie CRM und ERP werden eingebunden, nicht ersetzt."
+   },
+   {
+    "titel": "Hosting und Datensicherheit in Deutschland",
+    "erklaerung": "Daten werden sicher auf deutschen Servern oder im Kundenunternehmen gespeichert."
+   },
+   {
+    "titel": "Automationen entsprechen gesetzlichen Anforderungen",
+    "erklaerung": "Lösungen erfüllen Vorgaben wie DSGVO und ISO 27001-Konformität."
+   },
+   {
+    "titel": "Komplettservice mit Hosting und Support",
+    "erklaerung": "Umfasst Management, Monitoring, Updates, Backups und Troubleshooting."
+   }
+  ],
+  "icp": {
+   "firmografisch": "Mittelständische Unternehmen aus Deutschland, diverse Branchen, zertifiziert bevorzugt",
+   "technografisch": "CRM- und ERP-Systeme, bestehende IT-Infrastruktur, KI-Tools zur Prozessautomatisierung",
+   "verhalten": "Suchen Automationslösungen zur Effizienzsteigerung und Kostensenkung bei Prozessen",
+   "entscheider": "IT-Leiter, Operations Manager, Geschäftsführer, Automationsverantwortliche"
+  },
+  "ort": "Hannover",
+  "radius_km": 10,
+  "dienste": [
+   "IT-Berater"
+  ],
+  "ohne_ort_mitnehmen": false,
+  "abgewaehlt": [],
+  "firmen_domains": [
+   "torutec.com",
+   "tecmax.de",
+   "denkit.com",
+   "novacapta.de",
+   "nordwind.team",
+   "medsolve.de",
+   "itelligencegroup.com",
+   "mobaconsulting.de",
+   "pelo-it.com",
+   "blueteam.de",
+   "magrathea.eu",
+   "sybit.com",
+   "appvisory.com",
+   "success-solutions.de",
+   "mat3.de",
+   "thcc.de",
+   "avsar-te.de",
+   "jrc-training.com",
+   "digitalisierer24.de",
+   "akkodis.com",
+   "conscia.de",
+   "lifecon.net",
+   "netea.de",
+   "kontextwork.de",
+   "thoemel-consulting.de",
+   "compl3te.com",
+   "graitec.de",
+   "1a-infosysteme.de",
+   "leasebase.de",
+   "outlook.office.com",
+   "hanovatech.de",
+   "drhellberg.de",
+   "profi-ag.de",
+   "iotdata.systems",
+   "ventr.de",
+   "bitkollegen.de",
+   "pryga.de",
+   "amnau.de",
+   "media.smart.com",
+   "ciphron.de",
+   "kitech-software.de",
+   "techbase.digital",
+   "dieaiberater.de",
+   "syscrest.de",
+   "ai-lo.de",
+   "bustani-consulting.de",
+   "informatikheld.de",
+   "l3consulting.de",
+   "wertbar.com",
+   "comnet-solutions.de"
+  ],
+  "kunde_datei": "kunden/coldmailing-system.yaml",
+  "lauf_slug": "coldmailing-system",
+  "lauf_ts": "20260814-155042",
+  "firmen_anzahl": 50,
+  "versand_postfach": "o.redschlag@poleposition-automation.email",
+  "tageslimit": 20,
+  "zeit_von": "08:00",
+  "zeit_bis": "19:00",
+  "wochentage": [
+   "mo",
+   "di",
+   "mi",
+   "do",
+   "fr"
+  ],
+  "abstand_1_2": 7,
+  "abstand_2_3": 7,
+  "signatur": "",
+  "versand_modus": "test"
+ },
+ "geaendert": "2026-08-14T15:50:49"
+}

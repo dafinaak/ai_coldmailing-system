@@ -90,6 +90,8 @@ import requests
 # stand, nicht auf Schritt 1. Die Zuordnung unten ist entsprechend um
 # einen Schritt verschoben: Schritt 0 trägt den Delay bis Follow-up 1,
 # Schritt 1 trägt den Delay bis Follow-up 2 (als Differenz, siehe unten).
+from pipeline.config import WOCHENTAG_NUMMER
+
 BASIS = "https://api.instantly.ai/api/v2"
 
 class InstantlySender:
@@ -140,6 +142,23 @@ class InstantlySender:
             raise ValueError(
                 f"follow_up_tage muss aufsteigend sein (Tag a < Tag b), "
                 f"gefunden: [{a}, {b}]. Bitte die Angebots-Datei korrigieren.")
+        # Versand-Einstellungen aus der Kundendatei (14.08.2026). Bis dahin
+        # standen Zeitfenster, Wochentage und Tageslimit hier FEST im Code -
+        # was in Schritt 5 des Formulars eingestellt wurde, kam nie an.
+        # Parameter gewinnen ueber die Kundendatei (fuer Aufrufer, die es
+        # bewusst anders wollen), die Kundendatei ueber die alten Vorgaben.
+        postfaecher = list(absender_emails or [])
+        if not postfaecher and getattr(kunde, "versand_postfach", ""):
+            postfaecher = [kunde.versand_postfach]
+        limit = getattr(kunde, "tageslimit", None) or 20
+        von = getattr(kunde, "zeit_von", None) or "08:00"
+        bis = getattr(kunde, "zeit_bis", None) or "19:00"
+        gewaehlte_tage = getattr(kunde, "wochentage", None) or [
+            "mo", "di", "mi", "do", "fr"]
+        nummern = {WOCHENTAG_NUMMER[t] for t in gewaehlte_tage
+                   if t in WOCHENTAG_NUMMER}
+        tage_schalter = {str(n): str(n) in nummern for n in range(7)}
+
         b1, b2, b3 = betreffs or ("{{betreff}}", "", "")
         sequenz_schritte = [
             {"type": "email", "delay": a,
@@ -155,21 +174,21 @@ class InstantlySender:
             # (inaktiv). Diese Klasse ruft niemals /activate auf.
             "campaign_schedule": {
                 "schedules": [{
-                    "name": "Mo-Fr 08-19 Europe/Berlin",
-                    "timing": {"from": "08:00", "to": "19:00"},
-                    # Mo-Fr an, Sa/So aus (0=So ... 6=Sa, siehe Kommentar oben).
-                    "days": {"0": False, "1": True, "2": True, "3": True,
-                              "4": True, "5": True, "6": False},
+                    "name": f"{'/'.join(gewaehlte_tage)} {von}-{bis}",
+                    "timing": {"from": von, "to": bis},
+                    # 0=So ... 6=Sa (siehe Kommentar oben).
+                    "days": tage_schalter,
                     "timezone": "Europe/Belgrade",
                 }],
             },
             "sequences": [{"steps": sequenz_schritte}],
-            # Schutz-Voreinstellung: max. 20 Mails/Tag (siehe Kommentar oben
-            # zu Kampagnen- vs. Postfach-Ebene).
-            "daily_limit": 20,
+            # Schutz-Voreinstellung: 20 Mails/Tag, sofern die Kundendatei
+            # nichts anderes sagt (siehe Kommentar oben zu Kampagnen- vs.
+            # Postfach-Ebene).
+            "daily_limit": limit,
         }
-        if absender_emails:
-            kampagne["email_list"] = list(absender_emails)
+        if postfaecher:
+            kampagne["email_list"] = postfaecher
         antwort = self._post(f"{BASIS}/campaigns", kampagne)
         return antwort.json()["id"]
 

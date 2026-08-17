@@ -1,0 +1,103 @@
+{
+ "kennung": "20260814-162456",
+ "angelegt": "2026-08-14T16:24:56",
+ "schritt": 5,
+ "hoechster_schritt": 5,
+ "daten": {
+  "name": "Lena Hartmann",
+  "sprache": "en",
+  "anzahl_leads": 50,
+  "beschreibung": "",
+  "verkaeufer_url": "https://polepositionautomation.de",
+  "absender_email": "o.redschlag@poleposition-automation.cloud",
+  "referenz_1": "",
+  "referenz_2": "",
+  "anweisungen": "",
+  "usp": [
+   {
+    "titel": "Individuelle Automationslösungen aus einer Hand",
+    "erklaerung": "Die Firma entwickelt maßgeschneiderte Automations-Infrastrukturen ohne Einzeltools."
+   },
+   {
+    "titel": "Integration bestehender IT-Systeme",
+    "erklaerung": "Bestehende Systeme wie CRM und ERP werden integriert, nicht ersetzt."
+   },
+   {
+    "titel": "Datenschutz und Datensicherheit in Deutschland",
+    "erklaerung": "Daten werden auf sicheren Servern in Deutschland gespeichert und DSGVO-konform behandelt."
+   },
+   {
+    "titel": "Automation-as-a-Service inklusive Management und Support",
+    "erklaerung": "Das Hosting, Monitoring, Updates und Troubleshooting übernimmt die Firma komplett."
+   },
+   {
+    "titel": "Qualitätsmanagement nach ISO 9001",
+    "erklaerung": "Die Agentur ist ISO 9001 zertifiziert und hält regulatorische Vorgaben ein."
+   }
+  ],
+  "icp": {
+   "firmografisch": "Unternehmen verschiedener Branchen mit mittlerer bis großer Unternehmensgröße in Deutschland.",
+   "technografisch": "Nutzen CRM-, ERP-Systeme; benötigen integrierte Automationslösungen ohne Systemwechsel.",
+   "verhalten": "Suchen Automatisierungslösungen zur Effizienzsteigerung, Kostensenkung und Compliance-Erfüllung.",
+   "entscheider": "IT-Leiter, Digitalisierungsbeauftragte, Geschäftsführer und Prozessverantwortliche im Bereich Automatisierung."
+  },
+  "ort": "Hannover",
+  "radius_km": 10,
+  "dienste": [
+   "Unternehmensberater"
+  ],
+  "ohne_ort_mitnehmen": false,
+  "abgewaehlt": [],
+  "firmen_domains": [
+   "operativeklarheit.de",
+   "sxg-solutions.de",
+   "ventr.de",
+   "althammer-kill.de",
+   "dsbtech.de",
+   "individualmedical.de",
+   "lomavis.com",
+   "osc-bx.de",
+   "flinked.de",
+   "infinitas.de",
+   "digitalmindset.de",
+   "losy-gmbh.de",
+   "skhoch3-consult.de",
+   "ihre-helden.de",
+   "heldenconsulting.com",
+   "einfach-digital.de",
+   "coperte.de",
+   "deinconsultant.de",
+   "zuehlke.com",
+   "bankberatung.com",
+   "gutermuth.de",
+   "sympacon-ts.de",
+   "capgemini.com",
+   "drbg.de",
+   "jmz-consulting.de",
+   "3rd-opinion.de",
+   "linkedin.com",
+   "ecoservice.de",
+   "interev.de"
+  ],
+  "kunde_datei": "kunden/lena-hartmann-20260814-162456.yaml",
+  "lauf_slug": "lena-hartmann",
+  "lauf_ts": "20260814-162540",
+  "firmen_anzahl": 29,
+  "versand_postfach": "o.redschlag@poleposition-automation.cloud",
+  "tageslimit": 20,
+  "zeit_von": "08:00",
+  "zeit_bis": "19:00",
+  "wochentage": [
+   "mo",
+   "di",
+   "mi",
+   "do",
+   "fr"
+  ],
+  "abstand_1_2": 7,
+  "abstand_2_3": 7,
+  "signatur": "",
+  "versand_modus": "test"
+ },
+ "geaendert": "2026-08-14T16:25:50"
+}

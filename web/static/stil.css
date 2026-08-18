@@ -1562,6 +1562,17 @@ h1 { margin: 0; font-size: 24px; }
   background: #FFF0F0;
   border: 1px solid #EFC4C4;
 }
+/* Warten auf die Firmen-Sammlung (Schritt 4). Ruhig gehalten: es ist kein
+   Fehler, es dauert nur. */
+.assi-warten {
+  border: 1px solid var(--farbe-rand);
+  border-radius: 9px;
+  padding: 20px 22px;
+  background: #FDF6EE;
+  line-height: 1.6;
+}
+.assi-warten p { margin: 8px 0 0; }
+
 /* Probe oder echter Versand (Schritt 5). Die Wahl traegt Folgen fuer echte
    Menschen, deshalb zwei grosse Flaechen statt eines unscheinbaren Hakens -
    und die scharfe Option sichtbar abgesetzt. */

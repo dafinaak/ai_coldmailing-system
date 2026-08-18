@@ -1,0 +1,124 @@
+{
+ "kennung": "20260817-123521",
+ "angelegt": "2026-08-17T12:35:21",
+ "schritt": 5,
+ "hoechster_schritt": 5,
+ "daten": {
+  "name": "Lena Hartmann",
+  "sprache": "de",
+  "anzahl_leads": 50,
+  "beschreibung": "",
+  "verkaeufer_url": "https://polepositionautomation.de",
+  "absender_email": "o.redschlag@poleposition-automation.online",
+  "referenz_1": "",
+  "referenz_2": "",
+  "anweisungen": "",
+  "usp": [
+   {
+    "titel": "Maßgeschneiderte Automations-Infrastruktur aus einem Guss",
+    "erklaerung": "Die Firma entwickelt individuelle Automationslösungen statt einzelner Tools."
+   },
+   {
+    "titel": "Bestehende IT-Systeme werden integriert, nicht ersetzt",
+    "erklaerung": "Automationen arbeiten mit vorhandenen CRM, ERP-Systemen zusammen."
+   },
+   {
+    "titel": "Automation-as-a-Service inklusive Hosting und Management",
+    "erklaerung": "Die Firma übernimmt Betrieb, Wartung und Updates der Automationen."
+   },
+   {
+    "titel": "Hochwertige Datensicherheit und DSGVO-Konformität",
+    "erklaerung": "Daten werden sicher auf deutschen Servern oder vor Ort gespeichert."
+   },
+   {
+    "titel": "Anwendungsbereiche von Vertrieb bis Controlling automatisierbar",
+    "erklaerung": "Automationen unterstützen Administration, Kundenservice, Kommunikation und mehr."
+   }
+  ],
+  "icp": {
+   "firmografisch": "Unternehmen jeder Branche und Größe in Deutschland",
+   "technografisch": "Nutzung von CRM- und ERP-Systemen, vorhandene IT-Infrastruktur",
+   "verhalten": "Suchen Digitalisierung und Prozessautomatisierung zur Effizienzsteigerung",
+   "entscheider": "IT-Leiter, Geschäftsführung, Prozessverantwortliche, Digitalisierungsbeauftragte"
+  },
+  "ort": "",
+  "radius_km": 50,
+  "dienste": [
+   "Computerservice"
+  ],
+  "ohne_ort_mitnehmen": false,
+  "abgewaehlt": [],
+  "firmen_domains": [
+   "hanovatech.de",
+   "torutec.com",
+   "ithilfe-ro.de",
+   "synedat.com",
+   "ext-it.tech",
+   "pryga.de",
+   "traser.de",
+   "it-nunweiler.de",
+   "kavandee.de",
+   "assmann-it.net",
+   "support-4-it.com",
+   "ivv.de",
+   "nkit-gmbh.de",
+   "zu5.de",
+   "lnit.de",
+   "edv.de",
+   "enodia-it.de",
+   "it-konstantin.de",
+   "baensch-it.net",
+   "tsc-wedemark.de",
+   "epassion.eu",
+   "seydel-it.de",
+   "dolle-it.de",
+   "computerservice-schaumburg.de",
+   "netzlink.com",
+   "it-industrial.de",
+   "bechtle-plm.com",
+   "pc-service-aus-schaumburg.de",
+   "vinerotec.de",
+   "buete-online.de",
+   "ihre-helden.de",
+   "holzbrecher-it.de",
+   "ditz-it.com",
+   "uz-online.com",
+   "it-stelmach.de",
+   "br-systems.eu",
+   "edvexperten.de",
+   "licotek.de",
+   "mbedv-service.de",
+   "nivako.de",
+   "netkomcenter.de",
+   "klacom.de",
+   "tl-systems.de",
+   "david-schneider.de",
+   "molinari-it.de",
+   "wal-it.de",
+   "kleinert-pcservice.de",
+   "webercorp.de",
+   "jk-systems.de",
+   "wbit-systeme.de"
+  ],
+  "kunde_datei": "kunden/lena-hartmann-20260817-123521.yaml",
+  "lauf_slug": "lena-hartmann",
+  "lauf_ts": "20260817-123554",
+  "firmen_anzahl": 50,
+  "versand_postfach": "o.redschlag@poleposition-automation.online",
+  "tageslimit": 20,
+  "zeit_von": "08:00",
+  "zeit_bis": "19:00",
+  "wochentage": [
+   "mo",
+   "di",
+   "mi",
+   "do",
+   "fr"
+  ],
+  "abstand_1_2": 7,
+  "abstand_2_3": 7,
+  "signatur": "",
+  "versand_modus": "test"
+ },
+ "geaendert": "2026-08-17T12:36:02"
+}

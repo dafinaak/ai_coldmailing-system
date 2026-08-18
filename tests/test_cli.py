@@ -198,7 +198,11 @@ def test_senden_wiederholt_nach_fehlgeschlagenem_lead_import_ohne_neue_kampagne(
     versand_komplett = store.load_step("versand_komplett")
     assert versand_komplett["campaign_id"] == "camp-1"
 
-def _fake_source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key):
+def _fake_source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
+                        **rest):
+    # **rest schluckt lauf_dir und die injizierbaren Quellen: seit dem
+    # 17.08.2026 gibt der Aufrufer den Laufordner mit, damit ein abgegebener
+    # Dropcontact-Auftrag eine Unterbrechung ueberlebt.
     """Ersetzt pipeline.sourcing.source_leads: liefert 2 feste Leads (statt
     echter Apify-/Hunter-/Dropcontact-Aufrufe) plus eine dazu passende
     Deckungsquote (2 von 2 Firmen mit Kontakt -> 100%), damit alles danach

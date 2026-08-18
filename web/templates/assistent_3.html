@@ -56,6 +56,33 @@
     </div>
   </div>
 
+  {# Bestand nutzen oder neu sammeln. Steht ganz unten, direkt ueber dem
+     Knopf: Sammeln kostet Geld, und man soll die Wahl sehen, kurz bevor
+     man weitergeht. Vorgabe ist immer der vorhandene Bestand. #}
+  <div class="assi-block assi-block--versandart">
+    <h2 class="assi-block-titel">Woher die Firmen kommen</h2>
+    <label class="assi-versandart">
+      <input type="radio" name="firmen_quelle" value="bestand"
+             {% if d.firmen_quelle != "neu" %}checked{% endif %}>
+      <span>
+        <strong>Aus dem Bestand</strong> — {{ bestand_gesamt }} bereits
+        gesammelte Firmen. Sofort da, kostet nichts.
+        <span class="formular-hilfstext">Der Bestand deckt heute den Raum
+          Hannover ab. Für andere Städte ist er leer.</span>
+      </span>
+    </label>
+    <label class="assi-versandart assi-versandart--echt">
+      <input type="radio" name="firmen_quelle" value="neu"
+             {% if d.firmen_quelle == "neu" %}checked{% endif %}>
+      <span>
+        <strong>Neu sammeln</strong> — für den Ort und Umkreis oben, über
+        Google Maps, Gelbe Seiten und OpenStreetMap.
+        <span class="formular-hilfstext">Dauert einige Minuten und kostet
+          Geld. Die gefundenen Firmen bleiben danach im Bestand.</span>
+      </span>
+    </label>
+  </div>
+
   <div class="assi-fuss">
     <a href="/assistent/{{ entwurf.kennung }}/2" class="knopf-sekundaer">← Zurück</a>
     <button type="submit" class="knopf-primaer">Firmen suchen →</button>

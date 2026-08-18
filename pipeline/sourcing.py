@@ -46,6 +46,7 @@ Lead-Qualitaets-Fix (Probe-Lauf-Funde, siehe Auftrag):
    _firmenname_saeubern() unten - genutzt wird der Name aber nur als
    Rueckfallebene, bevorzugt wird Apollos kanonischer Organisationsname
    (ergebnis["name"]), wenn Apollo die Organisation gefunden hat."""
+import json
 import os
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -66,12 +67,18 @@ MAX_KONTAKTE_PRO_FIRMA_STANDARD = 1  # siehe Kunde.max_kontakte_pro_firma (pipel
 # der Standard beim bisherigen einstufigen Ablauf.
 STANDARD_REIHENFOLGE = ["hunter_dropcontact"]
 GUELTIGE_STUFEN = ("hunter_dropcontact", "prospeo", "impressum")
-# info@-Pruefstatus (Hunter Email Verifier), die als versandtauglich gelten.
+# info@-Pruefstatus, die als versandtauglich gelten. Zwei Anbieter, zwei
+# Vokabulare - beide stehen hier, sonst wuerde das Urteil des einen vom
+# anderen stillschweigend verworfen:
+#
+#   Hunter      "valid", "accept_all"
+#   Dropcontact "gueltig"
+#
 # "accept_all" bewusst dabei: der Server nimmt dort formal alles an, mehr als
 # diese Aussage gibt es fuer solche Domains technisch nicht - bei unseren
 # Kleinstfirmen ist das der haeufigste Fall. "invalid"/"disposable"/"unknown"
-# fliegen raus (Zuverlaessigkeit zuerst).
-INFO_OK_STATUS = ("valid", "accept_all")
+# und "ungueltig" fliegen raus (Zuverlaessigkeit zuerst).
+INFO_OK_STATUS = ("valid", "accept_all", "gueltig")
 
 # Prospeo kennt keinen decision_maker-Schalter wie Hunter; diese
 # Seniority-Stufen gelten als Entscheider-Merkmal. Nur fuer die LOKALE
@@ -360,6 +367,153 @@ def _impressum_kontakte(firma: dict, max_pro_firma: int, impressum,
     return kontakte
 
 
+def _impressum_lesen(firma: dict, impressum) -> dict | None:
+    """Nur der Lese-Teil der Impressum-Stufe: Namen von der Webseite.
+
+    Getrennt von der Adress-Bildung, damit die Namen ALLER Firmen zuerst
+    gesammelt und dann in EINEM Zug an Dropcontact gegeben werden koennen
+    (siehe _impressum_gebuendelt).
+    """
+    website = firma.get("website")
+    if not website:
+        return None
+    text = impressum.impressum_text(website)
+    if not text:
+        return None
+    ergebnis = impressum.entscheider_lesen(
+        text, firma.get("name", ""), domain=firma.get("domain", ""),
+        hinweis_name=firma.get("gf_name_liste", ""))
+    personen = ergebnis.get("personen") or []
+    if not personen:
+        return None
+    mail_domain = ergebnis.get("mail_domain")
+    return {"personen": personen,
+            "ziel_website": f"https://{mail_domain}" if mail_domain else website}
+
+
+def _impressum_gebuendelt(firmen: list, impressum, dropcontact, max_pro_firma,
+                          batch_speicher=None) -> tuple[dict, dict]:
+    """Impressum-Stufe fuer ALLE Firmen - mit EINER Dropcontact-Anfrage.
+
+    Vorher fragte jede Firma einzeln bei Dropcontact an und wartete auf
+    ihre Antwort. Dropcontact arbeitet aber mit Warteschleife: abgeben,
+    Nummer bekommen, nachfragen bis fertig - zehn bis dreissig Sekunden je
+    Person. Bei fuenfzig Firmen waren das fuenfzig Wartezeiten
+    hintereinander, und sie machten den groessten Teil der Laufzeit aus
+    (gemessen am 17.08.2026).
+
+    Jetzt: erst alle Webseiten lesen (parallel), dann alle Namen in einem
+    Zug abgeben und EINMAL warten. Runde zwei fragt nur die Firmen, bei
+    denen die erste Person keine Adresse ergab - so bleibt der
+    Credit-Verbrauch genau derselbe wie vorher.
+
+    Gibt ({index: [kontakte]}, {index: fehler}) zurueck.
+    """
+    gelesen: dict = {}
+    fehler: dict = {}
+
+    with ThreadPoolExecutor(
+            max_workers=min(GLEICHZEITIG, max(1, len(firmen)))) as pool:
+        auftraege = {pool.submit(_impressum_lesen, firma, impressum): i
+                     for i, firma in enumerate(firmen)}
+        for auftrag in as_completed(auftraege):
+            i = auftraege[auftrag]
+            try:
+                treffer = auftrag.result()
+            except Exception as f:      # noqa: BLE001
+                fehler[i] = f
+                continue
+            if treffer:
+                gelesen[i] = treffer
+
+    kontakte_je_firma: dict = {i: [] for i in range(len(firmen))}
+    # Runde fuer Runde: in jeder Runde genau eine Person je Firma, und nur
+    # von den Firmen, die noch keine Adresse haben. Mehr als max_pro_firma
+    # Runden waeren sinnlos.
+    for runde in range(max_pro_firma):
+        anfragen, gehoert_zu = [], []
+        # Nach Firmen-Reihenfolge, nicht nach Lese-Reihenfolge: die Namen
+        # kommen aus parallelen Threads und damit in zufaelliger Folge. Die
+        # Zuordnung waere zwar trotzdem richtig (gehoert_zu laeuft mit),
+        # aber zwei gleiche Laeufe sollen dieselbe Anfrage erzeugen.
+        for i in sorted(gelesen):
+            treffer = gelesen[i]
+            if len(kontakte_je_firma[i]) > runde:
+                continue      # diese Firma hat in dieser Runde schon genug
+            personen = treffer["personen"]
+            if runde >= len(personen):
+                continue
+            person = personen[runde]
+            anfragen.append({"first_name": person["vorname"],
+                             "last_name": person["nachname"],
+                             "website": treffer["ziel_website"],
+                             "company": firmen[i].get("name", "")})
+            gehoert_zu.append((i, person))
+        if not anfragen:
+            break
+
+        print(f"Dropcontact: {len(anfragen)} Namen in einer Anfrage "
+              f"(Runde {runde + 1})")
+        mails = _batch_mit_wiederaufnahme(dropcontact, anfragen, batch_speicher)
+        for (i, person), mail in zip(gehoert_zu, mails):
+            if mail:
+                kontakte_je_firma[i].append({
+                    "first_name": person["vorname"],
+                    "last_name": person["nachname"],
+                    "email": mail["email"],
+                    "title": "Geschäftsführung (laut Impressum)",
+                    "source": "impressum"})
+    return kontakte_je_firma, fehler
+
+
+def _batch_mit_wiederaufnahme(dropcontact, anfragen, batch_speicher):
+    """Einen Dropcontact-Batch abgeben und abholen - abbruchfest.
+
+    Zwischen Abgeben und Abholen liegt die Wartezeit, und in ihr sind die
+    Credits schon bezahlt. Stirbt der Lauf dort, waere das Geld weg. Die
+    Auftragsnummer wird deshalb sofort nach dem Abgeben weggeschrieben;
+    ein neuer Lauf holt sie ab, statt noch einmal zu zahlen (dieselbe
+    Lehre wie im Schnelllauf, dort rettete es einmal 103 Credits).
+    """
+    # Aeltere Quellen (und die Fakes in den Tests) kennen nur email_bauen.
+    # Dann eben einzeln - langsamer, aber richtig. Gleiches Muster wie beim
+    # info@-Pruefer weiter oben.
+    if not hasattr(dropcontact, "batch_abgeben"):
+        return [dropcontact.email_bauen(a["first_name"], a["last_name"],
+                                        a["website"], company=a.get("company", ""))
+                for a in anfragen]
+
+    offen = batch_speicher.lesen() if batch_speicher else None
+    if offen and offen.get("anzahl") == len(anfragen):
+        try:
+            zeilen = dropcontact.batch_abholen(
+                offen["request_id"], offen["gesendet"], len(anfragen))
+            if len(zeilen) != len(anfragen):
+                # Der Merkzettel passt nicht zu dem, was wir gerade fragen.
+                # Lieber noch einmal zahlen als Adressen falsch zuordnen.
+                raise RuntimeError(
+                    f"Gemerkter Auftrag liefert {len(zeilen)} Zeilen fuer "
+                    f"{len(anfragen)} Namen")
+            batch_speicher.loeschen()
+            return zeilen
+        except Exception as fehler:      # noqa: BLE001
+            print(f"Offener Dropcontact-Auftrag nicht abholbar ({fehler}) - "
+                  f"wird neu abgegeben.")
+            batch_speicher.loeschen()
+
+    request_id, gesendet = dropcontact.batch_abgeben(anfragen)
+    if request_id is None:
+        return [None] * len(anfragen)
+    if batch_speicher:
+        batch_speicher.schreiben({"request_id": request_id,
+                                   "gesendet": gesendet,
+                                   "anzahl": len(anfragen)})
+    zeilen = dropcontact.batch_abholen(request_id, gesendet, len(anfragen))
+    if batch_speicher:
+        batch_speicher.loeschen()
+    return zeilen
+
+
 def _pruefe_kunde(kunde):
     fehlend = [f for f in ("maps_suche", "kontakt_rollen") if not getattr(kunde, f, None)]
     if fehlend:
@@ -476,10 +630,99 @@ def fehler_satz(fehler: object) -> str:
     return "Fehler bei der Suche (später erneut versuchen)"
 
 
+def _info_urteile(firmen, ergebnisse, dropcontact, email_pruefer) -> dict:
+    """Urteil ueber jede info@-Adresse, die gebraucht wird: {adresse: (status, fehler)}.
+
+    Gefragt wird nur fuer Firmen, die keinen persoenlichen Treffer haben und
+    eine Domain tragen - genau die Faelle, in denen die info@-Regel greift.
+
+    Zuerst Dropcontact, in EINER Anfrage fuer alle: es kann eine vorgegebene
+    Adresse beurteilen (gemessen am 17.08.2026 - eine echte info@ kommt als
+    "generic@pro" zurueck, eine erfundene als "invalid@pro"), und sein
+    Kontingent ist bezahlt. Kann die Quelle das nicht, bleibt es beim
+    bisherigen Pruefer (Hunter) je Adresse einzeln.
+
+    Ohne beides bleibt der Status None - dann greift weiter unten die alte
+    Regel "ungeprueft uebernehmen", wie bei den aelteren Test-Fakes.
+    """
+    gebraucht = []
+    for firma, (treffer, such_fehler) in zip(firmen, ergebnisse):
+        if such_fehler is not None or not firma.get("domain"):
+            continue
+        kontakte = (treffer or ([], None))[0]
+        if not kontakte:
+            adresse = f"info@{firma['domain']}"
+            if adresse not in gebraucht:
+                gebraucht.append(adresse)
+    if not gebraucht:
+        return {}
+
+    if hasattr(dropcontact, "adressen_pruefen"):
+        print(f"Dropcontact: {len(gebraucht)} info@-Adressen in einer Prüfung")
+        try:
+            urteile = dropcontact.adressen_pruefen(gebraucht)
+        except Exception as fehler:      # noqa: BLE001
+            # Eine gescheiterte Sammelpruefung trifft alle betroffenen
+            # Firmen gleich - jede bekommt denselben, ehrlichen Grund.
+            return {adresse: (None, fehler) for adresse in gebraucht}
+        return {adresse: (urteil.get("status"), None)
+                for adresse, urteil in zip(gebraucht, urteile)}
+
+    if not email_pruefer:
+        return {}
+
+    ergebnis = {}
+    for adresse in gebraucht:
+        try:
+            ergebnis[adresse] = ((email_pruefer(adresse) or {}).get("status", ""), None)
+        except Exception as fehler:      # noqa: BLE001
+            ergebnis[adresse] = (None, fehler)
+    return ergebnis
+
+
+class BatchSpeicher:
+    """Merkt sich einen abgegebenen, noch nicht abgeholten Dropcontact-Auftrag.
+
+    Zwischen Abgeben und Abholen sind die Credits bezahlt, das Ergebnis aber
+    noch nicht da. Stirbt der Lauf genau dort, waere das Geld weg - und bei
+    fuenfzig Namen auf einmal ist das kein Rundungsfehler mehr.
+
+    Ohne Laufordner (Tests, Einmal-Aufrufe) wird nichts geschrieben.
+    """
+
+    DATEINAME = "dropcontact-offen.json"
+
+    def __init__(self, lauf_dir=None):
+        from pathlib import Path
+
+        self.pfad = Path(lauf_dir) / self.DATEINAME if lauf_dir else None
+
+    def lesen(self):
+        if not self.pfad or not self.pfad.exists():
+            return None
+        try:
+            return json.loads(self.pfad.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return None
+
+    def schreiben(self, daten) -> None:
+        if not self.pfad:
+            return
+        try:
+            self.pfad.write_text(json.dumps(daten, ensure_ascii=False),
+                                  encoding="utf-8")
+        except OSError:
+            pass      # Ein fehlgeschlagener Merkzettel darf den Lauf nicht stoppen
+
+    def loeschen(self) -> None:
+        if self.pfad:
+            self.pfad.unlink(missing_ok=True)
+
+
 def source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
                   apify_source=None, hunter_source=None, dropcontact_source=None,
                   prospeo_key=None, prospeo_source=None,
-                  impressum_quelle=None) -> tuple:
+                  impressum_quelle=None, lauf_dir=None) -> tuple:
     """Fuehrt alle Stufen aus und liefert (leads, deckung, firmen_mit_ausgang):
     - leads: Liste von pipeline.models.Lead (bestehende Form, downstream
       unveraendert nutzbar).
@@ -520,11 +763,26 @@ def source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
     # ihn anbietet. Aeltere Test-Fakes ohne email_pruefen behalten das alte
     # Verhalten (info@ ungeprueft uebernehmen) - Rueckwaerts-Kompatibilitaet.
     email_pruefer = _mit_kontingent_stopp(getattr(hunter, "email_pruefen", None))
+    batch_speicher = BatchSpeicher(lauf_dir)
 
     firmen = apify.search(kunde.maps_suche, limit)
     leads, firmen_mit_kontakt, firmen_mit_ausgang = [], 0, []
     je_stufe = {name: 0 for name, _ in stufen}
     je_stufe["info@"] = 0
+
+    # Der Weg des Formulars ist genau eine Stufe: das Impressum. Fuer ihn
+    # gibt es die gebuendelte Variante - alle Webseiten parallel lesen und
+    # die Namen in EINEM Zug an Dropcontact geben, statt je Firma einzeln
+    # zu warten (siehe _impressum_gebuendelt). Bei jeder anderen Reihenfolge
+    # bleibt es beim bisherigen Weg: dort greifen Stufen ineinander, und
+    # eine halbe Buendelung waere schwerer zu verstehen als der Gewinn wert.
+    nur_impressum = [name for name, _ in stufen] == ["impressum"]
+    if nur_impressum:
+        gebuendelt, lese_fehler = _impressum_gebuendelt(
+            firmen, impressum_quelle, dropcontact, max_pro_firma,
+            batch_speicher)
+    else:
+        gebuendelt, lese_fehler = None, {}
 
     def _suchen(firma: dict) -> tuple:
         """Die Sucharbeit EINER Firma - ohne gemeinsamen Zustand, damit
@@ -545,14 +803,29 @@ def source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
     # Sammeln der Reihe nach ausgewertet), damit Berichte und Tests
     # vorhersagbar bleiben.
     ergebnisse = [None] * len(firmen)
-    with ThreadPoolExecutor(max_workers=min(GLEICHZEITIG, max(1, len(firmen)))) as pool:
-        auftraege = {pool.submit(_suchen, firma): i for i, firma in enumerate(firmen)}
-        for auftrag in as_completed(auftraege):
-            i = auftraege[auftrag]
-            try:
-                ergebnisse[i] = (auftrag.result(), None)
-            except Exception as fehler:      # noqa: BLE001
-                ergebnisse[i] = (None, fehler)
+    if gebuendelt is not None:
+        # Schon gebuendelt erledigt - nur noch in dieselbe Form bringen.
+        for i in range(len(firmen)):
+            if i in lese_fehler:
+                ergebnisse[i] = (None, lese_fehler[i])
+            else:
+                kontakte = gebuendelt.get(i) or []
+                ergebnisse[i] = ((kontakte, "impressum" if kontakte else None), None)
+    else:
+        with ThreadPoolExecutor(max_workers=min(GLEICHZEITIG, max(1, len(firmen)))) as pool:
+            auftraege = {pool.submit(_suchen, firma): i for i, firma in enumerate(firmen)}
+            for auftrag in as_completed(auftraege):
+                i = auftraege[auftrag]
+                try:
+                    ergebnisse[i] = (auftrag.result(), None)
+                except Exception as fehler:      # noqa: BLE001
+                    ergebnisse[i] = (None, fehler)
+
+    # Die info@-Adressen ALLER Firmen ohne persoenlichen Treffer in einem Zug
+    # pruefen (siehe _info_urteile). Vorher fragte jede Firma einzeln bei
+    # Hunter nach - und seit dessen Freikontingent aufgebraucht ist, fiel
+    # damit jede solche Firma heraus (17.08.2026: 23 von 50).
+    info_urteile = _info_urteile(firmen, ergebnisse, dropcontact, email_pruefer)
 
     for firma, (treffer, such_fehler) in zip(firmen, ergebnisse):
         if such_fehler is not None:
@@ -593,18 +866,15 @@ def source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
             # Pruefer verfuegbar ist; nicht versandtaugliche Adressen werden
             # verworfen ("info_ungueltig") statt still versendet.
             info_email = f"info@{firma['domain']}"
-            pruefstatus = None
-            if email_pruefer:
-                try:
-                    pruefstatus = (email_pruefer(info_email) or {}).get("status", "")
-                except Exception as fehler:
-                    # Zuverlaessigkeit zuerst: laesst sich die Adresse nicht
-                    # pruefen, geht sie NICHT in den Versand.
-                    print(f"Firma '{firma.get('name') or firma.get('domain')}' "
-                          f"übersprungen (Fehler bei der info@-Prüfung): {fehler}")
-                    firmen_mit_ausgang.append({**firma, "ausgang": "fehler",
-                                                "fehler_grund": fehler_satz(fehler)})
-                    continue
+            pruefstatus, pruef_fehler = info_urteile.get(info_email, (None, None))
+            if pruef_fehler is not None:
+                # Zuverlaessigkeit zuerst: laesst sich die Adresse nicht
+                # pruefen, geht sie NICHT in den Versand.
+                print(f"Firma '{firma.get('name') or firma.get('domain')}' "
+                      f"übersprungen (Fehler bei der info@-Prüfung): {pruef_fehler}")
+                firmen_mit_ausgang.append({**firma, "ausgang": "fehler",
+                                            "fehler_grund": fehler_satz(pruef_fehler)})
+                continue
             if pruefstatus is not None:
                 zusatz["info_pruefstatus"] = pruefstatus
             if pruefstatus is None or pruefstatus in INFO_OK_STATUS:

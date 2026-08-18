@@ -40,6 +40,45 @@ STANDARD_BEFEHL = [sys.executable, "-m", "pipeline"]
 _PROJEKT_WURZEL = Path(__file__).resolve().parent.parent
 
 
+# Dateien, die es nur in einem Auftragsordner gibt - je eine Spur aus den
+# Schritten, die ein Auftrag durchlaeuft.
+#
+# firmen.json und bericht.md stehen BEWUSST NICHT hier: die schreibt zwar
+# auch ein Auftrag, aber ebenso die reinen Datenordner (laeufe/leadquellen/
+# traegt firmen.json, laeufe/vergleich-anbieter/ traegt bericht.md). Als
+# Merkmal taugen nur Dateien, die es woanders nicht gibt.
+_LAUF_MERKMALE = (
+    "kunde_pfad.json", "auftrag_meta.json", "lauf.log",
+    "leads.json", "dedupe.json", "personalisierung.json", "pruefung_ok.json",
+    "versand.json", "versand_komplett.json", "FREIGABE.txt",
+)
+
+
+def ist_laufordner(pfad) -> bool:
+    """Ist dieser Ordner ein Auftrag - oder nur ein Datenordner?
+
+    Unter laeufe/ liegen nicht nur Auftraege: laeufe/leadquellen/ traegt den
+    gesammelten Firmenbestand (siehe web.routen.assistent._firmen_bestand),
+    laeufe/vergleich-anbieter/ alte Anbieter-Vergleiche. Ohne diese
+    Unterscheidung galt jeder solche Ordner als Auftrag - und weil er nie
+    fertig wurde, meldete das Dashboard ihn dauerhaft rot als "angehalten,
+    Problem, das wir nicht genauer benennen können" (gefunden am
+    17.08.2026: sieben solcher Meldungen, die meisten davon gar keine
+    Auftraege).
+
+    WICHTIG - die Liste war zuerst zu kurz und hat mehr kaputt gemacht als
+    repariert (17.08.2026, eine Stunde spaeter gefunden): Ein Ordner, der
+    NUR eine Kampagne festhaelt (versand_komplett.json), hat weder
+    kunde_pfad.json noch auftrag_meta.json. So sieht die per API angelegte
+    echte Kampagne mit 277 Empfaengern aus, und ebenso jede von Hand
+    verknuepfte Probe. Die fielen alle aus der Kampagnenliste - und damit
+    holte das Postfach ihre Antworten nicht mehr ab, und das CRM blieb
+    leer. Ein Ordner mit campaign_id ist IMMER ein Auftrag.
+    """
+    pfad = Path(pfad)
+    return any((pfad / name).exists() for name in _LAUF_MERKMALE)
+
+
 def _subprozess_umgebung() -> dict:
     """Der Unterprozess MUSS mit cwd=daten_dir gestartet werden (PFLICHT,
     siehe Modul-Kommentar) - daten_dir ist i.A. NICHT der Code-Ordner (im

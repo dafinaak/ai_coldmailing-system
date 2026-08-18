@@ -83,6 +83,13 @@ def mappe_bauen(lauf_dir) -> openpyxl.Workbook:
     leads = (_laden(lauf_dir, "leads.json", {}) or {}).get("leads") or []
     firmen = _laden(lauf_dir, "firmen.json", []) or []
     texte = _texte_nach_mail(_laden(lauf_dir, "personalisierung.json", {}) or {})
+    # Aussortierte Adressen (Doppelt, Sperrliste, schon angeschrieben) stehen
+    # weiter in leads.json und damit auch in dieser Liste. Ohne ihren Grund
+    # standen sie hier mit "noch kein Text" - das liest sich, als käme der
+    # Text noch, dabei geht diese Adresse bewusst gar nicht raus
+    # (gefunden am 17.08.2026 an einer echten Mappe).
+    verworfen = {str(v.get("email", "")).casefold(): str(v.get("grund", ""))
+                 for v in (_laden(lauf_dir, "dedupe.json", {}) or {}).get("verworfen") or []}
 
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -118,6 +125,12 @@ def mappe_bauen(lauf_dir) -> openpyxl.Workbook:
             text.get("gruppe"), "noch kein Text")
         if text.get("gruppe") == "nacharbeit" and text.get("grund"):
             hinweise.append(f"Text: {text['grund']}")
+        # Aussortiert gewinnt: diese Adresse bekommt keinen Text, weil sie
+        # nicht rausgehen soll - nicht, weil noch etwas fehlt.
+        grund_verworfen = verworfen.get(mail.casefold())
+        if grund_verworfen:
+            stand = "geht nicht raus"
+            hinweise.append(grund_verworfen)
 
         nummer += 1
         ws.append([nummer, firma.get("name") or lead.get("company"), person,

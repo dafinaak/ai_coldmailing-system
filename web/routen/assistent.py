@@ -57,12 +57,26 @@ def _daten_dir(request: Request) -> Path:
 
 
 def _firmen_bestand(daten_dir: Path) -> list:
-    """Every company we have already collected, across all lead sources.
+    """Alle bisher gesammelten Firmen, ueber alle Sammlungen hinweg.
 
-    Deliberately reads what is on disk instead of scraping: this is the
-    half of the work that is already paid for and finished.
+    Liest bewusst von der Platte statt zu sammeln: das ist die Haelfte der
+    Arbeit, die schon bezahlt und erledigt ist.
+
+    Jede Sammlung liegt in einem eigenen Ordner unter laeufe/leadquellen/.
+    Die aeltere wird dabei NIE ueberschrieben - eine kaputte Fusion darf
+    nicht den ganzen Bestand beschaedigen (aktuell 1.481 Firmen, rund
+    sieben Dollar Sammelkosten). Nach aussen ist es trotzdem EIN Bestand,
+    weil hier zusammengefuehrt wird.
+
+    Kennt eine spaetere Sammlung dieselbe Firma, ergaenzt sie die
+    fehlenden Felder - Webseite, Telefon, PLZ. Vorher gewann schlicht der
+    erste Fund und alles Spaetere flog weg: eine neue Sammlung konnte den
+    Bestand also nur vergroessern, nie auffrischen (17.08.2026, auf
+    Nachfrage: "vetem me i shtu edhe te rejat aty me u bo update").
+    Gefuellte Felder bleiben unangetastet - ergaenzen, nicht ueberschreiben.
     """
-    bestand, gesehen = [], set()
+    bestand: list = []
+    nach_schluessel: dict = {}
     wurzel = daten_dir / "laeufe" / "leadquellen"
     for pfad in sorted(wurzel.glob("*/firmen.json")) if wurzel.exists() else []:
         try:
@@ -71,10 +85,46 @@ def _firmen_bestand(daten_dir: Path) -> list:
             continue
         for firma in firmen if isinstance(firmen, list) else []:
             schluessel = (firma.get("domain") or firma.get("name") or "").lower()
-            if schluessel and schluessel not in gesehen:
-                gesehen.add(schluessel)
-                bestand.append(firma)
+            if not schluessel:
+                continue
+            bekannt = nach_schluessel.get(schluessel)
+            if bekannt is None:
+                kopie = dict(firma)
+                nach_schluessel[schluessel] = kopie
+                bestand.append(kopie)
+            else:
+                _firma_ergaenzen(bekannt, firma)
     return bestand
+
+
+# Felder, die eine spaetere Sammlung nachtragen darf, wenn sie fehlen.
+# Bewusst ohne "name": der Name ist der Schluessel zur Wiedererkennung und
+# soll sich nicht unter der Hand aendern.
+_ERGAENZBAR = ("website", "domain", "plz", "telefon", "address",
+               "vorhandene_email", "gf_name_liste", "ort")
+
+
+def _firma_ergaenzen(bekannt: dict, neu: dict) -> None:
+    """Leere Felder auffuellen, Kategorien und Quellen sammeln."""
+    for feld in _ERGAENZBAR:
+        if not bekannt.get(feld) and neu.get(feld):
+            bekannt[feld] = neu[feld]
+    kategorien = bekannt.setdefault("categories", [])
+    for kat in neu.get("categories") or []:
+        if kat not in kategorien:
+            kategorien.append(kat)
+    # Alte Saetze tragen "quelle" (eine), neuere "quellen" (mehrere). Beim
+    # ersten Zusammenfuehren die eigene Quelle mit uebernehmen, sonst geht
+    # sie verloren, sobald eine zweite Sammlung dieselbe Firma kennt.
+    if not bekannt.get("quellen") and bekannt.get("quelle"):
+        bekannt["quellen"] = [bekannt["quelle"]]
+    quellen = bekannt.setdefault("quellen", [])
+    neue_quellen = list(neu.get("quellen") or [])
+    if neu.get("quelle"):
+        neue_quellen.append(neu["quelle"])
+    for quelle in neue_quellen:
+        if quelle and quelle not in quellen:
+            quellen.append(quelle)
 
 
 def _entwurf_oder_start(request: Request, kennung: str):
@@ -299,10 +349,57 @@ async def schritt_3_speichern(request: Request, kennung: str):
     except ValueError:
         radius = 50
 
+    # Nur das genaue Wort "neu" sammelt - alles andere nutzt den Bestand.
+    # Bewusst so herum: ein verlorener Formularwert darf nie Geld ausgeben
+    # (gleiches Prinzip wie beim Probe-/Echt-Versand in Schritt 5).
+    quelle = "neu" if str(formular.get("firmen_quelle") or "") == "neu" else "bestand"
     werte = {"ort": ort, "radius_km": radius, "dienste": dienste,
-             "ohne_ort_mitnehmen": bool(formular.get("ohne_ort_mitnehmen"))}
-    entwuerfe.schritt_speichern(_daten_dir(request), kennung, 3, werte)
+             "ohne_ort_mitnehmen": bool(formular.get("ohne_ort_mitnehmen")),
+             "firmen_quelle": quelle}
+    daten_dir = _daten_dir(request)
+    entwuerfe.schritt_speichern(daten_dir, kennung, 3, werte)
+
+    if quelle == "neu":
+        fehler = _sammlung_starten(daten_dir, kennung, werte)
+        if fehler:
+            return _seite(request, entwurf, 3, {
+                "dienste_vorschlaege": dienste_vorschlagen(_firmen_bestand(daten_dir)),
+                "radius_stufen": RADIUS_STUFEN,
+                "bestand_gesamt": len(_firmen_bestand(daten_dir)),
+            }, fehler=fehler, status_code=400)
     return _weiter(kennung, 4)
+
+
+def _sammlung_stand(daten_dir: Path, entwurf: dict) -> dict | None:
+    """Stand der Sammlung dieses Entwurfs - None, wenn keine bestellt war."""
+    if entwurf["daten"].get("firmen_quelle") != "neu":
+        return None
+    from web.sammelmanager import status
+
+    stand = status(daten_dir, entwurf["kennung"])
+    # "unbekannt" heisst: bestellt, aber kein Job-Ordner da. Das ist kein
+    # Wartezustand, sondern ein Fehlstart - dann lieber den Bestand zeigen
+    # als ewig auf etwas zu warten, das nie laeuft.
+    return None if stand["zustand"] == "unbekannt" else stand
+
+
+def _sammlung_starten(daten_dir: Path, kennung: str, werte: dict) -> str | None:
+    """Sammlung im Hintergrund anstossen. Fehlertext oder None.
+
+    Laeuft absichtlich schon HIER los, nicht erst in Schritt 4: so sammelt
+    sie, waehrend die naechste Seite gelesen wird - derselbe Trick, mit dem
+    die Adress-Suche ihre Minuten unsichtbar macht.
+    """
+    from web.sammelmanager import SammelFehler, starte
+
+    try:
+        starte(daten_dir, kennung, werte["ort"], werte["radius_km"],
+               werte["dienste"])
+    except SammelFehler as fehler:
+        return str(fehler)
+    except Exception as fehler:      # noqa: BLE001
+        return f"Die Sammlung konnte nicht starten: {fehler}"
+    return None
 
 
 # ---------------------------------------------------------------- Schritt 4
@@ -314,6 +411,14 @@ def schritt_4(request: Request, kennung: str):
         return umleitung
 
     daten_dir = _daten_dir(request)
+
+    # Laeuft fuer diesen Entwurf noch eine Sammlung, hat der Bestand die
+    # neuen Firmen noch nicht - dann waere jede Zahl auf dieser Seite
+    # falsch. Also warten statt ein leeres Ergebnis zeigen.
+    sammlung = _sammlung_stand(daten_dir, entwurf)
+    if sammlung and sammlung["zustand"] == "laeuft":
+        return _seite(request, entwurf, 4, {"sammlung": sammlung})
+
     bestand = _firmen_bestand(daten_dir)
     try:
         ergebnis = filtern(
@@ -344,6 +449,7 @@ def schritt_4(request: Request, kennung: str):
         "ohne_ort": ergebnis["ohne_ort"],
         "abgewaehlt": abgewaehlt,
         "bestand_gesamt": len(bestand),
+        "sammlung": sammlung,
         "guthaben": guthaben_stand(daten_dir),
     })
 
@@ -395,6 +501,11 @@ def _lauf_starten(request: Request, entwurf: dict, domains: list) -> str | None:
     firmen_pfad.write_text(json.dumps(firmen, ensure_ascii=False, indent=1),
                            encoding="utf-8")
     kunde_datei = _kunde_schreiben(daten_dir, entwurf)
+    # Merken, WELCHE Kundendatei zu diesem Entwurf gehoert: Schritt 5 kommt
+    # erst NACH diesem Punkt und muss seine Antworten nachtragen koennen
+    # (siehe _versand_einstellungen_nachtragen).
+    entwuerfe.schritt_speichern(daten_dir, entwurf["kennung"], 4,
+                                {"kunde_datei": kunde_datei})
 
     try:
         lauf_dir = Laufmanager(daten_dir).starte(
@@ -519,7 +630,20 @@ def _gesperrte(daten_dir: Path) -> list:
 
 
 def _postfaecher(request: Request) -> list:
-    """Sender mailboxes from Instantly - empty list means 'type it in'."""
+    """Absender-Postfaecher aus Instantly - leere Liste heisst "von Hand".
+
+    Postfaecher mit ausgeschaltetem Warmup stehen HINTEN und tragen einen
+    Warnhinweis. Grund (gemessen am 17.08.2026): Von den Postfaechern mit
+    Warmup kam eine Antwort aus einem echten Outlook an, von denen ohne
+    Warmup nicht - und zwar auf DERSELBEN Domain. Warmup laeuft nur, wenn
+    ein Postfach auch empfangen kann; ist es aus, ist das Postfach oft nur
+    zum Senden eingerichtet. Wer so eines waehlt, verliert jede Antwort
+    lautlos - genau das ist der echten Kampagne mit 277 Empfaengern
+    passiert.
+
+    Bewusst kein Ausblenden: welches Postfach benutzt wird, entscheidet der
+    Mensch. Er soll es nur sehen.
+    """
     leser = getattr(request.app.state, "instantly_leser", None)
     if leser is None:
         return []
@@ -528,12 +652,23 @@ def _postfaecher(request: Request) -> list:
     except Exception:      # noqa: BLE001 - a dead API must not block the wizard
         return []
     eintraege = stand.get("postfaecher") if isinstance(stand, dict) else stand
-    adressen = []
+    gut, fraglich = [], []
     for eintrag in eintraege or []:
-        adresse = (eintrag or {}).get("email") if isinstance(eintrag, dict) else eintrag
-        if adresse:
-            adressen.append(str(adresse))
-    return adressen
+        if not isinstance(eintrag, dict):
+            if eintrag:
+                gut.append({"adresse": str(eintrag), "hinweis": ""})
+            continue
+        adresse = eintrag.get("email")
+        if not adresse:
+            continue
+        if eintrag.get("warmup") == "an" and eintrag.get("status") == "verbunden":
+            gut.append({"adresse": str(adresse), "hinweis": ""})
+        else:
+            fraglich.append({
+                "adresse": str(adresse),
+                "hinweis": "Warmup aus - empfängt vermutlich keine Antworten",
+            })
+    return gut + fraglich
 
 
 # ---------------------------------------------------------------- Schritt 5
@@ -590,7 +725,48 @@ async def schritt_5_speichern(request: Request, kennung: str):
                       status_code=400)
 
     entwuerfe.schritt_speichern(_daten_dir(request), kennung, 5, werte)
+    _versand_einstellungen_nachtragen(_daten_dir(request), entwurf, werte)
     return _weiter(kennung, 6)
+
+
+def _versand_einstellungen_nachtragen(daten_dir: Path, entwurf: dict,
+                                       werte: dict) -> None:
+    """Schritt 5 in die schon geschriebene Kundendatei nachtragen.
+
+    Die Kundendatei entsteht in Schritt 4, weil dort die Suche startet -
+    Schritt 5 wird erst DANACH ausgefuellt. Ohne dieses Nachtragen standen
+    Postfach, Signatur und Versandart also leer in der Datei, obwohl sie im
+    Formular beantwortet waren: die Kampagne wurde wieder ohne Absender
+    angelegt, und "Echter Versand" konnte gar nicht ankommen (gefunden am
+    17.08.2026 an einer echten Kampagne mit 17 Empfaengern).
+
+    Nur diese Felder werden angefasst; alles andere in der Datei bleibt, wie
+    es ist. Fehlt die Datei, passiert nichts - dann gibt es auch keinen Lauf.
+    """
+    import yaml
+
+    pfad = daten_dir / str(entwurf["daten"].get("kunde_datei") or "")
+    if not entwurf["daten"].get("kunde_datei") or not pfad.is_file():
+        return
+    try:
+        inhalt = yaml.safe_load(pfad.read_text(encoding="utf-8")) or {}
+    except (OSError, yaml.YAMLError):
+        return
+
+    inhalt["versand_postfach"] = werte.get("versand_postfach", "")
+    inhalt["tageslimit"] = werte.get("tageslimit", 20)
+    inhalt["zeit_von"] = werte.get("zeit_von", "08:00")
+    inhalt["zeit_bis"] = werte.get("zeit_bis", "19:00")
+    inhalt["wochentage"] = werte.get("wochentage") or ["mo", "di", "mi", "do", "fr"]
+    inhalt["signatur"] = werte.get("signatur", "")
+    inhalt["versand_modus"] = "echt" if werte.get("versand_modus") == "echt" else "test"
+    # Der Name unter den Mails: erste Zeile der Signatur, sonst das Postfach.
+    name = (str(werte.get("signatur") or "").strip().splitlines() or [""])[0]
+    if name or werte.get("versand_postfach"):
+        inhalt["absender"] = name or werte["versand_postfach"]
+
+    pfad.write_text(yaml.safe_dump(inhalt, allow_unicode=True, sort_keys=False),
+                    encoding="utf-8")
 
 
 # ---------------------------------------------------------------- Schritt 6

@@ -59,6 +59,26 @@ def _beste_email(email_liste: list):
     return None
 
 
+# Wortanfang der Qualifizierung, die eine Adresse als unbrauchbar ausweist.
+UNGUELTIG = "invalid"
+
+
+def _pruefurteil(zeile: dict) -> dict:
+    """Aus einer Antwortzeile das Urteil ueber die geprueften Adresse.
+
+    Dropcontact gibt bei einer erkannten Adresse ihre Qualifizierung zurueck
+    ("generic@pro" bei info@, "nominative@pro" bei persoenlichen) und laesst
+    das E-Mail-Feld leer, wenn es die Adresse fuer ungueltig haelt.
+    """
+    for eintrag in zeile.get("email") or []:
+        qualifikation = str(eintrag.get("qualification") or "")
+        if eintrag.get("email") and not qualifikation.startswith(UNGUELTIG):
+            return {"status": "gueltig", "qualification": qualifikation}
+        return {"status": "ungueltig", "qualification": qualifikation}
+    # Gar keine Antwortzeile: nichts gewusst heisst nicht versenden.
+    return {"status": "ungueltig", "qualification": ""}
+
+
 def _guthaben_merken(antwort: dict) -> None:
     """Note the credit count Dropcontact just reported.
 
@@ -236,6 +256,48 @@ class DropcontactSource:
             raise RuntimeError(f"Dropcontact lehnt den Batch ab: {grund}")
         _guthaben_merken(daten)
         return daten["request_id"], gesendet
+
+    def adressen_pruefen(self, adressen: list) -> list:
+        """Prueft VORGEGEBENE Adressen - dieselbe Frage, die Hunter beantwortet.
+
+        Dropcontact kann beides: aus Name und Domain eine Adresse bauen UND
+        eine mitgegebene Adresse beurteilen. Gemessen am 17.08.2026:
+
+            info@bundesweit.digital        -> "generic@pro", Adresse kommt zurueck
+            quatschpostfach999@…           -> "invalid@pro", Adresse leer
+
+        Gibt je Eingabe {"status": "gueltig"|"ungueltig", "qualification": …}
+        zurueck, in derselben Reihenfolge. Alles in EINER Anfrage: fuenfzig
+        info@-Adressen einzeln zu fragen waere fuenfzig Wartezeiten.
+
+        Bewusst NICHT auf "nominative@pro" eingeengt: eine info@ IST generisch,
+        das ist ja der Punkt. Ungueltig ist nur, was Dropcontact als ungueltig
+        zurueckgibt oder gar nicht wiederfindet - im Zweifel gilt eine Adresse
+        als ungueltig und geht nicht in den Versand (Projektregel).
+        """
+        sauber = [str(a).strip() for a in adressen if str(a or "").strip()]
+        if not sauber:
+            return []
+        body = {"data": [{"email": a} for a in sauber],
+                "siren": False, "language": "de"}
+        antwort = self.session.post(
+            ENRICH_URL, json=body, headers=self._headers, timeout=60)
+        if antwort.status_code >= 400:
+            raise RuntimeError(
+                f"Dropcontact antwortet mit {antwort.status_code} auf {ENRICH_URL}: "
+                f"{getattr(antwort, 'text', '')}")
+        daten = antwort.json() or {}
+        if daten.get("error") or not daten.get("request_id"):
+            grund = daten.get("reason") or daten.get("error") or "unbekannt"
+            raise RuntimeError(f"Dropcontact lehnt die Prüfung ab: {grund}")
+        _guthaben_merken(daten)
+
+        zeilen = self.zeilen_holen(daten["request_id"])
+        if len(zeilen) != len(sauber):
+            raise RuntimeError(
+                f"Dropcontact liefert {len(zeilen)} Zeilen für {len(sauber)} "
+                f"geprüfte Adressen - Zuordnung unsicher, nichts übernommen.")
+        return [_pruefurteil(zeile) for zeile in zeilen]
 
     def batch_abholen(self, request_id: str, gesendet: list,
                       gesamt: int | None = None) -> list:

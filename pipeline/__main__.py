@@ -97,7 +97,10 @@ def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None
         gefunden, deckung, firmen_mit_ausgang = source_leads(
             kunde, limit, os.environ.get("APIFY_API_KEY", ""),
             os.environ["HUNTER_API_KEY"], os.environ["DROPCONTACT_API_KEY"],
-            **zusatz)
+            # Der Laufordner ist der Merkzettel fuer einen abgegebenen,
+            # noch nicht abgeholten Dropcontact-Auftrag: stirbt der Lauf
+            # in der Wartezeit, sind die Credits sonst verloren.
+            lauf_dir=store.run_dir, **zusatz)
         store.save_step("leads", {"leads": [l.__dict__ for l in gefunden], "deckung": deckung})
         # Apollo-422-Fix: Stufe-1-Firmenliste + Pro-Firma-Ausgang separat
         # persistieren (firmen.json), damit ein spaeterer Blick in den
@@ -136,19 +139,9 @@ def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None
     stand = store.load_step("dedupe")
 
     if not store.step_done("personalisierung"):
-        ki, fertig, nacharbeit = KI(), [], []
-        for d in stand["behalten"]:
-            lead = Lead(**{k: d[k] for k in ("first_name", "last_name", "email",
-                                              "company", "title", "website", "source")})
-            try:
-                webseiten_text = fetch_text(lead.website)
-                # Nachbesserungs-Schleife: bei NEIN wird der Text mit dem
-                # Prüfer-Grund bis zu 3x neu geschrieben, bevor er zur
-                # Nacharbeit fällt (statt sofort auszusortieren).
-                ok, grund, texte, _ = personalisiere_mit_nachbesserung(
-                    lead, kunde, ki, webseiten_text, check)
-            except ValueError as fehler:
-                ok, grund, texte = False, str(fehler), {}
+        fertig, nacharbeit = [], []
+        for lead, (ok, grund, texte) in _texte_schreiben(
+                stand["behalten"], kunde, check):
             if ok:
                 fertig.append({"email": lead.email, **texte})
             else:
@@ -300,6 +293,119 @@ def senden(laufordner: str):
         sys.exit(str(fehler))
     print(f"Kampagne {campaign_id} pausiert angelegt - Aktivierung von Hand in Instantly.")
 
+# Wie viele Kontakte gleichzeitig Texte bekommen. Niedriger angesetzt als
+# bei der Firmensuche: hinter jedem Kontakt stecken mehrere KI-Anfragen
+# (Erstfassung plus bis zu drei Nachbesserungen), und die Anbieter drosseln
+# frueher als gewoehnliche Webserver.
+TEXTE_GLEICHZEITIG = max(1, int(os.environ.get("TEXTE_GLEICHZEITIG", "5")))
+
+
+def _texte_schreiben(behalten, kunde, check):
+    """Texte fuer alle Kontakte schreiben - mehrere gleichzeitig.
+
+    Gemessen am 17.08.2026 an einem echten Lauf: die Adress-Suche brauchte
+    3:45, das Texten 3:18 - also die Haelfte der Gesamtzeit. Getextet wurde
+    dabei ein Kontakt nach dem anderen, obwohl die Zeit fast vollstaendig
+    aus Warten auf die KI besteht.
+
+    Gibt (lead, (ok, grund, texte)) in der Reihenfolge der Eingabe zurueck:
+    Bericht und Freigabe-Tabelle sollen nicht davon abhaengen, welcher
+    Kontakt zufaellig zuerst fertig wird.
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    import threading
+
+    felder = ("first_name", "last_name", "email", "company", "title",
+              "website", "source")
+    leads = [Lead(**{k: d[k] for k in felder}) for d in behalten]
+    if not leads:
+        return []
+
+    # Jeder Thread bekommt seine eigene KI: die haelt eine HTTP-Sitzung,
+    # und die ist fuer gleichzeitige Nutzung nicht ausdruecklich freigegeben.
+    lokal = threading.local()
+
+    def ki_fuer_thread():
+        eigene = getattr(lokal, "ki", None)
+        if eigene is None:
+            eigene = KI()
+            lokal.ki = eigene
+        return eigene
+
+    def einen_text(lead):
+        try:
+            webseiten_text = fetch_text(lead.website)
+            # Nachbesserungs-Schleife: bei NEIN wird der Text mit dem
+            # Prüfer-Grund bis zu 3x neu geschrieben, bevor er zur
+            # Nacharbeit fällt (statt sofort auszusortieren).
+            ok, grund, texte, _ = personalisiere_mit_nachbesserung(
+                lead, kunde, ki_fuer_thread(), webseiten_text, check)
+            return ok, grund, texte
+        except ValueError as fehler:
+            return False, str(fehler), {}
+
+    ergebnisse = [None] * len(leads)
+    with ThreadPoolExecutor(
+            max_workers=min(TEXTE_GLEICHZEITIG, len(leads))) as pool:
+        auftraege = {pool.submit(einen_text, lead): i
+                     for i, lead in enumerate(leads)}
+        for auftrag in as_completed(auftraege):
+            i = auftraege[auftrag]
+            try:
+                ergebnisse[i] = auftrag.result()
+            except Exception as fehler:      # noqa: BLE001
+                # Ein einzelner Kontakt darf den Lauf nicht mitreissen -
+                # gleiche Regel wie bei der Firmensuche.
+                print(f"Kontakt {leads[i].email} übersprungen "
+                      f"(Fehler beim Texten): {fehler}")
+                ergebnisse[i] = (False, f"Fehler beim Texten: {fehler}", {})
+    return list(zip(leads, ergebnisse))
+
+
+def sammeln_cli(ort, radius_km, dienste, limit_pro_suche, ordner=None):
+    """Firmen fuer einen Umkreis sammeln und als eigenen Ordner ablegen.
+
+    Bewusst ein eigener Befehl und kein Teil von "lauf": Sammeln kostet
+    Geld (die Apify-Aktoren rechnen pro Lauf ab) und soll deshalb immer
+    eine bewusste Handlung sein - im Formular die Wahl in Schritt 3, hier
+    ein ausdruecklich getippter Befehl.
+
+    Der Fortschritt wird laufend ausgegeben, damit man bei einer Sammlung,
+    die Minuten dauert, sieht, dass sie lebt.
+    """
+    from datetime import datetime
+
+    from pipeline.firmen_sammeln import ordnername, sammeln, speichern
+    from pipeline.sources.apify_maps import ApifyMapsSource
+    from pipeline.sources.gelbe_seiten import GelbeSeitenQuelle
+    from pipeline.sources.overpass import OverpassQuelle
+
+    apify_key = os.environ.get("APIFY_API_KEY")
+    if not apify_key:
+        raise SystemExit(
+            "Fehlende Umgebungsvariable: APIFY_API_KEY. Ohne sie koennen "
+            "Google Maps und Gelbe Seiten nicht abgefragt werden.")
+
+    print(f"Sammle Firmen: {ort}, {radius_km} km, {', '.join(dienste)}")
+    firmen, bericht = sammeln(
+        ort, radius_km, dienste,
+        maps=ApifyMapsSource(apify_key),
+        gelbe_seiten=GelbeSeitenQuelle(apify_key),
+        overpass=OverpassQuelle(),
+        limit_pro_suche=limit_pro_suche)
+
+    ziel = speichern(".", firmen, bericht,
+                     ordner or ordnername(
+                         ort, radius_km, datetime.now().strftime("%Y%m%d-%H%M")))
+    print(f"Gefunden: {len(firmen)} Firmen")
+    print(f"  je Quelle: {bericht.get('je_quelle')}")
+    print(f"  fremde PLZ verworfen: {bericht.get('fremde_plz')}")
+    if bericht.get("quellen_fehler"):
+        print(f"  AUSGEFALLEN: {bericht['quellen_fehler']}")
+    print(f"Abgelegt in: {ziel}")
+    print("Die Firmen stehen ab sofort im Bestand des Formulars.")
+
+
 def main():
     lade_dotenv()
     parser = argparse.ArgumentParser(prog="pipeline")
@@ -316,6 +422,22 @@ def main():
                         choices=["leads", "dedupe", "personalisierung"],
                         help="Nur zusammen mit --fortsetzen: verwirft diesen Schritt und "
                              "alle nachgelagerten, damit sie neu berechnet werden.")
+    p_sammeln = sub.add_parser(
+        "sammeln", help="Firmen fuer einen Umkreis frisch sammeln (kostet "
+                        "Geld - die Apify-Aktoren rechnen pro Lauf ab).")
+    p_sammeln.add_argument("ort", help="Ortsname oder Postleitzahl")
+    p_sammeln.add_argument("--radius", type=float, default=25.0)
+    p_sammeln.add_argument("--dienst", action="append", dest="dienste",
+                           required=True,
+                           help="Suchbegriff, mehrfach angebbar")
+    p_sammeln.add_argument("--limit", type=int, default=200,
+                           help="Obergrenze je Suchbegriff bei Google Maps")
+    p_sammeln.add_argument("--ordner", dest="ordner", default=None,
+                           help="Name des Zielordners unter laeufe/leadquellen/ "
+                                "- ohne Angabe aus Ort, Radius und Zeit gebaut. "
+                                "Der Aufrufer (Weboberflaeche) gibt ihn vor, "
+                                "damit er das Ergebnis wiederfindet.")
+
     for name in ("freigeben", "senden"):
         p = sub.add_parser(name)
         p.add_argument("laufordner")
@@ -323,6 +445,8 @@ def main():
     if args.befehl == "lauf":
         lauf(args.kunde, args.limit, args.fortsetzen, args.neu_ab,
              args.firmen_datei)
+    elif args.befehl == "sammeln":
+        sammeln_cli(args.ort, args.radius, args.dienste, args.limit, args.ordner)
     elif args.befehl == "freigeben":
         freigeben(args.laufordner)
     else:

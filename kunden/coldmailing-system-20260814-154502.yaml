@@ -1,0 +1,50 @@
+name: coldmailing system
+webseite: https://polepositionautomation.de
+angebot: '- Maßgeschneiderte Automationsinfrastruktur aus einer Hand: Die Firma entwickelt
+  individuelle Automationslösungen, keine Standardtools.
+
+  - Integration bestehender Systeme ohne Ersatz: Bestehende IT-Systeme wie CRM und
+  ERP werden eingebunden, nicht ersetzt.
+
+  - Hosting und Datensicherheit in Deutschland: Daten werden sicher auf deutschen
+  Servern oder im Kundenunternehmen gespeichert.
+
+  - Automationen entsprechen gesetzlichen Anforderungen: Lösungen erfüllen Vorgaben
+  wie DSGVO und ISO 27001-Konformität.
+
+  - Komplettservice mit Hosting und Support: Umfasst Management, Monitoring, Updates,
+  Backups und Troubleshooting.'
+tonalitaet: ruhig, erklärend, keine Superlative, keine Ausrufezeichen
+absender: o.redschlag@poleposition-automation.email
+zielgruppe:
+  titel:
+  - Geschäftsführer
+  - Inhaber
+  region:
+  - Hannover
+  firmengroesse:
+  - alle
+follow_up_tage:
+- 7
+- 14
+test_empfaenger:
+- o.redschlag@poleposition-automation.email
+versand_postfach: o.redschlag@poleposition-automation.email
+tageslimit: 20
+zeit_von: 08:00
+zeit_bis: '19:00'
+wochentage:
+- mo
+- di
+- mi
+- do
+- fr
+signatur: ''
+versand_modus: echt
+maps_suche: (Assistent 20260814-154502)
+kontakt_rollen:
+- Geschäftsführer
+- Inhaber
+anbieter_reihenfolge:
+- impressum
+anweisungen: ''

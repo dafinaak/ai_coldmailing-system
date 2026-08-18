@@ -100,9 +100,9 @@
    "wertbar.com",
    "comnet-solutions.de"
   ],
-  "kunde_datei": "kunden/coldmailing-system.yaml",
+  "kunde_datei": "kunden/coldmailing-system-20260814-154502.yaml",
   "lauf_slug": "coldmailing-system",
-  "lauf_ts": "20260814-155042",
+  "lauf_ts": "20260817-095148",
   "firmen_anzahl": 50,
   "versand_postfach": "o.redschlag@poleposition-automation.email",
   "tageslimit": 20,
@@ -118,7 +118,7 @@
   "abstand_1_2": 7,
   "abstand_2_3": 7,
   "signatur": "",
-  "versand_modus": "test"
+  "versand_modus": "echt"
  },
- "geaendert": "2026-08-14T15:50:49"
+ "geaendert": "2026-08-17T09:51:51"
 }

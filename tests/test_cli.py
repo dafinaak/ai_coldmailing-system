@@ -198,7 +198,11 @@ def test_senden_wiederholt_nach_fehlgeschlagenem_lead_import_ohne_neue_kampagne(
     versand_komplett = store.load_step("versand_komplett")
     assert versand_komplett["campaign_id"] == "camp-1"
 
-def _fake_source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key):
+def _fake_source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
+                        **rest):
+    # **rest schluckt lauf_dir und die injizierbaren Quellen: seit dem
+    # 17.08.2026 gibt der Aufrufer den Laufordner mit, damit ein abgegebener
+    # Dropcontact-Auftrag eine Unterbrechung ueberlebt.
     """Ersetzt pipeline.sourcing.source_leads: liefert 2 feste Leads (statt
     echter Apify-/Hunter-/Dropcontact-Aufrufe) plus eine dazu passende
     Deckungsquote (2 von 2 Firmen mit Kontakt -> 100%), damit alles danach
@@ -279,6 +283,13 @@ def test_lauf_personalisiert_end_zu_ende_und_dedupe_greift_erst_im_naechsten_lau
     assert "Firmen ohne Kontakt: 0" in bericht
     assert ("Firmen-Ausgang: 2 mit persönlichem Entscheider, 0 nur über info@, "
             "0 ohne Webseite, 0 kein Entscheider-Treffer, 0 Fehler") in bericht
+
+    # Der erste Lauf wird als Kampagne uebergeben. Seit 17.08.2026 zaehlt
+    # ein Lauf naemlich erst dann als "angeschrieben", wenn er auch
+    # rausging - vorher sperrte jeder blosse Probelauf seine Firmen fuer
+    # immer (siehe pipeline.dedupe._bekannte_emails).
+    (erster_lauf / "versand_komplett.json").write_text(
+        json.dumps({"campaign_id": "camp-1"}), encoding="utf-8")
 
     # Zweiter, frischer Lauf: jetzt muessen beide Leads aus dem ersten Lauf
     # als "bereits in früherem Lauf angeschrieben" verworfen werden - das

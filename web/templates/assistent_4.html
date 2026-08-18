@@ -1,5 +1,38 @@
 {% extends "assistent_basis.html" %}
 {% block schritt_inhalt %}
+
+{% if sammlung and sammlung.zustand == "laeuft" %}
+{# Solange gesammelt wird, waere jede Zahl hier falsch - der Bestand kennt
+   die neuen Firmen noch nicht. Also warten und die Seite selbst nachsehen
+   lassen, statt dem Menschen das Neuladen aufzuhalsen. #}
+<div class="assi-warten" role="status">
+  <h2 class="assi-block-titel">Die Firmen werden gesammelt</h2>
+  <p>Google Maps, Gelbe Seiten und OpenStreetMap werden für
+    <strong>{{ entwurf.daten.ort }}</strong> im Umkreis von
+    {{ entwurf.daten.radius_km }} km abgefragt. Das dauert einige Minuten.</p>
+  <p class="formular-hilfstext">Diese Seite sieht von selbst nach. Du kannst
+    das Fenster auch schließen — gesammelt wird weiter.</p>
+</div>
+<div class="assi-fuss">
+  <a href="/assistent/{{ entwurf.kennung }}/3" class="knopf-sekundaer">← Zurück</a>
+  <a href="/kampagnen" class="knopf-sekundaer">Schließen — läuft weiter</a>
+</div>
+<script>
+  // Alle zehn Sekunden nachsehen. Kein eigener Status-Aufruf noetig: die
+  // Seite selbst zeigt das Ergebnis, sobald die Sammlung fertig ist.
+  setTimeout(function () { window.location.reload(); }, 10000);
+</script>
+{% else %}
+
+{% if sammlung and sammlung.zustand == "fehler" %}
+<div class="hinweis-kasten" role="alert">
+  Die Sammlung ist nicht durchgelaufen: {{ sammlung.meldung }}
+  Unten stehen die Firmen aus dem vorhandenen Bestand.
+</div>
+{% elif sammlung and sammlung.zustand == "fertig" %}
+<div class="hinweis-kasten">{{ sammlung.meldung }} Sie stehen ab sofort im Bestand.</div>
+{% endif %}
+
 <form method="post" action="/assistent/{{ entwurf.kennung }}/4" class="assi-form">
 
   {# Zahlenreihe wie im Wholix-Bildschirmfoto - hier aber ueber unserem
@@ -88,4 +121,5 @@
     {% endif %}
   </div>
 </form>
+{% endif %}
 {% endblock %}

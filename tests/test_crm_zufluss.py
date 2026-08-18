@@ -7,8 +7,12 @@ def _speicher(tmp_path):
                             uhr=lambda: "2026-07-29T12:00:00")
 
 
-def _konversation(email="chef@firma.de", richtungen=("gesendet", "erhalten"),
+def _konversation(email="chef@firma.de", richtungen=("gesendet", "empfangen"),
                   campaign_id="camp-1"):
+    # "empfangen" ist das Wort, das web.instantly_leser wirklich liefert.
+    # Bis 17.08.2026 stand hier "erhalten" - ein Wort, das in echten Daten
+    # nie vorkommt. Der Test war gruen, der CRM-Zufluss legte trotzdem nie
+    # einen Kontakt an. Der Test hat sich selbst geprueft, nicht die Welt.
     return {"kontakt_email": email,
             "nachrichten": [{"richtung": r, "campaign_id": campaign_id}
                             for r in richtungen]}

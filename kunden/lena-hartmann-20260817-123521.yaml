@@ -1,0 +1,50 @@
+name: Lena Hartmann
+webseite: https://polepositionautomation.de
+angebot: '- Maßgeschneiderte Automations-Infrastruktur aus einem Guss: Die Firma entwickelt
+  individuelle Automationslösungen statt einzelner Tools.
+
+  - Bestehende IT-Systeme werden integriert, nicht ersetzt: Automationen arbeiten
+  mit vorhandenen CRM, ERP-Systemen zusammen.
+
+  - Automation-as-a-Service inklusive Hosting und Management: Die Firma übernimmt
+  Betrieb, Wartung und Updates der Automationen.
+
+  - Hochwertige Datensicherheit und DSGVO-Konformität: Daten werden sicher auf deutschen
+  Servern oder vor Ort gespeichert.
+
+  - Anwendungsbereiche von Vertrieb bis Controlling automatisierbar: Automationen
+  unterstützen Administration, Kundenservice, Kommunikation und mehr.'
+tonalitaet: ruhig, erklärend, keine Superlative, keine Ausrufezeichen
+absender: o.redschlag@poleposition-automation.online
+zielgruppe:
+  titel:
+  - Geschäftsführer
+  - Inhaber
+  region:
+  - Deutschland
+  firmengroesse:
+  - alle
+follow_up_tage:
+- 7
+- 14
+test_empfaenger:
+- o.redschlag@poleposition-automation.online
+versand_postfach: o.redschlag@poleposition-automation.online
+tageslimit: 20
+zeit_von: 08:00
+zeit_bis: '19:00'
+wochentage:
+- mo
+- di
+- mi
+- do
+- fr
+signatur: ''
+versand_modus: test
+maps_suche: (Assistent 20260817-123521)
+kontakt_rollen:
+- Geschäftsführer
+- Inhaber
+anbieter_reihenfolge:
+- impressum
+anweisungen: ''

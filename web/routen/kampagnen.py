@@ -20,7 +20,8 @@ from fastapi.responses import RedirectResponse
 from pipeline.approval import freigabe_info
 from pipeline.run_store import RunStore
 from web import auth
-from web.laufmanager import Laufmanager, _lade_json_sicher, wartet_seit_text as _wartet_seit_text
+from web.laufmanager import (Laufmanager, _lade_json_sicher, ist_laufordner,
+                              wartet_seit_text as _wartet_seit_text)
 from web.nav import nav_kontext
 from web.wartende import format_deutsches_datum, kunde_fuer as _kunde_fuer
 
@@ -162,6 +163,8 @@ def _alle_laeufe(daten_dir) -> list[dict]:
         return ergebnis
     for kunden_ordner in sorted(p for p in laeufe_wurzel.iterdir() if p.is_dir()):
         for lauf_dir in sorted(p for p in kunden_ordner.iterdir() if p.is_dir()):
+            if not ist_laufordner(lauf_dir):
+                continue
             store = RunStore.resume(lauf_dir)
             stand = manager.status(lauf_dir)
             try:

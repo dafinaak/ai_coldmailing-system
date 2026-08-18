@@ -12,7 +12,7 @@
       <p>Die E-Mails werden im Namen von {{ absender }} versendet. Schritt 2 folgt nach {{ tag_1 }} Tagen, Schritt 3 nach {{ tag_2 }} Tagen.</p>
     </div>
     {% if campaign_id %}
-    <a href="https://app.instantly.ai/app/campaign/{{ campaign_id }}" target="_blank"
+    <a href="{{ instantly_kampagne_url(campaign_id) }}" target="_blank"
        rel="noopener" class="freigabe-instantly-link">In Instantly öffnen ↗</a>
     {% endif %}
   </header>

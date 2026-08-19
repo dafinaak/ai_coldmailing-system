@@ -28,11 +28,11 @@ import json
 from pathlib import Path
 
 from fastapi import APIRouter, Form, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 
 from pipeline import assistent_entwurf as entwuerfe
 from pipeline.config import lade_globale_sperrlisten_eintraege
-from pipeline.firmen_filter import dienste_vorschlagen, filtern
+from pipeline.firmen_filter import dienste_vorschlagen, filtern, ort_mit_plz
 from web import auth
 from web.nav import nav_kontext
 
@@ -833,3 +833,39 @@ def kontakte_excel(request: Request, kennung: str):
         media_type="application/vnd.openxmlformats-officedocument."
                    "spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="{dateiname}"'})
+
+
+@router.get("/assistent/{kennung}/bestand-zahl")
+def bestand_zahl(request: Request, kennung: str, ort: str = "",
+                 radius_km: int = 50, dienste: str = ""):
+    """Wie viele Firmen hat der Bestand fuer diesen Ort und Umkreis?
+
+    Schritt 3 fragt das waehrend des Tippens ab. Vorher musste man erst
+    weiterklicken, um zu sehen, dass der Bestand fuer diese Stadt leer ist -
+    und stand dann in Schritt 4 vor einer Null, ohne zu wissen warum
+    (17.08.2026, auf Wunsch: "sapo shkruash qytetin, të të tregojë sa firma
+    ka baza për atë zonë").
+
+    Antwortet immer mit 200 und einem Text, den die Seite direkt anzeigen
+    kann - ein unbekannter Ort ist hier kein Fehler, sondern eine Auskunft.
+    """
+    daten_dir = _daten_dir(request)
+    liste = [d.strip() for d in dienste.split(",") if d.strip()]
+    try:
+        ergebnis = filtern(_firmen_bestand(daten_dir), ort=ort,
+                           radius_km=radius_km, dienste=liste,
+                           gesperrte_domains=_gesperrte(daten_dir))
+    except ValueError as fehler:
+        return JSONResponse({"bekannt": False, "treffer": None,
+                             "text": str(fehler)})
+    treffer = len(ergebnis["treffer"])
+    ohne_ort = len(ergebnis["ohne_ort"])
+    if treffer:
+        text = f"Im Bestand sind {treffer} passende Firmen für diese Angaben."
+        if ohne_ort:
+            text += f" Dazu {ohne_ort} ohne bekannte Postleitzahl."
+    else:
+        text = ("Im Bestand ist für diese Angaben keine einzige Firma. "
+                "Ohne neues Sammeln bleibt der nächste Schritt leer.")
+    return JSONResponse({"bekannt": True, "treffer": treffer,
+                         "ohne_ort": ohne_ort, "text": text})

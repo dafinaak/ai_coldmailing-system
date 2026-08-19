@@ -1,0 +1,46 @@
+{
+ "kennung": "20260818-100634",
+ "angelegt": "2026-08-18T10:06:34",
+ "schritt": 2,
+ "hoechster_schritt": 2,
+ "daten": {
+  "name": "TEST Computerservice Hannover 18.08",
+  "sprache": "de",
+  "anzahl_leads": 10,
+  "beschreibung": "Technologie-Partnerschaft für IT-Dienstleister: Sie sollen unsere\r\nAutomationen ihren eigenen Kunden anbieten können. Angeschrieben werden\r\ndie Dienstleister selbst, nicht deren Kunden.",
+  "verkaeufer_url": "https://polepositionautomation.de",
+  "absender_email": "o.redschlag@poleposition-automation.email",
+  "referenz_1": "",
+  "referenz_2": "",
+  "anweisungen": "Ruhig und erklärend. Keine Superlative, keine Ausrufezeichen.",
+  "usp": [
+   {
+    "titel": "Maßgeschneiderte Automations-Infrastruktur aus einem Guss",
+    "erklaerung": "Die Firma entwickelt individuelle Automationslösungen statt einzelne Tools."
+   },
+   {
+    "titel": "Integration statt Ersatz bestehender IT-Systeme",
+    "erklaerung": "Vorhandene CRM- und ERP-Systeme werden in Automationen eingebunden."
+   },
+   {
+    "titel": "Hosting und Datenmanagement in Deutschland",
+    "erklaerung": "Automationen werden auf sicheren Servern in Deutschland gehostet."
+   },
+   {
+    "titel": "Umfassender Automation-as-a-Service (AaaS)",
+    "erklaerung": "Die Firma übernimmt Hosting, Monitoring, Updates und Support."
+   },
+   {
+    "titel": "DSGVO- und ISO 9001-konforme Lösungen",
+    "erklaerung": "Die Automationen erfüllen gesetzliche Datenschutz- und Qualitätsstandards."
+   }
+  ],
+  "icp": {
+   "firmografisch": "Mittelständische Unternehmen aus Deutschland verschiedener Branchen mit bestehenden CRM- und ERP-Systemen",
+   "technografisch": "Nutzung von CRM, ERP-Systemen; Interesse an KI-gestützten Automationen und App-Entwicklung",
+   "verhalten": "Suchen Automatisierungslösungen zur Effizienzsteigerung, Kostensenkung und Prozessdigitalisierung",
+   "entscheider": "IT-Leiter, Digitalisierungsbeauftragte, Geschäftsführer oder Verantwortliche für Prozessoptimierung"
+  }
+ },
+ "geaendert": "2026-08-18T10:10:23"
+}

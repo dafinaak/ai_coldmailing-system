@@ -1,0 +1,233 @@
+[
+ {
+  "name": "HanovaTech GmbH",
+  "website": "https://hanovatech.de",
+  "domain": "hanovatech.de",
+  "address": "Spielhagenstr. 25, 30171 Hannover (Südstadt)",
+  "categories": [
+   "IT-Dienstleistungen",
+   "Computerservice",
+   "IT-Berater",
+   "Computerreparaturdienst",
+   "Computersupport und -dienste",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30171",
+  "telefon": "+4951151512490",
+  "vorhandene_email": "info@hanovatech.de",
+  "gf_name_liste": "Hashem Mahmoud; Henry Akmann",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps",
+   "alte_liste"
+  ],
+  "quelle": "gelbe_seiten+maps+alte_liste"
+ },
+ {
+  "name": "TORUTEC GmbH",
+  "website": "https://torutec.com/it-dienstleister/hannover/",
+  "domain": "torutec.com",
+  "address": "Nikolaistr. 14, 30159 Hannover (Mitte)",
+  "categories": [
+   "IT-Dienstleistungen",
+   "IT-Berater",
+   "Computerservice",
+   "Computersupport und -dienste",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30159",
+  "telefon": "+49511592910",
+  "vorhandene_email": "kontakt@torutec.com",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps",
+   "alte_liste"
+  ],
+  "quelle": "gelbe_seiten+maps+alte_liste"
+ },
+ {
+  "name": "IT-Hilfe Rusche & Osman GbR",
+  "website": "http://www.ithilfe-ro.de",
+  "domain": "ithilfe-ro.de",
+  "address": "Hans-Böcker-Allee 20, 30173 Hannover",
+  "categories": [
+   "IT-Beratung",
+   "IT-Berater",
+   "Computernetzwerk-Service",
+   "Computerreparaturdienst",
+   "Computerservice",
+   "Computersupport und -dienste"
+  ],
+  "plz": "30173",
+  "telefon": "+4951151544707",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps"
+  ],
+  "quelle": "gelbe_seiten+maps"
+ },
+ {
+  "name": "Patrick Peter Pryga - IT-Service Pryga -",
+  "website": "http://www.pryga.de",
+  "domain": "pryga.de",
+  "address": "Schützenstr. 8, 30161 Hannover (List)",
+  "categories": [
+   "Webdesign",
+   "IT-Berater",
+   "Computerreparaturdienst",
+   "Computersicherheitsdienst",
+   "Computerservice"
+  ],
+  "plz": "30161",
+  "telefon": "+4951137380906",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "gelbe_seiten",
+   "maps"
+  ],
+  "quelle": "gelbe_seiten+maps"
+ },
+ {
+  "name": "Michael Wessel Informationstechnologie GmbH",
+  "website": "https://www.michael-wessel.de/",
+  "domain": "michael-wessel.de",
+  "address": "Freundallee 23, 30173 Hannover-Südstadt-Bult, Deutschland",
+  "categories": [
+   "IT-Berater",
+   "Computernetzwerk-Service",
+   "Computersicherheitsdienst",
+   "Computerservice",
+   "Softwarehändler",
+   "Computersupport und -dienste",
+   "IT-Dienstleister / IT-Systemhaus"
+  ],
+  "plz": "30173",
+  "telefon": "+49 511 99979200",
+  "vorhandene_email": "service@michael-wessel.de",
+  "gf_name_liste": "Michael Wessel",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps",
+   "alte_liste"
+  ],
+  "quelle": "maps+alte_liste"
+ },
+ {
+  "name": "Denk IT GmbH",
+  "website": "https://www.denkit.com/",
+  "domain": "denkit.com",
+  "address": "Bahnhofstraße 8, 30159 Hannover, Deutschland",
+  "categories": [
+   "Computersupport und -dienste",
+   "Computersicherheitsdienst",
+   "Computerservice",
+   "IT-Berater",
+   "Informationsservice"
+  ],
+  "plz": "30159",
+  "telefon": "+49 511 93639449",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "RAT & TAT - EDV SERVICE - DATENRETTUNG - LAPTOP REPARATUR UND MEHR....",
+  "website": "https://sites.google.com/view/ratundtat-hannover/start",
+  "domain": "sites.google.com",
+  "address": "Voßstraße 56, 30163 Hannover, Deutschland",
+  "categories": [
+   "Computerservice",
+   "IT-Berater",
+   "Computergeschäft",
+   "Computersupport und -dienste",
+   "Datenrettungsdienst",
+   "Reparaturladen für Mobiltelefone",
+   "Telefonreparaturdienst",
+   "Druckerreparaturservice"
+  ],
+  "plz": "30163",
+  "telefon": "+49 511 3400266",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Ai-Lo Computer & Service GmbH",
+  "website": "https://www.ai-lo.de/",
+  "domain": "ai-lo.de",
+  "address": "Hildesheimer Str. 88, 30169 Hannover, Deutschland",
+  "categories": [
+   "Computergeschäft",
+   "IT-Berater",
+   "Computerreparaturdienst",
+   "Computerservice",
+   "Softwarehändler",
+   "Computersupport und -dienste",
+   "Softwareentwickler/-hersteller",
+   "Geschäft für Second-Hand-Computer",
+   "Webdesigner"
+  ],
+  "plz": "30169",
+  "telefon": "+49 511 45000199",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "Informatikheld - Daniel Pomella",
+  "website": "https://informatikheld.de/",
+  "domain": "informatikheld.de",
+  "address": "Kommandanturstraße 14, 30169 Hannover, Deutschland",
+  "categories": [
+   "Computerservice",
+   "IT-Berater"
+  ],
+  "plz": "30169",
+  "telefon": "+49 15678 531463",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ },
+ {
+  "name": "ITKlar",
+  "website": "http://itklar.de/",
+  "domain": "itklar.de",
+  "address": "Dragonerstraße 34, 30163 Hannover-Vahrenwald-List, Deutschland",
+  "categories": [
+   "Computerservice"
+  ],
+  "plz": "30163",
+  "telefon": "+49 1512 0101993",
+  "vorhandene_email": "",
+  "gf_name_liste": "",
+  "ausserhalb_region": false,
+  "quellen": [
+   "maps"
+  ],
+  "quelle": "maps"
+ }
+]

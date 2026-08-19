@@ -127,3 +127,40 @@ def dienste_vorschlagen(firmen: list, anzahl: int = 15) -> list:
             if text and "=" not in text:      # "office=it" ist Maschinen-Kram
                 zaehler[text] += 1
     return [name for name, _ in zaehler.most_common(anzahl)]
+
+
+# "Rolandstr. 2-3, 30161 Hannover (Vahrenwald)" -> die Postleitzahl, dann
+# der Ortsname bis zum naechsten Komma oder einer Klammer.
+_ORT_IN_ADRESSE = re.compile(r"\b(\d{5})\s+([^,(0-9]+)")
+
+
+def ort_aus_adresse(adresse: object, plz: object = "") -> str:
+    """Den Ortsnamen aus der Adresszeile holen.
+
+    Die Quellen liefern die Adresse als eine Zeile und den Ort nirgends
+    einzeln - das Feld "ort" ist bei allen 1.481 gesammelten Firmen leer.
+    In Schritt 4 stand deshalb nur die Postleitzahl, und "30161" sagt
+    niemandem etwas (18.08.2026).
+
+    Steht eine Postleitzahl fest, wird genau die gesucht; sonst die erste
+    fuenfstellige Zahl. Findet sich nichts, kommt ein leerer Text zurueck -
+    lieber nur die Zahl als ein geratener Ort.
+    """
+    text = str(adresse or "").strip()
+    if not text:
+        return ""
+    plz = str(plz or "").strip()
+    if plz:
+        treffer = re.search(rf"\b{re.escape(plz)}\s+([^,(0-9]+)", text)
+        if treffer:
+            return treffer.group(1).strip(" -")
+    treffer = _ORT_IN_ADRESSE.search(text)
+    return treffer.group(2).strip(" -") if treffer else ""
+
+
+def ort_mit_plz(firma: dict) -> str:
+    """"30161 Hannover" fuer die Anzeige - oder nur das, was bekannt ist."""
+    plz = str(firma.get("plz") or "").strip()
+    ort = str(firma.get("ort") or "").strip() or ort_aus_adresse(
+        firma.get("address"), plz)
+    return " ".join(t for t in (plz, ort) if t)

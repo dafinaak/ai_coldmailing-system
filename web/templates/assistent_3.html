@@ -67,8 +67,12 @@
       <span>
         <strong>Aus dem Bestand</strong> — {{ bestand_gesamt }} bereits
         gesammelte Firmen. Sofort da, kostet nichts.
-        <span class="formular-hilfstext">Der Bestand deckt heute den Raum
-          Hannover ab. Für andere Städte ist er leer.</span>
+        {# Zaehlt mit, was oben eingegeben wird: sonst sieht man erst in
+           Schritt 4, dass der Bestand fuer diese Stadt leer ist. #}
+        <span class="formular-hilfstext" id="bestand-treffer"
+              data-adresse="/assistent/{{ entwurf.kennung }}/bestand-zahl">
+          Ort und Leistung oben eingeben — dann steht hier, wie viele davon
+          passen.</span>
       </span>
     </label>
     <label class="assi-versandart assi-versandart--echt">
@@ -88,4 +92,56 @@
     <button type="submit" class="knopf-primaer">Firmen suchen →</button>
   </div>
 </form>
+
+{# Zaehlt den Bestand mit, waehrend oben getippt wird. Rein zusaetzlich:
+   ohne JavaScript bleibt der Einleitungssatz stehen und das Formular
+   funktioniert unveraendert. #}
+<script>
+(function () {
+  var ziel = document.getElementById("bestand-treffer");
+  if (!ziel) { return; }
+  var ort = document.getElementById("ort");
+  var radius = document.getElementById("radius_km");
+  var eigen = document.getElementById("dienst_eigen");
+  var haken = document.querySelectorAll('input[name="dienste"]');
+  var wartet = null;
+  var laufende = 0;
+
+  function dienste() {
+    var namen = [];
+    haken.forEach(function (h) { if (h.checked) { namen.push(h.value); } });
+    if (eigen && eigen.value.trim()) { namen.push(eigen.value.trim()); }
+    return namen.join(",");
+  }
+
+  function nachsehen() {
+    var adresse = ziel.dataset.adresse
+      + "?ort=" + encodeURIComponent(ort ? ort.value.trim() : "")
+      + "&radius_km=" + encodeURIComponent(radius ? radius.value : "50")
+      + "&dienste=" + encodeURIComponent(dienste());
+    var meine = ++laufende;
+    fetch(adresse)
+      .then(function (a) { return a.json(); })
+      .then(function (d) {
+        // Eine spaetere Eingabe hat Vorrang - sonst ueberschreibt eine
+        // langsame Antwort das Ergebnis der neueren.
+        if (meine !== laufende) { return; }
+        ziel.textContent = d.text;
+        ziel.classList.toggle("bestand-leer", d.bekannt && d.treffer === 0);
+      })
+      .catch(function () { /* Netz weg: der alte Text bleibt stehen */ });
+  }
+
+  function spaeter() {
+    window.clearTimeout(wartet);
+    wartet = window.setTimeout(nachsehen, 400);
+  }
+
+  if (ort) { ort.addEventListener("input", spaeter); }
+  if (radius) { radius.addEventListener("change", spaeter); }
+  if (eigen) { eigen.addEventListener("input", spaeter); }
+  haken.forEach(function (h) { h.addEventListener("change", spaeter); });
+  if (ort && ort.value.trim()) { nachsehen(); }
+})();
+</script>
 {% endblock %}

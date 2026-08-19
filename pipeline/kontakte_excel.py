@@ -25,6 +25,7 @@ from pathlib import Path
 import openpyxl
 
 from pipeline.anrede_spalte import baue_anrede
+from pipeline.firmen_filter import ort_mit_plz
 
 AUSGANG_TEXT = {
     "info_ungueltig": "info@-Adresse geprüft und nicht zustellbar",
@@ -32,8 +33,12 @@ AUSGANG_TEXT = {
     "keine_webseite": "keine Webseite hinterlegt",
     "fehler": "Fehler bei der Suche (später erneut versuchen)",
 }
+# "Ort" statt "PLZ": in der Spalte steht seit 18.08.2026 "30161 Hannover"
+# statt nur der Zahl - wer die Liste zum Anrufen benutzt, will den Ort
+# lesen koennen (das Feld "ort" ist bei den gesammelten Firmen leer, der
+# Name kommt aus der Adresszeile, siehe pipeline.firmen_filter).
 KOPF_KONTAKTE = ["Nr", "Firma", "Person", "Anrede", "E-Mail", "Telefon",
-                 "PLZ", "Webseite", "Betreff", "Text", "Hinweis"]
+                 "Ort", "Webseite", "Betreff", "Text", "Hinweis"]
 
 
 def _domain(wert: object) -> str:
@@ -134,7 +139,7 @@ def mappe_bauen(lauf_dir) -> openpyxl.Workbook:
 
         nummer += 1
         ws.append([nummer, firma.get("name") or lead.get("company"), person,
-                   anrede, mail, firma.get("telefon"), firma.get("plz"),
+                   anrede, mail, firma.get("telefon"), ort_mit_plz(firma),
                    firma.get("website") or lead.get("website"),
                    text.get("betreff"), stand, " | ".join(hinweise)])
         if hinweise:
@@ -153,7 +158,7 @@ def mappe_bauen(lauf_dir) -> openpyxl.Workbook:
 def _blatt_anruf_brief(wb: openpyxl.Workbook, firmen: list) -> None:
     """Companies without a usable address - never silently dropped."""
     blatt = wb.create_sheet("Anruf & Brief")
-    blatt.append(["Firma", "Warum keine E-Mail", "Telefon", "PLZ", "Webseite"])
+    blatt.append(["Firma", "Warum keine E-Mail", "Telefon", "Ort", "Webseite"])
     for firma in firmen:
         ausgang = firma.get("ausgang")
         if ausgang in (None, "mit_entscheider", "info_fallback"):
@@ -165,7 +170,7 @@ def _blatt_anruf_brief(wb: openpyxl.Workbook, firmen: list) -> None:
         # pipeline.sourcing.fehler_satz).
         grund = firma.get("fehler_grund") or AUSGANG_TEXT.get(ausgang, ausgang)
         blatt.append([firma.get("name"), grund,
-                      firma.get("telefon"), firma.get("plz"),
+                      firma.get("telefon"), ort_mit_plz(firma),
                       firma.get("website")])
 
 

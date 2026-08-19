@@ -1,0 +1,50 @@
+name: TEST Computerservice Hannover 18.08
+webseite: https://polepositionautomation.de
+angebot: '- Maßgeschneiderte Automations-Infrastruktur: Wir entwickeln individuelle
+  Automationslösungen, keine Standard-Tools.
+
+  - Integration bestehender IT-Systeme: Bestehende CRM- und ERP-Systeme werden integriert,
+  nicht ersetzt.
+
+  - Automation-as-a-Service inklusive Betrieb: Wir bieten Hosting, Management und
+  Wartung der Automationen an.
+
+  - Datensicherheit und DSGVO-Konformität: Daten werden sicher in Deutschland gespeichert
+  und rechtlich geschützt.
+
+  - ISO 9001 zertifizierte Qualitätsstandards: Qualität wird durch externe Zertifizierung
+  abgesichert.'
+tonalitaet: ruhig, erklärend, keine Superlative, keine Ausrufezeichen
+absender: Oliver Redschlag
+zielgruppe:
+  titel:
+  - Geschäftsführer
+  - Inhaber
+  region:
+  - Hannover
+  firmengroesse:
+  - alle
+follow_up_tage:
+- 7
+- 14
+test_empfaenger:
+- o.redschlag@poleposition-automation.email
+versand_postfach: o.redschlag@poleposition-automation.email
+tageslimit: 20
+zeit_von: 08:00
+zeit_bis: '19:00'
+wochentage:
+- mo
+- di
+- mi
+- do
+- fr
+signatur: "Oliver Redschlag\r\nPolePosition Automation\r\n– Geschäftsführer/CEO –"
+versand_modus: test
+maps_suche: (Assistent 20260818-104446)
+kontakt_rollen:
+- Geschäftsführer
+- Inhaber
+anbieter_reihenfolge:
+- impressum
+anweisungen: Ruhig und erklärend. Keine Superlative, keine Ausrufezeichen.

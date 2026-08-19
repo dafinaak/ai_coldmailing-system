@@ -17,6 +17,13 @@
     {% endif %}
   </header>
 
+  {# Stand der letzten "an mich zur Ansicht"-Mail. Steht bewusst oben:
+     der Versand dauert Minuten, und man will beim Zurueckkommen sehen,
+     ob sie raus ist. #}
+  {% if probe_stand and probe_stand.zustand %}
+  <div class="hinweis-kasten" role="status">{{ probe_stand.meldung }}</div>
+  {% endif %}
+
   {% if fehler %}<div class="formular-fehler">{{ fehler }}</div>{% endif %}
   {% if versand_fehler %}
   <div class="fehler-box">
@@ -159,6 +166,26 @@
                     <button type="submit" class="knopf-sekundaer">Neu erzeugen lassen</button>
                   </form>
                 </div>
+                {# Denselben Text einmal an die eigene Adresse schicken, um
+                   ihn im Posteingang zu sehen: Absender, Betreff, Anrede.
+                   Geht NIE an einen echten Empfaenger dieser Runde - das
+                   prueft web.probe_versand. #}
+                <form method="post" action="/pruefen/{{ slug }}/{{ ts }}/ansichts-probe"
+                      class="freigabe-probe-form">
+                  <input type="hidden" name="recipient_id" value="{{ e.id }}">
+                  <input type="hidden" name="step" value="{{ step.key }}">
+                  <label class="formular-label" for="probe-{{ e.id }}-{{ step.key }}">
+                    Zur Ansicht an mich schicken</label>
+                  <div class="freigabe-probe-zeile">
+                    <input class="formular-eingabe" type="email" required
+                           id="probe-{{ e.id }}-{{ step.key }}" name="empfaenger"
+                           value="{{ probe_adresse }}" placeholder="ich@firma.de">
+                    <button type="submit" class="knopf-sekundaer">Senden</button>
+                  </div>
+                  <p class="formular-hilfstext">Eine einzelne Mail an die eigene
+                    Adresse, damit man den Text im Posteingang sieht. Dauert ein
+                    paar Minuten und ändert an dieser Runde nichts.</p>
+                </form>
                 {% endif %}
               </div>
             </dialog>

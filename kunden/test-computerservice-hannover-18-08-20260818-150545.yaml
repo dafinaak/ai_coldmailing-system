@@ -1,0 +1,50 @@
+name: TEST Computerservice Hannover 18.08
+webseite: https://polepositionautomation.de
+angebot: '- Maßgeschneiderte Automations-Infrastruktur aus einer Hand: Die Firma entwickelt
+  individuelle Automationslösungen statt Einzel-Tools.
+
+  - Integration in bestehende IT-Systeme ohne Änderungen: Bestehende Systeme wie CRM
+  und ERP werden eingebunden, nicht ersetzt.
+
+  - Hosting und Datenmanagement in Deutschland: Automationen werden auf sicheren Partner-Servern
+  in Deutschland gehostet.
+
+  - Umfassendes Automation-as-a-Service Angebot: Hosting, Management, Monitoring und
+  Updates werden komplett übernommen.
+
+  - Einhaltung gesetzlicher und regulatorischer Vorgaben: Automationen sind DSGVO-konform
+  und entsprechen weiteren Richtlinien.'
+tonalitaet: ruhig, erklärend, keine Superlative, keine Ausrufezeichen
+absender: o.redschlag@poleposition-automation.email
+zielgruppe:
+  titel:
+  - Geschäftsführer
+  - Inhaber
+  region:
+  - Hannover
+  firmengroesse:
+  - alle
+follow_up_tage:
+- 7
+- 14
+test_empfaenger:
+- o.redschlag@poleposition-automation.email
+versand_postfach: ''
+tageslimit: 20
+zeit_von: 08:00
+zeit_bis: '19:00'
+wochentage:
+- mo
+- di
+- mi
+- do
+- fr
+signatur: ''
+versand_modus: test
+maps_suche: (Assistent 20260818-150545)
+kontakt_rollen:
+- Geschäftsführer
+- Inhaber
+anbieter_reihenfolge:
+- impressum
+anweisungen: ''

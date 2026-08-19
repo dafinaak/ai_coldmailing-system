@@ -362,6 +362,72 @@ def _texte_schreiben(behalten, kunde, check):
     return list(zip(leads, ergebnisse))
 
 
+def ansichts_probe_cli(job_ordner):
+    """Eine einzelne Ansichts-Mail verschicken und danach SELBST pausieren.
+
+    Instantly verschickt nicht sofort: am 18.08.2026 lagen 200 Sekunden
+    zwischen Aktivieren und Mail. Deshalb laeuft das hier als eigener
+    Auftrag - und deshalb steht am Ende ein Pausieren im finally-Block.
+    Eine Kampagne, die niemand freigegeben hat, darf nicht aktiv
+    stehenbleiben (Projektregel vom 17.08.2026).
+    """
+    import time
+
+    from pipeline.senders.instantly import InstantlySender
+
+    job = Path(job_ordner)
+    auftrag = json.loads((job / "auftrag.json").read_text(encoding="utf-8"))
+    sender = InstantlySender(os.environ["INSTANTLY_API_KEY"])
+
+    class _Probe:
+        name = "Ansichts-Probe"
+        follow_up_tage = [7, 14]
+        versand_postfach = auftrag["absender"]
+        tageslimit = 20
+        zeit_von = "08:00"
+        zeit_bis = "19:00"
+        wochentage = ["mo", "di", "mi", "do", "fr"]
+
+    betreff = auftrag.get("betreff") or "Ansichts-Probe"
+    print(f"Ansichts-Probe an {auftrag['empfaenger']} über {auftrag['absender']}")
+    campaign_id = sender.create_campaign(
+        _Probe(), name=f"[TEST] Ansicht {betreff}"[:120],
+        absender_emails=[auftrag["absender"]], betreffs=(betreff, "", ""))
+    sender.import_leads(campaign_id, [{
+        "email": auftrag["empfaenger"], "betreff": betreff,
+        "mail_1": auftrag["text"],
+        "follow_up_1": "Nicht verwendet - reine Ansichts-Probe.",
+        "follow_up_2": "Nicht verwendet - reine Ansichts-Probe."}])
+
+    gesendet, fehler = False, ""
+    try:
+        from web.instantly_leser import InstantlyLeser
+
+        leser = InstantlyLeser(os.environ["INSTANTLY_API_KEY"])
+        sender.aktiviere_kampagne(campaign_id)
+        for versuch in range(24):          # 8 Minuten
+            time.sleep(20)
+            if leser._emails_hole_frisch(campaign_id):
+                gesendet = True
+                print(f"raus nach {(versuch + 1) * 20}s")
+                break
+        if not gesendet:
+            fehler = "Instantly hat die Mail in acht Minuten nicht verschickt."
+    except Exception as f:      # noqa: BLE001
+        fehler = str(f)
+    finally:
+        try:
+            sender.pausiere_kampagne(campaign_id)
+            print("Kampagne wieder pausiert.")
+        except Exception as f:      # noqa: BLE001
+            print(f"Pausieren fehlgeschlagen: {f}")
+        (job / "ergebnis.json").write_text(json.dumps(
+            {"gesendet": gesendet, "fehler": fehler,
+             "campaign_id": campaign_id,
+             "empfaenger": auftrag["empfaenger"]}, ensure_ascii=False),
+            encoding="utf-8")
+
+
 def sammeln_cli(ort, radius_km, dienste, limit_pro_suche, ordner=None):
     """Firmen fuer einen Umkreis sammeln und als eigenen Ordner ablegen.
 
@@ -438,6 +504,12 @@ def main():
                                 "Der Aufrufer (Weboberflaeche) gibt ihn vor, "
                                 "damit er das Ergebnis wiederfindet.")
 
+    p_probe = sub.add_parser(
+        "ansichts-probe",
+        help="Einen fertigen Kampagnentext zur Ansicht an eine eigene "
+             "Adresse schicken (Unterauftrag der Weboberflaeche).")
+    p_probe.add_argument("job_ordner")
+
     for name in ("freigeben", "senden"):
         p = sub.add_parser(name)
         p.add_argument("laufordner")
@@ -447,6 +519,8 @@ def main():
              args.firmen_datei)
     elif args.befehl == "sammeln":
         sammeln_cli(args.ort, args.radius, args.dienste, args.limit, args.ordner)
+    elif args.befehl == "ansichts-probe":
+        ansichts_probe_cli(args.job_ordner)
     elif args.befehl == "freigeben":
         freigeben(args.laufordner)
     else:

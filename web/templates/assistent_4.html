@@ -39,9 +39,9 @@
      eigenen Bestand, und deshalb sofort da statt nach Minuten. #}
   <div class="assi-zahlen">
     <div class="assi-zahl"><span class="assi-zahl-wert">{{ gewuenscht }}</span>
-      <span class="assi-zahl-text">gewünscht</span></div>
+      <span class="assi-zahl-text">Firmen gewünscht</span></div>
     <div class="assi-zahl"><span class="assi-zahl-wert assi-zahl--gut">{{ firmen | length }}</span>
-      <span class="assi-zahl-text">übernommen</span></div>
+      <span class="assi-zahl-text">Firmen übernommen</span></div>
     <div class="assi-zahl"><span class="assi-zahl-wert">{{ zahlen.raus_umkreis }}</span>
       <span class="assi-zahl-text">außerhalb</span></div>
     <div class="assi-zahl"><span class="assi-zahl-wert">{{ zahlen.raus_gesperrt }}</span>
@@ -94,7 +94,7 @@
       {% set kennung = firma.domain or firma.name %}
       <tr>
         <td>{{ firma.name }}<input type="hidden" name="firma" value="{{ kennung }}"></td>
-        <td>{{ firma.plz or '—' }}</td>
+        <td>{{ ort_mit_plz(firma) or '—' }}</td>
         <td>{% if firma.entfernung_km is defined %}{{ firma.entfernung_km }} km{% else %}—{% endif %}</td>
         <td><a href="{{ firma.website }}" target="_blank" rel="noopener">{{ firma.domain or firma.website }}</a></td>
         <td>{{ firma.telefon or '—' }}</td>

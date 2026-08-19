@@ -1,0 +1,108 @@
+{
+ "kennung": "20260818-140037",
+ "angelegt": "2026-08-18T14:00:37",
+ "schritt": 4,
+ "hoechster_schritt": 4,
+ "daten": {
+  "name": "TEST Computerservice Hannover 18.08",
+  "sprache": "de",
+  "anzahl_leads": 50,
+  "beschreibung": "",
+  "verkaeufer_url": "https://polepositionautomation.de",
+  "absender_email": "o.redschlag@poleposition-automation.digital",
+  "referenz_1": "",
+  "referenz_2": "",
+  "anweisungen": "",
+  "usp": [
+   {
+    "titel": "Maßgeschneiderte Automationslösungen aus einer Hand",
+    "erklaerung": "Die Firma entwickelt individuelle Automations-Infrastrukturen ohne Einzel-Tools zu kombinieren."
+   },
+   {
+    "titel": "Integration bestehender IT-Systeme ohne Ersatz",
+    "erklaerung": "Bestehende CRM- oder ERP-Systeme werden in die Automationen eingebunden, nicht ersetzt."
+   },
+   {
+    "titel": "Hosting und Datenmanagement in Deutschland",
+    "erklaerung": "Automationen werden auf gesicherten Partner-Servern in Deutschland gehostet, mit Datenschutz-Containern."
+   },
+   {
+    "titel": "Umfassende Automation-as-a-Service Leistungen",
+    "erklaerung": "Inklusive Hosting, Management, Monitoring, Updates, Backups und Troubleshooting."
+   },
+   {
+    "titel": "Umsetzung gemäß gesetzlichen Datenschutzvorgaben",
+    "erklaerung": "Automationen erfüllen Vorgaben wie ISO 9001, DSGVO und EU AI Act Compliance."
+   }
+  ],
+  "icp": {
+   "firmografisch": "IT-Dienstleister oder -Agenturen, vorwiegend in Deutschland, jeglicher Unternehmensgröße",
+   "technografisch": "Unternehmen mit CRM-, ERP-Systemen und Bedarf an Prozessautomatisierung",
+   "verhalten": "Empfänger, die Automationslösungen für eigene Kunden suchen oder Prozessoptimierung wünschen",
+   "entscheider": "IT-Leiter, Geschäftsführer oder Projektverantwortliche bei IT-Dienstleistern"
+  },
+  "ort": "",
+  "radius_km": 50,
+  "dienste": [],
+  "ohne_ort_mitnehmen": false,
+  "firmen_quelle": "bestand",
+  "abgewaehlt": [],
+  "firmen_domains": [
+   "bundesweit.digital",
+   "hanovatech.de",
+   "schaper-software.de",
+   "luis.uni-hannover.de",
+   "quant-x-sec.com",
+   "torutec.com",
+   "bfwkom.de",
+   "viorado.de",
+   "bitkollegen.de",
+   "incremental.plus",
+   "atelios.de",
+   "supplyo.de",
+   "cse-it.net",
+   "schauerte-edv-service.business.site",
+   "mollat.de",
+   "ferchau.com",
+   "followerhit.de",
+   "mystical-host.de",
+   "pcservicehannoverdavenstedtmickusschrörder.de",
+   "tutanota.com",
+   "office-solution.de",
+   "innomaticservices.de",
+   "drhellberg.de",
+   "ithilfe-ro.de",
+   "kommunity.net",
+   "synedat.com",
+   "basement.de",
+   "tk-technologies.de",
+   "ext-it.tech",
+   "i-mbu.com",
+   "bsse.eu",
+   "tasteone.eu",
+   "4dview.de",
+   "milsch.de",
+   "sorglos-marketing.de",
+   "mbublitz.de",
+   "it-mod.de",
+   "fujitsu.com",
+   "spirgatis-ms.com",
+   "codecivil.de",
+   "randstad.de",
+   "hannomax.de",
+   "tina-voss.de",
+   "airitsystems.de",
+   "blankk.it",
+   "itbn-gmbh.de",
+   "burner-it.de",
+   "fourinone-consulting.de",
+   "pryga.de",
+   "wv-s.com"
+  ],
+  "kunde_datei": "kunden/test-computerservice-hannover-18-08-20260818-140037.yaml",
+  "lauf_slug": "test-computerservice-hannover-18-08",
+  "lauf_ts": "20260818-144536",
+  "firmen_anzahl": 50
+ },
+ "geaendert": "2026-08-18T14:45:36"
+}

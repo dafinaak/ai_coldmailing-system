@@ -27,6 +27,7 @@ from pathlib import Path
 
 from pipeline.listen_fusion import fusionieren
 from pipeline.plz_geo import entfernung_km, plz_tabelle
+from pipeline.service_categories import expand_for_search
 
 # Ein Kreis wird als Vieleck angenaehert - der Maps-Actor will ein
 # Polygon. 24 Ecken sind auf Stadtgroesse vom Kreis nicht zu unterscheiden.
@@ -103,6 +104,10 @@ def sammeln(ort: str, radius_km: float, dienste, *, maps=None,
     """
     if not dienste:
         raise ValueError("Ohne Suchbegriffe kann nicht gesammelt werden.")
+    # Eine Leistungs-Familie wird zur kurzen, kuratierten Suchliste -
+    # kurz mit Absicht: jeder Suchbegriff crawlt bis zu seinem eigenen
+    # Limit und wird bezahlt (pipeline.service_categories).
+    dienste = expand_for_search(dienste)
     tabelle = tabelle if tabelle is not None else plz_tabelle()
     zentrum = _zentrum(ort, tabelle)
     if zentrum is None:
@@ -116,6 +121,24 @@ def sammeln(ort: str, radius_km: float, dienste, *, maps=None,
     # wuerde die Fusion alles als "fremde PLZ" wegwerfen.
     praefixe = sorted({p[:3] for p in plz_liste}) or [""]
 
+    listen, fehler = _quellen_sammeln(
+        dienste, zentrum, radius_km, praefixe, maps=maps,
+        gelbe_seiten=gelbe_seiten, overpass=overpass,
+        limit_pro_suche=limit_pro_suche, gs_ort=ort)
+
+    firmen, bericht = fusionieren(listen, praefixe)
+    bericht.update({"ort": ort, "radius_km": radius_km,
+                    "dienste": list(dienste), "plz_im_umkreis": len(plz_liste),
+                    "plz_praefixe": praefixe, "quellen_fehler": fehler})
+    return firmen, bericht
+
+
+def _quellen_sammeln(dienste, zentrum, radius_km, praefixe, *, maps=None,
+                     gelbe_seiten=None, overpass=None, limit_pro_suche=200,
+                     gs_ort="", gs_seiten=1) -> tuple[list, dict]:
+    """Ein Gebiet bei allen Quellen abfragen - der gemeinsame Kern von
+    sammeln() und sammeln_bis_ziel(). Faellt eine Quelle aus, wird das
+    vermerkt und mit den uebrigen weitergemacht."""
     listen, fehler = [], {}
 
     if maps is not None:
@@ -126,11 +149,11 @@ def sammeln(ort: str, radius_km: float, dienste, *, maps=None,
         except Exception as f:      # noqa: BLE001
             fehler["maps"] = str(f)
 
-    if gelbe_seiten is not None:
+    if gelbe_seiten is not None and gs_ort:
         gefunden = []
         for begriff in dienste:
             try:
-                gefunden += gelbe_seiten.search(begriff, ort)
+                gefunden += gelbe_seiten.search(begriff, gs_ort, gs_seiten)
             except Exception as f:      # noqa: BLE001
                 fehler.setdefault("gelbe_seiten", str(f))
         listen.append(gefunden)
@@ -142,10 +165,157 @@ def sammeln(ort: str, radius_km: float, dienste, *, maps=None,
         except Exception as f:      # noqa: BLE001
             fehler["overpass"] = str(f)
 
-    firmen, bericht = fusionieren(listen, praefixe)
-    bericht.update({"ort": ort, "radius_km": radius_km,
-                    "dienste": list(dienste), "plz_im_umkreis": len(plz_liste),
-                    "plz_praefixe": praefixe, "quellen_fehler": fehler})
+    return listen, fehler
+
+
+def regionen_deutschland(tabelle=None) -> list:
+    """Die zweistelligen Postleitregionen Deutschlands, dichteste zuerst.
+
+    Fuer die deutschlandweite Sammlung: ein Gebiet je Region, Mittelpunkt
+    und Radius aus den PLZ-Koordinaten gerechnet. "Dichteste zuerst"
+    (meiste Postleitzahlen = staedtischste Region), damit ein kleines
+    Ziel wie 100 Firmen schon nach ein, zwei Regionen erreicht ist und
+    nicht erst das halbe Land abgesucht werden muss.
+    """
+    tabelle = tabelle if tabelle is not None else plz_tabelle()
+    gruppen: dict = {}
+    for plz, eintrag in tabelle.items():
+        gruppen.setdefault(str(plz)[:2], []).append(eintrag)
+    regionen = []
+    for praefix, eintraege in gruppen.items():
+        lat = sum(e["lat"] for e in eintraege) / len(eintraege)
+        lon = sum(e["lon"] for e in eintraege) / len(eintraege)
+        radius = max(entfernung_km((lat, lon), (e["lat"], e["lon"]))
+                     for e in eintraege)
+        orte: dict = {}
+        for e in eintraege:
+            orte[e["ort"]] = orte.get(e["ort"], 0) + 1
+        regionen.append({
+            "praefix": praefix,
+            "zentrum": (lat, lon),
+            # Etwas Rand, aber gedeckelt - die PLZ-Feinfilterung der
+            # Fusion braucht keinen praezisen Kreis, nur Abdeckung.
+            "radius_km": min(radius + 5, 120.0),
+            "label": max(orte, key=orte.get),
+            "plz_anzahl": len(eintraege),
+        })
+    regionen.sort(key=lambda r: (-r["plz_anzahl"], r["praefix"]))
+    return regionen
+
+
+def sammeln_bis_ziel(ort, radius_km, dienste, ziel_anzahl, *, maps=None,
+                     gelbe_seiten=None, overpass=None, tabelle=None,
+                     max_gebiete=None, log=print) -> tuple[list, dict]:
+    """Sammeln, bis die gewuenschte Zahl einzigartiger Firmen da ist.
+
+    Olivers Vorgabe (19.08.2026): "100 angefragt" soll so nah wie
+    moeglich an 100 einzigartige, gueltige Firmen kommen. Ohne Ort wird
+    deutschlandweit gesammelt - Region fuer Region (dichteste zuerst);
+    nach jedem Gebiet wird fusioniert, dedupliziert und gezaehlt, dann
+    entscheidet der Stand: weiter oder fertig. Es wird NICHTS erfunden
+    oder doppelt gezaehlt, um das Ziel zu erreichen - reicht es nicht,
+    nennt der Bericht ehrlich den Grund ("grund_ende") und jedes Gebiet
+    einzeln ("je_gebiet").
+    """
+    if not dienste:
+        raise ValueError("Ohne Suchbegriffe kann nicht gesammelt werden.")
+    ziel_anzahl = max(1, int(ziel_anzahl))
+    suchbegriffe = expand_for_search(dienste)
+    tabelle = tabelle if tabelle is not None else plz_tabelle()
+
+    deutschlandweit = not str(ort or "").strip()
+    if deutschlandweit:
+        gebiete = [{"label": f"PLZ-Region {r['praefix']} ({r['label']})",
+                    "zentrum": r["zentrum"], "radius_km": r["radius_km"],
+                    "praefixe": (r["praefix"],)}
+                   for r in regionen_deutschland(tabelle)]
+    else:
+        zentrum = _zentrum(ort, tabelle)
+        if zentrum is None:
+            raise ValueError(
+                f"Den Ort {ort!r} kennen wir nicht - bitte einen Ortsnamen "
+                f"oder eine Postleitzahl angeben.")
+        plz_liste = plz_im_umkreis(ort, radius_km, tabelle)
+        gebiete = [{"label": str(ort), "zentrum": zentrum,
+                    "radius_km": float(radius_km),
+                    "praefixe": tuple(sorted({p[:3] for p in plz_liste})
+                                      or ("",))}]
+    if max_gebiete:
+        gebiete = gebiete[:max_gebiete]
+
+    alle_listen: list = []
+    fehler_gesamt: dict = {}
+    je_gebiet: list = []
+    firmen: list = []
+    bericht: dict = {}
+    einzigartig = 0
+
+    for nummer, gebiet in enumerate(gebiete):
+        fehlen = ziel_anzahl - einzigartig
+        # Limits am Restbedarf ausrichten: grosszuegig genug fuer Verluste
+        # durch Dubletten und Ausschluesse, aber gedeckelt - jeder
+        # gescrapte Eintrag wird bezahlt. Das Maps-Limit gilt JE
+        # SUCHBEGRIFF, deshalb wird der Restbedarf auf die Begriffe
+        # verteilt: beim Verifikationslauf am 19.08.2026 holten
+        # 300 x 10 Begriffe 3.530 Firmen fuer ein Ziel von 100.
+        maps_limit = max(30, min(300, -(-fehlen * 3 // max(1, len(suchbegriffe)))))
+        gs_seiten = max(1, min(10, -(-fehlen // 10)))
+        # Gelbe Seiten kann landesweit suchen - deutschlandweit deshalb
+        # EINE Abfrage im ersten Gebiet statt 95 kleine je Region.
+        if deutschlandweit:
+            gs_ort = "Deutschland" if nummer == 0 else ""
+        else:
+            gs_ort = gebiet["label"]
+        log(f"Gebiet {nummer + 1}/{len(gebiete)}: {gebiet['label']} - "
+            f"noch {fehlen} von {ziel_anzahl} gesucht")
+        listen, fehler = _quellen_sammeln(
+            suchbegriffe, gebiet["zentrum"], gebiet["radius_km"],
+            gebiet["praefixe"], maps=maps,
+            gelbe_seiten=gelbe_seiten if gs_ort else None,
+            overpass=overpass, limit_pro_suche=maps_limit,
+            gs_ort=gs_ort, gs_seiten=gs_seiten)
+        for quelle, text in fehler.items():
+            fehler_gesamt[f"{gebiet['label']}: {quelle}"] = text
+            log(f"  AUSGEFALLEN {quelle}: {text}")
+        alle_listen.extend(listen)
+
+        # Nach jedem Gebiet ueber ALLES fusionieren: so zaehlt eine Firma,
+        # die zwei Gebiete oder zwei Quellen kennen, genau einmal.
+        vorher = einzigartig
+        praefix_filter = (("",) if deutschlandweit
+                          else gebiete[0]["praefixe"])
+        firmen, bericht = fusionieren(alle_listen, praefix_filter)
+        einzigartig = len(firmen)
+        geliefert = sum(len(liste) for liste in listen)
+        je_gebiet.append({"gebiet": gebiet["label"], "geliefert": geliefert,
+                          "neu_einzigartig": einzigartig - vorher})
+        log(f"  geliefert: {geliefert}, neu einzigartig: "
+            f"{einzigartig - vorher}, gesamt: {einzigartig}/{ziel_anzahl}")
+        if einzigartig >= ziel_anzahl:
+            break
+
+    if einzigartig >= ziel_anzahl:
+        grund_ende = "ziel_erreicht"
+    elif fehler_gesamt and not any(alle_listen):
+        grund_ende = "quellen_ausgefallen"
+    else:
+        grund_ende = "quellen_erschoepft"
+        log(f"Nur {einzigartig} von {ziel_anzahl} gefunden - die "
+            f"durchsuchten Gebiete geben nicht mehr her.")
+
+    bericht.update({
+        "angefragt": ziel_anzahl,
+        "einzigartig": einzigartig,
+        "deutschlandweit": deutschlandweit,
+        "gebiete_durchsucht": len(je_gebiet),
+        "je_gebiet": je_gebiet,
+        "grund_ende": grund_ende,
+        "quellen_fehler": fehler_gesamt,
+        "ort": str(ort or "").strip() or "Deutschland",
+        "radius_km": None if deutschlandweit else radius_km,
+        "dienste": list(dienste),
+        "suchbegriffe": suchbegriffe,
+    })
     return firmen, bericht
 
 

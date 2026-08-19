@@ -44,9 +44,12 @@ def test_kontakte_stehen_mit_anrede_und_telefon_drin(tmp_path):
 
     zeilen = blatt(mappe_bauen(tmp_path), "Kontakte")
 
-    assert zeilen[0][:6] == ["Nr", "Firma", "Person", "Anrede", "E-Mail", "Telefon"]
-    assert zeilen[1][1:6] == ["A GmbH", "Tim Cappelmann", "Herr Cappelmann",
-                              "t@a.de", "0511 1"]
+    # PLZ und Ort getrennt, Rolle als eigene Spalte (Oliver, 19.08.2026).
+    assert zeilen[0][:9] == ["Nr", "Firma", "Person", "Rolle", "Anrede",
+                             "E-Mail", "Telefon", "PLZ", "Ort"]
+    assert zeilen[1][1:7] == ["A GmbH", "Tim Cappelmann", "Geschäftsführung",
+                              "Herr Cappelmann", "t@a.de", "0511 1"]
+    assert zeilen[1][7] == "30159"
 
 
 def test_sammeladresse_bekommt_die_anrede_ohne_namen(tmp_path):
@@ -54,7 +57,7 @@ def test_sammeladresse_bekommt_die_anrede_ohne_namen(tmp_path):
 
     zeilen = blatt(mappe_bauen(tmp_path), "Kontakte")
 
-    assert zeilen[1][3] == "zusammen"
+    assert zeilen[1][4] == "zusammen"
     assert "Sammeladresse" in zeilen[1][-1]
 
 
@@ -68,9 +71,11 @@ def test_firmen_ohne_adresse_landen_auf_anruf_und_brief(tmp_path):
 
     zeilen = blatt(mappe_bauen(tmp_path), "Anruf & Brief")
 
+    assert zeilen[0][:4] == ["Firma", "Person (falls gefunden)",
+                             "Warum keine E-Mail", "Telefon"]
     assert [z[0] for z in zeilen[1:]] == ["B GmbH", "C GmbH"]
-    assert "nicht zustellbar" in zeilen[1][1]
-    assert zeilen[1][2] == "0511 2"          # Telefonnummer muss mit
+    assert "nicht zustellbar" in zeilen[1][2]
+    assert zeilen[1][3] == "0511 2"          # Telefonnummer muss mit
 
 
 def test_erreichte_firmen_stehen_nicht_auf_anruf_und_brief(tmp_path):
@@ -110,8 +115,8 @@ def test_textstand_wird_gezeigt(tmp_path):
 
     zeilen = blatt(mappe_bauen(tmp_path), "Kontakte")
 
-    assert zeilen[1][8:10] == ["Kurz gefragt", "fertig"]
-    assert zeilen[2][9] == "Nacharbeit nötig"
+    assert zeilen[1][10:12] == ["Kurz gefragt", "fertig"]
+    assert zeilen[2][11] == "Nacharbeit nötig"
     assert "zu lang" in zeilen[2][-1]
 
 

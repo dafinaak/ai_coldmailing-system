@@ -60,11 +60,17 @@ Regeln:
   Bei einer GmbH & Co. KG nimm den Geschaeftsfuehrer der Verwaltungs-GmbH.
 - Vor- und Nachname muessen ausgeschrieben sein; abgekuerzte Vornamen nicht
   uebernehmen.
+- "rolle": die Funktionsbezeichnung, GENAU wie sie auf der Seite steht
+  (z.B. "Geschaeftsfuehrer", "Inhaberin", "Gruender") - nichts erfinden;
+  steht keine dabei, gib null.
+- "linkedin": nur wenn direkt bei dieser Person ein LinkedIn-Profil-Link
+  steht, gib die volle URL an - sonst null. Nicht raten, nicht bauen.
 - "mail_domain": Nur wenn im Impressum eine E-Mail-Adresse mit einer ANDEREN
   Domain als der Webseiten-Domain steht, gib diese Domain an - sonst null.
 
 Antwortformat (nur dieses JSON, kein weiterer Text):
-{"personen": [{"vorname": "...", "nachname": "..."}], "mail_domain": "..." }"""
+{"personen": [{"vorname": "...", "nachname": "...", "rolle": "...",
+"linkedin": null}], "mail_domain": "..." }"""
 
 
 def _html_zu_text(roh: str) -> str:
@@ -224,6 +230,14 @@ class ImpressumQuelle:
             vor = (p.get("vorname") or "").strip()
             nach = (p.get("nachname") or "").strip()
             if _ist_personenname(vor, nach):
-                personen.append({"vorname": vor, "nachname": nach})
+                # Rolle und LinkedIn nur, wenn sie wirklich dastanden -
+                # eine erfundene URL waere schlimmer als keine.
+                linkedin = str(p.get("linkedin") or "").strip()
+                if not (linkedin.startswith("http")
+                        and "linkedin.com" in linkedin.lower()):
+                    linkedin = None
+                personen.append({"vorname": vor, "nachname": nach,
+                                 "rolle": (p.get("rolle") or "").strip(),
+                                 "linkedin": linkedin})
         mail_domain = (daten.get("mail_domain") or "").strip().lower() or None
         return {"personen": personen, "mail_domain": mail_domain}

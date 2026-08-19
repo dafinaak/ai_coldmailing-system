@@ -339,6 +339,47 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
   für Olivers tägliche Zahlen gebaut (`python -m pipeline.kurzmeldung`).
   Namens-Lauf (Impressum-KI über alle 1.481) läuft; Ergebnis unter
   `laeufe/leadquellen/plr-30-31/namenslauf.json`.
+- Dokumentimi për Oliverin (19.08.2026 paradite):
+  `docs/workflow-documentation.docx` + `docs/workflow-diagram.png` —
+  anglisht e thjeshtë, si punon sistemi nga kërkimi deri te dërgimi,
+  plus 4 kërkesat e reja të tij me vlerësim. Jira: AP-203 (Done).
+  Ia dërgon Dafina vetë. (Shënim: kjo hyrje u shkrua edhe në mëngjes,
+  por dosja u kthye diku gjatë ditës në gjendjen e commit-it të vjetër
+  — hyrja u rishtua e përmbledhur më 19.08 pasdite.)
+- Katër kërkesat e Oliverit TË NDËRTUARA (19.08.2026, plani me hapa e
+  prova: `docs/bauplan-kerkesat-oliverit-2026-08-19.md`; 1.049 teste
+  të gjelbra):
+  (1) PLZ dhe qyteti ndamas kudo — burimet mbushin "ort", fusioni e
+  lexon nga adresa një herë në ruajtje; hapi 4 dhe Excel me dy kolona;
+  Excel ka edhe kolonën "Rolle"; "Anruf & Brief" tregon personin e
+  gjetur edhe pa mail.
+  (2) Familjet e shërbimeve (`pipeline/service_categories.py`):
+  "Computer Services" = tërë familja IT — NJË hartë për formularin
+  (chip "ganze Familie" te hapi 3), numëruesin live, filtrin dhe
+  mbledhjen; për scraping me pagesë vetëm ~10 terma të kuruar.
+  Përjashtimet e vjetra të Oliverit (hosting/automation/provider)
+  mbeten në fuqi — konflikt i shënuar, vendos Oliveri.
+  (3) Mbledhja deri-në-cak (`pipeline/firmen_sammeln.sammeln_bis_ziel`):
+  numri i hapit 1 = caku; ort bosh = krejt Gjermania si radhë 96
+  rajonesh postare; pas çdo rajoni fusion + dedup + numërim; ndalet kur
+  arrihet caku ose shterohen burimet; mungesa raportohet me arsye
+  (grund_ende, je_gebiet). CLI: `sammeln --ziel N --deutschland`.
+  Kufizim i njohur: radhitja e rajoneve përdor numrin e PLZ-ve si
+  proxy të dendësisë (Augsburg del i pari, jo Berlini).
+  (4) Vendimmarrësit me prioritet (`pipeline/decision_maker.py`):
+  CEO/GF → Inhaber → Gründer → Managing Director → drejtues tjetër;
+  Impressum-AI kthen edhe rolin (+ LinkedIn vetëm kur shkruan aty);
+  te firmen.json ruhen `entscheider` + `entscheider_primaer` EDHE pa
+  mail të verifikuar ("ohne_mail"); rradha e parë e Dropcontact shkon
+  te rangu më i mirë; firmat pa person mbeten ("kein_entscheider").
+  Verifikimi i vërtetë (Deutschland / Computer Services / 100 firma,
+  19.08.2026): 4.252 bruto → 3.530 unike (348 dublikata, 374 të
+  përjashtuara nga rregullat e Oliverit), 829 qytete; mostra 100 firma:
+  67 me vendimmarrës me emër+rol (Impressum-AI, 0 kredite Dropcontact),
+  33 pa — mbeten të shënuara. Mësim: limiti i Maps ishte për TERM →
+  35× mbi cak; formula u nda me numrin e termave (1.052 teste).
+  Rezultatet: `laeufe/leadquellen/sammlung-verifikation-2026-08-19/`.
+  Firmat e reja janë tash në bestand të formularit.
 
 ## Entscheidungen
 

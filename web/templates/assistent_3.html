@@ -38,6 +38,24 @@
 
   <div class="assi-block">
     <h2 class="assi-block-titel">Welche Leistung</h2>
+    {% if familien %}
+    {# Eine Familie steht fuer ihre ganze Unterkategorien-Liste - die
+       Suche und der Filter loesen sie automatisch auf (Oliver,
+       19.08.2026; pipeline/service_categories.py). #}
+    <div class="assi-chips">
+      {% for name, unter in familien.items() %}
+      <label class="assi-chip assi-chip--familie" title="{{ unter | join(', ') }}">
+        <input type="checkbox" name="dienste" value="{{ name }}"
+               {% if name in (d.dienste or []) %}checked{% endif %}>
+        <span>{{ name }} (ganze Familie)</span>
+      </label>
+      {% endfor %}
+    </div>
+    {% for name, unter in familien.items() %}
+    <p class="formular-hilfstext">„{{ name }}“ umfasst:
+      {{ unter | join(", ") }}.</p>
+    {% endfor %}
+    {% endif %}
     <p class="formular-hilfstext">Diese Einträge kommen aus dem echten Bestand —
       es ist also keiner dabei, der nichts findet.</p>
     <div class="assi-chips">
@@ -82,7 +100,10 @@
         <strong>Neu sammeln</strong> — für den Ort und Umkreis oben, über
         Google Maps, Gelbe Seiten und OpenStreetMap.
         <span class="formular-hilfstext">Dauert einige Minuten und kostet
-          Geld. Die gefundenen Firmen bleiben danach im Bestand.</span>
+          Geld. Die gefundenen Firmen bleiben danach im Bestand.
+          Gesammelt wird, bis die in Schritt 1 gewünschte Zahl erreicht
+          ist. Ohne Ort läuft die Sammlung deutschlandweit — Region für
+          Region, dichteste zuerst.</span>
       </span>
     </label>
   </div>

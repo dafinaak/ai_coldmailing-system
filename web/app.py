@@ -16,7 +16,7 @@ from fastapi.templating import Jinja2Templates
 from itsdangerous import URLSafeTimedSerializer
 
 from . import auth
-from pipeline.firmen_filter import ort_mit_plz
+from pipeline.firmen_filter import ort_mit_plz, stadt
 from .nav import NAV_BEREICHE, nav_kontext
 from .routen import assistent as assistent_routen
 from .routen import auftraege as auftraege_routen
@@ -104,10 +104,11 @@ def create_app(daten_dir: Path) -> FastAPI:
     # Versions-Kennung haengt am Datei-Inhalt - neue Datei, neue Adresse.
     templates.env.globals["stil_version"] = stil_version()
     templates.env.globals["instantly_kampagne_url"] = instantly_kampagne_url
-    # "30161 Hannover" statt nur "30161": den Ortsnamen holt sich die
-    # Anzeige aus der Adresszeile, denn das Feld "ort" ist bei allen
-    # gesammelten Firmen leer (siehe pipeline.firmen_filter).
+    # PLZ und Ort getrennt (Olivers Vorgabe 19.08.2026); den Ortsnamen
+    # holt sich die Anzeige aus dem "ort"-Feld oder der Adresszeile
+    # (siehe pipeline.firmen_filter). ort_mit_plz bleibt fuer Altseiten.
     templates.env.globals["ort_mit_plz"] = ort_mit_plz
+    templates.env.globals["stadt"] = stadt
     app.state.templates = templates
 
     app.add_middleware(auth.AnmeldePflicht)

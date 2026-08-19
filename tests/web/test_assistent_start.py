@@ -220,7 +220,8 @@ def test_excel_kommt_als_download_mit_den_kontakten(angemeldet, daten_dir):
     assert antwort.headers["content-disposition"].endswith('.xlsx"')
     wb = openpyxl.load_workbook(io.BytesIO(antwort.content))
     assert wb.sheetnames == ["Kontakte", "Anruf & Brief", "Zur Kontrolle"]
-    assert wb["Kontakte"].cell(row=2, column=4).value == "Herr Cappelmann"
+    # Spalte 4 ist seit 19.08.2026 die Rolle; die Anrede steht in Spalte 5.
+    assert wb["Kontakte"].cell(row=2, column=5).value == "Herr Cappelmann"
 
 
 def test_excel_ohne_lauf_sagt_es_statt_leer_zu_liefern(angemeldet):

@@ -19,6 +19,7 @@ Aufgaben:
 Ausgabe im firmen.json-Format der Pipeline (kompatibel zu
 listen_import/grosslauf), plus Bericht als Zahlenwerk.
 """
+from pipeline.firmen_filter import ort_aus_adresse
 from pipeline.grosslauf import _namenskern
 
 # Olivers Ausschluss-Liste als Schluesselwoerter (kleingeschrieben,
@@ -36,7 +37,7 @@ AUSSCHLUESSE = {
     "Automations-Dienstleistung": ("automation", "automatisierung"),
 }
 
-FELDER_AUFFUELLEN = ("website", "domain", "address", "plz", "telefon",
+FELDER_AUFFUELLEN = ("website", "domain", "address", "plz", "ort", "telefon",
                      "vorhandene_email", "gf_name_liste")
 
 
@@ -100,6 +101,12 @@ def fusionieren(listen, plz_praefixe) -> tuple:
                     "address": f.get("address", ""),
                     "categories": list(f.get("categories") or []),
                     "plz": f.get("plz", ""),
+                    # PLZ und Ort getrennt (Olivers Vorgabe 19.08.2026).
+                    # Liefert die Quelle keinen Ort, wird er einmal beim
+                    # Speichern aus der Adresszeile gelesen - nicht erst
+                    # bei jeder Anzeige.
+                    "ort": f.get("ort") or ort_aus_adresse(f.get("address"),
+                                                           f.get("plz")),
                     "telefon": f.get("telefon", ""),
                     "vorhandene_email": f.get("vorhandene_email", ""),
                     "gf_name_liste": f.get("gf_name_liste", ""),

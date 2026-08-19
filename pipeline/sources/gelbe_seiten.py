@@ -25,6 +25,7 @@ Quellen; bricht dieser Actor, laufen die anderen weiter.
 import re
 import requests
 
+from pipeline.firmen_filter import ort_aus_adresse
 from pipeline.sources.apify_maps import _domain_aus_website
 
 ACTOR_ID = "plowdata~gelbe-seiten-ppr"
@@ -61,12 +62,14 @@ class GelbeSeitenQuelle:
         for e in eintraege:
             website = e.get("website") or ""
             adresse = e.get("address") or ""
+            plz = _plz_aus_adresse(adresse)
             firmen.append({
                 "name": e.get("name", ""),
                 "website": website,
                 "domain": _domain_aus_website(website),
                 "address": adresse,
-                "plz": _plz_aus_adresse(adresse),
+                "plz": plz,
+                "ort": ort_aus_adresse(adresse, plz),
                 "telefon": e.get("phone") or "",
                 "vorhandene_email": e.get("email") or "",
                 "categories": list(e.get("industries") or []),

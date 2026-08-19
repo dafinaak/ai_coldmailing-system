@@ -134,6 +134,7 @@ class OverpassQuelle:
                 "domain": _domain_aus_website(website),
                 "address": _adresse(tags),
                 "plz": plz,
+                "ort": tags.get("addr:city", ""),
                 "telefon": _tag(tags, "phone", "contact:phone"),
                 "vorhandene_email": _tag(tags, "email", "contact:email"),
                 "categories": [f"{k}={tags[k]}" for k, _ in

@@ -61,8 +61,9 @@ def test_excel_zeigt_den_genauen_grund(tmp_path):
         "website": "http://www.webdesign-haas.de/"}])
 
     zeile = _anruf_zeilen(lauf)[0]
-    assert "Kontingent" in zeile[1]
-    assert "später erneut versuchen" not in zeile[1]
+    # Spalte 2 seit 19.08.2026: davor steht "Person (falls gefunden)".
+    assert "Kontingent" in zeile[2]
+    assert "später erneut versuchen" not in zeile[2]
 
 
 def test_ohne_genauen_grund_bleibt_der_sammelbegriff(tmp_path):
@@ -71,7 +72,7 @@ def test_ohne_genauen_grund_bleibt_der_sammelbegriff(tmp_path):
                              "telefon": "1", "plz": "2", "website": "x.de"}])
 
     zeile = _anruf_zeilen(lauf)[0]
-    assert zeile[1] == "Fehler bei der Suche (später erneut versuchen)"
+    assert zeile[2] == "Fehler bei der Suche (später erneut versuchen)"
 
 
 def test_firmen_mit_kontakt_stehen_nicht_auf_der_anruf_liste(tmp_path):

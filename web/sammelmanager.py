@@ -35,14 +35,20 @@ def _job_dir(daten_dir, kennung: str) -> Path:
 
 
 def starte(daten_dir, kennung: str, ort: str, radius_km: float,
-           dienste: list, limit_pro_suche: int = 200, befehl=None) -> Path:
+           dienste: list, limit_pro_suche: int = 200, befehl=None,
+           ziel_anzahl: int | None = None,
+           deutschlandweit: bool = False) -> Path:
     """Startet 'python -m pipeline sammeln ...' als Unterprozess.
 
     Der Zielordner wird VORGEGEBEN statt hinterher gesucht: so weiss der
     Aufrufer schon vor dem Start, wo das Ergebnis landet, auch wenn der
     Prozess abstuerzt.
+
+    Ohne Ort wird NUR mit deutschlandweit=True gesammelt (Schritt 3:
+    leeres Ortsfeld heisst ganz Deutschland) - ein verlorener Formular-
+    wert allein darf keine teure Landessammlung starten.
     """
-    if not ort or not str(ort).strip():
+    if (not ort or not str(ort).strip()) and not deutschlandweit:
         raise SammelFehler("Ohne Ort kann nicht gesammelt werden.")
     if not dienste:
         raise SammelFehler("Ohne Suchbegriffe kann nicht gesammelt werden.")
@@ -52,15 +58,22 @@ def starte(daten_dir, kennung: str, ort: str, radius_km: float,
     job.mkdir(parents=True, exist_ok=True)
     ziel_ordner = f"sammlung-{kennung}"
 
-    argv = list(befehl or STANDARD_BEFEHL) + ["sammeln", str(ort),
-                           "--radius", str(radius_km),
-                           "--limit", str(limit_pro_suche),
-                           "--ordner", ziel_ordner]
+    argv = list(befehl or STANDARD_BEFEHL) + ["sammeln"]
+    if str(ort or "").strip():
+        argv.append(str(ort))
+    argv += ["--radius", str(radius_km),
+             "--limit", str(limit_pro_suche),
+             "--ordner", ziel_ordner]
     for dienst in dienste:
         argv += ["--dienst", str(dienst)]
+    if ziel_anzahl:
+        argv += ["--ziel", str(int(ziel_anzahl))]
+    if deutschlandweit and not str(ort or "").strip():
+        argv.append("--deutschland")
 
     (job / "meta.json").write_text(json.dumps({
         "ort": ort, "radius_km": radius_km, "dienste": list(dienste),
+        "ziel_anzahl": ziel_anzahl, "deutschlandweit": deutschlandweit,
         "ziel_ordner": ziel_ordner}, ensure_ascii=False), encoding="utf-8")
 
     log = (job / "lauf.log").open("wb")

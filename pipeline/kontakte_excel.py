@@ -25,7 +25,7 @@ from pathlib import Path
 import openpyxl
 
 from pipeline.anrede_spalte import baue_anrede
-from pipeline.firmen_filter import ort_mit_plz
+from pipeline.firmen_filter import stadt
 
 AUSGANG_TEXT = {
     "info_ungueltig": "info@-Adresse geprüft und nicht zustellbar",
@@ -33,12 +33,12 @@ AUSGANG_TEXT = {
     "keine_webseite": "keine Webseite hinterlegt",
     "fehler": "Fehler bei der Suche (später erneut versuchen)",
 }
-# "Ort" statt "PLZ": in der Spalte steht seit 18.08.2026 "30161 Hannover"
-# statt nur der Zahl - wer die Liste zum Anrufen benutzt, will den Ort
-# lesen koennen (das Feld "ort" ist bei den gesammelten Firmen leer, der
-# Name kommt aus der Adresszeile, siehe pipeline.firmen_filter).
-KOPF_KONTAKTE = ["Nr", "Firma", "Person", "Anrede", "E-Mail", "Telefon",
-                 "Ort", "Webseite", "Betreff", "Text", "Hinweis"]
+# PLZ und Ort als ZWEI Spalten (Olivers Vorgabe 19.08.2026; vorher stand
+# beides kombiniert als "30161 Hannover" in einer). Der Ortsname kommt aus
+# dem "ort"-Feld oder der Adresszeile, siehe pipeline.firmen_filter.stadt.
+KOPF_KONTAKTE = ["Nr", "Firma", "Person", "Rolle", "Anrede", "E-Mail",
+                 "Telefon", "PLZ", "Ort", "Webseite", "Betreff", "Text",
+                 "Hinweis"]
 
 
 def _domain(wert: object) -> str:
@@ -139,7 +139,8 @@ def mappe_bauen(lauf_dir) -> openpyxl.Workbook:
 
         nummer += 1
         ws.append([nummer, firma.get("name") or lead.get("company"), person,
-                   anrede, mail, firma.get("telefon"), ort_mit_plz(firma),
+                   lead.get("title") or "", anrede, mail, firma.get("telefon"),
+                   firma.get("plz") or "", stadt(firma),
                    firma.get("website") or lead.get("website"),
                    text.get("betreff"), stand, " | ".join(hinweise)])
         if hinweise:
@@ -158,7 +159,8 @@ def mappe_bauen(lauf_dir) -> openpyxl.Workbook:
 def _blatt_anruf_brief(wb: openpyxl.Workbook, firmen: list) -> None:
     """Companies without a usable address - never silently dropped."""
     blatt = wb.create_sheet("Anruf & Brief")
-    blatt.append(["Firma", "Warum keine E-Mail", "Telefon", "Ort", "Webseite"])
+    blatt.append(["Firma", "Person (falls gefunden)", "Warum keine E-Mail",
+                  "Telefon", "PLZ", "Ort", "Webseite"])
     for firma in firmen:
         ausgang = firma.get("ausgang")
         if ausgang in (None, "mit_entscheider", "info_fallback"):
@@ -169,9 +171,16 @@ def _blatt_anruf_brief(wb: openpyxl.Workbook, firmen: list) -> None:
         # Person am Telefon vergeblich noch einmal (siehe
         # pipeline.sourcing.fehler_satz).
         grund = firma.get("fehler_grund") or AUSGANG_TEXT.get(ausgang, ausgang)
-        blatt.append([firma.get("name"), grund,
-                      firma.get("telefon"), ort_mit_plz(firma),
-                      firma.get("website")])
+        # Ein gefundener Chef-Name ohne gepruefte Mail gehoert der Person am
+        # Telefon gesagt - vorher ging er hier verloren (19.08.2026).
+        primaer = firma.get("entscheider_primaer") or {}
+        person = " ".join(t for t in (primaer.get("vorname"),
+                                      primaer.get("nachname")) if t)
+        if person and primaer.get("rolle"):
+            person = f"{person} ({primaer['rolle']})"
+        blatt.append([firma.get("name"), person, grund,
+                      firma.get("telefon"), firma.get("plz") or "",
+                      stadt(firma), firma.get("website")])
 
 
 def schreiben(lauf_dir, ziel) -> Path:

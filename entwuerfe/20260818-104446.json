@@ -1,0 +1,85 @@
+{
+ "kennung": "20260818-104446",
+ "angelegt": "2026-08-18T10:44:46",
+ "schritt": 5,
+ "hoechster_schritt": 5,
+ "daten": {
+  "name": "TEST Computerservice Hannover 18.08",
+  "sprache": "de",
+  "anzahl_leads": 10,
+  "beschreibung": "Technologie-Partnerschaft für IT-Dienstleister: Sie sollen unsere\r\nAutomationen ihren eigenen Kunden anbieten können. Angeschrieben werden\r\ndie Dienstleister selbst, nicht deren Kunden.",
+  "verkaeufer_url": "https://polepositionautomation.de",
+  "absender_email": "o.redschlag@poleposition-automation.email",
+  "referenz_1": "",
+  "referenz_2": "",
+  "anweisungen": "Ruhig und erklärend. Keine Superlative, keine Ausrufezeichen.",
+  "usp": [
+   {
+    "titel": "Maßgeschneiderte Automations-Infrastruktur",
+    "erklaerung": "Wir entwickeln individuelle Automationslösungen, keine Standard-Tools."
+   },
+   {
+    "titel": "Integration bestehender IT-Systeme",
+    "erklaerung": "Bestehende CRM- und ERP-Systeme werden integriert, nicht ersetzt."
+   },
+   {
+    "titel": "Automation-as-a-Service inklusive Betrieb",
+    "erklaerung": "Wir bieten Hosting, Management und Wartung der Automationen an."
+   },
+   {
+    "titel": "Datensicherheit und DSGVO-Konformität",
+    "erklaerung": "Daten werden sicher in Deutschland gespeichert und rechtlich geschützt."
+   },
+   {
+    "titel": "ISO 9001 zertifizierte Qualitätsstandards",
+    "erklaerung": "Qualität wird durch externe Zertifizierung abgesichert."
+   }
+  ],
+  "icp": {
+   "firmografisch": "IT-Dienstleister in Deutschland, kleine bis mittlere Unternehmen",
+   "technografisch": "Nutzen verschiedene IT-Systeme bei Kunden, bevorzugen Integrationslösungen",
+   "verhalten": "Suchen Automationslösungen, die sie an eigene Kunden weiterverkaufen können",
+   "entscheider": "Geschäftsführer und technische Leiter bei IT-Dienstleistern"
+  },
+  "ort": "Hannover",
+  "radius_km": 10,
+  "dienste": [
+   "Computerservice"
+  ],
+  "ohne_ort_mitnehmen": false,
+  "firmen_quelle": "bestand",
+  "abgewaehlt": [],
+  "firmen_domains": [
+   "torutec.com",
+   "denkit.com",
+   "hanovatech.de",
+   "pryga.de",
+   "ai-lo.de",
+   "informatikheld.de",
+   "sites.google.com",
+   "itklar.de",
+   "ithilfe-ro.de",
+   "michael-wessel.de"
+  ],
+  "kunde_datei": "kunden/test-computerservice-hannover-18-08.yaml",
+  "lauf_slug": "test-computerservice-hannover-18-08",
+  "lauf_ts": "20260818-110325",
+  "firmen_anzahl": 10,
+  "versand_postfach": "o.redschlag@poleposition-automation.email",
+  "tageslimit": 20,
+  "zeit_von": "08:00",
+  "zeit_bis": "19:00",
+  "wochentage": [
+   "mo",
+   "di",
+   "mi",
+   "do",
+   "fr"
+  ],
+  "abstand_1_2": 7,
+  "abstand_2_3": 7,
+  "signatur": "Oliver Redschlag\r\nPolePosition Automation\r\n– Geschäftsführer/CEO –",
+  "versand_modus": "test"
+ },
+ "geaendert": "2026-08-18T11:05:13"
+}

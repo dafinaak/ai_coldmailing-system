@@ -2428,3 +2428,26 @@ h1 { margin: 0; font-size: 24px; }
   .assi-inhalt { padding: 16px; }
   .assi-tabelle { display: block; overflow-x: auto; }
 }
+
+/* "Im Bestand ist keine einzige Firma" - der Satz, der die Wahl in
+   Schritt 3 entscheidet. Auffaellig genug, um ihn nicht zu ueberlesen. */
+.bestand-leer {
+  color: #8A2F2F;
+  font-weight: 600;
+}
+
+/* "Zur Ansicht an mich schicken" im Freigabe-Dialog. Bewusst unter den
+   beiden Haupt-Knoepfen und ruhiger gehalten: es ist eine Nebenhandlung,
+   die an der Runde nichts aendert. */
+.freigabe-probe-form {
+  margin-top: 18px;
+  border-top: 1px solid var(--farbe-rand);
+  padding-top: 14px;
+}
+.freigabe-probe-zeile {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 6px;
+}
+.freigabe-probe-zeile input { flex: 1; }

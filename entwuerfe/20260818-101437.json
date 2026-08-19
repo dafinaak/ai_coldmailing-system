@@ -1,0 +1,46 @@
+{
+ "kennung": "20260818-101437",
+ "angelegt": "2026-08-18T10:14:37",
+ "schritt": 2,
+ "hoechster_schritt": 2,
+ "daten": {
+  "name": "TEST Computerservice Hannover 18.08",
+  "sprache": "de",
+  "anzahl_leads": 10,
+  "beschreibung": "Technologie-Partnerschaft für IT-Dienstleister: Sie sollen unsere\r\nAutomationen ihren eigenen Kunden anbieten können. Angeschrieben werden\r\ndie Dienstleister selbst, nicht deren Kunden.",
+  "verkaeufer_url": "https://polepositionautomation.de",
+  "absender_email": "o.redschlag@poleposition-automation.email",
+  "referenz_1": "",
+  "referenz_2": "",
+  "anweisungen": "Ruhig und erklärend. Keine Superlative, keine Ausrufezeichen.",
+  "usp": [
+   {
+    "titel": "Maßgeschneiderte Automations-Infrastruktur aus einem Guss",
+    "erklaerung": "PolePosition entwickelt individuelle Automationslösungen, die nahtlos zusammenarbeiten."
+   },
+   {
+    "titel": "Integration bestehender IT-Systeme ohne Ersetzung",
+    "erklaerung": "Bestehende CRM- und ERP-Systeme werden in die Automationen integriert, nicht ersetzt."
+   },
+   {
+    "titel": "Hosting und Datenmanagement in Deutschland",
+    "erklaerung": "Automationen und Daten werden sicher auf Partner-Servern in Deutschland gehostet."
+   },
+   {
+    "titel": "Umfassendes Automation-as-a-Service Angebot",
+    "erklaerung": "Hosting, Management, Monitoring, Updates und Support werden komplett übernommen."
+   },
+   {
+    "titel": "ISO 9001 zertifizierte Qualitätssicherung",
+    "erklaerung": "Die Leistungen entsprechen anerkannten Qualitätsstandards und regulatorischen Vorgaben."
+   }
+  ],
+  "icp": {
+   "firmografisch": "IT-Dienstleister in Deutschland, die ihren Kunden Automationslösungen anbieten wollen",
+   "technografisch": "Dienstleister, die eigene Automationen oder Software-Integrationen für Kunden bereitstellen",
+   "verhalten": "Wenn IT-Dienstleister ihr Produktportfolio mit Automationen erweitern möchten",
+   "entscheider": "Inhaber oder leitende IT-Manager bei IT-Dienstleistungsunternehmen"
+  }
+ },
+ "geaendert": "2026-08-18T10:21:48"
+}

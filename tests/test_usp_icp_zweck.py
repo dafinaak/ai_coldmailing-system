@@ -45,12 +45,19 @@ def test_ohne_zweck_bleibt_der_prompt_ehrlich_leer():
     assert "(nichts angegeben)" in ki.prompt
 
 
-def test_prompt_verlangt_die_empfaenger_der_kampagne():
+def test_prompt_trennt_absender_und_empfaenger():
+    # Der Webseiten-Text beschreibt UNS, der Zweck beschreibt den
+    # EMPFAENGER. Am 18.08.2026 hat die KI die beiden trotz Hinweis
+    # verwechselt und die Endkunden als Zielgruppe zurueckgegeben - der
+    # Prompt sagt es seitdem gleich im ersten Satz.
     ki = FakeKI()
 
     draft_usp_icp("Text", ki, "Partner gesucht")
 
-    assert "DIESE KAMPAGNE anschreibt" in ki.prompt
+    assert "ZWEI VERSCHIEDENE FIRMEN" in ki.prompt
+    assert "Der ICP kommt aus dem ZWECK" in ki.prompt
+    # Der Zweck muss VOR dem Webseiten-Text stehen, sonst geht er unter.
+    assert ki.prompt.index("Partner gesucht") < ki.prompt.index("Webseiten-Text")
 
 
 def test_zweck_wird_aus_name_beschreibung_und_hinweisen_gebaut():

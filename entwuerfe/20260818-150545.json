@@ -1,0 +1,70 @@
+{
+ "kennung": "20260818-150545",
+ "angelegt": "2026-08-18T15:05:45",
+ "schritt": 4,
+ "hoechster_schritt": 4,
+ "daten": {
+  "name": "TEST Computerservice Hannover 18.08",
+  "sprache": "de",
+  "anzahl_leads": 10,
+  "beschreibung": "",
+  "verkaeufer_url": "https://polepositionautomation.de",
+  "absender_email": "o.redschlag@poleposition-automation.email",
+  "referenz_1": "",
+  "referenz_2": "",
+  "anweisungen": "",
+  "usp": [
+   {
+    "titel": "Maßgeschneiderte Automations-Infrastruktur aus einer Hand",
+    "erklaerung": "Die Firma entwickelt individuelle Automationslösungen statt Einzel-Tools."
+   },
+   {
+    "titel": "Integration in bestehende IT-Systeme ohne Änderungen",
+    "erklaerung": "Bestehende Systeme wie CRM und ERP werden eingebunden, nicht ersetzt."
+   },
+   {
+    "titel": "Hosting und Datenmanagement in Deutschland",
+    "erklaerung": "Automationen werden auf sicheren Partner-Servern in Deutschland gehostet."
+   },
+   {
+    "titel": "Umfassendes Automation-as-a-Service Angebot",
+    "erklaerung": "Hosting, Management, Monitoring und Updates werden komplett übernommen."
+   },
+   {
+    "titel": "Einhaltung gesetzlicher und regulatorischer Vorgaben",
+    "erklaerung": "Automationen sind DSGVO-konform und entsprechen weiteren Richtlinien."
+   }
+  ],
+  "icp": {
+   "firmografisch": "IT-Dienstleister und Serviceanbieter in der Region Hannover",
+   "technografisch": "Nutzer von CRM-, ERP-Systemen und automatisierten Verwaltungstools",
+   "verhalten": "Suchen Automationslösungen zur Effizienzsteigerung für eigene Kunden",
+   "entscheider": "IT-Leiter, Geschäftsführer oder Projektverantwortliche bei IT-Dienstleistern"
+  },
+  "ort": "Hannover",
+  "radius_km": 10,
+  "dienste": [
+   "Computerservice"
+  ],
+  "ohne_ort_mitnehmen": false,
+  "firmen_quelle": "bestand",
+  "abgewaehlt": [],
+  "firmen_domains": [
+   "torutec.com",
+   "denkit.com",
+   "hanovatech.de",
+   "pryga.de",
+   "ai-lo.de",
+   "informatikheld.de",
+   "sites.google.com",
+   "itklar.de",
+   "ithilfe-ro.de",
+   "michael-wessel.de"
+  ],
+  "kunde_datei": "kunden/test-computerservice-hannover-18-08-20260818-150545.yaml",
+  "lauf_slug": "test-computerservice-hannover-18-08",
+  "lauf_ts": "20260818-151251",
+  "firmen_anzahl": 10
+ },
+ "geaendert": "2026-08-18T15:14:18"
+}

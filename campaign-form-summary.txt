@@ -1,0 +1,118 @@
+FROM SEARCH TO SEND
+The campaign form, in six steps
+
+The campaign form takes you from an empty screen to a set of
+personalised, approved emails in six steps. Each step is a decision
+point: nothing moves forward on its own.
+
+
+--------------------------------------------------------------------
+THE SIX STEPS
+--------------------------------------------------------------------
+
+01  CAMPAIGN SETUP
+
+    Name, language of the emails, and how many companies to put
+    through the search. You pick the sender address from the
+    mailboxes that actually exist in the sending account, add the
+    seller's website and up to two reference customers, and write
+    any guidance for the texts.
+
+    Roughly seven out of ten companies yield a usable contact, and
+    the form says so next to the field - so 14 companies for 10
+    contacts.
+
+
+02  SELLING POINTS AND TARGET CUSTOMER
+
+    The AI reads the seller's website and drafts both the selling
+    points and the profile of the customer to approach. Both are
+    editable text - you correct anything that is off before moving
+    on.
+
+    The form keeps sender and recipient strictly apart, so the
+    profile describes the companies you want to reach, not the
+    company you are writing on behalf of.
+
+
+03  COMPANY FILTERS
+
+    City or postal code with a radius around it, plus the services
+    the companies should offer. You also choose here whether to work
+    from the companies already in the database or collect fresh ones
+    for this campaign.
+
+    While you type a city, a live counter shows how many companies
+    the database already holds for that area - so you can see before
+    searching whether a fresh collection is needed.
+
+
+04  SEARCH RESULT
+
+    The companies found, each with name, city and postal code, and
+    website. The page shows how many companies you asked for against
+    how many were actually taken over, what the lookup will cost,
+    and how many credits remain.
+
+    Contacts are looked up in one bundled request instead of one per
+    company, and every address is checked by a paid verification
+    service before it can be used.
+
+
+05  DISPATCH SETTINGS
+
+    Sending mailbox, daily limit, the hours and weekdays mail may go
+    out, and the signature. One switch decides the whole character
+    of the campaign: PREVIEW sends only to your own test addresses,
+    LIVE sends to the real recipients.
+
+
+06  WRITE AND RELEASE
+
+    The AI writes one personalised email per contact. A quality
+    check reads each text back and flags any claim it cannot support
+    from the source material. You read every email in full, send any
+    of them to yourself first to see exactly how it will land, and
+    confirm them one by one. The whole set exports to Excel.
+
+
+--------------------------------------------------------------------
+WHAT THE TOOL WILL NOT DO ON ITS OWN
+--------------------------------------------------------------------
+
+  - No email leaves without a person confirming that specific email.
+
+  - Handing a campaign over to the sending engine creates it PAUSED.
+    Handover is not a send.
+
+  - In preview mode the tool refuses any address that belongs to a
+    real recipient - a preview only ever goes to your own test
+    address.
+
+  - Emails flagged by the quality check stay behind until a person
+    either clears them or has the text rewritten.
+
+  THE FINAL GATE: no campaign is activated and no mail is sent
+  without Dafina saying so explicitly, each time, for every campaign
+  and every tool.
+
+
+--------------------------------------------------------------------
+MEASURED, NOT ESTIMATED
+--------------------------------------------------------------------
+
+  1,479    companies in the database today, covering the Hannover
+           postal region
+
+  7 / 10   companies yielded a verified contact in the last full run
+
+  2:35     minutes to search 10 companies, texts written in another
+           20 seconds
+
+  1,014    automated tests running green over the whole system
+
+
+--------------------------------------------------------------------
+
+Internal tool. Sending runs on Instantly underneath; the campaign
+form is the only place a campaign is built, checked and released.

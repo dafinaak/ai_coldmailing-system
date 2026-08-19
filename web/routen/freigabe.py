@@ -28,6 +28,7 @@ from pipeline.personalize import regenerate_step
 from pipeline.quality import check as quality_check
 from pipeline.run_store import RunStore
 from web import auth
+from web import probe_versand as _probe_versand
 from web.freigabe_status import (
     SCHRITTE,
     FreigabeStatusStore,
@@ -351,7 +352,21 @@ def _lese_kontext(request: Request, slug: str, ts: str, *,
         "abgelehnt": abgelehnt,
         "heute": datetime.now().strftime("%d.%m.%Y, %H:%M"),
         "campaign_id": campaign_id,
+        # Vorschlag fuers "an mich zur Ansicht"-Feld: die erste
+        # Test-Adresse des Kunden. Sie ist genau dafuer gedacht - die
+        # Adresse, an die wir zum Ausprobieren schicken duerfen.
+        "probe_adresse": _probe_adresse(daten_dir, lauf_dir),
+        "probe_stand": _probe_versand.status(daten_dir, f"{slug}-{ts}"),
     }
+
+
+def _probe_adresse(daten_dir, lauf_dir) -> str:
+    try:
+        kunde = _kunde_fuer(daten_dir, lauf_dir)
+    except (OSError, ValueError, KeyError):
+        return ""
+    liste = list(getattr(kunde, "test_empfaenger", None) or [])
+    return str(liste[0]) if liste else ""
 
 
 def _freigabe_fehlerseite(
@@ -580,6 +595,55 @@ def alle_bestaetigen(
             409,
         )
     except (OSError, ValueError, KeyError) as fehler:
+        return _freigabe_fehlerseite(request, slug, ts, str(fehler), 400)
+    return RedirectResponse(f"/pruefen/{slug}/{ts}", status_code=303)
+
+
+@router.post("/pruefen/{slug}/{ts}/ansichts-probe")
+async def ansichts_probe(request: Request, slug: str, ts: str):
+    """Denselben Text einmal an die eigene Adresse schicken.
+
+    Aendert an der Runde nichts: keine Freigabe, kein Versandstand, kein
+    Eintrag in der Kampagne. Nur eine einzelne Mail, damit man Absender,
+    Betreff und Anrede im Posteingang sieht statt nur im Browser.
+
+    Laeuft als Unterauftrag, weil Instantly Minuten braucht (siehe
+    web.probe_versand) - die Seite kommt sofort zurueck.
+    """
+    daten_dir = request.app.state.daten_dir
+    lauf_dir = _lauf_dir_oder_404(daten_dir, slug, ts)
+    formular = await request.form()
+
+    store = RunStore.resume(lauf_dir)
+    grundtexte = grundtexte_fuer_lauf(lauf_dir)
+    stand = FreigabeStatusStore(lauf_dir).ansicht(grundtexte)
+    empfaenger_id = str(formular.get("recipient_id") or "")
+    schritt = str(formular.get("step") or "mail_1")
+    treffer = next((e for e in stand["recipients"] if e["id"] == empfaenger_id), None)
+    if treffer is None or schritt not in SCHRITTE:
+        return _freigabe_fehlerseite(
+            request, slug, ts, "Diesen E-Mail-Schritt gibt es hier nicht.", 400)
+
+    wirksam = FreigabeStatusStore(lauf_dir).materialisieren(grundtexte)
+    text_satz = next(
+        (x for x in wirksam
+         if x["email"].strip().lower() == treffer["email"].strip().lower()), {})
+
+    try:
+        kunde = _kunde_fuer(daten_dir, lauf_dir)
+        absender = getattr(kunde, "versand_postfach", "") or kunde.absender
+    except (OSError, ValueError, KeyError):
+        absender = ""
+
+    try:
+        _probe_versand.starte(
+            daten_dir, f"{slug}-{ts}",
+            absender=absender,
+            empfaenger=str(formular.get("empfaenger") or ""),
+            betreff=text_satz.get("betreff") or "",
+            text=text_satz.get(schritt) or "",
+            verbotene=tuple(e["email"] for e in stand["recipients"]))
+    except _probe_versand.ProbeFehler as fehler:
         return _freigabe_fehlerseite(request, slug, ts, str(fehler), 400)
     return RedirectResponse(f"/pruefen/{slug}/{ts}", status_code=303)
 

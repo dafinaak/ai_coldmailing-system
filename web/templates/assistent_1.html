@@ -17,9 +17,16 @@
       </select>
     </div>
     <div class="formular-feld">
-      <label class="formular-label" for="anzahl_leads">Anzahl Kontakte</label>
+      {# "Firmen", nicht "Kontakte": die Zahl begrenzt, wie viele FIRMEN in
+         Schritt 4 uebernommen werden. Kontakte entstehen erst danach, und
+         nicht jede Firma gibt einen her - am 18.08.2026 wurden aus 10
+         Firmen 7 Kontakte. Wer 10 Kontakte will, traegt hier mehr ein. #}
+      <label class="formular-label" for="anzahl_leads">Anzahl Firmen</label>
       <input class="formular-eingabe" id="anzahl_leads" name="anzahl_leads" type="number"
              min="1" max="2000" value="{{ d.anzahl_leads or 50 }}">
+      <p class="formular-hilfstext">So viele Firmen gehen in die Suche. Etwa
+        sieben von zehn geben einen Kontakt her — für 10 Kontakte also rund
+        14 Firmen eintragen.</p>
     </div>
   </div>
 

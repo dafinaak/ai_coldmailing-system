@@ -52,6 +52,7 @@ import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from pipeline.models import Lead
+from pipeline.decision_maker import build_entscheider, sort_by_priority
 from pipeline.sources.apify_maps import ApifyMapsSource
 from pipeline.sources.hunter import HunterSource
 from pipeline.sources.dropcontact import DropcontactSource
@@ -353,7 +354,10 @@ def _impressum_kontakte(firma: dict, max_pro_firma: int, impressum,
     mail_domain = ergebnis.get("mail_domain")
     ziel_website = f"https://{mail_domain}" if mail_domain else website
     kontakte = []
-    for person in ergebnis.get("personen") or []:
+    # Beste Rolle zuerst (CEO/GF vor Inhaber vor Gruender ...): der erste
+    # bezahlte Adress-Bau gilt dem wahrscheinlichsten Entscheider
+    # (Olivers Vorgabe 19.08.2026, pipeline.decision_maker).
+    for person in sort_by_priority(ergebnis.get("personen") or []):
         if len(kontakte) >= max_pro_firma:
             break
         mail = dropcontact.email_bauen(person["vorname"], person["nachname"],
@@ -362,9 +366,15 @@ def _impressum_kontakte(firma: dict, max_pro_firma: int, impressum,
             kontakte.append({
                 "first_name": person["vorname"], "last_name": person["nachname"],
                 "email": mail["email"],
-                "title": "Geschäftsführung (laut Impressum)",
+                "title": _impressum_titel(person),
                 "source": "impressum"})
     return kontakte
+
+
+def _impressum_titel(person: dict) -> str:
+    """"Geschäftsführer (laut Impressum)" - die echte Rolle, wenn das
+    Impressum eine nennt, sonst der bisherige Sammelbegriff."""
+    return (person.get("rolle") or "Geschäftsführung") + " (laut Impressum)"
 
 
 def _impressum_lesen(firma: dict, impressum) -> dict | None:
@@ -383,7 +393,7 @@ def _impressum_lesen(firma: dict, impressum) -> dict | None:
     ergebnis = impressum.entscheider_lesen(
         text, firma.get("name", ""), domain=firma.get("domain", ""),
         hinweis_name=firma.get("gf_name_liste", ""))
-    personen = ergebnis.get("personen") or []
+    personen = sort_by_priority(ergebnis.get("personen") or [])
     if not personen:
         return None
     mail_domain = ergebnis.get("mail_domain")
@@ -407,7 +417,9 @@ def _impressum_gebuendelt(firmen: list, impressum, dropcontact, max_pro_firma,
     denen die erste Person keine Adresse ergab - so bleibt der
     Credit-Verbrauch genau derselbe wie vorher.
 
-    Gibt ({index: [kontakte]}, {index: fehler}) zurueck.
+    Gibt ({index: [kontakte]}, {index: fehler}, {index: gelesen}) zurueck -
+    "gelesen" sind die Impressums-Funde je Firma, damit source_leads auch
+    Personen OHNE gepruefte Mail am Firmensatz festhalten kann.
     """
     gelesen: dict = {}
     fehler: dict = {}
@@ -461,9 +473,9 @@ def _impressum_gebuendelt(firmen: list, impressum, dropcontact, max_pro_firma,
                     "first_name": person["vorname"],
                     "last_name": person["nachname"],
                     "email": mail["email"],
-                    "title": "Geschäftsführung (laut Impressum)",
+                    "title": _impressum_titel(person),
                     "source": "impressum"})
-    return kontakte_je_firma, fehler
+    return kontakte_je_firma, fehler, gelesen
 
 
 def _batch_mit_wiederaufnahme(dropcontact, anfragen, batch_speicher):
@@ -778,11 +790,11 @@ def source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
     # eine halbe Buendelung waere schwerer zu verstehen als der Gewinn wert.
     nur_impressum = [name for name, _ in stufen] == ["impressum"]
     if nur_impressum:
-        gebuendelt, lese_fehler = _impressum_gebuendelt(
+        gebuendelt, lese_fehler, impressum_gelesen = _impressum_gebuendelt(
             firmen, impressum_quelle, dropcontact, max_pro_firma,
             batch_speicher)
     else:
-        gebuendelt, lese_fehler = None, {}
+        gebuendelt, lese_fehler, impressum_gelesen = None, {}, {}
 
     def _suchen(firma: dict) -> tuple:
         """Die Sucharbeit EINER Firma - ohne gemeinsamen Zustand, damit
@@ -827,7 +839,7 @@ def source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
     # damit jede solche Firma heraus (17.08.2026: 23 von 50).
     info_urteile = _info_urteile(firmen, ergebnisse, dropcontact, email_pruefer)
 
-    for firma, (treffer, such_fehler) in zip(firmen, ergebnisse):
+    for i, (firma, (treffer, such_fehler)) in enumerate(zip(firmen, ergebnisse)):
         if such_fehler is not None:
             # Eine einzelne fehlerhafte Firma (ein Anbieter dauerhaft 4xx/5xx,
             # oder Dropcontact lehnt den Batch ab - z.B. leere Credits) darf
@@ -848,6 +860,16 @@ def source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
 
         ausgang = "kein_entscheider" if firma.get("website") else "keine_webseite"
         zusatz = {}
+        # Gefundene Entscheider am Firmensatz festhalten - MIT Rolle und
+        # Rangfolge, und auch dann, wenn keine Adresse geprueft werden
+        # konnte ("ohne_mail"). Ein gefundener Chef-Name darf nicht
+        # verschwinden, nur weil kein Postfach belegt ist (Oliver,
+        # 19.08.2026). Eintrag 0 ist der primaere Entscheider.
+        entscheider = build_entscheider(
+            (impressum_gelesen.get(i) or {}).get("personen") or [], kontakte)
+        if entscheider:
+            zusatz["entscheider"] = entscheider
+            zusatz["entscheider_primaer"] = entscheider[0]
         if kontakte:
             for k in kontakte:
                 leads.append(Lead(

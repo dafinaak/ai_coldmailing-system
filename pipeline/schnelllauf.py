@@ -43,7 +43,9 @@ from pipeline.ki import KI
 from pipeline.sources.dropcontact import DropcontactSource
 from pipeline.sources.hunter import HunterSource
 from pipeline.sources.impressum import ImpressumQuelle
-from pipeline.sourcing import INFO_OK_STATUS, _firmenname_saeubern
+from pipeline.decision_maker import build_entscheider, sort_by_priority
+from pipeline.sourcing import (INFO_OK_STATUS, _firmenname_saeubern,
+                               _impressum_titel)
 from pipeline.grosslauf import (
     _schluessel, dubletten_finden, lauf_laden, lauf_speichern, zusammenfassung,
 )
@@ -132,9 +134,14 @@ def personen_lesen(firma: dict, impressum) -> dict:
     text = impressum.impressum_text(website)
     if not text:
         return {"personen": [], "mail_domain": None}
-    return impressum.entscheider_lesen(
+    ergebnis = impressum.entscheider_lesen(
         text, firma.get("name", ""), domain=firma.get("domain", ""),
         hinweis_name=firma.get("gf_name_liste", ""))
+    # Beste Rolle zuerst (CEO/GF vor Inhaber vor Gruender ...): Runde 1
+    # des Adress-Baus gilt dem wahrscheinlichsten Entscheider (Oliver,
+    # 19.08.2026, pipeline.decision_maker).
+    ergebnis["personen"] = sort_by_priority(ergebnis.get("personen") or [])
+    return ergebnis
 
 
 def _seiten_lesen(firmen: list, impressum, arbeiter: int, stand: Zwischenstand,
@@ -280,7 +287,7 @@ def _adressen_bauen(firmen: list, gelesen: dict, dropcontact, max_pro_firma: int
                 kontakte[nr].append({
                     "first_name": person["vorname"],
                     "last_name": person["nachname"],
-                    "email": mail["email"], "title": TITEL,
+                    "email": mail["email"], "title": _impressum_titel(person),
                     "source": "impressum",
                     "notizen": [mail["hinweis"]] if mail.get("hinweis") else []})
 
@@ -290,9 +297,18 @@ def _eintrag_bauen(firma: dict, gefunden: list, gelesen, kunde, hunter) -> dict:
     if isinstance(gelesen, Exception):
         return {**firma, "ausgang": "fehler"}
 
+    # Gefundene Entscheider MIT Rolle und Rangfolge am Firmensatz halten -
+    # auch ohne gepruefte Mail ("ohne_mail"); Eintrag 0 ist der primaere
+    # Entscheider (Oliver, 19.08.2026).
+    entscheider = build_entscheider((gelesen or {}).get("personen") or [],
+                                    gefunden)
+    zusatz = ({"entscheider": entscheider,
+               "entscheider_primaer": entscheider[0]} if entscheider else {})
+
     firmenname = _firmenname_saeubern(firma.get("name", ""), kunde.maps_suche)
     if gefunden:
-        return {**firma, "ausgang": "mit_entscheider", "stufe": "impressum",
+        return {**firma, **zusatz,
+                "ausgang": "mit_entscheider", "stufe": "impressum",
                 "leads": [{"first_name": k["first_name"], "last_name": k["last_name"],
                            "email": k["email"].strip().lower(), "company": firmenname,
                            "title": k["title"], "website": firma.get("website"),
@@ -301,7 +317,7 @@ def _eintrag_bauen(firma: dict, gefunden: list, gelesen, kunde, hunter) -> dict:
 
     if not firma.get("domain"):
         ausgang = "kein_entscheider" if firma.get("website") else "keine_webseite"
-        return {**firma, "ausgang": ausgang, "leads": []}
+        return {**firma, **zusatz, "ausgang": ausgang, "leads": []}
 
     info_email = f"info@{firma['domain']}"
     pruefstatus = None
@@ -313,7 +329,7 @@ def _eintrag_bauen(firma: dict, gefunden: list, gelesen, kunde, hunter) -> dict:
                   f"übersprungen (Fehler bei der info@-Prüfung): {fehler}")
             return {**firma, "ausgang": "fehler"}
 
-    eintrag = {**firma}
+    eintrag = {**firma, **zusatz}
     if pruefstatus is not None:
         eintrag["info_pruefstatus"] = pruefstatus
     if pruefstatus is None or pruefstatus in INFO_OK_STATUS:

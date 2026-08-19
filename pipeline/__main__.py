@@ -428,7 +428,8 @@ def ansichts_probe_cli(job_ordner):
             encoding="utf-8")
 
 
-def sammeln_cli(ort, radius_km, dienste, limit_pro_suche, ordner=None):
+def sammeln_cli(ort, radius_km, dienste, limit_pro_suche, ordner=None,
+                ziel_anzahl=None, deutschland=False):
     """Firmen fuer einen Umkreis sammeln und als eigenen Ordner ablegen.
 
     Bewusst ein eigener Befehl und kein Teil von "lauf": Sammeln kostet
@@ -436,15 +437,26 @@ def sammeln_cli(ort, radius_km, dienste, limit_pro_suche, ordner=None):
     eine bewusste Handlung sein - im Formular die Wahl in Schritt 3, hier
     ein ausdruecklich getippter Befehl.
 
+    Mit --ziel wird gesammelt, BIS die gewuenschte Zahl einzigartiger
+    Firmen erreicht ist (oder die Quellen nichts mehr hergeben); mit
+    --deutschland ohne Ort geht das deutschlandweit, Region fuer Region.
+
     Der Fortschritt wird laufend ausgegeben, damit man bei einer Sammlung,
     die Minuten dauert, sieht, dass sie lebt.
     """
     from datetime import datetime
 
-    from pipeline.firmen_sammeln import ordnername, sammeln, speichern
+    from pipeline.firmen_sammeln import (ordnername, sammeln,
+                                          sammeln_bis_ziel, speichern)
     from pipeline.sources.apify_maps import ApifyMapsSource
     from pipeline.sources.gelbe_seiten import GelbeSeitenQuelle
     from pipeline.sources.overpass import OverpassQuelle
+
+    if not str(ort or "").strip() and not deutschland:
+        raise SystemExit(
+            "Ohne Ort kann nicht gesammelt werden. Fuer eine "
+            "deutschlandweite Sammlung ausdruecklich --deutschland angeben "
+            "(kostet je nach Ziel mehrere Apify-Laeufe).")
 
     apify_key = os.environ.get("APIFY_API_KEY")
     if not apify_key:
@@ -452,19 +464,32 @@ def sammeln_cli(ort, radius_km, dienste, limit_pro_suche, ordner=None):
             "Fehlende Umgebungsvariable: APIFY_API_KEY. Ohne sie koennen "
             "Google Maps und Gelbe Seiten nicht abgefragt werden.")
 
-    print(f"Sammle Firmen: {ort}, {radius_km} km, {', '.join(dienste)}")
-    firmen, bericht = sammeln(
-        ort, radius_km, dienste,
-        maps=ApifyMapsSource(apify_key),
-        gelbe_seiten=GelbeSeitenQuelle(apify_key),
-        overpass=OverpassQuelle(),
-        limit_pro_suche=limit_pro_suche)
+    if ziel_anzahl:
+        print(f"Sammle bis {ziel_anzahl} einzigartige Firmen: "
+              f"{ort or 'ganz Deutschland'}, {', '.join(dienste)}")
+        firmen, bericht = sammeln_bis_ziel(
+            ort, radius_km, dienste, ziel_anzahl,
+            maps=ApifyMapsSource(apify_key),
+            gelbe_seiten=GelbeSeitenQuelle(apify_key),
+            overpass=OverpassQuelle())
+    else:
+        print(f"Sammle Firmen: {ort}, {radius_km} km, {', '.join(dienste)}")
+        firmen, bericht = sammeln(
+            ort, radius_km, dienste,
+            maps=ApifyMapsSource(apify_key),
+            gelbe_seiten=GelbeSeitenQuelle(apify_key),
+            overpass=OverpassQuelle(),
+            limit_pro_suche=limit_pro_suche)
 
     ziel = speichern(".", firmen, bericht,
                      ordner or ordnername(
-                         ort, radius_km, datetime.now().strftime("%Y%m%d-%H%M")))
+                         ort or "deutschland", radius_km,
+                         datetime.now().strftime("%Y%m%d-%H%M")))
     print(f"Gefunden: {len(firmen)} Firmen")
     print(f"  je Quelle: {bericht.get('je_quelle')}")
+    if ziel_anzahl:
+        print(f"  angefragt: {bericht.get('angefragt')}, einzigartig: "
+              f"{bericht.get('einzigartig')}, Ende: {bericht.get('grund_ende')}")
     print(f"  fremde PLZ verworfen: {bericht.get('fremde_plz')}")
     if bericht.get("quellen_fehler"):
         print(f"  AUSGEFALLEN: {bericht['quellen_fehler']}")
@@ -491,13 +516,21 @@ def main():
     p_sammeln = sub.add_parser(
         "sammeln", help="Firmen fuer einen Umkreis frisch sammeln (kostet "
                         "Geld - die Apify-Aktoren rechnen pro Lauf ab).")
-    p_sammeln.add_argument("ort", help="Ortsname oder Postleitzahl")
+    p_sammeln.add_argument("ort", nargs="?", default="",
+                           help="Ortsname oder Postleitzahl - leer nur "
+                                "zusammen mit --deutschland")
     p_sammeln.add_argument("--radius", type=float, default=25.0)
     p_sammeln.add_argument("--dienst", action="append", dest="dienste",
                            required=True,
                            help="Suchbegriff, mehrfach angebbar")
     p_sammeln.add_argument("--limit", type=int, default=200,
                            help="Obergrenze je Suchbegriff bei Google Maps")
+    p_sammeln.add_argument("--ziel", type=int, default=None,
+                           help="Sammeln, bis so viele einzigartige Firmen "
+                                "da sind (oder die Quellen leer sind)")
+    p_sammeln.add_argument("--deutschland", action="store_true",
+                           help="Ohne Ort deutschlandweit sammeln, Region "
+                                "fuer Region (dichteste zuerst)")
     p_sammeln.add_argument("--ordner", dest="ordner", default=None,
                            help="Name des Zielordners unter laeufe/leadquellen/ "
                                 "- ohne Angabe aus Ort, Radius und Zeit gebaut. "
@@ -518,7 +551,9 @@ def main():
         lauf(args.kunde, args.limit, args.fortsetzen, args.neu_ab,
              args.firmen_datei)
     elif args.befehl == "sammeln":
-        sammeln_cli(args.ort, args.radius, args.dienste, args.limit, args.ordner)
+        sammeln_cli(args.ort, args.radius, args.dienste, args.limit,
+                    args.ordner, ziel_anzahl=args.ziel,
+                    deutschland=args.deutschland)
     elif args.befehl == "ansichts-probe":
         ansichts_probe_cli(args.job_ordner)
     elif args.befehl == "freigeben":

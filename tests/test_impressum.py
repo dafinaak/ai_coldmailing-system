@@ -85,7 +85,8 @@ def test_ki_liest_personen_und_abweichende_mail_domain():
     q = quelle(ki_antwort='{"personen": [{"vorname": "Thomas", "nachname": "Riek"}], '
                           '"mail_domain": "hannover-edv.de"}')
     ergebnis = q.entscheider_lesen(LANGER_IMPRESSUM_TEXT, "N&R EDV", "it-hannover.de")
-    assert ergebnis["personen"] == [{"vorname": "Thomas", "nachname": "Riek"}]
+    assert ergebnis["personen"] == [{"vorname": "Thomas", "nachname": "Riek",
+                                     "rolle": "", "linkedin": None}]
     assert ergebnis["mail_domain"] == "hannover-edv.de"
     # Der Impressums-Text und der Firmenname muessen im Prompt stecken:
     ki = q.ki
@@ -98,7 +99,8 @@ def test_firmenname_wird_nicht_als_person_uebernommen():
     q = quelle(ki_antwort='{"personen": [{"vorname": "VR", "nachname": "Immobilien & Service GmbH"},'
                           '{"vorname": "Anna", "nachname": "Muster"}], "mail_domain": null}')
     ergebnis = q.entscheider_lesen(LANGER_IMPRESSUM_TEXT, "Aimway", "aimway.de")
-    assert ergebnis["personen"] == [{"vorname": "Anna", "nachname": "Muster"}]
+    assert ergebnis["personen"] == [{"vorname": "Anna", "nachname": "Muster",
+                                     "rolle": "", "linkedin": None}]
 
 
 def test_unvollstaendige_namen_werden_verworfen():
@@ -113,7 +115,8 @@ def test_ki_antwort_mit_text_drumherum_wird_geparst():
     q = quelle(ki_antwort='Hier das Ergebnis:\n```json\n{"personen": '
                           '[{"vorname": "Anna", "nachname": "Muster"}], "mail_domain": null}\n```')
     ergebnis = q.entscheider_lesen(LANGER_IMPRESSUM_TEXT, "Firma", "firma.de")
-    assert ergebnis["personen"] == [{"vorname": "Anna", "nachname": "Muster"}]
+    assert ergebnis["personen"] == [{"vorname": "Anna", "nachname": "Muster",
+                                     "rolle": "", "linkedin": None}]
 
 
 def test_unbrauchbare_ki_antwort_gibt_leeres_ergebnis():

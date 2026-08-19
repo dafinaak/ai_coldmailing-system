@@ -8,8 +8,11 @@
 <div class="assi-warten" role="status">
   <h2 class="assi-block-titel">Die Firmen werden gesammelt</h2>
   <p>Google Maps, Gelbe Seiten und OpenStreetMap werden für
-    <strong>{{ entwurf.daten.ort }}</strong> im Umkreis von
-    {{ entwurf.daten.radius_km }} km abgefragt. Das dauert einige Minuten.</p>
+    <strong>{{ entwurf.daten.ort or "ganz Deutschland" }}</strong>
+    {% if entwurf.daten.ort %}im Umkreis von {{ entwurf.daten.radius_km }} km
+    {% else %}Region für Region {% endif %}abgefragt. Das dauert einige
+    Minuten{% if not entwurf.daten.ort %} — je nach gewünschter Zahl auch
+    länger{% endif %}.</p>
   <p class="formular-hilfstext">Diese Seite sieht von selbst nach. Du kannst
     das Fenster auch schließen — gesammelt wird weiter.</p>
 </div>
@@ -86,7 +89,7 @@
   {% if firmen %}
   <table class="tabelle assi-tabelle">
     <thead>
-      <tr><th>Firma</th><th>Ort</th><th>Entfernung</th><th>Webseite</th>
+      <tr><th>Firma</th><th>PLZ</th><th>Ort</th><th>Entfernung</th><th>Webseite</th>
           <th>Telefon</th><th class="assi-spalte-raus">raus</th></tr>
     </thead>
     <tbody>
@@ -94,7 +97,8 @@
       {% set kennung = firma.domain or firma.name %}
       <tr>
         <td>{{ firma.name }}<input type="hidden" name="firma" value="{{ kennung }}"></td>
-        <td>{{ ort_mit_plz(firma) or '—' }}</td>
+        <td>{{ firma.plz or '—' }}</td>
+        <td>{{ stadt(firma) or '—' }}</td>
         <td>{% if firma.entfernung_km is defined %}{{ firma.entfernung_km }} km{% else %}—{% endif %}</td>
         <td><a href="{{ firma.website }}" target="_blank" rel="noopener">{{ firma.domain or firma.website }}</a></td>
         <td>{{ firma.telefon or '—' }}</td>

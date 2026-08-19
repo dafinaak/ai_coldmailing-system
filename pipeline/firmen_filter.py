@@ -23,6 +23,7 @@ from __future__ import annotations
 import re
 
 from pipeline.plz_geo import entfernung_km, mittelpunkt, punkt_fuer_plz
+from pipeline.service_categories import expand_for_matching
 
 
 def _text_der_firma(firma: dict) -> str:
@@ -71,6 +72,10 @@ def filtern(firmen: list, *, ort: str = "", radius_km: float | None = None,
                  radius search cannot judge them (shown separately)
       zahlen   - counts for the wizard's result screen
     """
+    # Eine Leistungs-Familie ("Computer Services") steht fuer ihre ganze
+    # Unterkategorien-Liste - eine Quelle fuer Formular, Zaehler und
+    # Filter (siehe pipeline.service_categories, Oliver 19.08.2026).
+    dienste = expand_for_matching(dienste)
     zentrum = mittelpunkt(ort, plz_tabelle_pfad) if ort else None
     if ort and zentrum is None:
         raise ValueError(
@@ -161,6 +166,12 @@ def ort_aus_adresse(adresse: object, plz: object = "") -> str:
 def ort_mit_plz(firma: dict) -> str:
     """"30161 Hannover" fuer die Anzeige - oder nur das, was bekannt ist."""
     plz = str(firma.get("plz") or "").strip()
-    ort = str(firma.get("ort") or "").strip() or ort_aus_adresse(
-        firma.get("address"), plz)
+    ort = stadt(firma)
     return " ".join(t for t in (plz, ort) if t)
+
+
+def stadt(firma: dict) -> str:
+    """Nur der Ortsname. PLZ und Ort sind seit dem 19.08.2026 getrennte
+    Spalten (Olivers Vorgabe); die kombinierte Form bleibt fuer Altnutzer."""
+    return (str(firma.get("ort") or "").strip()
+            or ort_aus_adresse(firma.get("address"), firma.get("plz")))

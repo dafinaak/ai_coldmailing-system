@@ -33,6 +33,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from pipeline import assistent_entwurf as entwuerfe
 from pipeline.config import lade_globale_sperrlisten_eintraege
 from pipeline.firmen_filter import dienste_vorschlagen, filtern, ort_mit_plz
+from pipeline.service_categories import families
 from web import auth
 from web.nav import nav_kontext
 
@@ -329,6 +330,7 @@ def schritt_3(request: Request, kennung: str):
         "dienste_vorschlaege": dienste_vorschlagen(bestand),
         "radius_stufen": RADIUS_STUFEN,
         "bestand_gesamt": len(bestand),
+        "familien": families(),
     })
 
 
@@ -360,12 +362,14 @@ async def schritt_3_speichern(request: Request, kennung: str):
     entwuerfe.schritt_speichern(daten_dir, kennung, 3, werte)
 
     if quelle == "neu":
-        fehler = _sammlung_starten(daten_dir, kennung, werte)
+        anzahl = int(entwurf["daten"].get("anzahl_leads") or 50)
+        fehler = _sammlung_starten(daten_dir, kennung, werte, anzahl)
         if fehler:
             return _seite(request, entwurf, 3, {
                 "dienste_vorschlaege": dienste_vorschlagen(_firmen_bestand(daten_dir)),
                 "radius_stufen": RADIUS_STUFEN,
                 "bestand_gesamt": len(_firmen_bestand(daten_dir)),
+                "familien": families(),
             }, fehler=fehler, status_code=400)
     return _weiter(kennung, 4)
 
@@ -383,18 +387,24 @@ def _sammlung_stand(daten_dir: Path, entwurf: dict) -> dict | None:
     return None if stand["zustand"] == "unbekannt" else stand
 
 
-def _sammlung_starten(daten_dir: Path, kennung: str, werte: dict) -> str | None:
+def _sammlung_starten(daten_dir: Path, kennung: str, werte: dict,
+                      anzahl: int) -> str | None:
     """Sammlung im Hintergrund anstossen. Fehlertext oder None.
 
     Laeuft absichtlich schon HIER los, nicht erst in Schritt 4: so sammelt
     sie, waehrend die naechste Seite gelesen wird - derselbe Trick, mit dem
     die Adress-Suche ihre Minuten unsichtbar macht.
+
+    Die gewuenschte Zahl aus Schritt 1 ist das Sammel-Ziel; ein leeres
+    Ortsfeld heisst ganz Deutschland (so steht es am Feld) - dann laeuft
+    die Sammlung Region fuer Region, bis das Ziel erreicht ist.
     """
     from web.sammelmanager import SammelFehler, starte
 
     try:
         starte(daten_dir, kennung, werte["ort"], werte["radius_km"],
-               werte["dienste"])
+               werte["dienste"], ziel_anzahl=anzahl,
+               deutschlandweit=not str(werte.get("ort") or "").strip())
     except SammelFehler as fehler:
         return str(fehler)
     except Exception as fehler:      # noqa: BLE001
@@ -432,6 +442,7 @@ def schritt_4(request: Request, kennung: str):
             "dienste_vorschlaege": dienste_vorschlagen(bestand),
             "radius_stufen": RADIUS_STUFEN,
             "bestand_gesamt": len(bestand),
+            "familien": families(),
         }, fehler=str(fehler), status_code=400)
 
     gewuenscht = int(entwurf["daten"].get("anzahl_leads") or 50)

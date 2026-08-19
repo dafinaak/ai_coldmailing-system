@@ -124,6 +124,7 @@ class ApifyMapsSource:
                 "domain": _domain_aus_website(website),
                 "address": e.get("address", ""),
                 "plz": e.get("postalCode") or "",
+                "ort": e.get("city") or "",
                 "telefon": e.get("phone") or "",
                 "vorhandene_email": "",
                 "categories": kategorien,
@@ -155,6 +156,8 @@ class ApifyMapsSource:
                 "website": website,
                 "domain": _domain_aus_website(website),
                 "address": eintrag.get("address", ""),
+                "plz": eintrag.get("postalCode") or "",
+                "ort": eintrag.get("city") or "",
                 "categories": kategorien,
             })
         return firmen

@@ -1,0 +1,46 @@
+{
+ "kennung": "20260819-095153",
+ "angelegt": "2026-08-19T09:51:53",
+ "schritt": 2,
+ "hoechster_schritt": 2,
+ "daten": {
+  "name": "TEST Computerservice Hannover 18.08",
+  "sprache": "de",
+  "anzahl_leads": 50,
+  "beschreibung": "",
+  "verkaeufer_url": "https://polepositionautomation.de",
+  "absender_email": "email@poleposition-seo.online",
+  "referenz_1": "",
+  "referenz_2": "",
+  "anweisungen": "",
+  "usp": [
+   {
+    "titel": "Maßgeschneiderte Automations-Infrastruktur aus einer Hand",
+    "erklaerung": "Die Firma entwickelt individuelle Automationslösungen, keine Einzel-Tools."
+   },
+   {
+    "titel": "Integration vorhandener IT-Systeme",
+    "erklaerung": "Bestehende CRM- oder ERP-Systeme werden in die Automationen eingebunden."
+   },
+   {
+    "titel": "Hosting auf sicheren Servern in Deutschland",
+    "erklaerung": "Daten werden in geschützten Containern oder direkt beim Kunden gespeichert."
+   },
+   {
+    "titel": "Umfassender Automation-as-a-Service",
+    "erklaerung": "Übernahme von Hosting, Management, Monitoring und Updates durch die Firma."
+   },
+   {
+    "titel": "Einhaltung gesetzlicher Datenschutzvorgaben",
+    "erklaerung": "Automationen erfüllen DSGVO und weitere regulatorische Anforderungen."
+   }
+  ],
+  "icp": {
+   "firmografisch": "IT-Dienstleister in Deutschland, spezialisiert auf Computer- und Serviceleistungen, kleine bis mittelgroße Unternehmen",
+   "technografisch": "Setzen bestehende CRM-, ERP-Systeme ein, nutzen Automations- und Kommunikationswerkzeuge",
+   "verhalten": "Suchen individuelle Automationslösungen zur Erweiterung ihres Serviceportfolios für Kunden",
+   "entscheider": "IT-Leiter, Geschäftsführer oder leitende Entscheidungsbefugte bei IT-Dienstleistern"
+  }
+ },
+ "geaendert": "2026-08-19T09:52:57"
+}

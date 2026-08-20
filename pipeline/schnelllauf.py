@@ -315,10 +315,21 @@ def _eintrag_bauen(firma: dict, gefunden: list, gelesen, kunde, hunter) -> dict:
                            "source": k["source"], "notizen": k.get("notizen") or []}
                           for k in gefunden]}
 
+    # Ohne persoenliche geprueft Adresse ist die Firma nicht
+    # kampagnentauglich (Oliver, Phase 1, 20.08.2026) - gespeichert
+    # bleibt alles, was gefunden wurde.
+    unfaehig = {"campaign_eligible": False,
+                "campaign_ineligibility_reason":
+                    "personal_decision_maker_email_missing"
+                    if zusatz.get("entscheider") else "no_decision_maker"}
+
     if not firma.get("domain"):
         ausgang = "kein_entscheider" if firma.get("website") else "keine_webseite"
-        return {**firma, **zusatz, "ausgang": ausgang, "leads": []}
+        return {**firma, **zusatz, **unfaehig, "ausgang": ausgang, "leads": []}
 
+    # Sammeladressen-Regel: info@ wird weiter geprueft und als
+    # FIRMEN-INFORMATION festgehalten - sie wird NIE mehr zum
+    # Kampagnen-Lead (vorher Ausgang "info_fallback" samt Lead).
     info_email = f"info@{firma['domain']}"
     pruefstatus = None
     if hunter is not None:
@@ -329,18 +340,20 @@ def _eintrag_bauen(firma: dict, gefunden: list, gelesen, kunde, hunter) -> dict:
                   f"übersprungen (Fehler bei der info@-Prüfung): {fehler}")
             return {**firma, "ausgang": "fehler"}
 
-    eintrag = {**firma, **zusatz}
-    if pruefstatus is not None:
+    eintrag = {**firma, **zusatz, **unfaehig, "leads": []}
+    if pruefstatus is None:
+        # Kein Pruefer: Adresse bleibt als UNGEPRUEFTE Information stehen
+        # (frueher wurde sie hier sogar ungeprueft versendet - Altlast).
+        eintrag["info_email"] = info_email
+        eintrag["info_pruefstatus"] = "ungeprueft"
+        eintrag["ausgang"] = "ohne_persoenliche_mail"
+    elif pruefstatus in INFO_OK_STATUS:
+        eintrag["info_email"] = info_email
         eintrag["info_pruefstatus"] = pruefstatus
-    if pruefstatus is None or pruefstatus in INFO_OK_STATUS:
-        eintrag["ausgang"] = "info_fallback"
-        eintrag["leads"] = [{"first_name": "", "last_name": "", "email": info_email,
-                             "company": firmenname, "title": "",
-                             "website": firma.get("website"), "source": "info@",
-                             "notizen": []}]
+        eintrag["ausgang"] = "ohne_persoenliche_mail"
     else:
+        eintrag["info_pruefstatus"] = pruefstatus
         eintrag["ausgang"] = "info_ungueltig"
-        eintrag["leads"] = []
     return eintrag
 
 

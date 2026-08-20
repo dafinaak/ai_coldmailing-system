@@ -179,10 +179,12 @@ def test_reines_systemhaus_ist_kein_wettbewerber():
     assert ergebnis["wettbewerber"] is False
 
 
-def test_unlesbare_antwort_gilt_als_wettbewerber():
+def test_unlesbare_antwort_gilt_als_unsicher():
     """Zuverlaessigkeit zuerst: Wer nicht eindeutig als unbedenklich
-    erkannt wird, wird nicht angeschrieben."""
+    erkannt wird, wird nicht angeschrieben - seit der Phase-2-Eichung
+    (20.08.2026) als "unsicher" statt faelschlich als Anbieter."""
     from pipeline.branchen_filter import ist_wettbewerber
     ergebnis = ist_wettbewerber(firma(), webtext="x", ki=_FakeKI("murks"))
-    assert ergebnis["wettbewerber"] is True
+    assert ergebnis["wettbewerber"] is False
+    assert ergebnis["unsicher"] is True
     assert "nicht lesbar" in ergebnis["belege"].lower()

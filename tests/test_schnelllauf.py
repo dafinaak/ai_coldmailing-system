@@ -151,8 +151,12 @@ def test_ohne_persoenliche_mail_kommt_geprueftes_info_at():
                                  hunter, arbeiter=1, fortschritt=lambda _: None)
 
     assert hunter.geprueft == ["info@a.de"]
-    assert ergebnisse[0]["ausgang"] == "info_fallback"
-    assert ergebnisse[0]["leads"][0]["email"] == "info@a.de"
+    # Kampagnen-Regel (20.08.2026): geprueft und GESPEICHERT - nie Lead.
+    assert ergebnisse[0]["ausgang"] == "ohne_persoenliche_mail"
+    assert ergebnisse[0]["leads"] == []
+    assert ergebnisse[0]["info_email"] == "info@a.de"
+    assert ergebnisse[0]["info_pruefstatus"] == "valid"
+    assert ergebnisse[0]["campaign_eligible"] is False
 
 
 def test_nicht_zustellbares_info_at_wird_verworfen():

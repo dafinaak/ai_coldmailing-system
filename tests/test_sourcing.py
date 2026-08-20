@@ -75,25 +75,30 @@ def test_lead_aus_hunter_treffer_und_dropcontact_mail():
     assert [f["ausgang"] for f in ausgang] == ["mit_entscheider"]
 
 
-def test_dropcontact_findet_nichts_faellt_auf_info_at():
-    # Hunter kennt die Person, Dropcontact baut keine Mail, Hunters eigene Mail
-    # ist nicht als valid verifiziert -> info@ als Rueckfall.
+def test_dropcontact_findet_nichts_info_wird_nur_gespeichert():
+    # Hunter kennt die Person, Dropcontact baut keine Mail, Hunters eigene
+    # Mail ist nicht als valid verifiziert. Seit der Kampagnen-Regel
+    # (20.08.2026) wird info@ dann NICHT mehr Empfaenger - sie bleibt als
+    # Firmen-Information stehen, die Firma geht auf die Anruf/Brief-Liste.
     firmen = [_firma("klein.de")]
     personen = {"klein.de": [_person("Anna", email="anna@klein.de", verification_status="")]}
     leads, deckung, ausgang = source_leads(
         _kunde(), 10, "a", "b", "c", **_quellen(firmen, personen, {}))
-    assert len(leads) == 1
-    assert leads[0].email == "info@klein.de" and leads[0].source == "info@"
-    assert deckung["firmen_mit_kontakt"] == 1
-    assert [f["ausgang"] for f in ausgang] == ["info_fallback"]
+    assert leads == []
+    assert deckung["firmen_mit_kontakt"] == 0
+    assert [f["ausgang"] for f in ausgang] == ["ohne_persoenliche_mail"]
+    assert ausgang[0]["info_email"] == "info@klein.de"
+    assert ausgang[0]["campaign_eligible"] is False
 
 
-def test_hunter_findet_niemanden_faellt_auf_info_at():
+def test_hunter_findet_niemanden_info_wird_nur_gespeichert():
     firmen = [_firma("leer.de")]
     leads, deckung, ausgang = source_leads(
         _kunde(), 10, "a", "b", "c", **_quellen(firmen, {"leer.de": []}, {}))
-    assert leads[0].email == "info@leer.de" and leads[0].source == "info@"
-    assert [f["ausgang"] for f in ausgang] == ["info_fallback"]
+    assert leads == []
+    assert [f["ausgang"] for f in ausgang] == ["ohne_persoenliche_mail"]
+    assert ausgang[0]["info_email"] == "info@leer.de"
+    assert ausgang[0]["campaign_ineligibility_reason"] == "no_decision_maker"
 
 
 def test_faellt_auf_hunters_eigene_mail_wenn_valide_und_dropcontact_leer():
@@ -132,8 +137,8 @@ def test_nicht_entscheider_ohne_rollentreffer_wird_uebersprungen():
     leads, _, ausgang = source_leads(
         _kunde(), 10, "a", "b", "c",
         **_quellen(firmen, personen, {"Tom": "tom@support.de"}))
-    assert leads[0].email == "info@support.de"
-    assert [f["ausgang"] for f in ausgang] == ["info_fallback"]
+    assert leads == []          # Support-Mitarbeiter wird nicht angeschrieben
+    assert [f["ausgang"] for f in ausgang] == ["ohne_persoenliche_mail"]
 
 
 def test_standard_ist_ein_entscheider_pro_firma():
@@ -419,17 +424,21 @@ def test_prospeo_stufe_ohne_quelle_scheitert_mit_klarem_fehler():
                      **_quellen([_firma("a.de")], {}, {}))
 
 
-def test_info_mail_wird_vor_uebernahme_geprueft():
+def test_info_mail_wird_geprueft_und_nur_gespeichert():
+    # Seit der Kampagnen-Regel (20.08.2026): die Pruefung laeuft weiter
+    # (der Befund gehoert zur Firma), aber die Adresse wird NIE Empfaenger.
     hunter = _FakeHunterMitPruefer({}, {"info@a.de": "accept_all"})
     leads, deckung, firmen_aus = source_leads(
         _kunde(), 10, "k", "k", "k",
         apify_source=_FakeApify([_firma("a.de")]),
         hunter_source=hunter, dropcontact_source=_FakeDropcontact())
-    assert [l.email for l in leads] == ["info@a.de"]
+    assert leads == []
     assert hunter.geprueft == ["info@a.de"]
-    assert firmen_aus[0]["ausgang"] == "info_fallback"
+    assert firmen_aus[0]["ausgang"] == "ohne_persoenliche_mail"
+    assert firmen_aus[0]["info_email"] == "info@a.de"
     assert firmen_aus[0]["info_pruefstatus"] == "accept_all"
-    assert deckung["je_stufe"]["info@"] == 1
+    assert deckung["je_stufe"]["info@"] == 1          # gefunden, nie versendet
+    assert deckung["firmen_mit_kontakt"] == 0
 
 
 def test_ungueltige_info_mail_wird_verworfen():
@@ -455,14 +464,16 @@ def test_fehler_bei_der_info_pruefung_verwendet_mail_nicht():
     assert firmen_aus[0]["ausgang"] == "fehler"
 
 
-def test_ohne_pruefer_bleibt_altes_info_verhalten():
-    # Alte Fakes/Quellen ohne email_pruefen: info@ wird wie bisher ungeprueft
-    # uebernommen (Rueckwaerts-Kompatibilitaet der bestehenden Tests/Ablaeufe).
+def test_ohne_pruefer_wird_info_nie_mehr_uebernommen():
+    # Frueher wurde info@ ohne verfuegbaren Pruefer UNGEPRUEFT uebernommen
+    # (Altlast). Seit der Kampagnen-Regel (20.08.2026) bleibt sie nur als
+    # ungepruefte Firmen-Information stehen - Empfaenger wird sie nie.
     leads, deckung, firmen_aus = source_leads(
         _kunde(), 10, "k", "k", "k",
         **_quellen([_firma("a.de")], {}, {}))
-    assert [l.email for l in leads] == ["info@a.de"]
-    assert firmen_aus[0]["ausgang"] == "info_fallback"
+    assert leads == []
+    assert firmen_aus[0]["ausgang"] == "ohne_persoenliche_mail"
+    assert firmen_aus[0]["info_pruefstatus"] == "ungeprueft"
 
 
 # --- Deutsche Titelformen (Messlauf-Funde 23.07.2026) ----------------------

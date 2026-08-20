@@ -169,15 +169,18 @@ def test_bester_rang_bekommt_den_ersten_bezahlten_adressbau():
 
 
 def test_person_ohne_gepruefte_mail_bleibt_am_firmensatz():
-    # Firma mit Domain: sie faellt in die info@-Regel - aber der gelesene
-    # Chef-Name muss trotzdem am Firmensatz stehen, nicht verschwinden.
+    # Firma mit Domain: seit der Kampagnen-Regel (20.08.2026) gibt es
+    # keinen info@-Lead mehr - der gelesene Chef-Name und die gespeicherte
+    # Sammeladresse bleiben trotzdem am Firmensatz stehen.
     leads, _, firmen_aus = _lauf(
         {"a.de": {"personen": [person("Gerd", "Chef", "Geschäftsführer")],
                   "mail_domain": None}},
         {})      # Dropcontact findet nichts
-    assert [l.source for l in leads] == ["info@"]
+    assert leads == []
     eintrag = firmen_aus[0]
-    assert eintrag["ausgang"] == "info_fallback"
+    assert eintrag["ausgang"] == "ohne_persoenliche_mail"
+    assert eintrag["campaign_ineligibility_reason"] == \
+        "personal_decision_maker_email_missing"
     assert eintrag["entscheider_primaer"]["name"] == "Gerd Chef"
     assert eintrag["entscheider_primaer"]["status"] == "ohne_mail"
 

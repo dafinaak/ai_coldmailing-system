@@ -449,9 +449,13 @@ def test_lauf_fortsetzen_akzeptiert_altes_leads_listenformat(tmp_path, monkeypat
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
     store = RunStore(tmp_path, "Demo")
     store.save_step("kunde_pfad", {"pfad": "kunden/demo-gmbh.yaml"})
+    # source "dropcontact": seit der Kampagnen-Regel (20.08.2026) bekommen
+    # nur Leads mit buergender Quelle einen Text - hier geht es um das
+    # ALTE LISTENFORMAT, nicht um die Regel.
     store.save_step("leads", [
         {"first_name": "Anna", "last_name": "Muster", "email": "anna@firma.de",
-         "company": "Firma GmbH", "title": "CEO", "website": "", "source": "apollo"}])
+         "company": "Firma GmbH", "title": "CEO", "website": "",
+         "source": "dropcontact"}])
 
     cli.lauf("kunden/demo-gmbh.yaml", 10, str(store.run_dir))
 

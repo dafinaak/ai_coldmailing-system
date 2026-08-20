@@ -117,19 +117,20 @@ def test_die_anfrage_selbst_ist_reproduzierbar():
         [f"Muster{i}" for i in range(8)]
 
 
-def test_firmen_ohne_treffer_fallen_auf_info_zurueck():
-    # Wer keine persoenliche Adresse bekommt, geht nicht verloren, sondern
-    # faellt auf info@ - genau wie auf dem alten, ungebuendelten Weg.
+def test_firmen_ohne_treffer_behalten_nur_die_info_information():
+    # Wer keine persoenliche Adresse bekommt, geht nicht verloren - die
+    # Firma bleibt samt gepruefter info@ gespeichert. Empfaenger wird sie
+    # seit der Kampagnen-Regel (20.08.2026) aber nie mehr.
     dc = BuendelDropcontact(fehlt=["Muster2", "Muster4"])
 
     leads, deckung, firmen_mit_ausgang = _lauf(_firmen(5), dc)
 
-    persoenlich = [l for l in leads if l.source == "impressum"]
-    assert len(persoenlich) == 3
-    assert {l.email for l in leads if l.source == "info@"} == {
-        "info@firma2.de", "info@firma4.de"}
-    ausgaenge = {f["name"]: f["ausgang"] for f in firmen_mit_ausgang}
-    assert ausgaenge["firma2"] == "info_fallback"
+    assert len(leads) == 3
+    assert all(l.source == "impressum" for l in leads)
+    nach_name = {f["name"]: f for f in firmen_mit_ausgang}
+    assert nach_name["firma2"]["ausgang"] == "ohne_persoenliche_mail"
+    assert nach_name["firma2"]["info_email"] == "info@firma2.de"
+    assert nach_name["firma2"]["campaign_eligible"] is False
     assert deckung["je_stufe"]["impressum"] == 3
 
 

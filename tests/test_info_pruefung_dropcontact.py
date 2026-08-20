@@ -102,11 +102,13 @@ def test_gar_keine_antwort_heisst_nicht_versenden():
 def test_alle_info_adressen_in_einer_anfrage():
     dc = PruefenderDropcontact()
 
-    leads, _, _ = _lauf(_firmen(8), dc)
+    leads, _, firmen_aus = _lauf(_firmen(8), dc)
 
     assert len(dc.anfragen) == 1, "es wurde mehr als einmal gefragt"
     assert len(dc.anfragen[0]) == 8
-    assert len(leads) == 8
+    # Kampagnen-Regel (20.08.2026): geprueft ja, Empfaenger nie.
+    assert leads == []
+    assert all(f["info_email"] for f in firmen_aus)
 
 
 def test_gueltige_gehen_raus_ungueltige_nicht():
@@ -115,10 +117,13 @@ def test_gueltige_gehen_raus_ungueltige_nicht():
 
     leads, deckung, firmen_mit_ausgang = _lauf(_firmen(5), dc)
 
-    assert {l.email for l in leads} == {"info@firma0.de", "info@firma2.de",
-                                         "info@firma4.de"}
-    ausgaenge = {f["name"]: f["ausgang"] for f in firmen_mit_ausgang}
-    assert ausgaenge["firma1"] == "info_ungueltig"
+    # Gueltige werden GESPEICHERT (nie versendet), ungueltige verworfen.
+    assert leads == []
+    nach_name = {f["name"]: f for f in firmen_mit_ausgang}
+    assert nach_name["firma0"]["info_email"] == "info@firma0.de"
+    assert nach_name["firma0"]["ausgang"] == "ohne_persoenliche_mail"
+    assert nach_name["firma1"]["ausgang"] == "info_ungueltig"
+    assert "info_email" not in nach_name["firma1"]
     assert deckung["je_stufe"]["info@"] == 3
 
 
@@ -127,10 +132,10 @@ def test_hunter_wird_gar_nicht_mehr_gefragt():
         def email_pruefen(self, email):
             raise AssertionError("Hunter darf hier nicht mehr gefragt werden")
 
-    leads, _, _ = _lauf(_firmen(3), PruefenderDropcontact(),
-                        hunter=HunterDerSchreit())
+    _, _, firmen_aus = _lauf(_firmen(3), PruefenderDropcontact(),
+                             hunter=HunterDerSchreit())
 
-    assert len(leads) == 3
+    assert all(f["info_pruefstatus"] == "gueltig" for f in firmen_aus)
 
 
 def test_gescheiterte_pruefung_laesst_niemanden_durch():
@@ -159,7 +164,8 @@ def test_quelle_ohne_pruefung_faellt_auf_hunter_zurueck():
             return {"status": "valid", "score": 90}
 
     hunter = HunterMitKontingent()
-    leads, _, _ = _lauf(_firmen(3), NurEinzeln(), hunter=hunter)
+    leads, _, firmen_aus = _lauf(_firmen(3), NurEinzeln(), hunter=hunter)
 
     assert hunter.gefragt == ["info@firma0.de", "info@firma1.de", "info@firma2.de"]
-    assert len(leads) == 3
+    assert leads == []
+    assert all(f["info_pruefstatus"] == "valid" for f in firmen_aus)

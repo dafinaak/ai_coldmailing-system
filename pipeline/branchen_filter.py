@@ -110,48 +110,78 @@ Antworte AUSSCHLIESSLICH mit:
 
 
 WETTBEWERBER_SYSTEM = """Du prüfst EINE Frage: Bietet diese Firma selbst
-Automatisierung oder KI-Lösungen als Leistung an?
+Geschäftsprozess-Automatisierung oder KI-Lösungen als LEISTUNG für
+Kunden an?
 
-Als Wettbewerber gilt, wer Folgendes anbietet oder damit wirbt:
-- Prozessautomatisierung, Workflow-Automation, Geschäftsprozess-
-  Automatisierung, RPA
-- KI-Lösungen, KI-Beratung, KI-Implementierung, KI-Integration,
-  "Prozesse intelligent automatisieren", KI-Agenten, Chatbots
-- Systemintegration/Schnittstellen ausdrücklich als Automations-Angebot
-- Digitalisierungs-Projekte mit Automatisierungs-Versprechen
+"automation" NUR, wenn die Firma solche Leistungen erkennbar ANBIETET:
+- Prozessautomatisierung, Workflow-Automatisierung, Geschäftsprozess-
+  Automatisierung, RPA, Hyperautomation
+- KI-Lösungen, KI-Beratung, KI-Implementierung als Dienstleistung,
+  KI-Agenten, Chatbots, "Prozesse intelligent automatisieren"
+- Automatisierungs-Beratung oder -Umsetzung für Kunden (z.B. mit n8n,
+  Make, Zapier, Power Automate)
+- Digitalisierungs-Projekte mit ausdrücklichem Automatisierungs-Angebot
   ("Abläufe automatisieren", "Papierlose Prozesse", Workflow-Systeme)
+- Geschäftsprozess-Integration/EDI-Orchestrierung NUR, wenn die Firma
+  sie selbst ausdrücklich als (Business Process) Automation vermarktet -
+  gewöhnliche Systemintegration ohne dieses Versprechen zählt NICHT
 
-NICHT als Wettbewerber gilt reine IT-Betreuung: Managed Services,
-Support, Wartung, Netzwerk/Server-Betrieb, Hardware, Security-Betrieb,
-Backup, Cloud-Migration ohne Automations-Versprechen.
+"keine_automation" bei:
+- reiner IT-Betreuung: Managed Services, Support, Wartung, Netzwerk/
+  Server-Betrieb, Hardware, Security-Betrieb, Backup, Cloud-Migration
+- INDUSTRIE-Automatisierung: Steuerungstechnik, SPS/PLC, Maschinen-,
+  Fertigungs- oder Gebäudeautomation - andere Branche, kein Wettbewerber
+- Software-PRODUKTEN, die Automatisierungs-/KI-Funktionen nur ENTHALTEN
+  (z.B. ein CAD-, Logistik- oder Branchenprodukt "mit KI") - solange die
+  Firma keine Automatisierungs-DIENSTLEISTUNG verkauft
+- blossen Erwähnungen wie "automatisierte Backups", "automatisches
+  Monitoring" oder intern genutzter Automatisierung
+
+"unsicher" bei zu wenig oder mehrdeutiger Information. Rate NICHT.
 
 Antworte AUSSCHLIESSLICH mit:
-{"wettbewerber": true|false, "belege": "<Zitat/Stichwort von der Seite
-oder leer>"}"""
+{"einstufung": "automation" | "keine_automation" | "unsicher",
+ "belege": "<Zitat/Stichwort von der Seite oder leer>"}"""
 
 
 def ist_wettbewerber(firma: dict, webtext: str, ki) -> dict:
-    """Zweite, harte Pruefung (Olivers Fund 30.07.2026): Bietet die Firma
-    SELBST Automatisierung/KI an? Gibt {"wettbewerber", "belege"}.
-    Unlesbare Antworten gelten als Wettbewerber - wer nicht eindeutig
-    unbedenklich ist, wird nicht angeschrieben."""
+    """Zweite, harte Pruefung (Olivers Fund 30.07.2026; Dreiteilung seit
+    der Phase-2-Eichung 20.08.2026): Bietet die Firma SELBST
+    Geschaeftsprozess-Automatisierung/KI als Leistung an?
+
+    Gibt {"wettbewerber": bool, "unsicher": bool, "belege": str} zurueck.
+    Unlesbare Antworten gelten als "unsicher" - wer nicht eindeutig
+    unbedenklich ist, wird nicht angeschrieben (die Firma bleibt
+    gespeichert). WICHTIG fuer Aufrufer: Ist gar kein Webseiten-Text
+    lesbar, soll die Firma OHNE diesen Aufruf als unsicher gelten -
+    ein Urteil nur aus dem Namen waere geraten (Benchmark 20.08.2026)."""
     kategorien = ", ".join(str(k) for k in firma.get("categories") or []) or "keine"
     webseite_teil = (f"Text der Webseite (Auszug):\n{webtext[:3500]}"
                      if webtext.strip() else
                      "Kein Text von der Webseite verfügbar - urteile nur nach "
-                     "Name und Kategorien.")
+                     "Name und Kategorien; im Zweifel \"unsicher\".")
     prompt = (f"Firma: {firma.get('name', '')}\n"
               f"Kategorien: {kategorien}\n\n{webseite_teil}")
     antwort = ki.frage(WETTBEWERBER_SYSTEM, prompt)
     treffer = re.search(r"\{.*\}", antwort or "", re.S)
     if not treffer:
-        return {"wettbewerber": True, "belege": "KI-Antwort nicht lesbar"}
+        return {"wettbewerber": False, "unsicher": True,
+                "belege": "KI-Antwort nicht lesbar"}
     try:
         daten = json.loads(treffer.group(0))
     except ValueError:
-        return {"wettbewerber": True, "belege": "KI-Antwort nicht lesbar"}
+        return {"wettbewerber": False, "unsicher": True,
+                "belege": "KI-Antwort nicht lesbar"}
+    belege = str(daten.get("belege") or "")
+    if "einstufung" in daten:
+        stufe = str(daten.get("einstufung") or "").strip().lower()
+        return {"wettbewerber": stufe == "automation",
+                "unsicher": stufe not in ("automation", "keine_automation"),
+                "belege": belege}
+    # Alte Antwortform {"wettbewerber": true|false} (aeltere Ablaeufe und
+    # Test-Attrappen) bleibt lesbar.
     return {"wettbewerber": bool(daten.get("wettbewerber")),
-            "belege": str(daten.get("belege") or "")}
+            "unsicher": False, "belege": belege}
 
 
 def firma_bewerten(firma: dict, webtext: str, ki, system=None) -> dict:

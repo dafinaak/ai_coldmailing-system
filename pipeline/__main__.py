@@ -139,9 +139,23 @@ def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None
     stand = store.load_step("dedupe")
 
     if not store.step_done("personalisierung"):
+        # Kampagnen-Regel (Oliver, Phase 1, 20.08.2026): Texte gibt es nur
+        # fuer benannte Entscheider mit persoenlicher, geprueft Adresse.
+        # Neue Laeufe erzeugen andere Leads gar nicht mehr erst; dieser
+        # Filter schuetzt FORTGESETZTE alte Laufordner, deren leads.json
+        # noch Sammeladressen (info@ ...) enthaelt. Am Ordner selbst wird
+        # nichts veraendert - die Eintraege bleiben, sie bekommen nur
+        # keinen Text und damit keinen Weg Richtung Instantly.
+        from pipeline.campaign_eligibility import eligible_leads
+        zulaessig, aussortiert = eligible_leads(stand["behalten"])
+        if aussortiert:
+            print(f"Kampagnen-Regel: {len(aussortiert)} Kontakt(e) ohne "
+                  f"persönliche geprüfte Adresse bekommen keinen Text "
+                  f"(bleiben im Laufordner erhalten): "
+                  f"{', '.join(a['email'] for a in aussortiert[:5])}")
         fertig, nacharbeit = [], []
         for lead, (ok, grund, texte) in _texte_schreiben(
-                stand["behalten"], kunde, check):
+                zulaessig, kunde, check):
             if ok:
                 fertig.append({"email": lead.email, **texte})
             else:
@@ -238,6 +252,27 @@ def _versand_ausfuehren(store, sender, kunde=None) -> str:
     if kunde is None:
         kunde = load_kunde(store.load_step("kunde_pfad")["pfad"])
     texte = store.load_step("pruefung_ok")
+    # Kampagnen-Regel (Oliver, Phase 1, 20.08.2026): Sammeladressen
+    # (info@, contact@, ...) verlassen das Haus nicht - auch nicht aus
+    # alten, laengst freigegebenen Laufordnern. Der Ordner bleibt
+    # unangetastet; nur die Uebergabe filtert, und was rausfiel, wird
+    # sichtbar im Laufordner festgehalten (versand_ausgeschlossen).
+    from pipeline.campaign_eligibility import is_generic_email
+    ausgeschlossen = [t["email"] for t in texte
+                      if is_generic_email(t.get("email"))]
+    if ausgeschlossen:
+        print(f"Kampagnen-Regel: {len(ausgeschlossen)} Sammeladresse(n) "
+              f"von der Übergabe ausgeschlossen: "
+              f"{', '.join(ausgeschlossen[:5])}")
+        store.save_step("versand_ausgeschlossen",
+                        {"emails": ausgeschlossen, "grund": "generic_email"})
+        texte = [t for t in texte if not is_generic_email(t.get("email"))]
+    if not texte and ausgeschlossen:
+        raise SendenFehler(
+            "Abbruch: alle freigegebenen Kontakte sind Sammeladressen "
+            "(info@ u.ä.). Nach der Kampagnen-Regel vom 20.08.2026 gehen "
+            "nur benannte Entscheider mit geprüfter persönlicher Adresse "
+            "in den Versand.")
     # Test-Modus (Vorgabe): nur an die eigenen Test-Adressen. Echt-Modus:
     # an die gefundenen Empfaenger. Der Modus steht in der Kundendatei und
     # wird in Schritt 5 des Formulars bewusst gesetzt - fehlt das Feld,
@@ -281,6 +316,12 @@ def _versand_ausfuehren(store, sender, kunde=None) -> str:
     sender.import_leads(campaign_id, texte)
     store.save_step("versand_komplett", {"campaign_id": campaign_id})
     return campaign_id
+
+
+# Damit ein Blick in main() reicht: die Kampagnen-Regel greift viermal -
+# Lead-Erzeugung (sourcing/schnelllauf), Text-Erzeugung (lauf), Uebergabe
+# (_versand_ausfuehren) und als letztes Tor der Instantly-Import selbst
+# (senders.instantly). Siehe pipeline/campaign_eligibility.py.
 
 
 def senden(laufordner: str):
@@ -393,11 +434,14 @@ def ansichts_probe_cli(job_ordner):
     campaign_id = sender.create_campaign(
         _Probe(), name=f"[TEST] Ansicht {betreff}"[:120],
         absender_emails=[auftrag["absender"]], betreffs=(betreff, "", ""))
+    # eigene_adresse: die Probe geht an das EIGENE Postfach - das darf
+    # auch eine Sammeladresse sein, ein Kampagnen-Empfaenger ist es nie.
     sender.import_leads(campaign_id, [{
         "email": auftrag["empfaenger"], "betreff": betreff,
         "mail_1": auftrag["text"],
         "follow_up_1": "Nicht verwendet - reine Ansichts-Probe.",
-        "follow_up_2": "Nicht verwendet - reine Ansichts-Probe."}])
+        "follow_up_2": "Nicht verwendet - reine Ansichts-Probe."}],
+        eigene_adresse=True)
 
     gesendet, fehler = False, ""
     try:
@@ -542,6 +586,18 @@ def main():
         help="Alle Waterfall-Quellen mit Faehigkeiten und ehrlichem "
              "Status zeigen (bereit / kein Zugang / nicht implementiert).")
 
+    p_auto = sub.add_parser(
+        "automation-check",
+        help="Automatisierungs-Klassifikation ueber den Firmen-Bestand "
+             "(webseite + KI; unsicher heisst: keine Kampagne, kein "
+             "Cent Anreicherung). Wiederaufnehmbar, Stand in "
+             "daten/automation-klassifikation.json.")
+    p_auto.add_argument("--limit", type=int, default=None,
+                        help="Nur so viele offene Firmen beurteilen")
+    p_auto.add_argument("--neu-pruefen", action="store_true",
+                        dest="neu_pruefen",
+                        help="Auch schon beurteilte Firmen neu beurteilen")
+
     sub.add_parser(
         "master-db",
         help="Die Master-Datenbank (daten/master.db) frisch aus allen "
@@ -578,6 +634,9 @@ def main():
             print(f"{zeile['name']:<18} {zeile['status']:<22} {faehig}")
             if zeile["hinweis"]:
                 print(f"{'':<18} {zeile['hinweis']}")
+    elif args.befehl == "automation-check":
+        from pipeline.automation_klassifikation import klassifizieren
+        klassifizieren(".", limit=args.limit, neu_pruefen=args.neu_pruefen)
     elif args.befehl == "master-db":
         from pipeline.master_db import bauen
         zahlen = bauen(".")

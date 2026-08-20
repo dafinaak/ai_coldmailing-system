@@ -6,6 +6,21 @@ bleiben GESPEICHERT (Master-Datenbank), mit Urteil, Grund und Zeitpunkt.
 """
 import json
 
+import pytest
+
+import pipeline.automation_klassifikation as _klass
+import pipeline.website as _website
+
+
+@pytest.fixture(autouse=True)
+def _feste_webseite(monkeypatch):
+    """Kein echtes Netz und kein echter Pool-Stand in diesen Tests."""
+    monkeypatch.setattr(_website, "fetch_text",
+                        lambda url, max_zeichen=5000: f"Webseite von {url}")
+    monkeypatch.setattr(_klass, "laden", lambda daten_dir=".": {})
+
+
+
 from pipeline.config import Kunde
 from pipeline.kontakte_excel import mappe_bauen
 from pipeline.sourcing import source_leads

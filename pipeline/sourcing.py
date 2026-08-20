@@ -12,17 +12,23 @@ Stufe 2+: Anbieter-Stufen laut Kunde.anbieter_reihenfolge, NACHEINANDER je
            geprueft zustellbare Mails auf.
          Standard (solange der Anbieter-Vergleich die Reihenfolge nicht
          festgelegt hat): nur "hunter_dropcontact".
-Zuletzt: info@-Regel (unten) fuer Firmen, bei denen keine Stufe traf.
+Zuletzt: Sammeladressen-Regel (unten) fuer Firmen ohne persoenlichen Treffer.
 
-info@-Regel: Findet keine Stufe einen persoenlichen Kontakt, wird
-info@<domain> als Lead-E-Mail verwendet (source="info@") - nur, wenn eine
-Domain bekannt ist, und GEPRUEFT ueber Hunters Email Verifier, sofern die
-Hunter-Quelle das anbietet (Projektregel: keine ungepruefte Adresse in den
-Versand; nicht versandtaugliche Adressen enden als "info_ungueltig").
+Sammeladressen-Regel (seit 20.08.2026, Oliver Phase 1): Findet keine
+Stufe einen persoenlichen Kontakt, wird info@<domain> nur noch als
+FIRMEN-INFORMATION festgehalten (info_email/info_pruefstatus am
+Firmensatz) - NIE mehr als Kampagnen-Empfaenger. Geprueft wird sie
+weiterhin, sofern ein Pruefer verfuegbar ist; nicht zustellbare
+Adressen enden wie bisher als "info_ungueltig", zustellbare als
+Ausgang "ohne_persoenliche_mail" (Anruf/Brief-Liste). Die Firma traegt
+dann campaign_eligible=False mit dem Grund
+"personal_decision_maker_email_missing" (Entscheider bekannt, aber
+keine persoenliche geprueft Adresse) bzw. "no_decision_maker".
 
-Deckungsquote: Anteil der Stufe-1-Firmen, die am Ende mindestens einen
-nutzbaren Kontakt (persoenlich ODER info@) haben - das ist die vom Chef
-geforderte "mindestens 80%"-Zahl (siehe pipeline.report).
+Deckungsquote: Anteil der Stufe-1-Firmen mit persoenlichem, geprueftem
+Kontakt - seit der Kampagnen-Regel zaehlt info@ NICHT mehr dazu;
+je_stufe["info@"] zaehlt nur noch gefundene, nie versendete
+Sammeladressen.
 
 Fehlertoleranz pro Firma: Ein Fehler bei der Anreicherung EINER Firma
 (z.B. Apollo antwortet dauerhaft mit 401/422, oder mit 500 auch nach den
@@ -397,17 +403,41 @@ def _wettbewerber_urteile(firmen: list, impressum_quelle, aktiv: bool) -> dict:
         print("Wettbewerber-Prüfung übersprungen: kein KI-Baustein in "
               "dieser Kaskade (anbieter_reihenfolge ohne 'impressum').")
         return {}
+    from pipeline.automation_klassifikation import laden as klassifikation_laden
     from pipeline.branchen_filter import ist_wettbewerber
     from pipeline.website import fetch_text
 
+    # Schon klassifizierte Firmen (Pool-Klassifikation, Phase 2) kosten
+    # keinen zweiten KI-Aufruf - das Urteil wird wiederverwendet.
+    try:
+        vorwissen = klassifikation_laden(".")
+    except Exception:      # noqa: BLE001 - fehlende/kaputte Datei ist kein Grund
+        vorwissen = {}     # den Lauf zu stoppen; dann wird eben frisch geprueft
+
     def eine(nummer_firma):
         nummer, firma = nummer_firma
+        kennung = (firma.get("domain") or firma.get("name") or "").lower()
+        bekannt = vorwissen.get(kennung) or {}
+        if bekannt.get("offers_automation_services") in ("yes", "no",
+                                                         "uncertain"):
+            offers = bekannt["offers_automation_services"]
+            return nummer, {"wettbewerber": offers == "yes",
+                            "unsicher": offers == "uncertain",
+                            "belege": bekannt.get("automation_check_reason", ""),
+                            "quelle": "pool-klassifikation"}
         text = ""
         if firma.get("website"):
             try:
                 text = fetch_text(firma["website"]) or ""
-            except Exception:      # noqa: BLE001 - ohne Text urteilt die
-                text = ""          # KI nach Name/Kategorien (konservativ)
+            except Exception:      # noqa: BLE001
+                text = ""
+        if not text.strip():
+            # Ohne lesbaren Webseiten-Text KEIN Urteil aus dem Namen -
+            # das waere geraten (Benchmark 20.08.2026). "unsicher" heisst:
+            # gespeichert ja, Kampagne nein, kein Cent Anreicherung.
+            return nummer, {"wettbewerber": False, "unsicher": True,
+                            "belege": "Webseite nicht lesbar",
+                            "quelle": "keine-webseite"}
         return nummer, ist_wettbewerber(firma, text, ki)
 
     urteile: dict = {}
@@ -415,21 +445,23 @@ def _wettbewerber_urteile(firmen: list, impressum_quelle, aktiv: bool) -> dict:
             max_workers=min(GLEICHZEITIG, max(1, len(firmen)))) as pool:
         for nummer, urteil in pool.map(eine, list(enumerate(firmen))):
             urteile[nummer] = urteil
-    betroffen = sum(1 for u in urteile.values() if u.get("wettbewerber"))
+    anbieter = sum(1 for u in urteile.values() if u.get("wettbewerber"))
+    unsicher = sum(1 for u in urteile.values() if u.get("unsicher"))
     print(f"Wettbewerber-Prüfung: {len(urteile)} Firmen geprüft, "
-          f"{betroffen} ausgeschlossen (bieten selbst Automatisierung an).")
+          f"{anbieter} Automatisierungs-Anbieter, {unsicher} unsicher - "
+          f"beide Gruppen bleiben gespeichert, bekommen aber weder "
+          f"Anreicherung noch Kampagne.")
     return urteile
 
 
 def _automation_felder(urteil: dict) -> dict:
     """Die Pruef-Felder am Firmensatz (Vokabular aus Olivers Auftrag)."""
-    unlesbar = urteil.get("belege") == "KI-Antwort nicht lesbar"
     return {
         "offers_automation_services":
-            "uncertain" if unlesbar
+            "uncertain" if urteil.get("unsicher")
             else ("yes" if urteil.get("wettbewerber") else "no"),
         "automation_check_reason": urteil.get("belege", ""),
-        "automation_check_source": "webseite+ki",
+        "automation_check_source": urteil.get("quelle", "webseite+ki"),
         "automation_checked_at": datetime.now().isoformat(timespec="seconds"),
     }
 
@@ -846,8 +878,10 @@ def source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
     wettbewerber_urteile = _wettbewerber_urteile(
         firmen, impressum_quelle,
         getattr(kunde, "wettbewerber_pruefung", False))
+    # "unsicher" schliesst genauso aus wie "ja" (Zuverlaessigkeit zuerst,
+    # Olivers Punkt 4): gespeichert bleibt beides, bezahlt wird nichts.
     ausgeschlossen = {i for i, urteil in wettbewerber_urteile.items()
-                      if urteil.get("wettbewerber")}
+                      if urteil.get("wettbewerber") or urteil.get("unsicher")}
 
     # Der Weg des Formulars ist genau eine Stufe: das Impressum. Fuer ihn
     # gibt es die gebuendelte Variante - alle Webseiten parallel lesen und
@@ -916,13 +950,17 @@ def source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
 
     for i, (firma, (treffer, such_fehler)) in enumerate(zip(firmen, ergebnisse)):
         if i in ausgeschlossen:
-            # Wettbewerber: bleibt gespeichert, bekommt aber weder Lead
-            # noch info@ - und zaehlt nicht als "mit Kontakt".
+            # Wettbewerber ODER unsicher: bleibt gespeichert, bekommt aber
+            # weder Lead noch info@ - und zaehlt nicht als "mit Kontakt".
+            urteil = wettbewerber_urteile[i]
+            unsicher = bool(urteil.get("unsicher"))
             firmen_mit_ausgang.append({
-                **firma, "ausgang": "wettbewerber",
-                **_automation_felder(wettbewerber_urteile[i]),
+                **firma,
+                "ausgang": "automation_unsicher" if unsicher else "wettbewerber",
+                **_automation_felder(urteil),
                 "campaign_eligible": False,
-                "campaign_ineligibility_reason": "automation_provider"})
+                "campaign_ineligibility_reason":
+                    "automation_uncertain" if unsicher else "automation_provider"})
             continue
         if such_fehler is not None:
             # Eine einzelne fehlerhafte Firma (ein Anbieter dauerhaft 4xx/5xx,
@@ -968,35 +1006,47 @@ def source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
             je_stufe[liefernde_stufe] += 1
             zusatz["stufe"] = liefernde_stufe
         elif firma.get("domain"):
-            # info@-Regel: keine Stufe fand einen persoenlichen Entscheider,
-            # aber die Domain ist da -> info@ als letzter Ausweg. Unsere
-            # Zielgruppe sind kleine Firmen, bei denen info@ oft direkt beim
-            # Inhaber landet. Vorher pruefen (Projektregel!), sofern ein
-            # Pruefer verfuegbar ist; nicht versandtaugliche Adressen werden
-            # verworfen ("info_ungueltig") statt still versendet.
+            # Sammeladressen-Regel (Oliver, Phase 1, 20.08.2026): info@
+            # wird weiter GEFUNDEN und am Firmensatz FESTGEHALTEN (jede
+            # entdeckte Information bleibt) - aber sie wird NIE mehr zum
+            # Kampagnen-Lead. Vorher war sie der Rueckfall-Empfaenger
+            # ("info_fallback"); jetzt bleibt die Firma ohne persoenliche
+            # geprueft Adresse bewusst ohne Empfaenger und geht auf die
+            # Anruf/Brief-Liste.
             info_email = f"info@{firma['domain']}"
             pruefstatus, pruef_fehler = info_urteile.get(info_email, (None, None))
             if pruef_fehler is not None:
-                # Zuverlaessigkeit zuerst: laesst sich die Adresse nicht
-                # pruefen, geht sie NICHT in den Versand.
                 print(f"Firma '{firma.get('name') or firma.get('domain')}' "
                       f"übersprungen (Fehler bei der info@-Prüfung): {pruef_fehler}")
                 firmen_mit_ausgang.append({**firma, "ausgang": "fehler",
                                             "fehler_grund": fehler_satz(pruef_fehler)})
                 continue
-            if pruefstatus is not None:
+            if pruefstatus is None:
+                # Kein Pruefer verfuegbar: die Adresse bleibt als
+                # UNGEPRUEFTE Firmen-Information stehen. Frueher wurde sie
+                # hier sogar ungeprueft versendet (Altlast) - das ist mit
+                # der Kampagnen-Regel doppelt vorbei.
+                zusatz["info_email"] = info_email
+                zusatz["info_pruefstatus"] = "ungeprueft"
+                ausgang = "ohne_persoenliche_mail"
+            elif pruefstatus in INFO_OK_STATUS:
+                zusatz["info_email"] = info_email
                 zusatz["info_pruefstatus"] = pruefstatus
-            if pruefstatus is None or pruefstatus in INFO_OK_STATUS:
-                leads.append(Lead(
-                    first_name="", last_name="", email=info_email,
-                    company=firmenname, title="", website=firma["website"],
-                    source="info@"))
-                firmen_mit_kontakt += 1
-                ausgang = "info_fallback"
+                ausgang = "ohne_persoenliche_mail"
+                # Zaehlt gefundene (nie versendete) Sammeladressen.
                 je_stufe["info@"] += 1
             else:
+                zusatz["info_pruefstatus"] = pruefstatus
                 ausgang = "info_ungueltig"
 
+        if not kontakte:
+            # Ohne persoenliche geprueft Adresse ist die Firma nicht
+            # kampagnentauglich - gespeichert bleibt sie samt allem, was
+            # gefunden wurde (Entscheider-Namen, Sammeladresse, Telefon).
+            zusatz["campaign_eligible"] = False
+            zusatz["campaign_ineligibility_reason"] = (
+                "personal_decision_maker_email_missing" if entscheider
+                else "no_decision_maker")
         firmen_mit_ausgang.append({**firma, "ausgang": ausgang, **zusatz})
 
     anzahl_firmen = len(firmen)

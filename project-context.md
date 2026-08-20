@@ -401,6 +401,44 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
   (CLI `master-db`, `master-export`). PYETJE E HAPUR: "MailCom" s'ekziston
   askund në projekt — duhet sqarim nga Oliveri; LinkedIn pret vendim
   ToS + qasje; North Data ishte hequr me vendim 29.07.
+- FAZA 1 — Rregulli i rreptë i pranueshmërisë së fushatës (20.08.2026
+  pasdite, urdhri pas auditimit `docs/audit-oliver-anforderungen-2026-08-20.md`;
+  1.069 → **1.080 teste**): Sammeladresat (info@, contact@, office@ ...)
+  NUK bëhen më kurrë marrës fushate — as të verifikuara, as (vrima e
+  vjetër) të paverifikuara pa verifikues. Ruhen si informacion firme
+  (`info_email` + `info_pruefstatus` te firmen.json, ausgang i ri
+  "ohne_persoenliche_mail", campaign_eligible=false me arsye
+  "personal_decision_maker_email_missing"/"no_decision_maker") dhe firma
+  del te fleta "Anruf & Brief". Mbrojtje në 4 shtresa
+  (`pipeline/campaign_eligibility.py`): (1) krijimi i lead-it në
+  sourcing/schnelllauf/grosslauf (të tre kalojnë nga e njëjta rrugë),
+  (2) filtri para tekstit te lauf() (mbron lëshimet e VJETRA të
+  rifilluara), (3) dorëzimi `_versand_ausfuehren` filtron + e shënon
+  te `versand_ausgeschlossen.json` pa e prekur historikun, (4) porta
+  përfundimtare në InstantlySender refuzon ME ZË (përjashtim vetëm
+  Ansichts-Probe me `eigene_adresse=True` — dërgim te vetja).
+  Deckungsquote numëron tash VETËM kontakte personale; kampanja e vjetër
+  e fjetur në Instantly mbetet e paprekur. 17 teste të vjetra u
+  përditësuan me sjelljen e re, 11 të reja (10 rastet e detyrës + 1).
+  FAZA 2 (klasifikimi i pool-it) PRET MIRATIM.
+- FAZA 2 E PËRFUNDUAR (20.08.2026 mbrëma; 1.088 teste): klasifikuesi i
+  automatizimit me TRI dalje (yes/no/uncertain) — prompt-i i ri dallon
+  automatizimin industrial (SPS/Gebäude → JO konkurrent) dhe produktet
+  softuerike nga oferta e vërtetë e automatizimit; faqe e palexueshme =
+  uncertain PA thirrje LLM e PA gjykim nga emri; unsicher = i ruajtur,
+  jashtë fushate (automation_uncertain), 0 cent. Dy benchmark-e
+  100-firmëshe (v1 $0.042 → 4 FP; v2 $0.040 → 0 FP të qarta, 1 kufitar
+  inSyca i dokumentuar). POOL-I I PLOTË i klasifikuar
+  (`python -m pipeline automation-check`, i rifillueshëm):
+  **4.964 firma → 410 yes (8.3%), 2.881 no, 1.673 uncertain**;
+  urteil-et te daten/automation-klassifikation.json, ripërdoren nga
+  lëshimet e fushatës (0 kosto të dyfishta) dhe nga master.db.
+  Pas rindërtimit: **kampagnenfähig 60** (automation no + vendimmarrës
+  + email personal i verifikuar); 2.821 "no"-firma presin vetëm
+  pasurimin (no_decision_maker). Kosto totale e Fazës 2: ~$1.5 OpenAI.
+  Mbetje të njohura: 1.673 uncertain (përmirësohen me render-fallback
+  Chrome — inkrement i ardhshëm), 5 not_checked (çelës emri pa domain).
+  FAZA 3 (benchmark-u i burimeve) PRET MIRATIM.
 - Testimi i burimeve, hapi A — falas (20.08.2026, përgjigje ndaj
   email-it të Oliverit "test which sources are useful and in what
   order"; Apollo/Clay etj. i sqaroi si vetëm ide): fusioni raporton tash

@@ -192,13 +192,24 @@ class InstantlySender:
         antwort = self._post(f"{BASIS}/campaigns", kampagne)
         return antwort.json()["id"]
 
-    def import_leads(self, campaign_id: str, texte_pro_lead):
+    def import_leads(self, campaign_id: str, texte_pro_lead, *,
+                     eigene_adresse: bool = False):
         """Importiert die Leads in eine bereits angelegte Kampagne. Eigener
         Guard hier (zusaetzlich zum Guard in "senden"), damit ein direkter
         Aufruf dieser Methode nie versehentlich einen leeren Import an
-        Instantly schickt."""
+        Instantly schickt.
+
+        Letztes Tor der Kampagnen-Regel (Oliver, Phase 1, 20.08.2026):
+        Sammeladressen (info@, contact@, ...) stoppen den Import LAUT -
+        erreicht eine solche Adresse diese Stelle, hat weiter oben ein
+        Filter versagt, und leise weitermachen wuerde den Fehler
+        verstecken. Einzige Ausnahme: eigene_adresse=True fuer die
+        Ansichts-Probe, die an das EIGENE Postfach schickt - das ist kein
+        Kampagnen-Empfaenger."""
         if not texte_pro_lead:
             raise ValueError("Keine freigegebenen Texte - kein Lead-Import.")
+        if not eigene_adresse:
+            self._sammeladressen_stoppen(t["email"] for t in texte_pro_lead)
         leads = [{"email": t["email"],
                   "custom_variables": {k: t[k] for k in
                                        ("betreff", "mail_1", "follow_up_1", "follow_up_2")}}
@@ -214,6 +225,9 @@ class InstantlySender:
         Import, bevor irgendetwas an Instantly geht."""
         if not kontakte:
             raise ValueError("Keine Kontakte - kein Lead-Import.")
+        # Letztes Tor der Kampagnen-Regel (siehe import_leads): auch auf
+        # diesem Import-Weg kommt keine Sammeladresse an Instantly vorbei.
+        self._sammeladressen_stoppen(k.get("email") for k in kontakte)
         ohne = [k.get("email") or "?" for k in kontakte
                 if not (k.get("anrede") or "").strip()]
         if ohne:
@@ -227,6 +241,17 @@ class InstantlySender:
                   "custom_variables": {"anrede": k["anrede"].strip()}}
                  for k in kontakte]
         self._post(f"{BASIS}/leads/add", {"campaign_id": campaign_id, "leads": leads})
+
+    @staticmethod
+    def _sammeladressen_stoppen(adressen) -> None:
+        from pipeline.campaign_eligibility import is_generic_email
+
+        generisch = [a for a in adressen if is_generic_email(a)]
+        if generisch:
+            raise ValueError(
+                f"{len(generisch)} Sammeladresse(n) im Lead-Import gestoppt "
+                f"(Kampagnen-Regel 20.08.2026 - nur persönliche geprüfte "
+                f"Adressen): {', '.join(str(a) for a in generisch[:5])}")
 
     def aktiviere_kampagne(self, campaign_id: str) -> None:
         """Startet eine bereits angelegte (pausierte) Kampagne - POST

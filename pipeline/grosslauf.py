@@ -117,8 +117,10 @@ def lauf_ausfuehren(firmen: list, kunde, prospeo, dropcontact, impressum,
         leads, _, mit_ausgang = source_leads(
             kunde, 1, "", "", "", apify_source=ListenQuelle([firma]),
             # Mit Hunter-Quelle wird info@ ueber deren email_pruefen()
-            # verifiziert; ohne (hunter=None) bleibt das alte Verhalten
-            # (info@ ungeprueft, im Bericht so gekennzeichnet).
+            # verifiziert; ohne (hunter=None) bleibt sie ungeprueft.
+            # Seit der Kampagnen-Regel (20.08.2026) wird sie in BEIDEN
+            # Faellen nur noch als Firmen-Information gespeichert, nie
+            # mehr als Empfaenger (siehe pipeline.campaign_eligibility).
             hunter_source=hunter if hunter is not None else object(),
             dropcontact_source=dropcontact, prospeo_source=prospeo,
             impressum_quelle=impressum)
@@ -138,9 +140,15 @@ def zusammenfassung(ergebnisse: list) -> dict:
     z["persoenliche_mail"] = sum(1 for e in ergebnisse if e.get("ausgang") == PERSOENLICH)
     z["quote_prozent"] = round(z["persoenliche_mail"] / len(ergebnisse) * 100, 1) \
         if ergebnisse else 0.0
+    # Seit der Kampagnen-Regel (20.08.2026) heisst der Ausgang
+    # "ohne_persoenliche_mail": die Sammeladresse ist gespeichert, wird
+    # aber nie angeschrieben. "info_ungeprueft" zaehlt die Teilmenge,
+    # deren Adresse (noch) kein Pruefer gesehen hat.
+    z["nur_sammeladresse"] = sum(1 for e in ergebnisse
+                                 if e.get("ausgang") == "ohne_persoenliche_mail")
     z["info_ungeprueft"] = sum(1 for e in ergebnisse
-                               if e.get("ausgang") == "info_fallback"
-                               and "info_pruefstatus" not in e)
+                               if e.get("ausgang") == "ohne_persoenliche_mail"
+                               and e.get("info_pruefstatus") == "ungeprueft")
     z["ohne_kontakt"] = sum(1 for e in ergebnisse if e.get("ausgang") in
                             ("kein_entscheider", "kein_treffer",
                              "keine_webseite", "info_ungueltig", "fehler"))
@@ -170,8 +178,9 @@ def bericht_markdown(ergebnisse: list, z: dict, dubletten: list,
         f"  - davon je Stufe: " + (", ".join(
             f"{name}: {anzahl}" for name, anzahl in sorted(z["je_stufe"].items()))
             or "—"),
-        f"- Nur info@-Adresse (noch ungeprüft, Prüfung vor Versand): "
-        f"{z['info_ungeprueft']}",
+        f"- Nur Sammeladresse info@ (wird nach der Kampagnen-Regel NICHT "
+        f"angeschrieben; davon ungeprüft: {z['info_ungeprueft']}): "
+        f"{z.get('nur_sammeladresse', z['info_ungeprueft'])}",
         f"- Ohne nutzbaren Kontakt: {z['ohne_kontakt']} (davon Fehler: {z['fehler']})",
         f"- Zentralen außerhalb der Region (werden mitgeführt): "
         f"{z['ausserhalb_region']}",

@@ -82,6 +82,29 @@ migrimi është pa rrezik (fshije → rindërtohet).
 6. Teste për të gjitha (lista §24 e specifikimit ku prek inkrementi) +
    suita e plotë.
 
+### FAZA 2 — E PËRFUNDUAR (20.08.2026 mbrëma)
+
+Klasifikimi i automatizimit + pranueshmëria e fushatës, pas dy
+benchmark-eve 100-firmëshe (v1 $0.042, v2 $0.040) dhe validimit manual:
+
+- Prompt-i i ri me TRI dalje (automation / keine_automation / unsicher):
+  automatizimi industrial (SPS/Steuerungs-/Gebäudeautomation) dhe
+  produktet softuerike me veti automatizimi = JO konkurrent; integrimi
+  i zakonshëm i sistemeve = JO, veç kur merkatohet vetë si automation.
+  v2 i hoqi të 4 false-positive-t e v1 (DKM-TEC, Müller, SKS, SOFiSTiK)
+  pa humbur asnjë TP të fortë; 1 rast kufitar i dokumentuar (inSyca).
+- Faqe e palexueshme / pa webseite → UNKNOWN **pa thirrje LLM dhe pa
+  gjykim nga emri**; unsicher = i ruajtur, jashtë fushate
+  (`automation_uncertain`), pa asnjë cent anreicherung, as në listën e
+  telefonatave.
+- Pool-i i plotë i klasifikuar me `python -m pipeline automation-check`
+  (i rifillueshëm, checkpoint çdo 50) →
+  `daten/automation-klassifikation.json`; master.db dhe lëshimi i
+  fushatës e RIPËRDORIN urteil-in (0 kosto të dyfishta).
+- Pranueshmëria e plotë e verifikuar: IT-firmë + automation "no" +
+  vendimmarrës me emër + email personal i verifikuar (Faza 1).
+- Teste: 1.069 → 1.088.
+
 ### Inkrementet e ardhshme (presin vendim/kredenciale)
 
 - **I2 — MailCom**: import i të dhënave ekzistuese si burim i parë —

@@ -194,15 +194,17 @@ def _entscheider_zeilen(firma: dict, leads: list) -> list:
 def _eligibility(firma: dict, personen: list) -> tuple:
     """(campaign_eligible, grund) - streng nach Olivers Auftrag Punkt 16."""
     automation = firma.get("offers_automation_services") or "not_checked"
-    if automation in ("yes", "uncertain"):
+    if automation == "yes":
         return 0, "automation_provider"
+    if automation == "uncertain":
+        return 0, "automation_uncertain"
     if automation == "not_checked":
         return 0, "automation_not_checked"
     if not personen:
         return 0, "no_decision_maker"
     if not any(p.get("email") and p.get("status") == "mail_geprueft"
                for p in personen):
-        return 0, "no_personal_email"
+        return 0, "personal_decision_maker_email_missing"
     return 1, ""
 
 
@@ -253,6 +255,17 @@ def bauen(daten_dir=".") -> dict:
             _firma_uebernehmen(satz, {**firma, "leads": firmen_leads})
             herkuenfte.setdefault(kennung, []).append(
                 ("lauf", f"lauf:{lauf}", zeit, firma))
+
+    # Pool-Klassifikation (Phase 2, 20.08.2026) einmischen: das dort
+    # gespeicherte Automatisierungs-Urteil gilt fuer jede Firma, die aus
+    # keinem Lauf ein eigenes (neueres) Urteil mitbringt.
+    from pipeline.automation_klassifikation import laden as _klass_laden
+    for kennung, urteil in _klass_laden(daten_dir).items():
+        satz = firmen.get(kennung)
+        if satz is not None and not satz.get("offers_automation_services"):
+            for feld in ("offers_automation_services",
+                         "automation_check_reason", "automation_checked_at"):
+                satz[feld] = urteil.get(feld, "")
 
     ziel = daten_dir / DB_NAME
     ziel.parent.mkdir(parents=True, exist_ok=True)

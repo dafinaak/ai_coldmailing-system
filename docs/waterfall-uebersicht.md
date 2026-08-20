@@ -62,8 +62,17 @@ Replies → internal inbox → CRM
   companies were already in the pool and how many are new, plus what
   every source contributed per area.
 - **Automation providers are competitors.** Checked before any paid
-  step; `yes`/`uncertain` → stored, `campaign_eligible = false`
-  (`automation_provider`), no credits spent, not on the call list.
+  step with a three-way verdict (Phase 2, 20.08.2026): `yes` (offers
+  process/AI automation as a service), `no`, `uncertain` (unreadable
+  website or ambiguous evidence — NEVER guessed from the company name).
+  `yes` → `automation_provider`, `uncertain` → `automation_uncertain`;
+  both stay stored, get no credits, no call-list entry and no campaign.
+  Industrial automation (PLC/Steuerungs-/Gebäudeautomation) and
+  software products that merely contain automation features count as
+  `no` — different market, not a competitor. The whole pool carries a
+  stored verdict (`daten/automation-klassifikation.json`, CLI
+  `automation-check`); campaign runs reuse it instead of paying for a
+  second AI call.
 - **Eligibility is strict** (per the spec): automation check must have
   run and said `no`, a decision-maker must be known, and a personal
   email must be verified. Anything else carries an honest reason:

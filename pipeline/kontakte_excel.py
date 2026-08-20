@@ -32,6 +32,10 @@ AUSGANG_TEXT = {
     "kein_entscheider": "keine Person auf der Webseite gefunden",
     "keine_webseite": "keine Webseite hinterlegt",
     "fehler": "Fehler bei der Suche (später erneut versuchen)",
+    # Kampagnen-Regel (20.08.2026): Sammeladressen werden nicht mehr
+    # angeschrieben - diese Firmen gehoeren auf die Anruf/Brief-Liste.
+    "ohne_persoenliche_mail": "keine persönliche geprüfte Adresse - "
+                              "Sammeladresse wird nicht angeschrieben",
 }
 # PLZ und Ort als ZWEI Spalten (Olivers Vorgabe 19.08.2026; vorher stand
 # beides kombiniert als "30161 Hannover" in einer). Der Ortsname kommt aus
@@ -163,11 +167,12 @@ def _blatt_anruf_brief(wb: openpyxl.Workbook, firmen: list) -> None:
                   "Telefon", "PLZ", "Ort", "Webseite"])
     for firma in firmen:
         ausgang = firma.get("ausgang")
-        # "wettbewerber" fehlt hier MIT ABSICHT: ein Automatisierungs-
-        # Anbieter soll auch nicht angerufen werden (Olivers Regel
-        # 19.08.2026); er bleibt im Firmensatz und im Master-Export.
+        # "wettbewerber" und "automation_unsicher" fehlen hier MIT
+        # ABSICHT: ein (moeglicher) Automatisierungs-Anbieter soll auch
+        # nicht angerufen werden (Olivers Regel 19./20.08.2026); beide
+        # bleiben im Firmensatz und im Master-Export.
         if ausgang in (None, "mit_entscheider", "info_fallback",
-                       "wettbewerber"):
+                       "wettbewerber", "automation_unsicher"):
             continue
         # Der genaue Grund des Laufs gewinnt ueber den Sammelbegriff: bei
         # "fehler" stand hier sonst "später erneut versuchen", auch wenn in

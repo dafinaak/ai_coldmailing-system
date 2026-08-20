@@ -31,7 +31,8 @@ def _kunde_grosslauf():
 
 
 def _drei_firmen():
-    # a: Prospeo trifft. b: Impressum rettet. c: nichts -> info@ (ungeprueft).
+    # a: Prospeo trifft. b: Impressum rettet. c: nichts -> nur die
+    # Sammeladresse bleibt gespeichert (Kampagnen-Regel 20.08.2026).
     return [firma("Alpha GmbH", "a.de"),
             firma("Beta GmbH", "b.de"),
             firma("Gamma GmbH", "c.de", telefon="0511 999",
@@ -43,7 +44,7 @@ def test_lauf_fuehrt_kaskade_je_firma_aus():
                                  *_quellen_fuer_lauf(),
                                  fortschritt=lambda t: None)
     assert [e["ausgang"] for e in ergebnisse] == \
-        ["mit_entscheider", "mit_entscheider", "info_fallback"]
+        ["mit_entscheider", "mit_entscheider", "ohne_persoenliche_mail"]
     assert [e.get("stufe") for e in ergebnisse] == ["prospeo", "impressum", None]
     assert ergebnisse[0]["leads"][0]["email"] == "paula.prosp@a.de"
     # Zusatzfelder der Liste bleiben am Ergebnis erhalten (Telefon fuer Oliver):
@@ -76,8 +77,10 @@ def test_lauf_prueft_info_adressen_mit_hunter():
                                  *_quellen_fuer_lauf(), hunter=hunter,
                                  fortschritt=lambda t: None)
     assert hunter.geprueft == ["info@c.de"]
-    assert ergebnisse[2]["ausgang"] == "info_fallback"
+    # Geprueft und gespeichert - Empfaenger wird sie trotzdem nie.
+    assert ergebnisse[2]["ausgang"] == "ohne_persoenliche_mail"
     assert ergebnisse[2]["info_pruefstatus"] == "valid"
+    assert ergebnisse[2]["leads"] == []
 
 
 def test_lauf_verwirft_ungueltige_info_adressen():
@@ -106,7 +109,7 @@ def test_lauf_setzt_fort_ohne_neue_abfragen(tmp_path):
                           _Explodiert(), _Explodiert(), _Explodiert(),
                           vorhandene=geladen, fortschritt=lambda t: None)
     assert [e["ausgang"] for e in neu] == \
-        ["mit_entscheider", "mit_entscheider", "info_fallback"]
+        ["mit_entscheider", "mit_entscheider", "ohne_persoenliche_mail"]
 
 
 def test_dubletten_ueber_domain_und_namenskern():

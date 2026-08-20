@@ -471,7 +471,7 @@ def sammeln_cli(ort, radius_km, dienste, limit_pro_suche, ordner=None,
             ort, radius_km, dienste, ziel_anzahl,
             maps=ApifyMapsSource(apify_key),
             gelbe_seiten=GelbeSeitenQuelle(apify_key),
-            overpass=OverpassQuelle())
+            overpass=OverpassQuelle(), daten_dir=".")
     else:
         print(f"Sammle Firmen: {ort}, {radius_km} km, {', '.join(dienste)}")
         firmen, bericht = sammeln(
@@ -537,6 +537,23 @@ def main():
                                 "Der Aufrufer (Weboberflaeche) gibt ihn vor, "
                                 "damit er das Ergebnis wiederfindet.")
 
+    sub.add_parser(
+        "anbieter",
+        help="Alle Waterfall-Quellen mit Faehigkeiten und ehrlichem "
+             "Status zeigen (bereit / kein Zugang / nicht implementiert).")
+
+    sub.add_parser(
+        "master-db",
+        help="Die Master-Datenbank (daten/master.db) frisch aus allen "
+             "Sammlungen und Laeufen bauen - loescht nichts an den "
+             "Quelldateien, jederzeit wiederholbar.")
+    p_export = sub.add_parser(
+        "master-export",
+        help="Master-Datenbank bauen und als Excel exportieren: eine "
+             "Zeile je Firma, Entscheider A-E, Olivers Spalten.")
+    p_export.add_argument("--ziel", default=None,
+                          help="Zieldatei (Standard: firmen-master.xlsx)")
+
     p_probe = sub.add_parser(
         "ansichts-probe",
         help="Einen fertigen Kampagnentext zur Ansicht an eine eigene "
@@ -554,6 +571,25 @@ def main():
         sammeln_cli(args.ort, args.radius, args.dienste, args.limit,
                     args.ordner, ziel_anzahl=args.ziel,
                     deutschland=args.deutschland)
+    elif args.befehl == "anbieter":
+        from pipeline.providers import uebersicht
+        for zeile in uebersicht():
+            faehig = ", ".join(zeile["faehigkeiten"])
+            print(f"{zeile['name']:<18} {zeile['status']:<22} {faehig}")
+            if zeile["hinweis"]:
+                print(f"{'':<18} {zeile['hinweis']}")
+    elif args.befehl == "master-db":
+        from pipeline.master_db import bauen
+        zahlen = bauen(".")
+        print(f"Master-Datenbank gebaut: {zahlen['pfad']}")
+        print(f"  Firmen: {zahlen['firmen']}, Entscheider: "
+              f"{zahlen['entscheider']}, kampagnenfähig: "
+              f"{zahlen['kampagnenfaehig']}, Quellen-Belege: "
+              f"{zahlen['quellen_belege']}")
+    elif args.befehl == "master-export":
+        from pipeline.master_db import export_excel
+        ziel = export_excel(".", args.ziel)
+        print(f"Export geschrieben: {ziel}")
     elif args.befehl == "ansichts-probe":
         ansichts_probe_cli(args.job_ordner)
     elif args.befehl == "freigeben":

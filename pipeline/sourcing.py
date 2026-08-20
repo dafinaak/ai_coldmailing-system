@@ -52,6 +52,8 @@ import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from pipeline.models import Lead
+from datetime import datetime
+
 from pipeline.decision_maker import build_entscheider, sort_by_priority
 from pipeline.sources.apify_maps import ApifyMapsSource
 from pipeline.sources.hunter import HunterSource
@@ -375,6 +377,61 @@ def _impressum_titel(person: dict) -> str:
     """"Geschäftsführer (laut Impressum)" - die echte Rolle, wenn das
     Impressum eine nennt, sonst der bisherige Sammelbegriff."""
     return (person.get("rolle") or "Geschäftsführung") + " (laut Impressum)"
+
+
+def _wettbewerber_urteile(firmen: list, impressum_quelle, aktiv: bool) -> dict:
+    """Automatisierungs-Pruefung VOR jedem bezahlten Schritt (Olivers
+    Regel, 19.08.2026): Firmen, die selbst Automatisierung anbieten, sind
+    Wettbewerber - sie kosten weder Dropcontact-Credits noch eine
+    info@-Pruefung und kommen in keine Kampagne. Gespeichert bleiben sie.
+
+    Gibt {index: ist_wettbewerber-Urteil} fuer alle geprueften Firmen
+    zurueck. Die KI kommt aus der Impressum-Quelle; fehlt sie (alte
+    Kaskaden ohne Impressum-Stufe), wird NICHT geraten - dann bleibt die
+    Pruefung ehrlich aus und jede Firma gilt als ungeprueft.
+    """
+    if not aktiv or not firmen:
+        return {}
+    ki = getattr(impressum_quelle, "ki", None)
+    if ki is None:
+        print("Wettbewerber-Prüfung übersprungen: kein KI-Baustein in "
+              "dieser Kaskade (anbieter_reihenfolge ohne 'impressum').")
+        return {}
+    from pipeline.branchen_filter import ist_wettbewerber
+    from pipeline.website import fetch_text
+
+    def eine(nummer_firma):
+        nummer, firma = nummer_firma
+        text = ""
+        if firma.get("website"):
+            try:
+                text = fetch_text(firma["website"]) or ""
+            except Exception:      # noqa: BLE001 - ohne Text urteilt die
+                text = ""          # KI nach Name/Kategorien (konservativ)
+        return nummer, ist_wettbewerber(firma, text, ki)
+
+    urteile: dict = {}
+    with ThreadPoolExecutor(
+            max_workers=min(GLEICHZEITIG, max(1, len(firmen)))) as pool:
+        for nummer, urteil in pool.map(eine, list(enumerate(firmen))):
+            urteile[nummer] = urteil
+    betroffen = sum(1 for u in urteile.values() if u.get("wettbewerber"))
+    print(f"Wettbewerber-Prüfung: {len(urteile)} Firmen geprüft, "
+          f"{betroffen} ausgeschlossen (bieten selbst Automatisierung an).")
+    return urteile
+
+
+def _automation_felder(urteil: dict) -> dict:
+    """Die Pruef-Felder am Firmensatz (Vokabular aus Olivers Auftrag)."""
+    unlesbar = urteil.get("belege") == "KI-Antwort nicht lesbar"
+    return {
+        "offers_automation_services":
+            "uncertain" if unlesbar
+            else ("yes" if urteil.get("wettbewerber") else "no"),
+        "automation_check_reason": urteil.get("belege", ""),
+        "automation_check_source": "webseite+ki",
+        "automation_checked_at": datetime.now().isoformat(timespec="seconds"),
+    }
 
 
 def _impressum_lesen(firma: dict, impressum) -> dict | None:
@@ -782,6 +839,16 @@ def source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
     je_stufe = {name: 0 for name, _ in stufen}
     je_stufe["info@"] = 0
 
+    # Olivers Regel (19.08.2026): Automatisierungs-Anbieter sind
+    # Wettbewerber. Die Pruefung laeuft VOR den Stufen, damit fuer diese
+    # Firmen kein einziger bezahlter Schritt (Dropcontact, info@-
+    # Pruefung) mehr anfaellt.
+    wettbewerber_urteile = _wettbewerber_urteile(
+        firmen, impressum_quelle,
+        getattr(kunde, "wettbewerber_pruefung", False))
+    ausgeschlossen = {i for i, urteil in wettbewerber_urteile.items()
+                      if urteil.get("wettbewerber")}
+
     # Der Weg des Formulars ist genau eine Stufe: das Impressum. Fuer ihn
     # gibt es die gebuendelte Variante - alle Webseiten parallel lesen und
     # die Namen in EINEM Zug an Dropcontact geben, statt je Firma einzeln
@@ -789,10 +856,14 @@ def source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
     # bleibt es beim bisherigen Weg: dort greifen Stufen ineinander, und
     # eine halbe Buendelung waere schwerer zu verstehen als der Gewinn wert.
     nur_impressum = [name for name, _ in stufen] == ["impressum"]
+    aktive = [i for i in range(len(firmen)) if i not in ausgeschlossen]
     if nur_impressum:
-        gebuendelt, lese_fehler, impressum_gelesen = _impressum_gebuendelt(
-            firmen, impressum_quelle, dropcontact, max_pro_firma,
-            batch_speicher)
+        teil_kontakte, teil_fehler, teil_gelesen = _impressum_gebuendelt(
+            [firmen[i] for i in aktive], impressum_quelle, dropcontact,
+            max_pro_firma, batch_speicher)
+        gebuendelt = {aktive[j]: k for j, k in teil_kontakte.items()}
+        lese_fehler = {aktive[j]: f for j, f in teil_fehler.items()}
+        impressum_gelesen = {aktive[j]: g for j, g in teil_gelesen.items()}
     else:
         gebuendelt, lese_fehler, impressum_gelesen = None, {}, {}
 
@@ -814,10 +885,10 @@ def source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
     # Die Reihenfolge bleibt die der Firmenliste (Ergebnisse werden nach dem
     # Sammeln der Reihe nach ausgewertet), damit Berichte und Tests
     # vorhersagbar bleiben.
-    ergebnisse = [None] * len(firmen)
+    ergebnisse = [(([], None), None)] * len(firmen)
     if gebuendelt is not None:
         # Schon gebuendelt erledigt - nur noch in dieselbe Form bringen.
-        for i in range(len(firmen)):
+        for i in aktive:
             if i in lese_fehler:
                 ergebnisse[i] = (None, lese_fehler[i])
             else:
@@ -825,7 +896,7 @@ def source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
                 ergebnisse[i] = ((kontakte, "impressum" if kontakte else None), None)
     else:
         with ThreadPoolExecutor(max_workers=min(GLEICHZEITIG, max(1, len(firmen)))) as pool:
-            auftraege = {pool.submit(_suchen, firma): i for i, firma in enumerate(firmen)}
+            auftraege = {pool.submit(_suchen, firmen[i]): i for i in aktive}
             for auftrag in as_completed(auftraege):
                 i = auftraege[auftrag]
                 try:
@@ -837,9 +908,22 @@ def source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
     # pruefen (siehe _info_urteile). Vorher fragte jede Firma einzeln bei
     # Hunter nach - und seit dessen Freikontingent aufgebraucht ist, fiel
     # damit jede solche Firma heraus (17.08.2026: 23 von 50).
-    info_urteile = _info_urteile(firmen, ergebnisse, dropcontact, email_pruefer)
+    # Ausgeschlossene Wettbewerber werden nicht mitgeprueft - keine
+    # Pruef-Credits fuer Firmen, die ohnehin keine Kampagne sehen.
+    info_urteile = _info_urteile(
+        [firmen[i] for i in aktive], [ergebnisse[i] for i in aktive],
+        dropcontact, email_pruefer)
 
     for i, (firma, (treffer, such_fehler)) in enumerate(zip(firmen, ergebnisse)):
+        if i in ausgeschlossen:
+            # Wettbewerber: bleibt gespeichert, bekommt aber weder Lead
+            # noch info@ - und zaehlt nicht als "mit Kontakt".
+            firmen_mit_ausgang.append({
+                **firma, "ausgang": "wettbewerber",
+                **_automation_felder(wettbewerber_urteile[i]),
+                "campaign_eligible": False,
+                "campaign_ineligibility_reason": "automation_provider"})
+            continue
         if such_fehler is not None:
             # Eine einzelne fehlerhafte Firma (ein Anbieter dauerhaft 4xx/5xx,
             # oder Dropcontact lehnt den Batch ab - z.B. leere Credits) darf
@@ -860,6 +944,9 @@ def source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
 
         ausgang = "kein_entscheider" if firma.get("website") else "keine_webseite"
         zusatz = {}
+        if i in wettbewerber_urteile:
+            # Auch das "nein" wird festgehalten - mit Grund und Zeitpunkt.
+            zusatz.update(_automation_felder(wettbewerber_urteile[i]))
         # Gefundene Entscheider am Firmensatz festhalten - MIT Rolle und
         # Rangfolge, und auch dann, wenn keine Adresse geprueft werden
         # konnte ("ohne_mail"). Ein gefundener Chef-Name darf nicht

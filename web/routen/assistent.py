@@ -595,6 +595,10 @@ def _kunde_schreiben(daten_dir: Path, entwurf: dict) -> str:
         "maps_suche": f"(Assistent {entwurf['kennung']})",
         "kontakt_rollen": ["Geschäftsführer", "Inhaber"],
         "anbieter_reihenfolge": ["impressum"],
+        # Olivers Regel (19.08.2026): Automatisierungs-Anbieter sind
+        # Wettbewerber - neue Formular-Kampagnen pruefen das immer, VOR
+        # jedem bezahlten Schritt. Alte Kunden-Dateien bleiben unberuehrt.
+        "wettbewerber_pruefung": True,
         "anweisungen": daten.get("anweisungen", ""),
     }
 

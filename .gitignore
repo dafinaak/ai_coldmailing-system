@@ -21,3 +21,9 @@ kontakte.db
 kontakte.db-journal
 kontakte.db-wal
 kontakte.db-shm
+
+# Master-Datenbank: aus den Laufdateien jederzeit neu baubar
+# (python -m pipeline master-db) und voller echter Firmendaten -
+# gehoert nicht ins Repo. Gleiches gilt fuer den Excel-Export daraus.
+daten/master.db
+firmen-master.xlsx

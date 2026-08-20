@@ -71,35 +71,36 @@ def person(vor, nach, rolle="", linkedin=None):
 
 # --- Rangfolge -------------------------------------------------------------
 
-def test_rangfolge_ceo_vor_inhaber_vor_gruender_vor_md_vor_leitung():
+def test_rangfolge_inhaber_vor_ceo_vor_gf_vor_gruender_vor_leitung():
+    # Olivers Reihenfolge vom 19.08.2026 (abends): Owner/Inhaber zuerst.
     raenge = [rank_role(r) for r in (
-        "Geschäftsführer", "CEO", "Inhaberin", "Owner", "Gründer",
-        "Co-Founder", "Managing Director", "Vorstand", "")]
-    assert raenge == [0, 0, 1, 1, 2, 2, 3, 4, 5]
-    assert rank_role("Geschäftsführender Gesellschafter") == 0
+        "Inhaberin", "Owner", "CEO", "Geschäftsführer", "Managing Director",
+        "Gründer", "Co-Founder", "Vorstand", "")]
+    assert raenge == [0, 0, 1, 2, 2, 3, 3, 4, 5]
+    assert rank_role("Geschäftsführender Gesellschafter") == 2
 
 
 def test_sortierung_stellt_den_besten_nach_vorn_und_bleibt_stabil():
     personen = [person("Ines", "Beck", "Prokuristin"),
-                person("Otto", "Alt", "Inhaber"),
                 person("Gerd", "Chef", "Geschäftsführer"),
+                person("Otto", "Alt", "Inhaber"),
                 person("Zoe", "Zwei", "Geschäftsführerin")]
     sortiert = sort_by_priority(personen)
-    assert [p["vorname"] for p in sortiert] == ["Gerd", "Zoe", "Otto", "Ines"]
+    assert [p["vorname"] for p in sortiert] == ["Otto", "Gerd", "Zoe", "Ines"]
 
 
 # --- Firmensatz ------------------------------------------------------------
 
 def test_firmensatz_haelt_alle_entscheider_und_markiert_den_primaeren():
     satz = build_entscheider(
-        [person("Otto", "Alt", "Inhaber"),
-         person("Gerd", "Chef", "Geschäftsführer")],
-        [{"first_name": "Otto", "last_name": "Alt", "email": "alt@a.de",
-          "title": "Inhaber (laut Impressum)", "source": "impressum"}])
-    assert [e["name"] for e in satz] == ["Gerd Chef", "Otto Alt"]
+        [person("Gerd", "Chef", "Geschäftsführer"),
+         person("Otto", "Alt", "Inhaber")],
+        [{"first_name": "Gerd", "last_name": "Chef", "email": "chef@a.de",
+          "title": "Geschäftsführer (laut Impressum)", "source": "impressum"}])
+    assert [e["name"] for e in satz] == ["Otto Alt", "Gerd Chef"]
     assert satz[0]["status"] == "ohne_mail"          # bester Rang = primaer
     assert satz[1]["status"] == "mail_geprueft"
-    assert satz[1]["email"] == "alt@a.de"
+    assert satz[1]["email"] == "chef@a.de"
 
 
 def test_kontakt_ohne_impressum_fund_wird_zum_satz():
@@ -153,17 +154,18 @@ def _lauf(ergebnisse, mails):
 
 
 def test_bester_rang_bekommt_den_ersten_bezahlten_adressbau():
+    # Inhaber schlaegt Geschaeftsfuehrer (Olivers Reihenfolge, abends).
     leads, _, firmen_aus = _lauf(
-        {"a.de": {"personen": [person("Otto", "Alt", "Inhaber"),
-                               person("Gerd", "Chef", "Geschäftsführer")],
+        {"a.de": {"personen": [person("Gerd", "Chef", "Geschäftsführer"),
+                               person("Otto", "Alt", "Inhaber")],
                   "mail_domain": None}},
-        {"Gerd": "chef@a.de"})
-    assert [l.email for l in leads] == ["chef@a.de"]
-    assert leads[0].title == "Geschäftsführer (laut Impressum)"
+        {"Otto": "alt@a.de"})
+    assert [l.email for l in leads] == ["alt@a.de"]
+    assert leads[0].title == "Inhaber (laut Impressum)"
     satz = firmen_aus[0]["entscheider"]
-    assert firmen_aus[0]["entscheider_primaer"]["name"] == "Gerd Chef"
+    assert firmen_aus[0]["entscheider_primaer"]["name"] == "Otto Alt"
     assert satz[0]["status"] == "mail_geprueft"
-    assert (satz[1]["name"], satz[1]["status"]) == ("Otto Alt", "ohne_mail")
+    assert (satz[1]["name"], satz[1]["status"]) == ("Gerd Chef", "ohne_mail")
 
 
 def test_person_ohne_gepruefte_mail_bleibt_am_firmensatz():

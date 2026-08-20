@@ -142,3 +142,21 @@ def test_sammelmanager_ohne_ort_und_ohne_flagge_bleibt_verboten(tmp_path):
     with pytest.raises(sammelmanager.SammelFehler):
         sammelmanager.starte(tmp_path, "k1", "", 10, ["IT-Service"],
                              befehl=["true"])
+
+
+def test_bericht_zaehlt_bekannt_und_neu_gegen_den_bestand(tmp_path):
+    # Olivers Beispiel: von 2 Gefundenen ist 1 schon im Bestand - die
+    # bleibt erhalten, nur die neue kommt dazu, nichts wird geloescht.
+    bestand = tmp_path / "laeufe" / "leadquellen" / "alt"
+    bestand.mkdir(parents=True)
+    import json
+    (bestand / "firmen.json").write_text(
+        json.dumps([{"name": "Firma 1", "domain": "f1.de"}]),
+        encoding="utf-8")
+    maps = GebietsMaps([[firma(1), firma(2)]])
+
+    _, bericht = sammeln_bis_ziel("", 0, ["IT-Service"], 2, maps=maps,
+                                  tabelle=TABELLE, daten_dir=tmp_path)
+
+    assert bericht["vorher_bekannt"] == 1
+    assert bericht["neu"] == 1

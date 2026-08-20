@@ -3,12 +3,13 @@
 Oliver's request (19.08.2026): the contact of a company must be the
 person most likely to make a purchasing or partnership decision - never
 just any employee. When several leaders are found, ONE is marked as the
-primary decision-maker, in this order:
+primary decision-maker. Order per Oliver's spec of 19.08.2026 (evening,
+replacing the morning order that put the CEO first):
 
-  1. CEO / Geschaeftsfuehrer
-  2. Owner / Inhaber
-  3. Founder / Co-Founder / Gruender
-  4. Managing Director / Geschaeftsleitung / Betriebsleitung
+  1. Owner / Inhaber
+  2. CEO
+  3. Managing Director / Geschaeftsfuehrer
+  4. Founder / Gruender
   5. any other company leader (Vorstand, Direktor, Prokurist, ...)
 
 The imprint stage sorts its persons through sort_by_priority() before
@@ -23,10 +24,11 @@ from __future__ import annotations
 
 # Substring match on a normalised title (casefold, umlauts flattened).
 ROLE_GROUPS: tuple = (
-    ("ceo", "geschaeftsfuehr", "chief executive"),
     ("inhaber", "owner", "eigentuem"),
+    ("ceo", "chief executive"),
+    ("geschaeftsfuehr", "managing director", "geschaeftsleit",
+     "betriebsleit"),
     ("gruender", "founder"),
-    ("managing director", "geschaeftsleit", "betriebsleit"),
     ("vorstand", "direktor", "director", "leiter", "leader", "executive",
      "prokurist", "head of", "partner"),
 )

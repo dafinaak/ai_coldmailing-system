@@ -41,6 +41,14 @@ class Kunde:
     # bis der Anbieter-Vergleich die Reihenfolge festgelegt hat). Gueltige
     # Stufennamen prueft pipeline.sourcing.source_leads() mit klarem Fehler.
     anbieter_reihenfolge: list = field(default_factory=list)
+    # Olivers Regel (19.08.2026): Firmen, die SELBST Automatisierung
+    # anbieten, sind Wettbewerber und duerfen in keine Kampagne. Mit true
+    # prueft der Lauf jede Firma VOR jedem bezahlten Schritt
+    # (Webseiten-Text + KI, siehe pipeline.branchen_filter) und schliesst
+    # Treffer aus - gespeichert bleiben sie trotzdem. Standard false,
+    # damit alte Kunden-Dateien ihr Verhalten behalten; das Formular
+    # setzt es fuer neue Kampagnen selbst.
+    wettbewerber_pruefung: bool = False
     # Versand-Einstellungen (14.08.2026). Vorher fragte das Formular in
     # Schritt 5 nach Postfach, Tageslimit, Zeitfenster und Wochentagen -
     # und KEINE dieser Antworten kam je bei Instantly an: die Kampagne

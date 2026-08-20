@@ -1,0 +1,46 @@
+{
+ "kennung": "20260820-113213",
+ "angelegt": "2026-08-20T11:32:13",
+ "schritt": 2,
+ "hoechster_schritt": 2,
+ "daten": {
+  "name": "Lena Hartmann",
+  "sprache": "en",
+  "anzahl_leads": 50,
+  "beschreibung": "",
+  "verkaeufer_url": "https://polepositionautomation.de",
+  "absender_email": "o.redschlag@poleposition-automation.info",
+  "referenz_1": "",
+  "referenz_2": "",
+  "anweisungen": "",
+  "usp": [
+   {
+    "titel": "Maßgeschneiderte Automations-Infrastruktur",
+    "erklaerung": "Die Firma entwickelt individuelle Lösungen, die genau auf Kundenbedürfnisse angepasst sind."
+   },
+   {
+    "titel": "Integration bestehender Systeme",
+    "erklaerung": "Vorhandene IT-Systeme wie CRM oder ERP werden integriert, ohne sie zu ersetzen."
+   },
+   {
+    "titel": "Zertifizierte Qualität und Sicherheit",
+    "erklaerung": "ISO 9001 Zertifizierung und DSGVO-konforme Datenspeicherung sorgen für verlässliche Qualität."
+   },
+   {
+    "titel": "Automation-as-a-Service",
+    "erklaerung": "Hosting, Management und Wartung der Automationen werden vom Anbieter übernommen."
+   },
+   {
+    "titel": "Breites Leistungsspektrum für Unternehmensprozesse",
+    "erklaerung": "Automationen umfassen Bereiche wie Administration, Vertrieb, Kundenservice und Controlling."
+   }
+  ],
+  "icp": {
+   "firmografisch": "aus dem Zweck nicht erkennbar",
+   "technografisch": "aus dem Zweck nicht erkennbar",
+   "verhalten": "aus dem Zweck nicht erkennbar",
+   "entscheider": "aus dem Zweck nicht erkennbar"
+  }
+ },
+ "geaendert": "2026-08-20T11:35:08"
+}

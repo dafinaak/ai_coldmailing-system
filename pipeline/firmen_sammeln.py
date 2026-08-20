@@ -203,9 +203,32 @@ def regionen_deutschland(tabelle=None) -> list:
     return regionen
 
 
+def _bestand_schluessel(daten_dir) -> set:
+    """Erkennungs-Schluessel aller schon gesammelten Firmen.
+
+    Dieselbe Regel wie beim Bestand des Formulars (Domain, sonst Name) -
+    damit "vorher bekannt / neu" im Sammelbericht dieselbe Wahrheit
+    erzaehlt wie Schritt 3/4.
+    """
+    schluessel = set()
+    wurzel = Path(daten_dir) / "laeufe" / "leadquellen"
+    for pfad in (sorted(wurzel.glob("*/firmen.json")) if wurzel.exists()
+                 else []):
+        try:
+            firmen = json.loads(pfad.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        for firma in firmen if isinstance(firmen, list) else []:
+            kennung = (firma.get("domain") or firma.get("name") or "").lower()
+            if kennung:
+                schluessel.add(kennung)
+    return schluessel
+
+
 def sammeln_bis_ziel(ort, radius_km, dienste, ziel_anzahl, *, maps=None,
                      gelbe_seiten=None, overpass=None, tabelle=None,
-                     max_gebiete=None, log=print) -> tuple[list, dict]:
+                     max_gebiete=None, daten_dir=None,
+                     log=print) -> tuple[list, dict]:
     """Sammeln, bis die gewuenschte Zahl einzigartiger Firmen da ist.
 
     Olivers Vorgabe (19.08.2026): "100 angefragt" soll so nah wie
@@ -302,6 +325,18 @@ def sammeln_bis_ziel(ort, radius_km, dienste, ziel_anzahl, *, maps=None,
         grund_ende = "quellen_erschoepft"
         log(f"Nur {einzigartig} von {ziel_anzahl} gefunden - die "
             f"durchsuchten Gebiete geben nicht mehr her.")
+
+    # Olivers Beispiel "7 bekannt + 3 neu": gegen den vorhandenen Bestand
+    # zaehlen, BEVOR diese Sammlung selbst gespeichert wird. Nichts wird
+    # geloescht oder ueberschrieben - der Bestand ergaenzt nur.
+    if daten_dir is not None:
+        bekannt = _bestand_schluessel(daten_dir)
+        neu = sum(1 for f in firmen
+                  if (f.get("domain") or f.get("name") or "").lower()
+                  not in bekannt)
+        bericht["vorher_bekannt"] = einzigartig - neu
+        bericht["neu"] = neu
+        log(f"Davon schon im Bestand: {einzigartig - neu}, neu: {neu}")
 
     bericht.update({
         "angefragt": ziel_anzahl,

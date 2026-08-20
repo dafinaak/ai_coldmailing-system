@@ -117,9 +117,27 @@ def fusionieren(listen, plz_praefixe) -> tuple:
     firmen = list(fusioniert.values())
     for f in firmen:
         f["quelle"] = "+".join(f["quellen"])
+
+    # Olivers Frage (20.08.2026): Welche Quelle traegt wie viel bei?
+    # "einzigartig" = Firmen, die NUR diese eine Quelle kennt - faellt
+    # die Quelle weg, sind genau diese Firmen weg. "kennt" = Firmen, in
+    # denen die Quelle (auch) vorkommt. Zusammen mit je_quelle (rohe
+    # Lieferung) ergibt das den ehrlichen Nutzwert je Quelle.
+    je_quelle_einzigartig: dict = {}
+    je_quelle_kennt: dict = {}
+    for f in firmen:
+        for quelle in f["quellen"]:
+            je_quelle_kennt[quelle] = je_quelle_kennt.get(quelle, 0) + 1
+        if len(f["quellen"]) == 1:
+            allein = f["quellen"][0]
+            je_quelle_einzigartig[allein] = \
+                je_quelle_einzigartig.get(allein, 0) + 1
+
     gesamt_roh = sum(je_quelle.values())
     bericht = {
         "je_quelle": je_quelle,
+        "je_quelle_einzigartig": je_quelle_einzigartig,
+        "je_quelle_kennt": je_quelle_kennt,
         "einzigartig": len(firmen),
         "ueberschneidungen": gesamt_roh - fremde_plz - len(ausgeschlossen)
                              - len(firmen),

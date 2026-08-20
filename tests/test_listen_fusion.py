@@ -75,3 +75,18 @@ def test_bericht_zaehlt_firmen_ohne_webseite():
         plz_praefixe=("30",))
     assert len(firmen) == 2
     assert bericht["ohne_webseite"] == 1
+
+
+def test_bericht_zaehlt_den_alleinbeitrag_je_quelle():
+    # Olivers Frage (20.08.2026): Was traegt jede Quelle EXKLUSIV bei?
+    # A kennt nur Maps; B kennen Maps UND Gelbe Seiten; C nur Overpass.
+    firmen, bericht = fusionieren([
+        [{"name": "A GmbH", "domain": "a.de", "quelle": "maps"},
+         {"name": "B GmbH", "domain": "b.de", "quelle": "maps"}],
+        [{"name": "B GmbH", "domain": "b.de", "quelle": "gelbe_seiten"}],
+        [{"name": "C GmbH", "domain": "c.de", "quelle": "overpass"}],
+    ], ("",))
+
+    assert bericht["je_quelle_einzigartig"] == {"maps": 1, "overpass": 1}
+    assert bericht["je_quelle_kennt"] == {"maps": 2, "gelbe_seiten": 1,
+                                          "overpass": 1}

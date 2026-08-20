@@ -163,7 +163,11 @@ def _blatt_anruf_brief(wb: openpyxl.Workbook, firmen: list) -> None:
                   "Telefon", "PLZ", "Ort", "Webseite"])
     for firma in firmen:
         ausgang = firma.get("ausgang")
-        if ausgang in (None, "mit_entscheider", "info_fallback"):
+        # "wettbewerber" fehlt hier MIT ABSICHT: ein Automatisierungs-
+        # Anbieter soll auch nicht angerufen werden (Olivers Regel
+        # 19.08.2026); er bleibt im Firmensatz und im Master-Export.
+        if ausgang in (None, "mit_entscheider", "info_fallback",
+                       "wettbewerber"):
             continue
         # Der genaue Grund des Laufs gewinnt ueber den Sammelbegriff: bei
         # "fehler" stand hier sonst "später erneut versuchen", auch wenn in

@@ -380,6 +380,40 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
   35× mbi cak; formula u nda me numrin e termave (1.052 teste).
   Rezultatet: `laeufe/leadquellen/sammlung-verifikation-2026-08-19/`.
   Firmat e reja janë tash në bestand të formularit.
+- Waterfall + baza master, inkrementi 1 (19.08.2026 mbrëma, specifikimi
+  i madh i Oliverit; plani: `docs/bauplan-waterfall-master-db-2026-08-19.md`,
+  përmbledhja për ekipin: `docs/waterfall-uebersicht.md`; 1.068 teste):
+  (1) prioriteti i roleve NDRYSHUAR sipas radhës së re të Oliverit —
+  Inhaber/Owner → CEO → Geschäftsführer/MD → Gründer → tjetër;
+  (2) përjashtimi i ofruesve të automatizimit i lidhur në lauf
+  (webseite+KI PARA çdo shpenzimi; fusha offers_automation_services etj.;
+  firmat mbeten të ruajtura, s'marrin as kredit as telefonatë; formulari
+  e ndez vetë me `wettbewerber_pruefung: true` në kunden-file);
+  (3) regjistri i ofruesve `pipeline/providers.py` + CLI `anbieter`
+  (LinkedIn/Apollo/Clay/North Data të shpallur "nicht implementiert" —
+  pa integrime të shpikura); (4) bericht i mbledhjes numëron
+  vorher_bekannt/neu kundrejt bestand-it; (5) `pipeline/master_db.py`:
+  daten/master.db E RIGJENERUESHME (companies/company_sources/
+  decision_makers, plotësia, campaign_eligible i rreptë sipas pikës 16 —
+  mbi të dhënat reale 4.969 firma / 5.713 dëshmi / 99 vendimmarrës,
+  kampagnenfähig 0 sepse asnjë firmë s'e ka ende kontrollin "no") +
+  eksporti Excel me kolonat e Oliverit dhe vendimmarrësit A–E
+  (CLI `master-db`, `master-export`). PYETJE E HAPUR: "MailCom" s'ekziston
+  askund në projekt — duhet sqarim nga Oliveri; LinkedIn pret vendim
+  ToS + qasje; North Data ishte hequr me vendim 29.07.
+- Testimi i burimeve, hapi A — falas (20.08.2026, përgjigje ndaj
+  email-it të Oliverit "test which sources are useful and in what
+  order"; Apollo/Clay etj. i sqaroi si vetëm ide): fusioni raporton tash
+  `je_quelle_einzigartig` / `je_quelle_kennt` (kontributi EKSKLUZIV i
+  çdo burimi — 1.069 teste). Numrat realë: mbledhja e verifikimit
+  3.530 firma → Maps njeh 2.579 (2.511 vetëm ai, 71%), Gelbe Seiten
+  729 (711 vetëm ai, 20%), Overpass 292 (239 vetëm ai, 7%) — burimet
+  GATI S'MBIVENDOSEN, secili sjell firma që tjetri s'i njeh; krejt
+  bestand-i (4.964): 73/15/7% + lista e vjetër 1%. Raporti për Oliverin:
+  `docs/source-comparison-report.docx` (anglisht, me planin e matjeve
+  B/C dhe pyetjen MailCom). Hapi B (bake-off €-për-kontakt me ~150
+  kredite Dropcontact) pret okay të Dafinës; hapi C (North Data/Apollo/
+  Clay/LinkedIn mbi të njëjtin kampion) pret llogari + vendim.
 
 ## Entscheidungen
 

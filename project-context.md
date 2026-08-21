@@ -439,6 +439,24 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
   Mbetje të njohura: 1.673 uncertain (përmirësohen me render-fallback
   Chrome — inkrement i ardhshëm), 5 not_checked (çelës emri pa domain).
   FAZA 3 (benchmark-u i burimeve) PRET MIRATIM.
+- FAZA 3 — benchmark-u i burimeve PJESËRISHT I PËRFUNDUAR (20.08.2026
+  natën; artifaktet: `laeufe/vergleich-anbieter/2026-08-20-quellen-benchmark/`):
+  mostër fikse 100 firmash nga popullata e saktë (2.821 "no + pa
+  vendimmarrës", 74 qytete). Zinxhiri i vetëm i testueshëm me qasjet
+  ekzistuese: **Impressum-AI 72/100 me vendimmarrës → Dropcontact 44/72
+  email personal të verifikuar = 44 kontakte të përdorshme (44%
+  end-to-end)**; kosto 72 kredite (~4,20 €) + ~$0.15 AI ≈ **~10 cent për
+  kontakt të përdorshëm**. Validimi manual: 42/44 të saktë (95%), 2 FP
+  (MAGNUM person i huaj me domain të huaj; Team VS domain i ndërsjellë)
+  — të dy kapen nga shenja ekzistuese "Mail-Domain weicht ab".
+  Hunter: i konfirmuar live 429 (kuota deri 02.09). LinkedIn/Apollo/
+  Clay/North Data: NOT_CONFIGURED (pa kredenciale — pa teste, pa
+  shpikje). Projeksioni për 2.821: ~2.030 emra → **~1.240 kontakte të
+  përdorshme** për ~2.030 kredite (≈ 118 € kredite + ~$4 AI). Radha e
+  rekomanduar: Bestand → zbulimi (Maps/GS/OSM) → Impressum-AI →
+  Dropcontact → Hunter kur rikthehet kuota (falas) → STOP; tool-et-ide
+  vetëm me llogari prove + vendim të Oliverit për ~25–30% e mbetur.
+  S'u prek asnjë kampanjë/pool/master; kreditet e mbetura ~390.
 - Testimi i burimeve, hapi A — falas (20.08.2026, përgjigje ndaj
   email-it të Oliverit "test which sources are useful and in what
   order"; Apollo/Clay etj. i sqaroi si vetëm ide): fusioni raporton tash

@@ -170,6 +170,33 @@ Wichtig: der Titel kommt ausschließlich aus `employment[].title`. Die
 **nicht** als Funktionsbezeichnung übernommen — im ersten echten Lauf
 bekamen so Leute ohne Entscheider-Rolle einen Titel angedichtet.
 
+## Was FullEnrich unter „persönlicher E-Mail" versteht — wichtig
+
+Aus dem Data Dictionary (geprüft 24.08.2026):
+
+| Feld | Beschreibung laut FullEnrich | Beispiel |
+|---|---|---|
+| `work_emails[]` | Verified **professional** email | `greg@fullenrich.com` |
+| `personal_emails[]` | Verified **personal** email | `greg.demoge@gmail.com` |
+
+**Das ist nicht dasselbe, was Oliver meint.** Er will die
+personenbezogene Geschäftsadresse — `t.cappelmann@airitsystems.de`, so
+wie sie in der alten Liste `IT-Liste-Emails-FERTIG` steht. Das ist bei
+FullEnrich die **work_email**, nicht deren personal_email.
+
+FullEnrichs `personal_email` ist die **private** Adresse (Gmail o.ä.).
+Die ist für eine B2B-Kampagne weder gewollt noch datenschutzrechtlich
+unbedenklich.
+
+Deshalb misst der Bericht drei Dinge getrennt:
+
+- **work_email** — die Geschäftsadresse. Das ist Olivers Ziel.
+- **work_email_is_generic** — ob es doch `info@`, `office@`, `sales@`
+  usw. ist. Eine Sammeladresse erfüllt die Anforderung nicht, auch wenn
+  FullEnrich sie als work_email liefert.
+- **personal_email** — FullEnrichs private Adresse. Wird gemessen, weil
+  der Auftrag es verlangt, ist aber nicht das Ziel.
+
 ## Wie Mail und Telefon getrennt gemessen werden
 
 Olivers Anforderung verlangt ausdrücklich die **persönliche** Mail und

@@ -11,11 +11,12 @@ from pipeline.fullenrich_poc import (
     RANG_GRUPPEN, bericht_text, entscheider_waehlen, exportieren,
     firmen_abgleich, firmen_waehlen, handpruefung_liste, kennzahlen_rechnen,
     pruefung_kontakt, rang_von_titel, _leere_zeile, db_oeffnen,
-    ergebnis_speichern, _saubern, _eine_firma, _telefone_einordnen)
+    ergebnis_speichern, _saubern, _eine_firma, _telefone_einordnen,
+    _entscheider_guete, _guete_grund)
 from pipeline.sources.fullenrich import (
     COMPANY_LOOKUP_URL, ENRICH_BULK_URL, ENRICH_FELDER, FullEnrichFehler,
     FullEnrichSource, KontingentLeer, PEOPLE_SEARCH_URL, beste_mail,
-    nur_domain, TESTKONTAKT,
+    nur_domain, TESTKONTAKT, ist_sammeladresse,
     telefon_art)
 
 
@@ -307,12 +308,28 @@ def test_beste_mail_vertraegt_leere_liste():
 @pytest.mark.parametrize("nummer,erwartet", [
     ("+49 151 61690365", "mobil"), ("0176-55382897", "mobil"),
     ("017642190990", "mobil"), ("+49 5221 9660", "festnetz"),
-    ("05235 / 501577-0", "festnetz"), ("+1 415 555 0100", ""), ("", ""),
+    ("05235 / 501577-0", "festnetz"),
+    # Auslandsnummern werden NICHT geraten - lieber offen unbekannt.
+    ("+1 415 555 0100", "unbekannt"), ("+33 6 76 78 90 65", "unbekannt"),
+    ("", ""),
 ])
 def test_telefon_art_wird_selbst_bestimmt(nummer, erwartet):
     # Die API sagt NICHT, ob eine Nummer mobil ist - wir ordnen an der
-    # Vorwahl ein und raten bei Auslandsnummern nicht.
+    # Vorwahl ein und geben sonst "unbekannt" zurück.
     assert telefon_art(nummer) == erwartet
+
+
+@pytest.mark.parametrize("email,erwartet", [
+    ("info@firma.de", True), ("office@firma.de", True),
+    ("sales@firma.de", True), ("kontakt@firma.de", True),
+    ("info-de@firma.de", True), ("no-reply@firma.de", True),
+    ("t.cappelmann@firma.de", False), ("mueller@firma.de", False),
+    ("anna.beispiel@firma.de", False), ("", False),
+])
+def test_sammeladressen_werden_erkannt(email, erwartet):
+    """Auch eine "work_email" kann info@ sein. Olivers Anforderung meint
+    die personenbezogene Adresse, deshalb getrennt messen."""
+    assert ist_sammeladresse(email) is erwartet
 
 
 # --------------------------------------------------------- 8. Fehlende Felder
@@ -382,16 +399,58 @@ def test_falsche_firma_wird_nicht_angereichert():
 @pytest.mark.parametrize("code,erwartet", [
     (401, "Schlüssel"), (429, "Ratenlimit"), (500, "500")])
 def test_http_fehler_werden_klar_benannt(code, erwartet):
-    quelle = quelle_mit([FakeResponse(code, {"message": "kaputt"})])
+    # 429 und 500 werden wiederholt, deshalb genug Antworten bereitlegen.
+    quelle = quelle_mit([FakeResponse(code, {"message": "kaputt"})] * 3,
+                        max_wiederholungen=3, pause_bei_limit=0,
+                        pause_bei_serverfehler=0)
     with pytest.raises(FullEnrichFehler) as fehler:
         quelle.personen_suchen("beispiel.de", ["CEO"])
     assert erwartet in str(fehler.value)
 
 
 def test_kaputtes_json_wird_als_fehler_behandelt():
-    quelle = quelle_mit([FakeResponse(500, ValueError("kein json"), "<html>")])
+    quelle = quelle_mit(
+        [FakeResponse(500, ValueError("kein json"), "<html>")] * 3,
+        max_wiederholungen=3, pause_bei_serverfehler=0)
     with pytest.raises(FullEnrichFehler):
         quelle.personen_suchen("beispiel.de", ["CEO"])
+
+
+# --------------------------------------------------- Begrenzte Wiederholung
+
+def test_ratenlimit_wird_wiederholt_und_klappt_dann():
+    quelle = quelle_mit([FakeResponse(429, {"message": "zu viele"}),
+                         FakeResponse(200, {"people": [PERSON_CEO]})],
+                        pause_bei_limit=0)
+    leute = quelle.personen_suchen("beispiel.de", ["CEO"])
+    assert len(leute) == 1
+    assert len(quelle.session.posts) == 2
+
+
+def test_serverfehler_wird_wiederholt():
+    quelle = quelle_mit([FakeResponse(503, {"message": "weg"}),
+                         FakeResponse(200, {"people": []})],
+                        pause_bei_serverfehler=0)
+    assert quelle.personen_suchen("beispiel.de", ["CEO"]) == []
+
+
+@pytest.mark.parametrize("code", [400, 401, 402, 404])
+def test_diese_fehler_werden_NICHT_wiederholt(code):
+    """Ein falscher Schlüssel oder leeres Guthaben ändert sich beim
+    zweiten Versuch nicht - Wiederholen wäre nur Zeitverschwendung."""
+    quelle = quelle_mit([FakeResponse(code, {"message": "nein"})],
+                        pause_bei_limit=0, pause_bei_serverfehler=0)
+    with pytest.raises(FullEnrichFehler):
+        quelle.personen_suchen("beispiel.de", ["CEO"])
+    assert len(quelle.session.posts) == 1
+
+
+def test_wiederholung_ist_begrenzt():
+    quelle = quelle_mit([FakeResponse(500, {"message": "weg"})] * 5,
+                        max_wiederholungen=3, pause_bei_serverfehler=0)
+    with pytest.raises(FullEnrichFehler):
+        quelle.personen_suchen("beispiel.de", ["CEO"])
+    assert len(quelle.session.posts) == 3
 
 
 # ------------------------------------------------------------ 10. Ratenlimit
@@ -422,7 +481,8 @@ def test_kennzahlen_zaehlen_nur_zulaessige_firmen_fuer_die_quoten():
     zeilen = [
         _zeile(automation_status="NO", eligible=1,
                fullenrich_company_found=1, decision_maker_found=1,
-               decision_maker_rank=0, work_email="a@x.de",
+               decision_maker_rank=0, decision_maker_status="valid",
+               work_email="a@x.de", individual_work_email="a@x.de",
                company_match_status="strong_match",
                verification_status="strong_match",
                mobile_phone="+49 151 1", credits_used=11),
@@ -445,6 +505,8 @@ def test_kennzahlen_zaehlen_nur_zulaessige_firmen_fuer_die_quoten():
     assert k["decision_maker_rate"] == 50.0
     assert k["work_email_rate"] == 50.0
     assert k["fully_enriched_contacts"] == 1
+    assert k["credible_decision_makers"] == 1
+    assert k["uncertain_people"] == 0
     assert k["total_credits_used"] == 11
 
 
@@ -471,8 +533,9 @@ def test_bericht_nennt_alle_pflichtzahlen():
         [_zeile(automation_status="NO", eligible=1)]))
     for stueck in ("Companies tested", "Automation YES", "Automation NO",
                    "Automation UNCERTAIN", "Eligible companies",
-                   "Companies matched", "Decision makers found",
-                   "Personal emails found", "Work emails found",
+                   "Companies matched", "CREDIBLE decision makers",
+                   "uncertain people", "INDIVIDUAL work emails",
+                   "Generic company emails", "Private personal emails",
                    "Direct lines found", "Mobile numbers found",
                    "Usable contacts", "Fully enriched",
                    "Needing manual review", "API failures",
@@ -540,7 +603,8 @@ def test_poc_datenbank_beruehrt_die_master_db_nicht(tmp_path):
 def test_export_schreibt_drei_dateien(tmp_path):
     zeilen = [
         _zeile(company_name="Gut", automation_status="NO", eligible=1,
-               decision_maker_found=1, work_email="a@x.de",
+               decision_maker_found=1, decision_maker_status="valid",
+               work_email="a@x.de", individual_work_email="a@x.de",
                company_match_status="strong_match",
                verification_status="strong_match"),
         _zeile(company_name="Automation", automation_status="YES"),
@@ -623,12 +687,22 @@ def test_mobil_und_festnetz_werden_getrennt():
     assert zeile["direct_phone"] == "+49 5221 111222"
 
 
-def test_auslandsnummer_geht_nicht_verloren_wird_aber_nicht_geraten():
+def test_auslandsnummer_wird_nicht_als_mobil_oder_durchwahl_gezaehlt():
+    """Nicht raten: eine falsch als mobil ausgewiesene Nummer wäre
+    schlimmer als eine offen unbekannte."""
     zeile = _zeile()
     _telefone_einordnen([{"number": "+1 415 555 0100"}], zeile)
-    assert zeile["direct_phone"] == "+1 415 555 0100"
-    assert zeile["direct_phone_status"] == "type_unknown"
     assert zeile["mobile_phone"] == ""
+    assert zeile["direct_phone"] == ""
+    assert zeile["direct_phone_status"] == "type_unknown_not_counted"
+    # Verloren geht sie trotzdem nicht.
+    assert "+1 415 555 0100" in zeile["unknown_phones"]
+
+
+def test_guthaben_wird_vom_konto_gelesen():
+    quelle = quelle_mit([FakeResponse(200, {"balance": 313.5})])
+    assert quelle.guthaben() == 313.5
+    assert quelle.session.gets[0]["url"].endswith("/account/credits")
 
 
 # ------------------------------------------------------ Such-Credits/Bremse
@@ -691,3 +765,125 @@ def test_rohantwort_mit_schluesselartigem_feld_wird_redigiert():
 
 def test_normale_rohantwort_bleibt_lesbar():
     assert "FINISHED" in _saubern({"status": "FINISHED"})
+
+
+def test_402_gilt_als_leeres_guthaben_nicht_als_allgemeiner_fehler():
+    """Gemessen am 24.08.2026: bei 13,25 Credits kam 402 beim Abholen.
+    Weiterlaufen hätte keinen Sinn, also eigener Fehlertyp."""
+    quelle = quelle_mit([FakeResponse(402, {"message": "Payment Required"})],
+                        wartezeit=0)
+    with pytest.raises(KontingentLeer):
+        quelle.anreicherung_abholen("abc")
+
+
+# ------------------------------------------- Kosten-Tor: Entscheider zuerst
+
+def _person(titel="", headline="", rang=None, domain="beispiel.de"):
+    return {"name": "Anna Beispiel", "first_name": "Anna",
+            "last_name": "Beispiel", "titel": titel, "headline": headline,
+            "firmenname": "Beispiel GmbH", "firmen_domain": domain,
+            "linkedin": "", "rang": rang if rang is not None
+            else rang_von_titel(titel)}
+
+
+def test_glaubwuerdiger_entscheider_oeffnet_das_tor():
+    zeile = _zeile(domain="beispiel.de", company_match_status="strong_match")
+    assert _entscheider_guete(zeile, _person("Geschäftsführer")) == "valid"
+
+
+def test_ohne_stellentitel_kein_teurer_aufruf():
+    """Eine Mobilnummer kostet 10 Credits - nicht für jemanden, von dem
+    wir nur eine headline kennen."""
+    zeile = _zeile(domain="beispiel.de", company_match_status="strong_match")
+    person = _person("", "Digital problem solver")
+    assert _entscheider_guete(zeile, person) == "uncertain"
+    assert "headline" in _guete_grund(zeile, person)
+
+
+def test_schwacher_firmentreffer_oeffnet_das_tor_nicht():
+    zeile = _zeile(domain="beispiel.de", company_match_status="possible_match")
+    assert _entscheider_guete(zeile, _person("CEO")) == "uncertain"
+
+
+def test_person_anderer_domain_ist_company_mismatch():
+    zeile = _zeile(domain="beispiel.de", company_match_status="strong_match")
+    assert _entscheider_guete(
+        zeile, _person("CEO", domain="ganzanders.de")) == "company_mismatch"
+
+
+def test_unpassender_titel_oeffnet_das_tor_nicht():
+    zeile = _zeile(domain="beispiel.de", company_match_status="strong_match")
+    person = _person("Werkstudent")
+    assert _entscheider_guete(zeile, person) == "uncertain"
+    assert "kein" in _guete_grund(zeile, person).lower()
+
+
+def test_kein_enrich_aufruf_ohne_glaubwuerdigen_entscheider():
+    """Das Tor muss die Anreicherung wirklich verhindern, nicht nur
+    markieren - sonst fließen die Credits trotzdem."""
+    quelle = quelle_mit([
+        FakeResponse(200, {"companies": [{"name": "Beispiel GmbH",
+                                          "domain": "beispiel.de"}]}),
+        FakeResponse(200, {"people": [PERSON_PRAKTIKANT]}),
+    ], wartezeit=0)
+    firma = {"id": 1, "name": "Beispiel GmbH", "domain": "beispiel.de"}
+    zeile = _leere_zeile(firma, "run-1")
+    _eine_firma(quelle, firma, zeile, True)
+    assert zeile["decision_maker_status"] == "uncertain"
+    assert zeile["api_status"] == "skipped_uncertain"
+    # Nur lookup und search - KEIN enrich.
+    assert len(quelle.session.posts) == 2
+
+
+# ----------------------------------------------- Drei E-Mail-Kategorien
+
+def test_individuelle_geschaeftsmail_ist_olivers_ziel():
+    quelle = quelle_mit([
+        FakeResponse(200, {"companies": [{"name": "Beispiel GmbH",
+                                          "domain": "beispiel.de"}]}),
+        FakeResponse(200, {"people": [PERSON_CEO]}),
+        FakeResponse(200, {"enrichment_id": "abc"}),
+        FakeResponse(200, {"status": "FINISHED", "cost": {"credits": 1},
+                           "data": [{"contact_info": {"work_emails": [
+                               {"email": "a.beispiel@beispiel.de",
+                                "status": "DELIVERABLE"}]}}]}),
+    ], wartezeit=0)
+    firma = {"id": 1, "name": "Beispiel GmbH", "domain": "beispiel.de"}
+    zeile = _leere_zeile(firma, "run-1")
+    _eine_firma(quelle, firma, zeile, True)
+    assert zeile["individual_work_email"] == "a.beispiel@beispiel.de"
+    assert zeile["generic_company_email"] == ""
+
+
+def test_sammeladresse_landet_nicht_bei_den_individuellen():
+    quelle = quelle_mit([
+        FakeResponse(200, {"companies": [{"name": "Beispiel GmbH",
+                                          "domain": "beispiel.de"}]}),
+        FakeResponse(200, {"people": [PERSON_CEO]}),
+        FakeResponse(200, {"enrichment_id": "abc"}),
+        FakeResponse(200, {"status": "FINISHED", "cost": {"credits": 1},
+                           "data": [{"contact_info": {"work_emails": [
+                               {"email": "info@beispiel.de",
+                                "status": "DELIVERABLE"}]}}]}),
+    ], wartezeit=0)
+    firma = {"id": 1, "name": "Beispiel GmbH", "domain": "beispiel.de"}
+    zeile = _leere_zeile(firma, "run-1")
+    _eine_firma(quelle, firma, zeile, True)
+    assert zeile["generic_company_email"] == "info@beispiel.de"
+    assert zeile["individual_work_email"] == ""
+
+
+def test_kennzahlen_zaehlen_nur_individuelle_mails_als_brauchbar():
+    zeilen = [
+        _zeile(automation_status="NO", eligible=1, decision_maker_found=1,
+               decision_maker_status="valid",
+               individual_work_email="a@x.de", mobile_phone="+49 151 1"),
+        _zeile(automation_status="NO", eligible=1, decision_maker_found=1,
+               decision_maker_status="valid",
+               generic_company_email="info@x.de"),
+    ]
+    k = kennzahlen_rechnen(zeilen)
+    assert k["individual_work_emails"] == 1
+    assert k["generic_company_emails"] == 1
+    assert k["usable_contacts"] == 1
+    assert k["fully_enriched_contacts"] == 1

@@ -36,7 +36,7 @@ from pathlib import Path
 
 from pipeline.sources.fullenrich import (
     FullEnrichFehler, FullEnrichSource, KontingentLeer, beste_mail,
-    telefon_art)
+    ist_sammeladresse, telefon_art)
 
 POC_DB = "daten/fullenrich-poc.db"
 AUSWAHL_DATEI = "daten/fullenrich-poc-auswahl.json"
@@ -79,7 +79,14 @@ CREATE TABLE IF NOT EXISTS poc_ergebnisse (
     plz TEXT,
     ort TEXT,
     land TEXT,
+    strasse TEXT,
     company_phone TEXT,
+    company_email TEXT,
+    sektor TEXT,
+    keywords TEXT,
+    mitarbeiter TEXT,
+    ceo_owner_db TEXT,
+    data_source TEXT,
     automation_status TEXT,
     automation_confidence REAL,
     automation_reason TEXT,
@@ -106,7 +113,11 @@ CREATE TABLE IF NOT EXISTS poc_ergebnisse (
     decision_maker_linkedin TEXT,
     decision_maker_rank INTEGER,
     decision_maker_reason TEXT,
+    decision_maker_status TEXT,
     alternative_candidates TEXT,
+    individual_work_email TEXT,
+    generic_company_email TEXT,
+    private_personal_email TEXT,
     personal_email TEXT,
     personal_email_status TEXT,
     work_email TEXT,
@@ -116,6 +127,8 @@ CREATE TABLE IF NOT EXISTS poc_ergebnisse (
     mobile_phone TEXT,
     mobile_phone_status TEXT,
     phones_raw TEXT,
+    unknown_phones TEXT,
+    work_email_is_generic INTEGER,
     verification_status TEXT,
     manual_review_reason TEXT,
     credits_used INTEGER,
@@ -483,10 +496,17 @@ def kennzahlen_rechnen(zeilen: list) -> dict:
     gematcht = [z for z in zulaessig if z["fullenrich_company_found"]]
     stark = [z for z in zulaessig
              if z["company_match_status"] == "strong_match"]
-    entscheider = [z for z in zulaessig if z["decision_maker_found"]]
-    echter_titel = [z for z in entscheider
+    leute = [z for z in zulaessig if z["decision_maker_found"]]
+    entscheider = [z for z in leute
+                   if z.get("decision_maker_status") == "valid"]
+    unsichere_leute = [z for z in leute
+                       if z.get("decision_maker_status") != "valid"]
+    echter_titel = [z for z in leute
                     if z["decision_maker_rank"] is not None
                     and z["decision_maker_rank"] < len(RANG_GRUPPEN)]
+    individuell = [z for z in zulaessig if z.get("individual_work_email")]
+    generisch = [z for z in zulaessig if z.get("generic_company_email")]
+    privat = [z for z in zulaessig if z.get("private_personal_email")]
     persoenlich = [z for z in zulaessig if z["personal_email"]]
     arbeit = [z for z in zulaessig if z["work_email"]]
     beide = [z for z in zulaessig if z["personal_email"] and z["work_email"]]
@@ -497,15 +517,11 @@ def kennzahlen_rechnen(zeilen: list) -> dict:
     # "Vollstaendig" nach Olivers Anforderung: richtige Firma, echter
     # Entscheider, mindestens eine Mail UND mindestens eine persoenliche
     # Nummer. Das ist streng - genau darum geht es.
-    vollstaendig = [z for z in zulaessig
-                    if z["verification_status"] in ("strong_match",
-                                                    "possible_match")
-                    and (z["personal_email"] or z["work_email"])
-                    and (z["mobile_phone"] or z["direct_phone"])]
-    brauchbar = [z for z in zulaessig
-                 if z["verification_status"] in ("strong_match",
-                                                 "possible_match")
-                 and (z["personal_email"] or z["work_email"])]
+    # Brauchbar heisst: glaubwuerdiger Entscheider UND eine
+    # personenbezogene Geschaefts-Mail. info@ zaehlt hier NICHT.
+    brauchbar = [z for z in entscheider if z.get("individual_work_email")]
+    vollstaendig = [z for z in brauchbar
+                    if z["mobile_phone"] or z["direct_phone"]]
     handpruefung = [z for z in zeilen
                     if z["manual_review_reason"]
                     or z["automation_status"] == "UNCERTAIN"
@@ -524,10 +540,17 @@ def kennzahlen_rechnen(zeilen: list) -> dict:
         "companies_matched": len(gematcht),
         "company_match_rate": anteil(len(gematcht), len(zulaessig)),
         "strong_company_matches": len(stark),
+        "people_found": len(leute),
+        "credible_decision_makers": len(entscheider),
+        "uncertain_people": len(unsichere_leute),
         "decision_makers_found": len(entscheider),
         "decision_maker_rate": anteil(len(entscheider), len(zulaessig)),
         "real_decision_maker_titles": len(echter_titel),
         "real_decision_maker_rate": anteil(len(echter_titel), len(zulaessig)),
+        "individual_work_emails": len(individuell),
+        "individual_work_email_rate": anteil(len(individuell), len(zulaessig)),
+        "generic_company_emails": len(generisch),
+        "private_personal_emails": len(privat),
         "personal_emails_found": len(persoenlich),
         "personal_email_rate": anteil(len(persoenlich), len(zulaessig)),
         "work_emails_found": len(arbeit),
@@ -574,16 +597,24 @@ def bericht_text(k: dict) -> str:
          f"Companies matched:                 {k['companies_matched']:>6}"
          f"  {k['company_match_rate']:>5}%",
          f"  of these strong matches:         {k['strong_company_matches']:>6}",
-         f"Decision makers found:             {k['decision_makers_found']:>6}"
+         f"People returned by search:         {k.get('people_found', 0):>6}",
+         f"CREDIBLE decision makers:          "
+         f"{k.get('credible_decision_makers', 0):>6}"
          f"  {k['decision_maker_rate']:>5}%",
+         f"  uncertain people (not counted):   "
+         f"{k.get('uncertain_people', 0):>6}",
          f"  with a real decision-maker title:{k['real_decision_maker_titles']:>6}"
          f"  {k['real_decision_maker_rate']:>5}%",
-         "", "-- E-Mail (counted separately) --",
-         f"Personal emails found:             {k['personal_emails_found']:>6}"
-         f"  {k['personal_email_rate']:>5}%",
-         f"Work emails found:                 {k['work_emails_found']:>6}"
+         "", "-- E-Mail (three separate categories) --",
+         f"INDIVIDUAL work emails:            "
+         f"{k.get('individual_work_emails', 0):>6}"
+         f"  {k.get('individual_work_email_rate', 0):>5}%   <- Oliver's target",
+         f"Generic company emails (info@ ...):"
+         f"{k.get('generic_company_emails', 0):>6}   not counted as a contact",
+         f"Private personal emails (gmail...):"
+         f"{k.get('private_personal_emails', 0):>6}",
+         f"Work emails total:                 {k['work_emails_found']:>6}"
          f"  {k['work_email_rate']:>5}%",
-         f"Both found:                        {k['both_emails_found']:>6}",
          f"Neither found:                     {k['no_email_found']:>6}",
          "", "-- Phone (company switchboard never counts) --",
          f"Direct lines found:                {k['direct_phones_found']:>6}"
@@ -612,25 +643,76 @@ def bericht_text(k: dict) -> str:
         z.append(f"Search credits (estimated):        "
                  f"{k['estimated_search_credits']:>6}"
                  f"   0.25/hit, not reported by the API")
+    if k.get("estimated_credits_min") is not None:
+        z += ["",
+              f"ESTIMATED credits for a real run:",
+              f"  minimum (searches only):         "
+              f"{k['estimated_credits_min']:>6}",
+              f"  maximum (all with mail+mobile):  "
+              f"{k['estimated_credits_max']:>6}"]
+    if k.get("credits_measured") is not None:
+        z += ["",
+              f"Credits before run:                {k['credits_before']:>6}",
+              f"Credits after run:                 {k['credits_after']:>6}",
+              f"MEASURED credits used:             {k['credits_measured']:>6}",
+              f"  per eligible company:            "
+              f"{k['measured_credits_per_eligible_company']:>6}",
+              f"  per decision maker:              "
+              f"{k['measured_credits_per_decision_maker']:>6}",
+              f"  per usable contact:              "
+              f"{k['measured_credits_per_usable_contact']:>6}"]
     z.append("=" * 52)
     return "\n".join(z)
+
+
+def credits_schaetzen(zulaessige: int) -> dict:
+    """Was ein echter Lauf ungefaehr kosten wuerde - als SPANNE.
+
+    Genau ist das nicht moeglich: die Suche kostet je Treffer, und wie
+    viele Treffer kommen, weiss man erst nach dem (bezahlten) Aufruf.
+    Deshalb zwei Ecken, beide aus der Preisliste der Doku gerechnet:
+
+      Untergrenze  nur die Suchen, niemand wird angereichert
+                   (Firmentreffer 0,25 + ~2 Personen a 0,25)
+      Obergrenze   jede zulaessige Firma liefert einen glaubwuerdigen
+                   Entscheider MIT Mail und Mobilnummer
+                   (Suchen + 1 Mail + 10 Mobil)
+
+    Die Wahrheit liegt dazwischen und haengt an der Trefferquote, die
+    dieser Test ja gerade erst messen soll."""
+    from pipeline.sources.fullenrich import (
+        PREIS_MAIL, PREIS_MOBIL, PREIS_SUCHTREFFER)
+
+    such_anteil = PREIS_SUCHTREFFER * 3          # 1 Firma + ~2 Personen
+    unten = round(zulaessige * such_anteil, 2)
+    oben = round(zulaessige * (such_anteil + PREIS_MAIL + PREIS_MOBIL), 2)
+    return {"estimated_credits_min": unten,
+            "estimated_credits_max": oben,
+            "estimated_credits_note":
+                "Untergrenze = nur Suchen; Obergrenze = jede Firma mit "
+                "Mail und Mobilnummer. Preise laut FullEnrich-Doku."}
 
 
 # ---------------------------------------------------------------- 7. Export
 
 EXPORT_SPALTEN = [
-    "company_id", "company", "domain", "website", "plz", "ort", "land",
-    "company_phone",
+    "company_id", "data_source", "company", "domain", "website",
+    "strasse", "plz", "ort", "land",
+    "sektor", "keywords", "mitarbeiter", "ceo_owner_db",
+    "company_phone", "company_email",
     "automation_status", "automation_confidence", "automation_reason",
     "automation_evidence", "automation_source_url", "website_status",
     "eligible", "exclusion_reason",
     "fullenrich_company_found", "fullenrich_company_name",
     "company_match_status", "company_match_score",
     "decision_maker", "title", "headline", "linkedin",
+    "decision_maker_status",
+    "individual_work_email", "generic_company_email",
+    "private_personal_email",
     "personal_email", "personal_email_status",
-    "work_email", "work_email_status",
+    "work_email", "work_email_status", "work_email_is_generic",
     "direct_line", "direct_line_status",
-    "mobile", "mobile_status",
+    "mobile", "mobile_status", "unknown_phones",
     "verification_status", "manual_review_reason",
     "credits_used", "api_status", "error",
 ]
@@ -638,8 +720,12 @@ EXPORT_SPALTEN = [
 
 def _export_zeile(z: dict) -> list:
     return [
-        z["company_id"], z["company_name"], z["domain"], z["website"],
-        z["plz"], z["ort"], z["land"], z["company_phone"],
+        z["company_id"], z.get("data_source", ""), z["company_name"],
+        z["domain"], z["website"], z.get("strasse", ""),
+        z["plz"], z["ort"], z["land"],
+        z.get("sektor", ""), z.get("keywords", ""), z.get("mitarbeiter", ""),
+        z.get("ceo_owner_db", ""),
+        z["company_phone"], z.get("company_email", ""),
         z["automation_status"], z["automation_confidence"],
         (z["automation_reason"] or "")[:300],
         (z["automation_evidence"] or "")[:300],
@@ -650,10 +736,16 @@ def _export_zeile(z: dict) -> list:
         z["company_match_status"], z["company_match_score"],
         z["decision_maker_name"], z["decision_maker_title"],
         (z["decision_maker_headline"] or "")[:120], z["decision_maker_linkedin"],
+        z.get("decision_maker_status", ""),
+        z.get("individual_work_email", ""),
+        z.get("generic_company_email", ""),
+        z.get("private_personal_email", ""),
         z["personal_email"], z["personal_email_status"],
         z["work_email"], z["work_email_status"],
+        "yes" if z.get("work_email_is_generic") else "no",
         z["direct_phone"], z["direct_phone_status"],
         z["mobile_phone"], z["mobile_phone_status"],
+        z.get("unknown_phones", ""),
         z["verification_status"], z["manual_review_reason"],
         z["credits_used"], z["api_status"], z["error_message"],
     ]
@@ -697,10 +789,9 @@ def exportieren(zeilen: list, daten_dir=".", stempel=None) -> dict:
     ziele["alle_csv"] = alle
 
     kontakte = [z for z in zeilen
-                if z["eligible"] and z["decision_maker_found"]
-                and (z["personal_email"] or z["work_email"])
-                and z["verification_status"] in ("strong_match",
-                                                 "possible_match")]
+                if z["eligible"]
+                and z.get("decision_maker_status") == "valid"
+                and z.get("individual_work_email")]
     kontakt_pfad = basis / f"fullenrich-kontakte-{stempel}.csv"
     _csv_schreiben(kontakt_pfad, kontakte)
     ziele["kontakte_csv"] = kontakt_pfad
@@ -757,7 +848,16 @@ def _leere_zeile(firma, test_run_id) -> dict:
         "website": firma.get("website", ""),
         "plz": firma.get("plz", ""), "ort": firma.get("ort", ""),
         "land": firma.get("land", ""),
+        "strasse": firma.get("strasse", ""),
         "company_phone": firma.get("telefon", ""),
+        "company_email": firma.get("email_allgemein", ""),
+        "sektor": firma.get("sektor", ""),
+        "keywords": firma.get("keywords", ""),
+        "mitarbeiter": firma.get("mitarbeiter", ""),
+        "ceo_owner_db": firma.get("ceo_owner", ""),
+        # Woher die Firma ueberhaupt stammt - fuer die Frage nach der
+        # Markt-Abdeckung (Punkt 6) getrennt von der Anreicherung.
+        "data_source": firma.get("data_source", "master.db"),
         "automation_status": "", "automation_confidence": 0.0,
         "automation_reason": "", "automation_evidence": "",
         "automation_source_url": "", "automation_check_quelle": "",
@@ -771,12 +871,16 @@ def _leere_zeile(firma, test_run_id) -> dict:
         "decision_maker_last_name": "", "decision_maker_name": "",
         "decision_maker_title": "", "decision_maker_headline": "",
         "decision_maker_linkedin": "", "decision_maker_rank": None,
-        "decision_maker_reason": "", "alternative_candidates": "",
+        "decision_maker_reason": "", "decision_maker_status": "",
+        "alternative_candidates": "",
+        "individual_work_email": "", "generic_company_email": "",
+        "private_personal_email": "",
         "personal_email": "", "personal_email_status": "",
         "work_email": "", "work_email_status": "",
         "direct_phone": "", "direct_phone_status": "",
         "mobile_phone": "", "mobile_phone_status": "",
-        "phones_raw": "", "verification_status": "",
+        "phones_raw": "", "unknown_phones": "",
+        "work_email_is_generic": 0, "verification_status": "",
         "manual_review_reason": "",
         "credits_used": 0, "api_status": "", "error_message": "",
         "raw_response": "",
@@ -786,7 +890,7 @@ def _leere_zeile(firma, test_run_id) -> dict:
 
 def lauf(daten_dir=".", limit=100, api_key=None, quelle=None, ki=None,
          seed=SEED, roh_speichern=True, max_credits=None, dry_run=False,
-         ttl_tage=None, seiten_leser=None) -> dict:
+         ttl_tage=None, seiten_leser=None, fe_gleichzeitig=1) -> dict:
     """Der ganze Lauf. dry_run=True macht KEINEN FullEnrich-Aufruf."""
     import os
 
@@ -815,9 +919,15 @@ def lauf(daten_dir=".", limit=100, api_key=None, quelle=None, ki=None,
     seiten, urteile = webseiten_und_urteile(
         firmen, ki, daten_dir, ttl_tage=ttl_tage, seiten_leser=seiten_leser)
 
+    guthaben_vorher = None
     if not dry_run:
         quelle = quelle or FullEnrichSource(
             api_key or os.environ.get("FULLENRICH_API_KEY"))
+        try:
+            guthaben_vorher = quelle.guthaben()
+            log(f"    Guthaben vor dem Lauf: {guthaben_vorher}")
+        except FullEnrichFehler as fehler:
+            log(f"    Guthaben nicht lesbar: {fehler}")
 
     db = db_oeffnen(daten_dir)
     db.execute("INSERT OR REPLACE INTO poc_laeufe (test_run_id, gestartet_am,"
@@ -910,8 +1020,33 @@ def lauf(daten_dir=".", limit=100, api_key=None, quelle=None, ki=None,
             log(f"    {nummer + 1}/{len(firmen)} Firmen verarbeitet")
 
     log("Schritt 3/3: Auswertung und Export")
+    guthaben_nachher = None
+    if not dry_run and quelle is not None:
+        try:
+            guthaben_nachher = quelle.guthaben()
+        except FullEnrichFehler as fehler:
+            log(f"    Guthaben nicht lesbar: {fehler}")
     kennzahlen = kennzahlen_rechnen(zeilen)
     kennzahlen["estimated_search_credits"] = round(such_credits[0], 2)
+    kennzahlen["credits_before"] = guthaben_vorher
+    kennzahlen["credits_after"] = guthaben_nachher
+    if dry_run:
+        kennzahlen.update(credits_schaetzen(kennzahlen["eligible_companies"]))
+    if guthaben_vorher is not None and guthaben_nachher is not None:
+        # Der GEMESSENE Verbrauch - inklusive der Such-Credits, die die
+        # Anreicherungs-Antwort nicht mitmeldet. Das ist die ehrliche
+        # Zahl; alles andere sind Schaetzungen.
+        verbrauch = round(guthaben_vorher - guthaben_nachher, 2)
+        kennzahlen["credits_measured"] = verbrauch
+        zul = kennzahlen["eligible_companies"] or 0
+        dm = kennzahlen["decision_makers_found"] or 0
+        nutz = kennzahlen["usable_contacts"] or 0
+        kennzahlen["measured_credits_per_eligible_company"] = (
+            round(verbrauch / zul, 2) if zul else 0.0)
+        kennzahlen["measured_credits_per_decision_maker"] = (
+            round(verbrauch / dm, 2) if dm else 0.0)
+        kennzahlen["measured_credits_per_usable_contact"] = (
+            round(verbrauch / nutz, 2) if nutz else 0.0)
     db.execute("UPDATE poc_laeufe SET beendet_am=?, kennzahlen=? "
                "WHERE test_run_id=?",
                (datetime.now().isoformat(timespec="seconds"),
@@ -923,6 +1058,46 @@ def lauf(daten_dir=".", limit=100, api_key=None, quelle=None, ki=None,
     return {"test_run_id": test_run_id, "kennzahlen": kennzahlen,
             "zeilen": zeilen, "exporte": ziele, "dry_run": dry_run,
             "laufzeit_minuten": round((time.time() - start) / 60, 1)}
+
+
+def _entscheider_guete(zeile: dict, person: dict) -> str:
+    """"valid" | "uncertain" | "company_mismatch".
+
+    Nur "valid" oeffnet das Tor zur bezahlten Anreicherung. Verlangt
+    wird BEIDES: die Firma muss sicher zugeordnet sein UND die Person
+    muss einen echten Entscheider-Titel tragen. Eine headline
+    ("Digital problem solver") ist kein Titel - genau dafuer wurde
+    dieses Tor gebaut."""
+    if zeile["company_match_status"] == "no_match":
+        return "company_mismatch"
+    if zeile["company_match_status"] != "strong_match":
+        return "uncertain"
+    if not (person.get("titel") or "").strip():
+        return "uncertain"
+    if person.get("rang") is None or person["rang"] >= len(RANG_GRUPPEN):
+        return "uncertain"
+    # Die Person muss auch laut ihrem eigenen Profil zu dieser Firma
+    # gehoeren, sonst ist die Zuordnung nur geraten.
+    person_domain = _norm(person.get("firmen_domain"))
+    if person_domain and person_domain != _norm(zeile["domain"]):
+        return "company_mismatch"
+    return "valid"
+
+
+def _guete_grund(zeile: dict, person: dict) -> str:
+    if zeile["company_match_status"] == "no_match":
+        return "Person gehört nachweislich zu einer anderen Firma"
+    gruende = []
+    if zeile["company_match_status"] != "strong_match":
+        gruende.append(f"Firmen-Zuordnung nur {zeile['company_match_status']}")
+    if not (person.get("titel") or "").strip():
+        kopf = (person.get("headline") or "")[:60]
+        gruende.append(f"kein Stellentitel im Profil"
+                       + (f", nur headline '{kopf}'" if kopf else ""))
+    elif person.get("rang") is None or person["rang"] >= len(RANG_GRUPPEN):
+        gruende.append(f"Titel '{person.get('titel')}' ist kein "
+                       f"Entscheider-Titel")
+    return "; ".join(gruende) or "Entscheider nicht belastbar"
 
 
 def _eine_firma(quelle, firma, zeile, roh_speichern, such_credits=None):
@@ -957,6 +1132,7 @@ def _eine_firma(quelle, firma, zeile, roh_speichern, such_credits=None):
 
     if not gewaehlt:
         zeile["api_status"] = "no_decision_maker"
+        zeile["decision_maker_status"] = "none"
         return
 
     zeile["decision_maker_found"] = 1
@@ -972,9 +1148,14 @@ def _eine_firma(quelle, firma, zeile, roh_speichern, such_credits=None):
         [{"name": a["name"], "titel": a["titel"], "rang": a["rang"]}
          for a in alternativen], ensure_ascii=False)
 
-    # Kein Geld fuer eine Person, die nachweislich woanders arbeitet.
-    if status == "no_match":
-        zeile["api_status"] = "skipped_company_mismatch"
+    # ---- KOSTEN-TOR: hier wird entschieden, ob die teuren Credits
+    # ueberhaupt ausgegeben werden. Eine Mobilnummer kostet 10 Credits -
+    # die darf NICHT fuer eine Person fliessen, von der wir nicht wissen,
+    # ob sie ueberhaupt entscheidet.
+    zeile["decision_maker_status"] = _entscheider_guete(zeile, gewaehlt)
+    if zeile["decision_maker_status"] != "valid":
+        zeile["api_status"] = f"skipped_{zeile['decision_maker_status']}"
+        zeile["manual_review_reason"] = _guete_grund(zeile, gewaehlt)
         return
 
     enrichment_id = quelle.anreicherung_starten([{
@@ -1002,14 +1183,25 @@ def _eine_firma(quelle, firma, zeile, roh_speichern, such_credits=None):
         return
     kontakt = (daten[0] or {}).get("contact_info") or {}
 
+    # Drei Kategorien, streng getrennt (Auftrag 24.08.2026):
+    #   individual_work_email   j.smith@firma.de   <- DAS will Oliver
+    #   generic_company_email   info@firma.de      <- erfuellt es NICHT
+    #   private_personal_email  j.smith@gmail.com  <- getrennt gespeichert
     arbeit = beste_mail(kontakt.get("work_emails"))
     if arbeit:
         zeile["work_email"] = arbeit["email"]
         zeile["work_email_status"] = arbeit.get("status", "")
+        generisch = ist_sammeladresse(arbeit["email"])
+        zeile["work_email_is_generic"] = 1 if generisch else 0
+        if generisch:
+            zeile["generic_company_email"] = arbeit["email"]
+        else:
+            zeile["individual_work_email"] = arbeit["email"]
     persoenlich = beste_mail(kontakt.get("personal_emails"))
     if persoenlich:
         zeile["personal_email"] = persoenlich["email"]
         zeile["personal_email_status"] = persoenlich.get("status", "")
+        zeile["private_personal_email"] = persoenlich["email"]
 
     _telefone_einordnen(kontakt.get("phones"), zeile)
 
@@ -1025,6 +1217,7 @@ def _telefone_einordnen(telefone, zeile):
     zeile["phones_raw"] = json.dumps(eintraege, ensure_ascii=False)
     zentrale = _ziffern(zeile.get("company_phone"))
 
+    unbekannte = []
     for eintrag in eintraege:
         nummer = eintrag["number"]
         if zentrale and _ziffern(nummer) == zentrale:
@@ -1039,7 +1232,13 @@ def _telefone_einordnen(telefone, zeile):
         elif art == "festnetz" and not zeile["direct_phone"]:
             zeile["direct_phone"] = nummer
             zeile["direct_phone_status"] = "landline_by_prefix"
-        elif not art and not zeile["direct_phone"]:
-            # Auslandsnummer o.ae.: nicht raten, aber auch nicht verlieren.
-            zeile["direct_phone"] = nummer
-            zeile["direct_phone_status"] = "type_unknown"
+        elif art == "unbekannt":
+            unbekannte.append(nummer)
+
+    # Nicht einzuordnende Nummern (Ausland, unklare Schreibweise) werden
+    # NICHT als Mobil oder Durchwahl ausgegeben - das waere geraten.
+    # Sie gehen aber auch nicht verloren.
+    if unbekannte:
+        zeile["unknown_phones"] = json.dumps(unbekannte, ensure_ascii=False)
+        if not (zeile["mobile_phone"] or zeile["direct_phone"]):
+            zeile["direct_phone_status"] = "type_unknown_not_counted"

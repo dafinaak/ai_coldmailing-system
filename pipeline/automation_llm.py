@@ -23,30 +23,49 @@ import re
 
 SYSTEM_PROMPT = """Du prüfst EINE Frage über eine Firma:
 
-Bietet diese Firma Automatisierung als LEISTUNG oder PRODUKT für ihre
-KUNDEN an?
+VERKAUFT diese Firma Automatisierung selbst als Dienstleistung oder
+Produkt an ihre Kunden?
 
-Antworte "YES" nur, wenn es dafür belastbare Hinweise gibt, zum Beispiel:
-- Geschäftsprozess-Automatisierung, Workflow-Automatisierung
-- RPA / Robotic Process Automation
-- KI-Automatisierung, KI-Agenten, Chatbots als Dienstleistung
-- Automatisierungs-Beratung oder -Umsetzung (n8n, Make, Zapier,
-  Power Automate, Camunda ...)
-- Digitalisierungsprojekte mit ausdrücklichem Automatisierungs-Angebot
+Es geht NICHT darum, ob irgendwo das Wort "Automatisierung" vorkommt.
+Es geht darum, ob Automatisierung ein ANGEBOT dieser Firma ist.
 
-Antworte "NO" bei:
-- reiner IT-Betreuung: Managed Services, Support, Wartung, Netzwerk,
-  Server, Hardware, Backup, Cloud-Migration, IT-Sicherheit
+Antworte "YES" nur bei belastbaren Hinweisen auf ein solches Angebot:
+- Automatisierungs-Beratung
+- Workflow-Automatisierung als Dienstleistung
+- Geschäftsprozess-Automatisierung als Dienstleistung
+- RPA / Robotic Process Automation als Dienstleistung
+- KI-Automatisierung, KI-Agenten als Dienstleistung
+- Automatisierungs-Umsetzung / -Implementierung für Kunden
+- Einführung von Automatisierungs-Plattformen für Kunden
+  (n8n, Make, Zapier, Power Automate, Camunda ...)
+
+Antworte "NO" - und das ist wichtig, hier wurde bisher zu oft falsch
+"YES" gesagt - bei:
+- MANAGED SERVICES. Auch dann, wenn dabei von Prozessoptimierung,
+  Effizienz oder standardisierten Abläufen die Rede ist. Managed
+  Services sind IT-Betreuung, kein Automatisierungs-Angebot.
+- IT-Dienstleistung, die Automatisierung nur INTERN benutzt
+  ("wir automatisieren unsere eigenen Abläufe", "automatisiertes
+  Monitoring", "automatische Backups")
+- SOFTWARE-PRODUKTEN, die Workflow- oder Automatisierungs-FUNKTIONEN
+  enthalten, ohne dass die Firma Automatisierung als Leistung verkauft.
+  Ein Projektmanagement-, DMS-, ERP- oder Compliance-Produkt mit
+  Workflow-Funktion ist NO. Entscheidend ist: wird ein PRODUKT verkauft,
+  das eine Funktion hat - oder wird die AUTOMATISIERUNG SELBST als
+  Leistung verkauft? Nur das Zweite ist YES.
+- Prozessoptimierung ohne ausdrückliches Automatisierungs-Angebot
 - INDUSTRIE-Automatisierung: SPS/PLC, Steuerungstechnik, Maschinen-,
   Fertigungs-, Gebäudeautomation - andere Branche, kein Wettbewerber
-- Firmen, die Automatisierung nur INTERN nutzen
-  ("wir automatisieren unsere eigenen Abläufe")
-- bloßen Erwähnungen ("automatische Backups", "automatisiertes
-  Monitoring") oder Software-Produkten, die Automatisierungs-Funktionen
-  nur ENTHALTEN, ohne dass die Firma Automatisierung als Leistung verkauft
+- reiner IT-Betreuung: Support, Wartung, Netzwerk, Server, Hardware,
+  Backup, Cloud-Migration, IT-Sicherheit
+
+Prüfe vor einem "YES" gegen dich selbst: Könnte ein Kunde bei dieser
+Firma "Automatisierung" BEAUFTRAGEN? Wenn du das aus dem Text nicht
+belegen kannst, ist es kein YES.
 
 Antworte "UNCERTAIN", wenn der Text zu dünn, zu allgemein oder
-widersprüchlich ist. Rate NICHT. Lieber UNCERTAIN als ein falsches NO.
+widersprüchlich ist. Zwinge keinen unklaren Fall in YES oder NO.
+Lieber UNCERTAIN als ein falsches Urteil in eine der beiden Richtungen.
 
 Der Text ist in Abschnitte geteilt, jeder beginnt mit "[Quelle: <URL>]".
 Gib bei "evidence" ein wörtliches Zitat an und bei "source_url" die URL

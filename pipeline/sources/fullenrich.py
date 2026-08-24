@@ -65,6 +65,26 @@ BASIS_URL = "https://app.fullenrich.com/api/v2"
 COMPANY_LOOKUP_URL = f"{BASIS_URL}/company/lookup"
 PEOPLE_SEARCH_URL = f"{BASIS_URL}/people/search"
 ENRICH_BULK_URL = f"{BASIS_URL}/contact/enrich/bulk"
+GUTHABEN_URL = f"{BASIS_URL}/account/credits"
+SCHLUESSEL_URL = f"{BASIS_URL}/account/keys/verify"
+
+# Was FullEnrich unter den beiden Mail-Arten versteht (Data Dictionary,
+# geprueft 24.08.2026) - der Unterschied ist fuer Olivers Anforderung
+# entscheidend:
+#   work_emails      "Verified professional email", Beispiel
+#                    greg@fullenrich.com  -> die GESCHAEFTLICHE Adresse
+#   personal_emails  "Verified personal email", Beispiel
+#                    greg.demoge@gmail.com -> die PRIVATE Adresse
+# Oliver will die personenbezogene GESCHAEFTS-Adresse
+# (t.cappelmann@airitsystems.de). Das ist FullEnrichs work_email, NICHT
+# deren personal_email. Deshalb wird zusaetzlich geprueft, ob eine
+# work_email personenbezogen oder eine Sammeladresse ist.
+SAMMEL_PRAEFIXE = (
+    "info", "office", "kontakt", "contact", "support", "sales", "service",
+    "mail", "email", "hallo", "hello", "team", "buero", "buro", "zentrale",
+    "empfang", "anfrage", "post", "webmaster", "admin", "noreply",
+    "no-reply", "verwaltung", "sekretariat", "bestellung", "vertrieb",
+)
 
 # Laut Doku 60 Aufrufe pro Minute ueber alle Endpunkte. Wir bleiben
 # bewusst darunter, damit ein paralleler Lauf nicht ins Limit rennt.
@@ -118,6 +138,10 @@ def nur_domain(wert) -> str:
     return text.strip().strip(".")
 STARKE_MAIL_STATUS = ("DELIVERABLE", "HIGH_PROBABILITY")
 
+# Nur diese HTTP-Codes werden wiederholt: Ratenlimit und Serverfehler.
+# 400/401/402/404 aendern sich beim zweiten Versuch nicht.
+_WIEDERHOLBAR = (429, 500, 502, 503, 504)
+
 # Endzustaende des Anreicherungs-Auftrags.
 FERTIG_STATUS = ("FINISHED", "CANCELED", "CREDITS_INSUFFICIENT")
 
@@ -155,7 +179,9 @@ class FullEnrichSource:
 
     def __init__(self, api_key, session=None, *, wartezeit=5.0,
                  max_abfragen=60, limit_pro_minute=LIMIT_PRO_MINUTE,
-                 schlafen=time.sleep, jetzt=time.monotonic):
+                 schlafen=time.sleep, jetzt=time.monotonic,
+                 max_wiederholungen=3, pause_bei_limit=61.0,
+                 pause_bei_serverfehler=2.0):
         if not api_key:
             raise FullEnrichFehler(
                 "FULLENRICH_API_KEY fehlt. Bitte in .env eintragen "
@@ -165,6 +191,9 @@ class FullEnrichSource:
         self.wartezeit = wartezeit
         self.max_abfragen = max_abfragen
         self.limit_pro_minute = max(1, int(limit_pro_minute))
+        self.max_wiederholungen = max(1, int(max_wiederholungen))
+        self.pause_bei_limit = pause_bei_limit
+        self.pause_bei_serverfehler = pause_bei_serverfehler
         self._schlafen = schlafen
         self._jetzt = jetzt
         self._aufrufe: list = []
@@ -201,6 +230,15 @@ class FullEnrichSource:
             raise FullEnrichFehler(
                 f"FullEnrich lehnt den Schlüssel ab ({was}): {text}",
                 status=code, code=fehlercode)
+        if code == 402:
+            # Gemessen am 24.08.2026: bei 13,25 Credits antwortete die
+            # API auf das Abholen einer Anreicherung mit 402. Das heisst
+            # nicht "kaputt", sondern "Guthaben reicht nicht" - und dann
+            # hat Weiterlaufen keinen Sinn.
+            raise KontingentLeer(
+                f"FullEnrich meldet 402 Payment Required ({was}): "
+                f"{text or 'Guthaben reicht für diese Anreicherung nicht'}",
+                status=code, code=fehlercode)
         if code == 429:
             raise FullEnrichFehler(
                 f"FullEnrich-Ratenlimit erreicht ({was}): {text}",
@@ -209,10 +247,37 @@ class FullEnrichSource:
             f"FullEnrich antwortet mit {code} ({was}): {text}",
             status=code, code=fehlercode)
 
+    def _mit_wiederholung(self, aufruf, was):
+        """Begrenzte Wiederholung bei 429 und 5xx.
+
+        Die Doku nennt keine eigene Retry-Empfehlung, nur das Limit von
+        60 Aufrufen je Kalenderminute. Deshalb bewusst zurueckhaltend:
+        wiederholt wird NUR bei Ratenlimit und Serverfehlern, mit
+        wachsender Pause. Bei 401 (Schluessel), 402 (Guthaben) und 400
+        (falsche Anfrage) waere Wiederholen sinnlos - das aendert sich
+        beim zweiten Versuch nicht."""
+        letzter = None
+        for versuch in range(1, self.max_wiederholungen + 1):
+            antwort = aufruf()
+            code = getattr(antwort, "status_code", 0)
+            if code < 400 or code not in _WIEDERHOLBAR:
+                return antwort
+            letzter = antwort
+            if versuch < self.max_wiederholungen:
+                # 429 heisst laut Doku: das Minutenfenster ist voll. Dann
+                # lohnt nur eine Pause bis zum naechsten Fenster.
+                pause = (self.pause_bei_limit if code == 429
+                         else self.pause_bei_serverfehler * versuch)
+                self._schlafen(pause)
+        return letzter
+
     def _post(self, url, body, was):
-        self._limit_einhalten()
-        antwort = self.session.post(url, json=body, headers=self._headers,
-                                    timeout=60)
+        def einmal():
+            self._limit_einhalten()
+            return self.session.post(url, json=body, headers=self._headers,
+                                     timeout=60)
+
+        antwort = self._mit_wiederholung(einmal, was)
         self._pruefen(antwort, was)
         return antwort.json() or {}
 
@@ -227,10 +292,13 @@ class FullEnrichSource:
         domain = nur_domain(domain)
         if not domain:
             return None
-        self._limit_einhalten()
-        antwort = self.session.post(COMPANY_LOOKUP_URL,
-                                    json={"domain": domain},
-                                    headers=self._headers, timeout=60)
+        def einmal():
+            self._limit_einhalten()
+            return self.session.post(COMPANY_LOOKUP_URL,
+                                     json={"domain": domain},
+                                     headers=self._headers, timeout=60)
+
+        antwort = self._mit_wiederholung(einmal, "company/lookup")
         if getattr(antwort, "status_code", 0) == 404:
             return None
         self._pruefen(antwort, "company/lookup")
@@ -313,6 +381,26 @@ class FullEnrichSource:
                              "contact/enrich/bulk")
         return antwort.get("enrichment_id")
 
+    def guthaben(self) -> float | None:
+        """GET /account/credits - aktueller Stand, kostet nichts.
+
+        Damit laesst sich vor und nach einem Lauf messen, was wirklich
+        verbraucht wurde - inklusive der Such-Credits, die die
+        Anreicherungs-Antwort NICHT mitmeldet."""
+        def einmal():
+            self._limit_einhalten()
+            return self.session.get(GUTHABEN_URL, headers=self._headers,
+                                    timeout=30)
+
+        antwort = self._mit_wiederholung(einmal, "account/credits")
+        self._pruefen(antwort, "account/credits")
+        daten = antwort.json() or {}
+        wert = daten.get("balance")
+        try:
+            return float(wert)
+        except (TypeError, ValueError):
+            return None
+
     def schluessel_pruefen(self) -> dict:
         """Prueft den Schluessel mit FullEnrichs eigenem Testkontakt.
 
@@ -341,8 +429,13 @@ class FullEnrichSource:
         url = f"{ENRICH_BULK_URL}/{enrichment_id}"
         letzter = {}
         for versuch in range(1, self.max_abfragen + 1):
-            self._limit_einhalten()
-            antwort = self.session.get(url, headers=self._headers, timeout=60)
+            def einmal():
+                self._limit_einhalten()
+                return self.session.get(url, headers=self._headers,
+                                        timeout=60)
+
+            antwort = self._mit_wiederholung(
+                einmal, "contact/enrich/bulk (abholen)")
             self._pruefen(antwort, "contact/enrich/bulk (abholen)")
             letzter = antwort.json() or {}
             status = str(letzter.get("status") or "").upper()
@@ -366,23 +459,46 @@ class FullEnrichSource:
 _MOBIL_DE = re.compile(r"^(?:\+49|0049|0)\s*1[5-7]")
 
 
-def telefon_art(nummer: str) -> str:
-    """"mobil" | "festnetz" | "" - die API sagt es NICHT selbst.
+def ist_sammeladresse(email: str) -> bool:
+    """info@, office@, sales@ ... - keine Person dahinter.
 
-    Das Phone-Objekt traegt nur number und region. Deutsche Mobilnummern
-    beginnen mit 015x/016x/017x; alles andere gilt als Festnetz, also als
-    Durchwahl/Zentrale. Bei nicht-deutschen Nummern bleibt die Einordnung
-    leer statt geraten."""
+    Auch eine "work_email" kann eine Sammeladresse sein. Fuer Olivers
+    Anforderung zaehlt nur die personenbezogene Adresse, deshalb wird
+    das getrennt gemessen statt stillschweigend mitgezaehlt."""
+    lokal = str(email or "").split("@")[0].strip().casefold()
+    if not lokal:
+        return False
+    # Geprueft wird der GANZE lokale Teil und sein ERSTER Bestandteil:
+    # "no-reply" steht als Ganzes in der Liste, "info-de" nur ueber den
+    # ersten Bestandteil. "thomas.info" bleibt personenbezogen, weil der
+    # erste Bestandteil "thomas" ist.
+    if lokal in SAMMEL_PRAEFIXE:
+        return True
+    return re.split(r"[._\-+]", lokal)[0] in SAMMEL_PRAEFIXE
+
+
+def telefon_art(nummer: str) -> str:
+    """"mobil" | "festnetz" | "unbekannt".
+
+    Die API sagt es NICHT selbst - das Phone-Objekt traegt nur number
+    und region. Deutsche Mobilnummern beginnen mit 015x/016x/017x. Alles
+    andere Deutsche gilt als Festnetz. Bei allem, was sich nicht sicher
+    einordnen laesst (Auslandsnummern, unklare Schreibweisen), wird
+    "unbekannt" zurueckgegeben statt geraten - eine falsch als mobil
+    ausgewiesene Nummer waere schlimmer als eine offen unbekannte."""
     text = (nummer or "").strip()
     if not text:
         return ""
     kompakt = re.sub(r"[^\d+]", "", text)
     if _MOBIL_DE.match(kompakt):
         return "mobil"
-    if kompakt.startswith("+49") or kompakt.startswith("0049") \
-            or kompakt.startswith("0"):
+    if kompakt.startswith(("+49", "0049")):
         return "festnetz"
-    return ""
+    if kompakt.startswith("0") and not kompakt.startswith("00"):
+        # Nationale Schreibweise ohne Landesvorwahl: nur dann Festnetz,
+        # wenn es keine Mobilvorwahl ist (oben schon geprueft).
+        return "festnetz"
+    return "unbekannt"
 
 
 def beste_mail(eintraege: list, nur_stark: bool = False) -> dict | None:

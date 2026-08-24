@@ -583,6 +583,55 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
   të tri rrugët e importit — edhe te prova në postën tonë.
   1.124 teste jeshile (para: 1.110; 14 të reja te
   `tests/test_versand_freigabe.py`).
+- ZONA 32 (Herford) E PËRFUNDUAR deri te lista me email (21.08.2026,
+  porosi e Dafinës mbi 45 kodet postare 32049–32839).
+  - **Mbledhja — 542 firma unike.** 497 nga dataset-i Apify i paguar më
+    21.08 (`yP1tVCwUcW3bNsSQw`, prova e ndalur për Bielefeld — Herford-i
+    binte brenda rrezes, prandaj 525 rezultate ishin tashmë të paguara
+    dhe u morën me 0 $). 45 nga Overpass/OSM, mbledhje e freskët falas,
+    prej tyre **25 firma që Maps s'i kishte**. Dy kode dolën bosh: 32369
+    dhe 32469. Gelbe Seiten dhe North Data NUK rrodhën — buxheti Apify
+    ishte 23,83 $ nga 29 $.
+  - **Filtrat:** profili IT 193 brenda / 349 jashtë; automatizimi 21
+    ofrues dhe 32 të pasigurta jashtë; **140 firma të pranueshme**.
+  - **Rikontrolli kufitar u lidh për herë të parë.** `ZWEITE_CHANCE_SYSTEM`
+    te `pipeline/branchen_filter.py` ekzistonte që në fillim por përdorej
+    vetëm nga testet. Tash rrjedh mbi firmat e hedhura si "prodhues
+    softueri / konsulent" dhe **i ktheu 60 firma brenda profilit** (128 →
+    188 te vrapimi i Maps). Kusht: së paku 300 shkronja tekst faqeje
+    (`MIN_BELEG`) — pa provë s'rikontrollohet, se do të ishte hamendje.
+  - **Dropcontact — 86 email nga 114 kontakte (75%).** Kushtoi rreth 89
+    kredite neto; Dropcontact-i kthen prapa kreditet e rreshtave pa
+    adresë. Mbeten ~319 kredite. `request_id` ruhet në disk sapo
+    dorëzohet batch-i, që një ndërprerje të mos i djegë kreditet.
+  - **Dedublikim person-nivel:** Frank Ehlers dhe Stephan Schröder dilnin
+    secili te dy firma motra — do të kishin marrë dy email nga e njëjta
+    fushatë. U hoq nga një. Lista përfundimtare: **84 rreshta**.
+  - **Dosjet:** `IT-Liste-Emails-Zona32-FERTIG-20260821-1651.xlsx` (84
+    kontakte, formati i Oliverit plus Position, lokacion dhe burim për
+    çdo fushë) dhe `zona32-herford-hapi1-20260821-1614.xlsx` (të 542
+    firmat me krejt kolonat teknike).
+  - **Baza:** 5.494 firma, 244 vendimmarrës, 145 kampanjefähig (84 zona
+    32 + 61 të vjetra). KUJDES: email-et e Dropcontact-it në fillim
+    mbetën vetëm në Excel — baza ishte rindërtuar para se ai të rrjedhë.
+    U rregullua me `werkzeuge/zona32-emails-in-db.py`, që i shkruan
+    prapa te dosjet e vrapimit dhe rindërton bazën.
+  - **Rregullim i vogël në kod:** `pipeline/master_db.py` e shkruante
+    gjithmonë bosh telefonin e personit (kolona ekzistonte, eksporti e
+    lexonte, asgjë s'e mbushte). Tash mbushet — 128 nga 144 vendimmarrësit
+    e zonës kanë numër. 1.124 teste mbeten jeshile.
+  - **Ndarja e burimeve, e matur:** Maps i gjen firmat (497 firma, 468
+    telefona, 0 persona). Impressum-i i gjen njerëzit (144 persona, 121
+    pozita, 128 telefona, 0 email). Dropcontact-i jep email-et (84). Asnjë
+    s'e bën punën e tjetrit — kjo është përgjigjja për pyetjen e Oliverit
+    se cilit mjet t'i besojmë.
+  - **Vegla:** `werkzeuge/zona32-lauf.py` (mbledhje→filtra→impressum),
+    `zona32-overpass.py`, `zona32-dropcontact.py`, `zona32-itliste-final.py`,
+    `zona32-export.py`, `zona32-emails-in-db.py`.
+  - Instantly i paprekur, asnjë email i dërguar, asnjë fushatë e krijuar.
+- Publikimi te serveri U SHTY (21.08.2026, vendim i Dafinës: "lere
+  njehere mos e publiko"). Ndërtimi te `deploy/DEPLOY.md` mbetet i
+  gatshëm; të dhënat e zonës 32 rrinë vetëm lokalisht.
 
 ## Entscheidungen
 

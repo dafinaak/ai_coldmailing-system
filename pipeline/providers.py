@@ -97,6 +97,12 @@ PROVIDERS: tuple = (
              env_keys=("PROSPEO_API_KEY",),
              hinweis="Konto beim API-Umbau des Anbieters gestorben "
                      "(29.07.2026); Baustein existiert noch"),
+    Provider("fullenrich", ("company_discovery", "decision_makers",
+                            "email_discovery", "phone_discovery"),
+             env_keys=("FULLENRICH_API_KEY",),
+             hinweis="NUR im Vergleichstest (POC 24.08.2026, Befehl "
+                     "'fullenrich-poc'). Nicht Teil der Produktivkaskade, "
+                     "solange die 100-Firmen-Messung nicht vorliegt"),
 )
 
 

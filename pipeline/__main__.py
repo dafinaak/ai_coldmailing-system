@@ -648,6 +648,36 @@ def main():
     p_export.add_argument("--ziel", default=None,
                           help="Zieldatei (Standard: firmen-master.xlsx)")
 
+    p_fe = sub.add_parser(
+        "fullenrich-poc",
+        help="FullEnrich-Vergleichstest über bestehende Firmen (POC). "
+             "Ändert keine Produktivdaten und ruft weder Apollo noch "
+             "Hunter noch Dropcontact auf.")
+    p_fe.add_argument("--limit", type=int, default=100,
+                      help="Wie viele bestehende Firmen getestet werden "
+                           "(Standard 100).")
+    p_fe.add_argument("--seed", type=int, default=None,
+                      help="Auswahl-Seed. Gleicher Seed = gleiche Firmen.")
+    p_fe.add_argument("--ohne-rohantwort", action="store_true",
+                      dest="ohne_roh",
+                      help="Rohantworten nicht mitspeichern.")
+    p_fe.add_argument("--max-credits", type=float, default=None,
+                      dest="max_credits",
+                      help="Harte Bremse: bei diesem Verbrauch werden keine "
+                           "weiteren API-Aufrufe mehr gemacht.")
+    p_fe.add_argument("--schluessel-pruefen", action="store_true",
+                      dest="nur_pruefen",
+                      help="Nur prüfen, ob der Schlüssel gültig ist. Nutzt "
+                           "FullEnrichs eigenen Testkontakt und kostet laut "
+                           "deren Doku 0 Credits.")
+    p_fe.add_argument("--dry-run", action="store_true", dest="dry_run",
+                      help="Webseiten lesen und Automatisierung prüfen, aber "
+                           "KEINEN FullEnrich-Aufruf machen. Zeigt, wie viele "
+                           "Firmen überhaupt angereichert würden.")
+    p_fe.add_argument("--ttl-tage", type=float, default=None, dest="ttl_tage",
+                      help="Wie lange gelesene Webseiten wiederverwendet "
+                           "werden (Standard 14 Tage).")
+
     p_probe = sub.add_parser(
         "ansichts-probe",
         help="Einen fertigen Kampagnentext zur Ansicht an eine eigene "
@@ -688,6 +718,44 @@ def main():
         from pipeline.master_db import export_excel
         ziel = export_excel(".", args.ziel)
         print(f"Export geschrieben: {ziel}")
+    elif args.befehl == "fullenrich-poc":
+        import os
+        if not args.dry_run:
+            _brauche_env("FULLENRICH_API_KEY")
+            # Schalter aus Punkt 35 des Auftrags: FullEnrich wird NICHT
+            # automatisch produktiv. Fehlt der Schalter, laeuft nur der
+            # Trockenlauf - kein Credit ohne ausdrueckliches Ja.
+            if os.environ.get("FULLENRICH_ENABLED", "").strip().lower() \
+                    not in ("1", "true", "yes", "ja"):
+                sys.exit(
+                    "FULLENRICH_ENABLED ist nicht gesetzt. Echte Aufrufe "
+                    "kosten Credits, deshalb sind sie standardmäßig aus.\n"
+                    "  Trockenlauf ohne Kosten:  --dry-run\n"
+                    "  Echter Lauf:              FULLENRICH_ENABLED=true "
+                    "in .env eintragen")
+        if args.nur_pruefen:
+            from pipeline.sources.fullenrich import FullEnrichSource
+            urteil = FullEnrichSource(
+                os.environ["FULLENRICH_API_KEY"]).schluessel_pruefen()
+            print(("OK: " if urteil["ok"] else "FEHLER: ") + urteil["meldung"])
+            raise SystemExit(0 if urteil["ok"] else 1)
+        _brauche_env_eines_von("ANTHROPIC_API_KEY", "OPENROUTER_API_KEY",
+                               "OPENAI_API_KEY")
+        from pipeline.fullenrich_poc import SEED, bericht_text, lauf
+        ergebnis = lauf(".", limit=args.limit, seed=args.seed or SEED,
+                        roh_speichern=not args.ohne_roh,
+                        max_credits=args.max_credits, dry_run=args.dry_run,
+                        ttl_tage=args.ttl_tage)
+        print()
+        print(bericht_text(ergebnis["kennzahlen"]))
+        print()
+        if ergebnis["dry_run"]:
+            print("DRY RUN - es wurde kein einziger FullEnrich-Aufruf "
+                  "gemacht und kein Credit verbraucht.")
+        print(f"Test-Lauf:  {ergebnis['test_run_id']}")
+        print(f"Laufzeit:   {ergebnis['laufzeit_minuten']} Minuten")
+        for art, pfad in ergebnis["exporte"].items():
+            print(f"Export {art}: {pfad}")
     elif args.befehl == "ansichts-probe":
         ansichts_probe_cli(args.job_ordner)
     elif args.befehl == "freigeben":

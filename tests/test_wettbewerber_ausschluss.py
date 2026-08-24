@@ -149,13 +149,21 @@ def test_unlesbares_urteil_gilt_als_uncertain_und_schliesst_aus():
     assert dropcontact.aufrufe == []
 
 
-def test_ohne_flagge_wird_nicht_geprueft():
+def test_abgeschaltete_flagge_laesst_niemanden_mehr_durch():
+    # Bis 21.08.2026 hiess wettbewerber_pruefung=false: gar nicht pruefen -
+    # und dann kam JEDE Firma ungeprueft durch, auch der Wettbewerber.
+    # Seit Dafinas Auftrag hebelt der Schalter die Pruefung nicht mehr aus:
+    # abgeschaltet heisst unsicher, und unsicher heisst keine Kampagne.
     impressum = _FakeImpressum(wettbewerber_domains=("a.de",))
-    _, _, firmen_aus, _, _ = _lauf(
+    leads, _, firmen_aus, hunter, dropcontact = _lauf(
         [_firma("a.de")], impressum, kunde=_kunde(wettbewerber_pruefung=False))
 
-    assert "offers_automation_services" not in firmen_aus[0]
-    assert firmen_aus[0]["ausgang"] != "wettbewerber"
+    assert firmen_aus[0]["offers_automation_services"] == "uncertain"
+    assert firmen_aus[0]["campaign_eligible"] is False
+    assert firmen_aus[0]["campaign_ineligibility_reason"] == "automation_uncertain"
+    assert leads == []
+    assert dropcontact.aufrufe == []
+    assert hunter.geprueft == []
 
 
 def test_wettbewerber_steht_nicht_auf_anruf_und_brief(tmp_path):

@@ -639,10 +639,22 @@ def kampagne_aktivieren(request: Request, slug: str, ts: str, bestaetigt: str = 
     if bestaetigt != "ja":
         return RedirectResponse(f"/kampagnen/{slug}/{ts}", status_code=303)
 
+    # Der bestätigte Knopf IST die ausdrückliche menschliche Freigabe -
+    # aber sie muss festgehalten werden, bevor irgendetwas an Instantly
+    # geht (21.08.2026): mit Namen, Zeitpunkt und Kampagne. Ohne diesen
+    # Beleg lehnt aktiviere_kampagne() ab.
+    from pipeline import versand_freigabe
+
+    freigabe = versand_freigabe.erteilen(
+        lauf_dir, campaign_id, auth.aktueller_nutzer(request),
+        bemerkung="Aktivieren-Knopf mit Bestätigung in der Oberfläche")
+
     sender = _hole_instantly(request)
     try:
-        sender.aktiviere_kampagne(campaign_id)
+        sender.aktiviere_kampagne(campaign_id, freigabe=freigabe)
     except (RuntimeError, requests.RequestException):
+        # Freigabe zurücknehmen: sie galt für diesen einen Versuch.
+        versand_freigabe.widerrufen(lauf_dir, auth.aktueller_nutzer(request))
         kontext = _detail_kontext(request, slug, ts, aktion_fehler=_AKTION_FEHLERTEXT)
         return request.app.state.templates.TemplateResponse(
             request, "kampagne_detail.html", kontext, status_code=200)

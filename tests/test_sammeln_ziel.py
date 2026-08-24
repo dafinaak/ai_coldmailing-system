@@ -8,7 +8,8 @@ Quellen ab, Geld fliesst keins.
 """
 import pytest
 
-from pipeline.firmen_sammeln import regionen_deutschland, sammeln_bis_ziel
+from pipeline.firmen_sammeln import (plz_liste_lesen, regionen_deutschland,
+                                      sammeln_bis_ziel)
 from web import sammelmanager
 
 # Kleine Kunst-Tabelle: Region "10" (Berlin, 2 PLZ - die dichteste),
@@ -38,6 +39,17 @@ class GebietsMaps:
         self.abrufe.append({"begriffe": list(suchbegriffe),
                             "limit": limit_pro_suche})
         return self.lieferungen.pop(0) if self.lieferungen else []
+
+
+class GelbeSeitenFake:
+    """Merkt sich, mit welchem Ort das Verzeichnis befragt wurde."""
+
+    def __init__(self):
+        self.abrufe = []
+
+    def search(self, begriff, ort, seiten=1):
+        self.abrufe.append({"begriff": begriff, "ort": ort, "seiten": seiten})
+        return []
 
 
 def test_sammelt_ueber_regionen_bis_das_ziel_erreicht_ist():
@@ -160,3 +172,122 @@ def test_bericht_zaehlt_bekannt_und_neu_gegen_den_bestand(tmp_path):
 
     assert bericht["vorher_bekannt"] == 1
     assert bericht["neu"] == 1
+
+
+# --- Feste PLZ-Liste (Olivers Gebiet 32-39, Auftrag 21.08.2026) ----------
+# Ein Auftrag kann statt "Umkreis" oder "ganz Deutschland" eine feste
+# Liste einzelner Postleitzahlen sein. Dann wird nur in den betroffenen
+# Regionen gesucht, und behalten wird NUR, was genau auf einem dieser
+# Codes sitzt - eine Nachbar-PLZ derselben Region ist nicht beauftragt.
+
+
+def test_plz_liste_sucht_nur_diese_regionen_und_behaelt_nur_diese_codes():
+    # Beauftragt ist allein 10115. 10117 liegt in derselben Region und
+    # muss trotzdem rausfliegen; Region 80 wird gar nicht erst bezahlt.
+    maps = GebietsMaps([[firma(1, plz="10115"), firma(2, plz="10117")]])
+
+    firmen, bericht = sammeln_bis_ziel(
+        "", 0, ["IT-Service"], 500, maps=maps, tabelle=TABELLE,
+        plz_liste=["10115"])
+
+    assert [f["name"] for f in firmen] == ["Firma 1"]
+    assert len(maps.abrufe) == 1
+    assert bericht["gebiete_durchsucht"] == 1
+    assert bericht["deutschlandweit"] is False
+    assert bericht["plz_liste_anzahl"] == 1
+    assert bericht["fremde_plz"] == 1
+
+
+def test_plz_liste_sucht_jede_betroffene_region():
+    maps = GebietsMaps([[firma(1, plz="10115")],
+                        [firma(2, plz="80331", ort="München")]])
+
+    firmen, bericht = sammeln_bis_ziel(
+        "", 0, ["IT-Service"], 500, maps=maps, tabelle=TABELLE,
+        plz_liste=["10115", "80331"])
+
+    assert sorted(f["name"] for f in firmen) == ["Firma 1", "Firma 2"]
+    assert bericht["gebiete_durchsucht"] == 2
+    assert bericht["grund_ende"] == "quellen_erschoepft"
+
+
+def test_plz_liste_fragt_gelbe_seiten_je_region_mit_dem_regionsort():
+    # Deutschlandweit stellt die Sammlung EINE "Deutschland"-Abfrage.
+    # Bei einer PLZ-Liste waere das viel zu grob bezahlt - hier gehoert
+    # je Region der Ortsname hin.
+    gs = GelbeSeitenFake()
+    maps = GebietsMaps([[], []])
+
+    sammeln_bis_ziel("", 0, ["IT-Service"], 500, maps=maps,
+                     gelbe_seiten=gs, tabelle=TABELLE,
+                     plz_liste=["10115", "80331"])
+
+    orte = {a["ort"] for a in gs.abrufe}
+    assert orte == {"Berlin", "München"}
+    assert "Deutschland" not in orte
+
+
+def test_plz_liste_und_ort_zusammen_sind_ein_fehler():
+    # Zwei Angaben, die dasselbe bestimmen - das muss auffallen, nicht
+    # stillschweigend eine der beiden gewinnen.
+    with pytest.raises(ValueError):
+        sammeln_bis_ziel("Berlin", 25, ["IT-Service"], 5,
+                         maps=GebietsMaps([]), tabelle=TABELLE,
+                         plz_liste=["10115"])
+
+
+def test_plz_liste_datei_wird_gelesen_kommentare_und_leerzeilen_raus(tmp_path):
+    datei = tmp_path / "plz.txt"
+    datei.write_text("# Olivers Gebiet\n32049\n\n33098\n32049\n",
+                     encoding="utf-8")
+
+    assert plz_liste_lesen(datei) == ["32049", "33098"]
+
+
+def test_plz_liste_datei_ohne_codes_ist_ein_fehler(tmp_path):
+    datei = tmp_path / "leer.txt"
+    datei.write_text("# nur ein Kommentar\n\n", encoding="utf-8")
+
+    with pytest.raises(ValueError):
+        plz_liste_lesen(datei)
+
+
+def test_krumme_zeile_in_der_plz_datei_ist_ein_fehler(tmp_path):
+    # Eine unbemerkt verschluckte Zeile hiesse: ein Gebiet fehlt im Lauf,
+    # ohne dass es jemand sieht.
+    datei = tmp_path / "krumm.txt"
+    datei.write_text("32049\n3205\n", encoding="utf-8")
+
+    with pytest.raises(ValueError):
+        plz_liste_lesen(datei)
+
+
+def test_cli_bricht_ab_bei_plz_liste_und_ort_zusammen(tmp_path):
+    # Die Abbrueche muessen greifen, BEVOR irgendeine bezahlte Quelle
+    # angefasst wird - deshalb ohne APIFY_API_KEY geprueft.
+    from pipeline.__main__ import sammeln_cli
+
+    datei = tmp_path / "plz.txt"
+    datei.write_text("32049\n", encoding="utf-8")
+
+    with pytest.raises(SystemExit):
+        sammeln_cli("Berlin", 25, ["IT-Service"], 200,
+                    plz_liste_datei=str(datei))
+
+
+def test_cli_bricht_ab_bei_leerer_plz_datei(tmp_path):
+    from pipeline.__main__ import sammeln_cli
+
+    datei = tmp_path / "leer.txt"
+    datei.write_text("\n\n", encoding="utf-8")
+
+    with pytest.raises(SystemExit):
+        sammeln_cli("", 25, ["IT-Service"], 200, plz_liste_datei=str(datei))
+
+
+def test_cli_bricht_ab_wenn_die_plz_datei_fehlt(tmp_path):
+    from pipeline.__main__ import sammeln_cli
+
+    with pytest.raises(SystemExit):
+        sammeln_cli("", 25, ["IT-Service"], 200,
+                    plz_liste_datei=str(tmp_path / "gibtsnicht.txt"))

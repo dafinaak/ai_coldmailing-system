@@ -42,13 +42,18 @@ class Kunde:
     # Stufennamen prueft pipeline.sourcing.source_leads() mit klarem Fehler.
     anbieter_reihenfolge: list = field(default_factory=list)
     # Olivers Regel (19.08.2026): Firmen, die SELBST Automatisierung
-    # anbieten, sind Wettbewerber und duerfen in keine Kampagne. Mit true
-    # prueft der Lauf jede Firma VOR jedem bezahlten Schritt
-    # (Webseiten-Text + KI, siehe pipeline.branchen_filter) und schliesst
-    # Treffer aus - gespeichert bleiben sie trotzdem. Standard false,
-    # damit alte Kunden-Dateien ihr Verhalten behalten; das Formular
-    # setzt es fuer neue Kampagnen selbst.
-    wettbewerber_pruefung: bool = False
+    # anbieten, sind Wettbewerber und duerfen in keine Kampagne. Der Lauf
+    # prueft jede Firma VOR jedem bezahlten Schritt (Webseiten-Text + KI,
+    # siehe pipeline.branchen_filter) und schliesst Treffer aus -
+    # gespeichert bleiben sie trotzdem.
+    #
+    # Standard seit 21.08.2026 TRUE (Dafinas Auftrag). Vorher stand hier
+    # false "damit alte Kundendateien ihr Verhalten behalten" - und genau
+    # das war das Leck: keine einzige der 17 Kundendateien hatte die
+    # Zeile, also lief die Pruefung dort nie. Ein abgeschaltetes false
+    # hebelt die Pruefung heute nicht mehr aus: dann gilt JEDE Firma als
+    # unsicher und damit als nicht kampagnenfaehig (pipeline.sourcing).
+    wettbewerber_pruefung: bool = True
     # Versand-Einstellungen (14.08.2026). Vorher fragte das Formular in
     # Schritt 5 nach Postfach, Tageslimit, Zeitfenster und Wochentagen -
     # und KEINE dieser Antworten kam je bei Instantly an: die Kampagne
@@ -164,12 +169,20 @@ def lade_globale_sperrlisten_eintraege(daten_dir) -> list[dict]:
     for eintrag in inhalt:
         if isinstance(eintrag, str):
             ergebnis.append({
-                "domain": eintrag, "reason": "", "comment": "", "legacy": True,
+                "domain": eintrag, "email": "", "reason": "", "comment": "",
+                "legacy": True,
             })
             continue
-        if not isinstance(eintrag, dict) or not isinstance(eintrag.get("domain"), str):
+        # Seit 21.08.2026 gibt es zwei Arten: "domain" sperrt die ganze
+        # Firma, "email" genau eine Adresse. Anlass war der Widerspruch
+        # zweier Betroffener - eine Person muss sperrbar sein, ohne dass
+        # man raten muss, welche Domain gerade gilt.
+        hat_domain = isinstance((eintrag or {}).get("domain"), str)
+        hat_email = isinstance((eintrag or {}).get("email"), str)
+        if not isinstance(eintrag, dict) or not (hat_domain or hat_email):
             raise ValueError(
-                f"Ein Sperrlisten-Eintrag in {pfad} ist falsch aufgebaut."
+                f"Ein Sperrlisten-Eintrag in {pfad} ist falsch aufgebaut: "
+                f"er braucht entweder 'domain:' oder 'email:'."
             )
         reason = eintrag.get("reason") or ""
         comment = eintrag.get("comment") or ""
@@ -178,12 +191,21 @@ def lade_globale_sperrlisten_eintraege(daten_dir) -> list[dict]:
                 f"Ein Sperrlisten-Eintrag in {pfad} ist falsch aufgebaut."
             )
         ergebnis.append({
-            "domain": eintrag["domain"], "reason": reason,
-            "comment": comment, "legacy": False,
+            "domain": eintrag.get("domain") if hat_domain else "",
+            "email": eintrag.get("email") if hat_email else "",
+            "reason": reason, "comment": comment, "legacy": False,
         })
     return ergebnis
 
 
 def lade_globale_sperrliste(daten_dir) -> list[str]:
     """Gibt fuer Pipeline und Deduplizierung weiterhin nur Domain-Muster aus."""
-    return [e["domain"] for e in lade_globale_sperrlisten_eintraege(daten_dir)]
+    return [e["domain"] for e in lade_globale_sperrlisten_eintraege(daten_dir)
+            if e.get("domain")]
+
+
+def lade_gesperrte_adressen(daten_dir) -> list[str]:
+    """Die einzeln gesperrten E-Mail-Adressen (klein geschrieben)."""
+    return [e["email"].strip().lower()
+            for e in lade_globale_sperrlisten_eintraege(daten_dir)
+            if e.get("email")]

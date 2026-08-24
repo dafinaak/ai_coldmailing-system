@@ -21,3 +21,8 @@ test_empfaenger:
 maps_suche: "(Liste PLR 30+31)"
 kontakt_rollen: ["Geschäftsführer", "Inhaber"]
 anbieter_reihenfolge: ["impressum"]
+
+# Pflichtprüfung seit 21.08.2026 (Auftrag Dafina): Firmen, die selbst
+# Automatisierung anbieten, kommen in keine Kampagne. Ohne diese Zeile
+# galt hier früher der alte Standard "false" - die Prüfung lief nie.
+wettbewerber_pruefung: true

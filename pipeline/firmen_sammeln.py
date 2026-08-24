@@ -203,6 +203,34 @@ def regionen_deutschland(tabelle=None) -> list:
     return regionen
 
 
+def plz_liste_lesen(pfad) -> list:
+    """Eine Datei mit je einer Postleitzahl pro Zeile einlesen.
+
+    Manche Auftraege sind weder "Umkreis" noch "ganz Deutschland",
+    sondern eine feste Liste einzelner Postleitzahlen (Olivers Gebiet
+    32-39, 21.08.2026: 521 Codes). Leere Zeilen und Kommentarzeilen
+    (#) werden uebergangen, Doppelte fallen weg.
+
+    Eine krumme Zeile ist ein Fehler und wird NICHT still verschluckt:
+    sonst faellt ein beauftragtes Gebiet aus dem Lauf, ohne dass es
+    jemandem auffaellt.
+    """
+    zeilen = Path(pfad).read_text(encoding="utf-8").splitlines()
+    codes = []
+    for nummer, zeile in enumerate(zeilen, 1):
+        text = zeile.strip()
+        if not text or text.startswith("#"):
+            continue
+        if len(text) != 5 or not text.isdigit():
+            raise ValueError(
+                f"{pfad}, Zeile {nummer}: {text!r} ist keine fuenfstellige "
+                f"Postleitzahl.")
+        codes.append(text)
+    if not codes:
+        raise ValueError(f"{pfad} enthaelt keine einzige Postleitzahl.")
+    return sorted(set(codes))
+
+
 def _bestand_schluessel(daten_dir) -> set:
     """Erkennungs-Schluessel aller schon gesammelten Firmen.
 
@@ -227,7 +255,7 @@ def _bestand_schluessel(daten_dir) -> set:
 
 def sammeln_bis_ziel(ort, radius_km, dienste, ziel_anzahl, *, maps=None,
                      gelbe_seiten=None, overpass=None, tabelle=None,
-                     max_gebiete=None, daten_dir=None,
+                     max_gebiete=None, daten_dir=None, plz_liste=None,
                      log=print) -> tuple[list, dict]:
     """Sammeln, bis die gewuenschte Zahl einzigartiger Firmen da ist.
 
@@ -239,6 +267,12 @@ def sammeln_bis_ziel(ort, radius_km, dienste, ziel_anzahl, *, maps=None,
     oder doppelt gezaehlt, um das Ziel zu erreichen - reicht es nicht,
     nennt der Bericht ehrlich den Grund ("grund_ende") und jedes Gebiet
     einzeln ("je_gebiet").
+
+    Dritte Betriebsart "plz_liste" (Olivers Gebiet 32-39, 21.08.2026):
+    statt Umkreis oder ganzem Land eine feste Liste einzelner
+    Postleitzahlen. Gesucht wird nur in den Regionen, in denen diese
+    Codes liegen; behalten wird NUR, was genau auf einem der Codes
+    sitzt - die Nachbar-PLZ derselben Region ist nicht beauftragt.
     """
     if not dienste:
         raise ValueError("Ohne Suchbegriffe kann nicht gesammelt werden.")
@@ -246,8 +280,29 @@ def sammeln_bis_ziel(ort, radius_km, dienste, ziel_anzahl, *, maps=None,
     suchbegriffe = expand_for_search(dienste)
     tabelle = tabelle if tabelle is not None else plz_tabelle()
 
-    deutschlandweit = not str(ort or "").strip()
-    if deutschlandweit:
+    codes = tuple(sorted({str(p).strip() for p in plz_liste or ()
+                          if str(p).strip()}))
+    if codes and str(ort or "").strip():
+        raise ValueError(
+            "PLZ-Liste und Ort zusammen geht nicht - die Liste sagt schon, "
+            "wo gesucht wird. Bitte nur eines von beiden angeben.")
+
+    deutschlandweit = not str(ort or "").strip() and not codes
+    if codes:
+        # Nur die Regionen anfassen, in denen die Codes ueberhaupt
+        # liegen - jedes zusaetzliche Gebiet waere bezahlter Leerlauf.
+        betroffen = {c[:2] for c in codes}
+        gebiete = [{"label": f"PLZ-Region {r['praefix']} ({r['label']})",
+                    "zentrum": r["zentrum"], "radius_km": r["radius_km"],
+                    # Volle fuenfstellige Codes als "Praefixe": die
+                    # Fusion vergleicht mit startswith, damit wird das
+                    # zum exakten Treffer auf genau diese PLZ.
+                    "praefixe": tuple(c for c in codes
+                                      if c.startswith(r["praefix"])),
+                    "gs_ort": r["label"]}
+                   for r in regionen_deutschland(tabelle)
+                   if r["praefix"] in betroffen]
+    elif deutschlandweit:
         gebiete = [{"label": f"PLZ-Region {r['praefix']} ({r['label']})",
                     "zentrum": r["zentrum"], "radius_km": r["radius_km"],
                     "praefixe": (r["praefix"],)}
@@ -258,10 +313,10 @@ def sammeln_bis_ziel(ort, radius_km, dienste, ziel_anzahl, *, maps=None,
             raise ValueError(
                 f"Den Ort {ort!r} kennen wir nicht - bitte einen Ortsnamen "
                 f"oder eine Postleitzahl angeben.")
-        plz_liste = plz_im_umkreis(ort, radius_km, tabelle)
+        umkreis_plz = plz_im_umkreis(ort, radius_km, tabelle)
         gebiete = [{"label": str(ort), "zentrum": zentrum,
                     "radius_km": float(radius_km),
-                    "praefixe": tuple(sorted({p[:3] for p in plz_liste})
+                    "praefixe": tuple(sorted({p[:3] for p in umkreis_plz})
                                       or ("",))}]
     if max_gebiete:
         gebiete = gebiete[:max_gebiete]
@@ -288,7 +343,7 @@ def sammeln_bis_ziel(ort, radius_km, dienste, ziel_anzahl, *, maps=None,
         if deutschlandweit:
             gs_ort = "Deutschland" if nummer == 0 else ""
         else:
-            gs_ort = gebiet["label"]
+            gs_ort = gebiet.get("gs_ort") or gebiet["label"]
         log(f"Gebiet {nummer + 1}/{len(gebiete)}: {gebiet['label']} - "
             f"noch {fehlen} von {ziel_anzahl} gesucht")
         listen, fehler = _quellen_sammeln(
@@ -305,7 +360,11 @@ def sammeln_bis_ziel(ort, radius_km, dienste, ziel_anzahl, *, maps=None,
         # Nach jedem Gebiet ueber ALLES fusionieren: so zaehlt eine Firma,
         # die zwei Gebiete oder zwei Quellen kennen, genau einmal.
         vorher = einzigartig
-        praefix_filter = (("",) if deutschlandweit
+        # Bei einer PLZ-Liste gilt ueber ALLE Gebiete dieselbe exakte
+        # Code-Liste; sonst wie bisher (deutschlandweit ohne Filter,
+        # beim Umkreis der Filter des einen Gebiets).
+        praefix_filter = (codes if codes
+                          else ("",) if deutschlandweit
                           else gebiete[0]["praefixe"])
         firmen, bericht = fusionieren(alle_listen, praefix_filter)
         einzigartig = len(firmen)
@@ -346,10 +405,12 @@ def sammeln_bis_ziel(ort, radius_km, dienste, ziel_anzahl, *, maps=None,
         "je_gebiet": je_gebiet,
         "grund_ende": grund_ende,
         "quellen_fehler": fehler_gesamt,
-        "ort": str(ort or "").strip() or "Deutschland",
-        "radius_km": None if deutschlandweit else radius_km,
+        "ort": (str(ort or "").strip()
+                or ("PLZ-Liste" if codes else "Deutschland")),
+        "radius_km": None if deutschlandweit or codes else radius_km,
         "dienste": list(dienste),
         "suchbegriffe": suchbegriffe,
+        "plz_liste_anzahl": len(codes),
     })
     return firmen, bericht
 

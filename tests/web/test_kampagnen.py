@@ -60,9 +60,17 @@ class FakeInstantly:
     def __init__(self, fehler_bei: str | None = None):
         self.aktiviert: list[str] = []
         self.pausiert: list[str] = []
+        self.freigaben: list[dict] = []
         self.fehler_bei = fehler_bei
 
-    def aktiviere_kampagne(self, campaign_id: str) -> None:
+    def aktiviere_kampagne(self, campaign_id: str, freigabe=None) -> None:
+        # Seit 21.08.2026 verlangt die echte Klasse den Freigabe-Beleg.
+        # Die Attrappe verlangt ihn auch - sonst wuerden diese Tests
+        # gruen bleiben, waehrend die Route ihn zu liefern vergisst.
+        if not isinstance(freigabe, dict) or not freigabe.get("freigegeben_von"):
+            raise AssertionError(
+                "aktiviere_kampagne ohne menschliche Versand-Freigabe")
+        self.freigaben.append(freigabe)
         if self.fehler_bei == "aktivieren":
             raise RuntimeError("Instantly antwortet mit 500 auf /activate: Server-Fehler")
         self.aktiviert.append(campaign_id)

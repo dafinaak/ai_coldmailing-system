@@ -446,9 +446,16 @@ def ansichts_probe_cli(job_ordner):
     gesendet, fehler = False, ""
     try:
         from web.instantly_leser import InstantlyLeser
+        from pipeline.versand_freigabe import pruefen as freigabe_pruefen
 
+        # 21.08.2026: Dieser Weg aktivierte die Kampagne bisher VON SELBST,
+        # ohne dass irgendwo eine Freigabe stand - der einzige Ort im
+        # Projekt, an dem eine Kampagne ohne menschliche Zustimmung
+        # anlief. Jetzt braucht auch die Ansichts-Probe eine Freigabe fuer
+        # genau diese Kampagne, sonst passiert nichts.
+        freigabe = freigabe_pruefen(job, campaign_id)
         leser = InstantlyLeser(os.environ["INSTANTLY_API_KEY"])
-        sender.aktiviere_kampagne(campaign_id)
+        sender.aktiviere_kampagne(campaign_id, freigabe=freigabe)
         for versuch in range(24):          # 8 Minuten
             time.sleep(20)
             if leser._emails_hole_frisch(campaign_id):
@@ -473,7 +480,7 @@ def ansichts_probe_cli(job_ordner):
 
 
 def sammeln_cli(ort, radius_km, dienste, limit_pro_suche, ordner=None,
-                ziel_anzahl=None, deutschland=False):
+                ziel_anzahl=None, deutschland=False, plz_liste_datei=None):
     """Firmen fuer einen Umkreis sammeln und als eigenen Ordner ablegen.
 
     Bewusst ein eigener Befehl und kein Teil von "lauf": Sammeln kostet
@@ -485,18 +492,40 @@ def sammeln_cli(ort, radius_km, dienste, limit_pro_suche, ordner=None,
     Firmen erreicht ist (oder die Quellen nichts mehr hergeben); mit
     --deutschland ohne Ort geht das deutschlandweit, Region fuer Region.
 
+    Mit --plz-liste kommt das Gebiet aus einer Datei mit je einer
+    Postleitzahl pro Zeile (Olivers Gebiet 32-39). Ohne --ziel wird
+    dann gesammelt, bis die betroffenen Regionen nichts mehr hergeben.
+
     Der Fortschritt wird laufend ausgegeben, damit man bei einer Sammlung,
     die Minuten dauert, sieht, dass sie lebt.
     """
     from datetime import datetime
 
-    from pipeline.firmen_sammeln import (ordnername, sammeln,
+    from pipeline.firmen_sammeln import (ordnername, plz_liste_lesen, sammeln,
                                           sammeln_bis_ziel, speichern)
     from pipeline.sources.apify_maps import ApifyMapsSource
     from pipeline.sources.gelbe_seiten import GelbeSeitenQuelle
     from pipeline.sources.overpass import OverpassQuelle
 
-    if not str(ort or "").strip() and not deutschland:
+    codes = None
+    if plz_liste_datei:
+        if str(ort or "").strip():
+            raise SystemExit(
+                "--plz-liste und ein Ort zusammen geht nicht - die Liste "
+                "sagt schon, wo gesucht wird.")
+        try:
+            codes = plz_liste_lesen(plz_liste_datei)
+        except (OSError, ValueError) as fehler:
+            raise SystemExit(str(fehler))
+        if not ziel_anzahl:
+            # Ohne Ziel heisst hier "alles, was es dort gibt": eine Zahl,
+            # die keine Sammlung erreicht, damit jede betroffene Region
+            # abgesucht wird. Der Bericht nennt danach als Grund ehrlich
+            # "quellen_erschoepft" statt "ziel_erreicht".
+            ziel_anzahl = 1_000_000
+        print(f"PLZ-Liste: {len(codes)} Postleitzahlen aus "
+              f"{plz_liste_datei}")
+    elif not str(ort or "").strip() and not deutschland:
         raise SystemExit(
             "Ohne Ort kann nicht gesammelt werden. Fuer eine "
             "deutschlandweite Sammlung ausdruecklich --deutschland angeben "
@@ -509,13 +538,16 @@ def sammeln_cli(ort, radius_km, dienste, limit_pro_suche, ordner=None,
             "Google Maps und Gelbe Seiten nicht abgefragt werden.")
 
     if ziel_anzahl:
+        wo = ("den Postleitzahlen der Liste" if codes
+              else ort or "ganz Deutschland")
         print(f"Sammle bis {ziel_anzahl} einzigartige Firmen: "
-              f"{ort or 'ganz Deutschland'}, {', '.join(dienste)}")
+              f"{wo}, {', '.join(dienste)}")
         firmen, bericht = sammeln_bis_ziel(
             ort, radius_km, dienste, ziel_anzahl,
             maps=ApifyMapsSource(apify_key),
             gelbe_seiten=GelbeSeitenQuelle(apify_key),
-            overpass=OverpassQuelle(), daten_dir=".")
+            overpass=OverpassQuelle(), daten_dir=".",
+            plz_liste=codes)
     else:
         print(f"Sammle Firmen: {ort}, {radius_km} km, {', '.join(dienste)}")
         firmen, bericht = sammeln(
@@ -527,7 +559,8 @@ def sammeln_cli(ort, radius_km, dienste, limit_pro_suche, ordner=None,
 
     ziel = speichern(".", firmen, bericht,
                      ordner or ordnername(
-                         ort or "deutschland", radius_km,
+                         ort or ("plz-liste" if codes else "deutschland"),
+                         radius_km,
                          datetime.now().strftime("%Y%m%d-%H%M")))
     print(f"Gefunden: {len(firmen)} Firmen")
     print(f"  je Quelle: {bericht.get('je_quelle')}")
@@ -575,6 +608,11 @@ def main():
     p_sammeln.add_argument("--deutschland", action="store_true",
                            help="Ohne Ort deutschlandweit sammeln, Region "
                                 "fuer Region (dichteste zuerst)")
+    p_sammeln.add_argument("--plz-liste", dest="plz_liste", default=None,
+                           help="Datei mit je einer Postleitzahl pro Zeile. "
+                                "Gesucht wird nur in den Regionen dieser "
+                                "Codes, behalten wird nur, was genau darauf "
+                                "sitzt. Nicht zusammen mit einem Ort.")
     p_sammeln.add_argument("--ordner", dest="ordner", default=None,
                            help="Name des Zielordners unter laeufe/leadquellen/ "
                                 "- ohne Angabe aus Ort, Radius und Zeit gebaut. "
@@ -626,7 +664,8 @@ def main():
     elif args.befehl == "sammeln":
         sammeln_cli(args.ort, args.radius, args.dienste, args.limit,
                     args.ordner, ziel_anzahl=args.ziel,
-                    deutschland=args.deutschland)
+                    deutschland=args.deutschland,
+                    plz_liste_datei=args.plz_liste)
     elif args.befehl == "anbieter":
         from pipeline.providers import uebersicht
         for zeile in uebersicht():

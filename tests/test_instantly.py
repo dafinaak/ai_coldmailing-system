@@ -167,11 +167,20 @@ class _FakeSessionRequestSpy:
         return self.antwort
 
 
+def _freigabe(campaign_id):
+    """Der Freigabe-Beleg, den aktiviere_kampagne() seit 21.08.2026
+    verlangt. Diese drei Tests prüfen den HTTP-Aufruf selbst; DASS ohne
+    Freigabe gar nichts passiert, steht in tests/test_versand_freigabe.py."""
+    return {"campaign_id": campaign_id, "freigegeben_von": "testperson",
+            "freigegeben_am": "2026-08-21T10:00:00", "widerrufen": False}
+
+
 def test_aktivieren_sendet_weder_json_body_noch_json_content_type():
     session = _FakeSessionRequestSpy(
         FakeResponse(200, {"id": "camp-1", "status": 1})
     )
-    InstantlySender("key", session=session).aktiviere_kampagne("camp-1")
+    InstantlySender("key", session=session).aktiviere_kampagne(
+        "camp-1", freigabe=_freigabe("camp-1"))
 
     _, kwargs = session.aufrufe[0]
     assert "json" not in kwargs
@@ -181,7 +190,8 @@ def test_aktivieren_sendet_weder_json_body_noch_json_content_type():
 def test_aktiviert_kampagne_ruft_activate_endpunkt_ohne_body_auf():
     session = _FakeSessionMitURL([FakeResponse(200, {"id": "camp-1", "status": 1})])
     sender = InstantlySender("key", session=session)
-    ergebnis = sender.aktiviere_kampagne("camp-1")
+    ergebnis = sender.aktiviere_kampagne("camp-1",
+                                     freigabe=_freigabe("camp-1"))
     assert ergebnis is None
     url, payload = session.aufrufe[0]
     assert url == "https://api.instantly.ai/api/v2/campaigns/camp-1/activate"
@@ -202,7 +212,7 @@ def test_aktivieren_fehler_wirft_runtime_error():
     session = _FakeSessionMitURL([FakeResponse(500, {}, text="Server-Fehler")])
     sender = InstantlySender("key", session=session)
     with pytest.raises(RuntimeError, match="500"):
-        sender.aktiviere_kampagne("camp-1")
+        sender.aktiviere_kampagne("camp-1", freigabe=_freigabe("camp-1"))
 
 
 def test_pausieren_fehler_wirft_runtime_error():

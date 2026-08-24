@@ -1,0 +1,41 @@
+# Globale Sperrliste - wer hier steht, wird NIE angeschrieben.
+#
+# Zwei Arten von Einträgen:
+#   - domain: nivako.de        -> die ganze Firma (auch "*.beispiel.de")
+#   - email:  person@firma.de  -> genau diese eine Adresse
+#
+# Die Liste wirkt an mehreren Stellen, zuletzt unmittelbar vor dem
+# Lead-Import zu Instantly (pipeline/senders/instantly.py). Ein Eintrag
+# hier löscht KEINE Daten: Firma, Kontakt und Verlauf bleiben für die
+# Nachvollziehbarkeit vollständig erhalten, sie bekommen nur nie wieder
+# eine Mail.
+
+# --- 21.08.2026: Widerspruch der Betroffenen ---------------------------
+# Björn Hagen und Achim Gärtner haben ausdrücklich verlangt, keine
+# weiteren Mailings mehr zu bekommen. Beide Firmen waren von der
+# KI-Prüfung als "keine Automatisierung" (no) eingestuft worden - die
+# Einstufung war also nicht der Schutz, den wir gebraucht hätten.
+# Gesperrt wird deshalb doppelt: die Person UND die Firmendomain.
+- email: hagen.bjoern@nivako.de
+  reason: Widerspruch der betroffenen Person
+  comment: >-
+    Björn Hagen (Nivako) hat am 21.08.2026 die Streichung aus allen
+    weiteren Mailings verlangt. Daten bleiben zur Nachvollziehbarkeit
+    erhalten.
+- domain: nivako.de
+  reason: Widerspruch der betroffenen Person
+  comment: >-
+    Firma von Björn Hagen. Ganze Domain gesperrt, damit auch eine andere
+    Adresse dieser Firma nie wieder angeschrieben wird.
+- email: achim@grtnr.it
+  reason: Widerspruch der betroffenen Person
+  comment: >-
+    Achim Gärtner (GRTNR.IT) hat am 21.08.2026 die Streichung aus allen
+    weiteren Mailings verlangt. Die Adresse stand nicht in unserer
+    Master-Datenbank, sondern nur in der Instantly-Kampagne - von dort
+    stammt sie.
+- domain: grtnr.it
+  reason: Widerspruch der betroffenen Person
+  comment: >-
+    GRTNR.IT - Firma von Achim Gärtner. Ganze Domain gesperrt, damit auch
+    eine andere Adresse dieser Firma nie wieder angeschrieben wird.

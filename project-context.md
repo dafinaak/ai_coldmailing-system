@@ -470,6 +470,119 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
   B/C dhe pyetjen MailCom). Hapi B (bake-off €-për-kontakt me ~150
   kredite Dropcontact) pret okay të Dafinës; hapi C (North Data/Apollo/
   Clay/LinkedIn mbi të njëjtin kampion) pret llogari + vendim.
+- Mbledhje mbi një listë të fiksuar kodesh postare — E NDËRTUAR
+  (21.08.2026, kërkesë e Dafinës për zonën 32–39 të Oliverit).
+  Deri tash mbledhja dinte vetëm dy mënyra: "vend + rreze" ose "krejt
+  Gjermania rajon-për-rajon". E treta tash: një dosje me nga një kod
+  postar për rresht.
+  - `laeufe/leadquellen/plz-liste-oliver-32-39.txt` — 521 kode.
+    KUJDES: kjo dosje s'shkon në git (`laeufe/` është në .gitignore),
+    prandaj u fshi një herë pa u vënë re më 21.08 paradite. Lista e
+    plotë qëndron edhe në bisedën e asaj dite.
+  - `plz_liste_lesen()` në `pipeline/firmen_sammeln.py` e lexon dosjen;
+    rreshtat bosh dhe komentet (#) kalohen, çdo rresht tjetër duhet të
+    jetë kod pesëshifror — një rresht i shtrembër është gabim, jo
+    heshtje, që të mos humbë pa u vënë re një zonë e porositur.
+  - `sammeln_bis_ziel(..., plz_liste=[...])` kërkon vetëm në rajonet ku
+    bien ato kode dhe mban VETËM firmat që ulen saktësisht mbi një prej
+    tyre (fusioni krahason me `startswith`, kodi i plotë pesëshifror =
+    përputhje e saktë). Kodi postar fqinj i të njëjtit rajon nuk është i
+    porositur, pra bie jashtë.
+  - Gelbe Seiten merr emrin e qytetit të rajonit (Bielefeld, Kassel,
+    Göttingen ...), jo "Deutschland" — ndryshe do të paguhej shumë e
+    gjerë.
+  - CLI: `python -m pipeline sammeln --plz-liste <dosja> --dienst
+    "Computer Services"`. Me një vend bashkë = gabim. Pa `--ziel` merret
+    gjithçka që japin rajonet; raporti e thotë ndershëm
+    `grund_ende: quellen_erschoepft`.
+  - 1.098 teste jeshile, prej tyre 10 të reja për këtë pjesë.
+  - Provë e thatë (pa asnjë burim, pa para): 8 rajone — 38 Braunschweig
+    94 kode, 37 Göttingen 86, 34 Kassel 82, 36 Fulda 74, 35 Wetzlar 61,
+    33 Bielefeld 55, 32 Herford 45, 39 Magdeburg 24. Vetëm 35033
+    (Marburg) s'është në tabelën tonë të koordinatave — pa pasojë, sepse
+    rajoni 35 kërkohet me rreze 120 km dhe filtri i saktë e mban firmën
+    nëse burimi e sjell.
+  - Zona është pothuajse e paprekur: nga 4.969 firma të bazës, vetëm 44
+    bien mbi këto 521 kode.
+  - Provë e nisur dhe e NDALUR me urdhër të Dafinës (21.08.2026, ~10:16):
+    rajoni 33 (Bielefeld, 55 kode) u nis te Apify dhe u ndërpre pas ~7
+    minutash. Kosto e vërtetë: **$6.17 për 2.058 rezultate Maps** — pra
+    një rajon i vetëm i plotë del rreth $9 dhe të 8 rajonet rreth $72,
+    shumë mbi buxhetin 29 $/muaj të llogarisë Apify. Ky është numri i
+    matur; vlerësimet e mëparshme (25–40 $) ishin shumë të ulëta.
+  - Të dhënat e paguara NUK humbën: dataset-i te Apify
+    `yP1tVCwUcW3bNsSQw` (lauf `SBnT7zkcKsCnKFOOz`, ABORTED) i mban
+    2.058 rezultatet dhe mund të merren pa paguar sërish.
+  - Asnjë mbledhje tjetër nuk niset pa fjalën e Dafinës.
+- Kontrolli i automatizimit u bë I DETYRUESHËM (21.08.2026, urdhër i
+  Dafinës). Auditi gjeti tri vrima ku kontrolli binte **në heshtje** dhe
+  atëherë kalonte çdo firmë, edhe konkurrenti:
+  (1) `wettbewerber_pruefung` e kishte parazgjedhjen `false` dhe asnjëra
+  nga 17 dosjet te `kunden/` s'e kishte rreshtin — pra atje s'u bë kurrë;
+  (2) pa pjesë KI në kaskadë kthehej gjykim bosh; (3) `pipeline/
+  schnelllauf.py` — rrugë e tërë ekzekutimi — s'e njihte fare kontrollin.
+  Rregulli tash: kush nuk gjykohet qartë si "pa automatizim" është
+  `uncertain` dhe nuk hyn në fushatë. AUTOMATION → bllokuar, UNKNOWN →
+  bllokuar, NO → vazhdon te kontrollet e tjera.
+  - Gjykimi i përbashkët: `urteile_je_firma()` te
+    `pipeline/automation_klassifikation.py` — kthen gjykim për ÇDO firmë,
+    kurrë vrimë. Radha: pool-i i gatshëm (falas) → tekst faqeje + KI →
+    ndryshe `uncertain`.
+  - Edhe çelësi i fikur nuk e heq më kontrollin: `false` do të thotë
+    "të gjitha të pasigurta", jo "mos kontrollo" — pra zero leads me
+    paralajmërim të qartë, jo leads të pakontrolluar.
+  - 1.110 teste jeshile (para: 1.098; 12 të reja te
+    `tests/test_automation_pflicht.py`).
+  - `tests/conftest.py` i ri: për testet e kaskadës vlen "pool-i i ka
+    parë të gjitha si të parrezikshme", që ato të testojnë atë për çka
+    janë shkruar. Testet e vetë kontrollit e mbishkruajnë këtë.
+  - S'u prek asnjë e dhënë firme (`daten/` i pandryshuar), asnjë fushatë
+    Instantly, dhe s'u thirr asnjë API me pagesë.
+- FUSHATA "IT-Dienstleister – Anschreiben" ISHTE PRAPË AKTIVE
+  (21.08.2026, gjetur gjatë hetimit; e njëjta fushatë që u ndal më
+  17.08). Kishte 203 kontakte. **U pauzua me urdhrin e Dafinës** më
+  21.08 ~11:50 — statusi u verifikua `2 = pauzuar`, dhe tash s'ka asnjë
+  fushatë aktive te Instantly (0 nga 12).
+  - Kush e riaktivizoi — ZBULUAR nga protokolli i Instantly-t
+    (`/api/v2/audit-logs`, 21.08.2026): më **18.08.2026 në 13:25:43**
+    një **NJERI në shfletues** (Chrome 151 / macOS, `from_api: false`)
+    ndryshoi statusin e pikërisht kësaj fushate. Nuk ishte vegla jonë:
+    ajo shkruan gjithmonë `aktiviert.json`, dhe asnjë dosje e tillë nuk
+    ekziston; asnjë skedar i projektit nuk e përmend fare këtë ID.
+  - Llogaria: `5a7c2fe5-4f60-4e1a-8136-f044224d2ca2` — që është
+    **pronari i workspace-it**, e vetmja llogari njeriu në organizatë.
+    Prandaj protokolli s'mund ta thotë CILI person ishte: të gjithë
+    hyjnë me të njëjtën llogari. Nëse duam përgjegjësi të gjurmueshme,
+    duhen llogari të ndara për secilin.
+  - Pasoja: pas ndaljes së 17.08 dolën edhe **60 email** (20 më 18.08,
+    20 më 19.08, 20 më 20.08). Gjithsej 85 email, 65 persona të kontaktuar.
+  - Mjeti për ta parë vetë: `python werkzeuge/instantly-verlauf.py
+    --tage 30` (vetëm lexim, s'ndryshon asgjë).
+- Björn Hagen dhe Achim Gärtner — kërkesë për heqje (21.08.2026):
+  - Përse morën email: fushata u ngarkua nga kalimi i vjetër plr-30-31
+    (fund korriku), PARA se të ekzistonte klasifikimi i automatizimit
+    (u ekzekutua 20.08 15:36/15:39) dhe kur `wettbewerber_pruefung` ishte
+    ende `false` kudo. Pra të dhëna të vjetra, jo anashkalim i logjikës.
+  - KUJDES për të ardhmen: të dyja firmat janë të klasifikuara **`no`**
+    (jo automatizim) — Nivako si IT-Service, GRTNR.IT si MSSP. Filtri i
+    automatizimit NUK do t'i kapte as sot. Mbrojtja e tyre është lista e
+    bllokimit, jo klasifikimi.
+  - Bllokuar te ne: `sperrliste-global.yaml` — adresat
+    `hagen.bjoern@nivako.de`, `achim@grtnr.it` dhe domain-et `nivako.de`,
+    `grtnr.it`.
+  - Bllokuar te Instantly: të katër vlerat në blocklist-in global, dhe të
+    dy leads-at u hoqën nga fushata (203 → 201, verifikuar).
+  - Asnjë e dhënë s'u fshi te ne — firma, kontakti dhe historiku mbeten.
+- Leja e nisjes u bë E DETYRUESHME NË KOD (21.08.2026):
+  `pipeline/versand_freigabe.py` — leje me emër + kohë + fushatë, e
+  vlefshme vetëm për një fushatë, e revokueshme. `aktiviere_kampagne()`
+  e refuzon aktivizimin pa të. Kjo mbylli rrugën ku prova e pamjes
+  (`ansichts-probe`) e aktivizonte fushatën vetë, pa asnjë miratim.
+  Krijimi i fushatës dhe miratimi i teksteve NUK janë leje nisjeje.
+  Lista e bllokimit tash vepron te porta e fundit para Instantly-t, në
+  të tri rrugët e importit — edhe te prova në postën tonë.
+  1.124 teste jeshile (para: 1.110; 14 të reja te
+  `tests/test_versand_freigabe.py`).
 
 ## Entscheidungen
 

@@ -79,6 +79,101 @@ def _eintrag(urteil: dict, name: str) -> dict:
     }
 
 
+def unsicheres_urteil(grund: str, quelle: str = "nicht-pruefbar") -> dict:
+    """Das Urteil, das NICHT durchlaesst - fuer jeden Fall, in dem wir
+    nicht eindeutig 'keine Automatisierung' sagen koennen."""
+    return {"wettbewerber": False, "unsicher": True,
+            "belege": grund, "quelle": quelle}
+
+
+def urteile_je_firma(firmen: list, ki, *, vorwissen=None, text_lesen=None,
+                     gleichzeitig: int = 8, log=print) -> dict:
+    """Ein Automatisierungs-Urteil fuer JEDE Firma - niemals ein Loch.
+
+    Rueckgabe: {index: {"wettbewerber": bool, "unsicher": bool,
+                        "belege": str, "quelle": str}} fuer alle
+    uebergebenen Firmen.
+
+    Pflichtpruefung seit 21.08.2026 (Dafinas Auftrag). Vorher gab es
+    Wege, auf denen diese Pruefung lautlos ausfiel und dann JEDE Firma
+    durchkam - fehlender KI-Baustein, abgeschalteter Schalter, ein
+    Ausfuehrungsweg der sie gar nicht kannte. Deshalb gilt jetzt in
+    JEDEM dieser Faelle: unsicher, und damit keine Kampagne.
+
+    Reihenfolge je Firma, vom Billigsten zum Teuersten:
+      1. Pool-Klassifikation (`vorwissen`) - kostet nichts;
+      2. Webseiten-Text + KI;
+      3. geht beides nicht -> unsicher.
+    """
+    from pipeline.branchen_filter import ist_wettbewerber
+
+    if not firmen:
+        return {}
+    # Bewusst "is None" statt "or {}": ein Pool-Stand darf auch ein
+    # leeres, aber antwortendes Objekt sein.
+    vorwissen = {} if vorwissen is None else vorwissen
+    if text_lesen is None:
+        from pipeline.website import fetch_text as text_lesen
+
+    # Schritt 1: der Pool-Stand. Kostet nichts und braucht keine KI -
+    # deshalb ZUERST. Wer hier schon ein Urteil hat, ist fertig.
+    urteile: dict = {}
+    offen = []
+    for nummer, firma in enumerate(firmen):
+        bekannt = vorwissen.get(_kennung(firma)) or {}
+        offers = bekannt.get("offers_automation_services")
+        if offers in ("yes", "no", "uncertain"):
+            urteile[nummer] = {
+                "wettbewerber": offers == "yes",
+                "unsicher": offers == "uncertain",
+                "belege": bekannt.get("automation_check_reason", ""),
+                "quelle": "pool-klassifikation"}
+        else:
+            offen.append((nummer, firma))
+
+    if not offen:
+        return urteile
+
+    # Schritt 2: fuer den Rest braucht es Webseiten-Text UND eine KI.
+    # Fehlt eines davon, wird NICHT geraten - frueher gab es hier ein
+    # leeres Urteil und damit freie Fahrt fuer jede Firma.
+    if ki is None:
+        log(f"Automatisierungs-Prüfung: für {len(offen)} noch nicht "
+            f"beurteilte Firmen fehlt der KI-Baustein. Es wird NICHT "
+            f"geraten - sie gelten als unsicher und bekommen weder "
+            f"Anreicherung noch Kampagne.")
+        for nummer, _ in offen:
+            urteile[nummer] = unsicheres_urteil(
+                "kein KI-Baustein in dieser Kaskade", "keine-ki")
+        return urteile
+
+    def eine(nummer_firma):
+        nummer, firma = nummer_firma
+        text = ""
+        if firma.get("website"):
+            try:
+                text = text_lesen(firma["website"]) or ""
+            except Exception:      # noqa: BLE001
+                text = ""
+        if not text.strip():
+            # Aus dem Namen zu urteilen waere geraten (Eichung
+            # 20.08.2026) - also unsicher, gespeichert, keine Kampagne.
+            return nummer, unsicheres_urteil(
+                "keine Webseite hinterlegt" if not firma.get("website")
+                else "Webseite nicht lesbar", "keine-webseite")
+        try:
+            return nummer, ist_wettbewerber(firma, text, ki)
+        except Exception as fehler:      # noqa: BLE001 - eine kaputte
+            # Antwort darf nicht als "unbedenklich" durchgehen
+            return nummer, unsicheres_urteil(f"Fehler: {fehler}", "fehler")
+
+    with ThreadPoolExecutor(
+            max_workers=min(max(1, gleichzeitig), len(offen))) as pool:
+        for nummer, urteil in pool.map(eine, offen):
+            urteile[nummer] = urteil
+    return urteile
+
+
 def klassifizieren(daten_dir=".", ki=None, fetch=None, limit=None,
                    arbeiter=8, neu_pruefen=False, log=print) -> dict:
     """Den ganzen Bestand (oder `limit` Firmen) klassifizieren.

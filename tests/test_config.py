@@ -132,10 +132,13 @@ def test_lade_globale_sperrliste_versteht_alte_und_neue_eintraege(tmp_path):
     )
 
     assert lade_globale_sperrliste(tmp_path) == ["alt.de", "*.bund.de"]
+    # Seit 21.08.2026 traegt jeder Eintrag zusaetzlich ein "email"-Feld
+    # (leer bei Domain-Sperren) - eine Person muss einzeln sperrbar sein.
     assert lade_globale_sperrlisten_eintraege(tmp_path) == [
-        {"domain": "alt.de", "reason": "", "comment": "", "legacy": True},
-        {"domain": "*.bund.de", "reason": "Kunde", "comment": "Vertrag",
-         "legacy": False},
+        {"domain": "alt.de", "email": "", "reason": "", "comment": "",
+         "legacy": True},
+        {"domain": "*.bund.de", "email": "", "reason": "Kunde",
+         "comment": "Vertrag", "legacy": False},
     ]
 
 def test_lade_globale_sperrliste_ohne_datei_gibt_leere_liste(tmp_path):

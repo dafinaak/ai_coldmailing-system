@@ -391,60 +391,42 @@ def _wettbewerber_urteile(firmen: list, impressum_quelle, aktiv: bool) -> dict:
     Wettbewerber - sie kosten weder Dropcontact-Credits noch eine
     info@-Pruefung und kommen in keine Kampagne. Gespeichert bleiben sie.
 
-    Gibt {index: ist_wettbewerber-Urteil} fuer alle geprueften Firmen
-    zurueck. Die KI kommt aus der Impressum-Quelle; fehlt sie (alte
-    Kaskaden ohne Impressum-Stufe), wird NICHT geraten - dann bleibt die
-    Pruefung ehrlich aus und jede Firma gilt als ungeprueft.
+    Gibt {index: Urteil} fuer JEDE uebergebene Firma zurueck - nie ein
+    Loch. Pflichtpruefung seit 21.08.2026 (Dafinas Auftrag): frueher gab
+    diese Funktion bei abgeschaltetem Schalter oder fehlendem
+    KI-Baustein ein leeres Ergebnis zurueck, und dann kam jede Firma
+    ungeprueft durch. Heute heisst "nicht pruefbar" unsicher - und
+    unsicher heisst: keine Kampagne.
     """
-    if not aktiv or not firmen:
+    from pipeline.automation_klassifikation import (laden as
+                                                    klassifikation_laden,
+                                                    unsicheres_urteil,
+                                                    urteile_je_firma)
+
+    if not firmen:
         return {}
-    ki = getattr(impressum_quelle, "ki", None)
-    if ki is None:
-        print("Wettbewerber-Prüfung übersprungen: kein KI-Baustein in "
-              "dieser Kaskade (anbieter_reihenfolge ohne 'impressum').")
-        return {}
-    from pipeline.automation_klassifikation import laden as klassifikation_laden
-    from pipeline.branchen_filter import ist_wettbewerber
-    from pipeline.website import fetch_text
+    if not aktiv:
+        # Der Schalter darf die Pruefung nicht mehr aushebeln: wer sie
+        # abschaltet, bekommt keine Leads statt ungeprueften Leads.
+        print("Wettbewerber-Prüfung ist in dieser Kundendatei "
+              "abgeschaltet (wettbewerber_pruefung: false). Sie wird "
+              "NICHT übersprungen: alle Firmen gelten als unsicher und "
+              "kommen in keine Kampagne. Zum Senden bitte die Prüfung "
+              "einschalten.")
+        urteile = {i: unsicheres_urteil("Prüfung abgeschaltet",
+                                        "pruefung-aus")
+                   for i in range(len(firmen))}
+    else:
+        # Schon klassifizierte Firmen (Pool-Klassifikation, Phase 2)
+        # kosten keinen zweiten KI-Aufruf - das Urteil wird wiederverwendet.
+        try:
+            vorwissen = klassifikation_laden(".")
+        except Exception:      # noqa: BLE001 - fehlende/kaputte Datei ist
+            vorwissen = {}     # kein Grund den Lauf zu stoppen
+        urteile = urteile_je_firma(
+            firmen, getattr(impressum_quelle, "ki", None),
+            vorwissen=vorwissen, gleichzeitig=GLEICHZEITIG)
 
-    # Schon klassifizierte Firmen (Pool-Klassifikation, Phase 2) kosten
-    # keinen zweiten KI-Aufruf - das Urteil wird wiederverwendet.
-    try:
-        vorwissen = klassifikation_laden(".")
-    except Exception:      # noqa: BLE001 - fehlende/kaputte Datei ist kein Grund
-        vorwissen = {}     # den Lauf zu stoppen; dann wird eben frisch geprueft
-
-    def eine(nummer_firma):
-        nummer, firma = nummer_firma
-        kennung = (firma.get("domain") or firma.get("name") or "").lower()
-        bekannt = vorwissen.get(kennung) or {}
-        if bekannt.get("offers_automation_services") in ("yes", "no",
-                                                         "uncertain"):
-            offers = bekannt["offers_automation_services"]
-            return nummer, {"wettbewerber": offers == "yes",
-                            "unsicher": offers == "uncertain",
-                            "belege": bekannt.get("automation_check_reason", ""),
-                            "quelle": "pool-klassifikation"}
-        text = ""
-        if firma.get("website"):
-            try:
-                text = fetch_text(firma["website"]) or ""
-            except Exception:      # noqa: BLE001
-                text = ""
-        if not text.strip():
-            # Ohne lesbaren Webseiten-Text KEIN Urteil aus dem Namen -
-            # das waere geraten (Benchmark 20.08.2026). "unsicher" heisst:
-            # gespeichert ja, Kampagne nein, kein Cent Anreicherung.
-            return nummer, {"wettbewerber": False, "unsicher": True,
-                            "belege": "Webseite nicht lesbar",
-                            "quelle": "keine-webseite"}
-        return nummer, ist_wettbewerber(firma, text, ki)
-
-    urteile: dict = {}
-    with ThreadPoolExecutor(
-            max_workers=min(GLEICHZEITIG, max(1, len(firmen)))) as pool:
-        for nummer, urteil in pool.map(eine, list(enumerate(firmen))):
-            urteile[nummer] = urteil
     anbieter = sum(1 for u in urteile.values() if u.get("wettbewerber"))
     unsicher = sum(1 for u in urteile.values() if u.get("unsicher"))
     print(f"Wettbewerber-Prüfung: {len(urteile)} Firmen geprüft, "

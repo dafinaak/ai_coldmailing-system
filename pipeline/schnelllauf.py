@@ -357,6 +357,66 @@ def _eintrag_bauen(firma: dict, gefunden: list, gelesen, kunde, hunter) -> dict:
     return eintrag
 
 
+def _automatisierung_pruefen(firmen: list, kunde, impressum, fortschritt) -> dict:
+    """Ein Urteil je Firma - dieselbe Pflichtregel wie in source_leads.
+
+    Nicht pruefbar (kein KI-Baustein, Schalter aus, Webseite nicht
+    lesbar) heisst unsicher, und unsicher heisst: keine Kampagne. Es gibt
+    hier keinen Rueckgabewert, der eine Firma ungeprueft durchlaesst.
+    """
+    from pipeline.automation_klassifikation import (laden as
+                                                    klassifikation_laden,
+                                                    unsicheres_urteil,
+                                                    urteile_je_firma)
+
+    if not firmen:
+        return {}
+    if not getattr(kunde, "wettbewerber_pruefung", True):
+        fortschritt("  Automatisierungs-Prüfung ist in dieser Kundendatei "
+                    "abgeschaltet - sie wird NICHT übersprungen: alle "
+                    "Firmen gelten als unsicher und kommen in keine "
+                    "Kampagne.")
+        return {i: unsicheres_urteil("Prüfung abgeschaltet", "pruefung-aus")
+                for i in range(len(firmen))}
+
+    try:
+        vorwissen = klassifikation_laden(".")
+    except Exception:      # noqa: BLE001 - fehlende Datei stoppt nichts
+        vorwissen = {}
+    urteile = urteile_je_firma(firmen, getattr(impressum, "ki", None),
+                               vorwissen=vorwissen, log=fortschritt)
+    anbieter = sum(1 for u in urteile.values() if u.get("wettbewerber"))
+    unsicher = sum(1 for u in urteile.values() if u.get("unsicher"))
+    fortschritt(f"  Automatisierungs-Prüfung: {len(urteile)} Firmen, "
+                f"{anbieter} Anbieter, {unsicher} unsicher - beide "
+                f"Gruppen bleiben gespeichert, ohne Kampagne.")
+    return urteile
+
+
+def _automation_felder(urteil: dict) -> dict:
+    """Die Pruef-Felder am Firmensatz - gleiches Vokabular wie sourcing."""
+    from datetime import datetime
+    return {
+        "offers_automation_services":
+            "uncertain" if urteil.get("unsicher")
+            else ("yes" if urteil.get("wettbewerber") else "no"),
+        "automation_check_reason": urteil.get("belege", ""),
+        "automation_check_source": urteil.get("quelle", "webseite+ki"),
+        "automation_checked_at": datetime.now().isoformat(timespec="seconds"),
+    }
+
+
+def _ausgeschlossene_firma(firma: dict, urteil: dict) -> dict:
+    """Der Firmensatz eines Ausgeschlossenen: markiert, nicht geloescht."""
+    unsicher = bool(urteil.get("unsicher"))
+    return {**firma, **_automation_felder(urteil),
+            "ausgang": "automation_unsicher" if unsicher else "wettbewerber",
+            "leads": [],
+            "campaign_eligible": False,
+            "campaign_ineligibility_reason":
+                "automation_uncertain" if unsicher else "automation_provider"}
+
+
 def lauf_ausfuehren(firmen: list, kunde, dropcontact, impressum, hunter=None,
                     vorhandene=None, arbeiter=16, batch=100, lauf_dir=None,
                     fortschritt=print) -> list:
@@ -371,14 +431,36 @@ def lauf_ausfuehren(firmen: list, kunde, dropcontact, impressum, hunter=None,
         return [alte[_schluessel(f)] for f in firmen]
 
     max_pro_firma = getattr(kunde, "max_kontakte_pro_firma", None) or 1
-    gelesen = _seiten_lesen(offen, impressum, arbeiter, stand, fortschritt)
-    kontakte = _adressen_bauen(offen, gelesen, dropcontact, max_pro_firma,
-                               batch, stand, fortschritt)
+
+    # Automatisierungs-Pruefung VOR jedem bezahlten Schritt - genau wie
+    # in source_leads. Dieser Weg hatte sie bis 21.08.2026 gar nicht:
+    # ueber schnelllauf kam JEDE Firma ungeprueft durch, auch der
+    # Wettbewerber. Wer hier ausgeschlossen wird, kostet weder eine
+    # Webseiten-Lesung noch ein Dropcontact-Guthaben.
+    urteile = _automatisierung_pruefen(offen, kunde, impressum, fortschritt)
+    geprueft = [(nr, f) for nr, f in enumerate(offen)
+                if not (urteile[nr].get("wettbewerber")
+                        or urteile[nr].get("unsicher"))]
+    weiter = [f for _, f in geprueft]
+
+    gelesen_teil = _seiten_lesen(weiter, impressum, arbeiter, stand,
+                                 fortschritt)
+    kontakte_teil = _adressen_bauen(weiter, gelesen_teil, dropcontact,
+                                    max_pro_firma, batch, stand, fortschritt)
+    # Zurueck auf die Nummern der vollen Liste uebersetzen.
+    gelesen = {nr: gelesen_teil.get(j) for j, (nr, _) in enumerate(geprueft)}
+    kontakte = {nr: kontakte_teil.get(j) for j, (nr, _) in enumerate(geprueft)}
 
     neu = {}
     for nr, firma in enumerate(offen):
-        neu[_schluessel(firma)] = _eintrag_bauen(
-            firma, kontakte.get(nr) or [], gelesen.get(nr), kunde, hunter)
+        urteil = urteile[nr]
+        if urteil.get("wettbewerber") or urteil.get("unsicher"):
+            neu[_schluessel(firma)] = _ausgeschlossene_firma(firma, urteil)
+            continue
+        neu[_schluessel(firma)] = {
+            **_eintrag_bauen(firma, kontakte.get(nr) or [], gelesen.get(nr),
+                             kunde, hunter),
+            **_automation_felder(urteil)}
     return [neu.get(_schluessel(f)) or alte[_schluessel(f)] for f in firmen]
 
 

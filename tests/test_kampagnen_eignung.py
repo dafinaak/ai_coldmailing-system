@@ -69,10 +69,25 @@ class _FakeDropcontact:
         return {"email": wert} if wert else None
 
 
+class _UnbedenklichKI:
+    """Sagt zu jeder Firma "keine Automatisierung".
+
+    Thema dieser Datei ist Olivers Kampagnen-Tauglichkeit (Phase 1), NICHT
+    die Automatisierungs-Prüfung. Seit diese Pflicht ist (21.08.2026),
+    braucht auch dieser Weg ein Urteil - ohne KI-Baustein wäre jede Firma
+    unsicher und käme gar nicht erst bis zu den Regeln, die hier geprüft
+    werden. Die zwei Tests, in denen das Urteil selbst zählt, setzen sich
+    ihre eigene KI (siehe unten).
+    """
+
+    def frage(self, system, prompt):
+        return json.dumps({"wettbewerber": False, "belege": ""})
+
+
 class _FakeImpressum:
     def __init__(self, personen_je_domain=None):
         self._personen = personen_je_domain or {}
-        self.ki = None
+        self.ki = _UnbedenklichKI()
 
     def impressum_text(self, website):
         return "Impressum ..." if website else None

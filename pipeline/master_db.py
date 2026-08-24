@@ -165,6 +165,7 @@ def _entscheider_zeilen(firma: dict, leads: list) -> list:
             "rolle": person.get("rolle", ""),
             "email": person.get("email", ""),
             "email_art": "persoenlich" if person.get("email") else "",
+            "telefon": person.get("telefon", ""),
             "linkedin": person.get("linkedin"),
             "quelle": person.get("quelle", ""),
             "status": person.get("status", "")})
@@ -185,6 +186,7 @@ def _entscheider_zeilen(firma: dict, leads: list) -> list:
                        "rolle": lead.get("title", ""),
                        "email": lead.get("email", ""),
                        "email_art": "persoenlich",
+                       "telefon": lead.get("phone", ""),
                        "linkedin": None, "quelle": lead.get("source", ""),
                        "status": "mail_geprueft"})
     zeilen.sort(key=lambda z: rank_role(z.get("rolle")))
@@ -323,7 +325,8 @@ def bauen(daten_dir=".") -> dict:
                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (company_id, person["name"], person["vorname"],
                  person["nachname"], person["rolle"], person["email"],
-                 person["email_art"], "", person["linkedin"],
+                 person["email_art"], person.get("telefon", "") or "",
+                 person["linkedin"],
                  person["quelle"], person["status"], "", jetzt))
             anzahl_personen += 1
 

@@ -208,6 +208,9 @@ class InstantlySender:
         Kampagnen-Empfaenger."""
         if not texte_pro_lead:
             raise ValueError("Keine freigegebenen Texte - kein Lead-Import.")
+        # Die Sperrliste gilt AUCH fuer die eigene Ansichts-Probe: wer
+        # widersprochen hat, bekommt von uns keine Mail, auf keinem Weg.
+        self._gesperrte_stoppen(t["email"] for t in texte_pro_lead)
         if not eigene_adresse:
             self._sammeladressen_stoppen(t["email"] for t in texte_pro_lead)
         leads = [{"email": t["email"],
@@ -226,7 +229,9 @@ class InstantlySender:
         if not kontakte:
             raise ValueError("Keine Kontakte - kein Lead-Import.")
         # Letztes Tor der Kampagnen-Regel (siehe import_leads): auch auf
-        # diesem Import-Weg kommt keine Sammeladresse an Instantly vorbei.
+        # diesem Import-Weg kommt weder eine Sammeladresse noch ein
+        # gesperrter Empfaenger an Instantly vorbei.
+        self._gesperrte_stoppen(k.get("email") for k in kontakte)
         self._sammeladressen_stoppen(k.get("email") for k in kontakte)
         ohne = [k.get("email") or "?" for k in kontakte
                 if not (k.get("anrede") or "").strip()]
@@ -253,14 +258,90 @@ class InstantlySender:
                 f"(Kampagnen-Regel 20.08.2026 - nur persönliche geprüfte "
                 f"Adressen): {', '.join(str(a) for a in generisch[:5])}")
 
-    def aktiviere_kampagne(self, campaign_id: str) -> None:
+    @staticmethod
+    def _gesperrte_stoppen(adressen, daten_dir=".") -> None:
+        """Letztes Tor fuer die globale Sperrliste (21.08.2026).
+
+        Anlass: Björn Hagen und Achim Gärtner haben Mails bekommen und
+        ihre Streichung verlangt. Die Sperrliste wirkte bis dahin nur in
+        der Deduplizierung, also mitten im Lauf - ein Lead aus einem
+        alten Lauf-Ordner oder aus einem Direkt-Import kam daran vorbei.
+        Hier kommt er nicht mehr vorbei: das ist die letzte Stelle vor
+        Instantly, und sie gilt fuer JEDEN Import-Weg, auch fuer die
+        eigene Ansichts-Probe.
+        """
+        from pipeline.config import (lade_gesperrte_adressen,
+                                     lade_globale_sperrliste)
+
+        try:
+            adressen_sperre = set(lade_gesperrte_adressen(daten_dir))
+            domain_sperre = [m.strip().lower()
+                             for m in lade_globale_sperrliste(daten_dir)]
+        except (OSError, ValueError) as fehler:
+            # Eine kaputte Sperrliste heisst NICHT "dann eben ohne
+            # Sperre" - dann wird gar nicht importiert.
+            raise ValueError(
+                f"Lead-Import gestoppt: die globale Sperrliste ist nicht "
+                f"lesbar ({fehler}). Ohne pruefbare Sperrliste geht kein "
+                f"Import an Instantly.") from fehler
+
+        getroffen = []
+        for adresse in adressen:
+            wert = str(adresse or "").strip().lower()
+            if not wert:
+                continue
+            if wert in adressen_sperre:
+                getroffen.append(wert)
+                continue
+            domain = wert.split("@", 1)[-1]
+            for muster in domain_sperre:
+                if domain == muster or (muster.startswith("*.")
+                                        and domain.endswith(muster[1:])):
+                    getroffen.append(wert)
+                    break
+        if getroffen:
+            raise ValueError(
+                f"{len(getroffen)} gesperrte(r) Empfänger im Lead-Import "
+                f"gestoppt (globale Sperrliste): "
+                f"{', '.join(getroffen[:5])}")
+
+    def aktiviere_kampagne(self, campaign_id: str, freigabe=None) -> None:
         """Startet eine bereits angelegte (pausierte) Kampagne - POST
         .../activate, kein Request-Body (siehe
         docs/instantly-api-machbarkeit.md #1, operationId "activateCampaign").
-        Baustein 1: ersetzt das bisherige manuelle Starten in Instantly durch
-        einen Knopf im eigenen Tool (web.routen.kampagnen) - diese Methode
-        selbst prueft keine Berechtigung/Bestaetigung, das ist Aufgabe der
-        Route, die sie aufruft."""
+
+        Seit 21.08.2026 (Dafinas Auftrag) fuehrt hier KEIN Weg ohne
+        ausdrueckliche menschliche Freigabe vorbei. Vorher hiess es an
+        dieser Stelle "diese Methode prueft keine Bestaetigung, das ist
+        Aufgabe der Route" - und genau deshalb konnte ein anderer
+        Aufrufer (die Ansichts-Probe) eine Kampagne ohne jede Freigabe
+        aktivieren. Die Pruefung sitzt jetzt an der Stelle, an der jeder
+        Aufrufer vorbei muss.
+
+        `freigabe` ist der Eintrag aus pipeline.versand_freigabe - er
+        muss zu GENAU dieser campaign_id gehoeren.
+        """
+        from pipeline.versand_freigabe import VersandGesperrt
+
+        if not isinstance(freigabe, dict):
+            raise VersandGesperrt(
+                f"Kampagne {campaign_id} wird NICHT aktiviert: es liegt "
+                f"keine menschliche Versand-Freigabe vor. Eine Kampagne "
+                f"anzulegen oder Texte freizugeben ist keine Freigabe des "
+                f"Versands.")
+        if freigabe.get("widerrufen"):
+            raise VersandGesperrt(
+                f"Kampagne {campaign_id} wird NICHT aktiviert: die "
+                f"Freigabe wurde widerrufen.")
+        if str(freigabe.get("campaign_id") or "") != str(campaign_id or ""):
+            raise VersandGesperrt(
+                f"Kampagne {campaign_id} wird NICHT aktiviert: die "
+                f"vorliegende Freigabe gilt für "
+                f"{freigabe.get('campaign_id')!r}.")
+        if not str(freigabe.get("freigegeben_von") or "").strip():
+            raise VersandGesperrt(
+                f"Kampagne {campaign_id} wird NICHT aktiviert: die "
+                f"Freigabe nennt keinen Menschen, der sie erteilt hat.")
         self._post(f"{BASIS}/campaigns/{campaign_id}/activate", None)
 
     def pausiere_kampagne(self, campaign_id: str) -> None:

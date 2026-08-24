@@ -1,0 +1,41 @@
+{
+ "seed": 20260824,
+ "limit": 15,
+ "gueltige_firmen_in_db": 4779,
+ "gewaehlt": 15,
+ "company_ids": [
+  2361,
+  4449,
+  4515,
+  704,
+  4569,
+  1742,
+  228,
+  1874,
+  2483,
+  1392,
+  1853,
+  1268,
+  1081,
+  4873,
+  3826
+ ],
+ "kennungen": [
+  "archdata.de",
+  "atene-gmbh.de",
+  "blueant.de",
+  "coders.win",
+  "enigma-software.de",
+  "genia-sec.de",
+  "kleinert-pcservice.de",
+  "komma-d.de",
+  "niteflite.com",
+  "powerbridge.de",
+  "reitzner.de",
+  "rgc-manager.de",
+  "riechey-gartentechnik.de",
+  "shi-gmbh.com",
+  "xame.de"
+ ],
+ "erstellt_am": "2026-08-24T15:37:17"
+}

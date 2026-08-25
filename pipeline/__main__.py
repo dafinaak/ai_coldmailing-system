@@ -678,6 +678,21 @@ def main():
                       help="Wie lange gelesene Webseiten wiederverwendet "
                            "werden (Standard 14 Tage).")
 
+    p_abd = sub.add_parser(
+        "fullenrich-abdeckung",
+        help="Schmaler Test: findet FullEnrich überhaupt echte "
+             "Entscheider? NUR company/lookup und people/search - "
+             "keine teure Anreicherung.")
+    p_abd.add_argument("--anzahl", type=int, default=25,
+                       help="Wie viele Firmen mit Automatisierung=NO "
+                            "getestet werden (Standard 25).")
+    p_abd.add_argument("--seed", type=int, default=None)
+    p_abd.add_argument("--max-credits", type=float, default=None,
+                       dest="max_credits")
+    p_abd.add_argument("--nur-planen", action="store_true", dest="nur_planen",
+                       help="Stichprobe bauen und Kosten rechnen, aber KEINEN "
+                            "FullEnrich-Aufruf machen.")
+
     p_probe = sub.add_parser(
         "ansichts-probe",
         help="Einen fertigen Kampagnentext zur Ansicht an eine eigene "
@@ -754,6 +769,47 @@ def main():
                   "gemacht und kein Credit verbraucht.")
         print(f"Test-Lauf:  {ergebnis['test_run_id']}")
         print(f"Laufzeit:   {ergebnis['laufzeit_minuten']} Minuten")
+        for art, pfad in ergebnis["exporte"].items():
+            print(f"Export {art}: {pfad}")
+    elif args.befehl == "fullenrich-abdeckung":
+        import os
+        _brauche_env("FULLENRICH_API_KEY")
+        _brauche_env_eines_von("ANTHROPIC_API_KEY", "OPENROUTER_API_KEY",
+                               "OPENAI_API_KEY")
+        from pipeline import fullenrich_abdeckung as abd
+        from pipeline.ki import KI
+        from pipeline.sources.fullenrich import FullEnrichSource
+
+        stichprobe = abd.stichprobe_bauen(
+            ".", anzahl=args.anzahl, seed=args.seed or abd.SEED, ki=KI())
+        firmen = stichprobe["firmen"]
+        kosten = abd.kosten_schaetzen(len(firmen))
+        quelle = FullEnrichSource(os.environ["FULLENRICH_API_KEY"])
+        guthaben = quelle.guthaben()
+
+        print()
+        print(f"Firmen mit Automatisierung=NO: {len(firmen)}")
+        print(f"Erwartete Kosten:              {kosten['gesamt']} Credits "
+              f"({kosten['company_lookups']} Lookups + "
+              f"{kosten['people_search']} Personensuche)")
+        print(f"Guthaben:                      {guthaben}")
+
+        if args.nur_planen:
+            print("\nNUR GEPLANT - kein FullEnrich-Aufruf gemacht.")
+            raise SystemExit(0)
+        if guthaben is not None and guthaben < kosten["gesamt"]:
+            sys.exit(
+                f"\nGuthaben reicht nicht: {guthaben} vorhanden, "
+                f"{kosten['gesamt']} nötig. Kein Aufruf gemacht.\n"
+                f"Mit weniger Firmen testen: --anzahl "
+                f"{int(guthaben / (kosten['gesamt'] / max(1, len(firmen))))}")
+
+        ergebnis = abd.lauf(".", firmen=firmen, quelle=quelle,
+                            max_credits=args.max_credits)
+        print()
+        print(abd.bericht_text(ergebnis["kennzahlen"],
+                               ergebnis["guthaben_vorher"],
+                               ergebnis["guthaben_nachher"]))
         for art, pfad in ergebnis["exporte"].items():
             print(f"Export {art}: {pfad}")
     elif args.befehl == "ansichts-probe":

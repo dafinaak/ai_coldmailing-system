@@ -12,7 +12,7 @@ from pipeline.fullenrich_poc import (
     firmen_abgleich, firmen_waehlen, handpruefung_liste, kennzahlen_rechnen,
     pruefung_kontakt, rang_von_titel, _leere_zeile, db_oeffnen,
     ergebnis_speichern, _saubern, _eine_firma, _telefone_einordnen,
-    _entscheider_guete, _guete_grund)
+    _entscheider_guete, _guete_grund, titel_aus_headline)
 from pipeline.sources.fullenrich import (
     COMPANY_LOOKUP_URL, ENRICH_BULK_URL, ENRICH_FELDER, FullEnrichFehler,
     FullEnrichSource, KontingentLeer, PEOPLE_SEARCH_URL, beste_mail,
@@ -887,3 +887,67 @@ def test_kennzahlen_zaehlen_nur_individuelle_mails_als_brauchbar():
     assert k["generic_company_emails"] == 1
     assert k["usable_contacts"] == 1
     assert k["fully_enriched_contacts"] == 1
+
+
+# ------------------------------- headline-Regel (eng gefasst, 25.08.2026)
+
+@pytest.mark.parametrize("headline,firma", [
+    ("Geschäftsführer bei powerBridge Computer Vertriebs GmbH",
+     "powerBridge Computervertrieb"),
+    ("Geschäftsführer bei SYSCON GmbH Systeme plus Consulting", "Syscon"),
+    ("Managing Director at Hypergene GmbH /Blue Ant Multi-Projektmanagement",
+     "Blue Ant Multi-Projektmanagement"),
+    ("CEO bei Beispiel GmbH", "Beispiel GmbH"),
+    ("Inhaberin bei Beispiel GmbH", "Beispiel GmbH"),
+])
+def test_headline_mit_titel_und_passender_firma_zaehlt(headline, firma):
+    assert titel_aus_headline(headline, firma)["titel"]
+
+
+@pytest.mark.parametrize("headline,firma,warum", [
+    ("Digital problem solver in all things web", "coders.win", "kein Titel"),
+    ("Wettbewerbsfähige Energiewende gemeinsam anpacken", "RGC", "kein Titel"),
+    ("Founder / entrepreneur", "Beispiel GmbH", "ohne Firma"),
+    ("CEO", "Beispiel GmbH", "ohne Firma"),
+    ("Geschäftsführer bei Ganz Andere AG", "Beispiel GmbH", "falsche Firma"),
+    ("", "Beispiel GmbH", "leer"),
+])
+def test_headline_ohne_beleg_zaehlt_nicht(headline, firma, warum):
+    assert titel_aus_headline(headline, firma)["titel"] == "", warum
+
+
+def test_echter_stellentitel_hat_vorrang_vor_headline():
+    """Die headline ist nur der Rückfall. Steht ein echter Titel im
+    Profil, wird der genommen."""
+    person = {"full_name": "Anna B", "first_name": "Anna", "last_name": "B",
+              "headline": "Geschäftsführer bei Beispiel GmbH",
+              "employment": [{"title": "Inhaberin", "is_current": True,
+                              "company": {"name": "Beispiel GmbH",
+                                          "domain": "beispiel.de"}}]}
+    gewaehlt, _ = entscheider_waehlen([person], {"name": "Beispiel GmbH"})
+    assert gewaehlt["titel"] == "Inhaberin"
+    assert gewaehlt["titel_quelle"] == "employment.title"
+
+
+def test_headline_fuellt_den_titel_wenn_das_profil_leer_ist():
+    person = {"full_name": "Fabio Görke", "first_name": "Fabio",
+              "last_name": "Görke",
+              "headline": "Geschäftsführer bei powerBridge Computer "
+                          "Vertriebs GmbH",
+              "employment": [{"is_current": True,
+                              "company": {"name": "powerBridge",
+                                          "domain": "powerbridge.de"}}]}
+    gewaehlt, _ = entscheider_waehlen(
+        [person], {"name": "powerBridge Computervertrieb"})
+    assert gewaehlt["titel"] == "Geschäftsführer"
+    assert "headline" in gewaehlt["titel_quelle"]
+    assert gewaehlt["rang"] == 1
+
+
+def test_ohne_firma_bleibt_das_alte_verhalten():
+    """Ohne Firmen-Kontext darf die headline nichts belegen."""
+    person = {"full_name": "Fabio G", "first_name": "Fabio", "last_name": "G",
+              "headline": "Geschäftsführer bei powerBridge GmbH",
+              "employment": [{"is_current": True}]}
+    gewaehlt, _ = entscheider_waehlen([person])
+    assert gewaehlt["titel"] == ""

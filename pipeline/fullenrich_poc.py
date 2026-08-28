@@ -29,6 +29,7 @@ Reihenfolge - der Kern des Auftrags, weil sie ueber die Kosten entscheidet:
 import csv
 import json
 import random
+import re
 import sqlite3
 import time
 from datetime import datetime
@@ -114,6 +115,8 @@ CREATE TABLE IF NOT EXISTS poc_ergebnisse (
     decision_maker_rank INTEGER,
     decision_maker_reason TEXT,
     decision_maker_status TEXT,
+    decision_maker_title_source TEXT,
+    decision_maker_headline_evidence TEXT,
     alternative_candidates TEXT,
     individual_work_email TEXT,
     generic_company_email TEXT,
@@ -287,6 +290,90 @@ def rang_von_titel(titel) -> int:
     return len(RANG_GRUPPEN)
 
 
+# --------------------------------------------- Titel aus der headline
+
+# Nur echte Chef-Titel. Reihenfolge egal, aber die laengeren zuerst
+# pruefen, damit "chief executive officer" nicht als "ceo" endet.
+EXEC_TITEL = (
+    "chief executive officer", "geschäftsführerin", "geschaeftsfuehrerin",
+    "geschäftsführer", "geschaeftsfuehrer", "geschäftsinhaberin",
+    "geschäftsinhaber", "managing director", "managing partner",
+    "co-founder", "gründerin", "gruenderin", "gründer", "gruender",
+    "inhaberin", "inhaber", "founder", "proprietor", "owner", "ceo",
+)
+# "<Titel> bei <Firma>" / "<Titel> at <Firma>". Ohne Trenner und ohne
+# Firma zaehlt die headline NICHT - "Founder / entrepreneur" oder ein
+# blosses "CEO" bleiben damit draussen.
+_TRENNER = re.compile(r"\s+(?:bei|at|von|@|of)\s+", re.I)
+# Rechtsformen und Fuellwoerter, die beim Firmenvergleich stoeren.
+_RECHTSFORM = re.compile(
+    r"(?i)\b(gmbh|mbh|ag|kg|ug|ohg|gbr|e\.?\s?k\.?|se|co|kgaa|"
+    r"haftungsbeschr[aä]nkt|und|and|the)\b")
+
+
+def _firmenkern(name) -> str:
+    """Firmenname auf den Kern reduziert, damit
+    "powerBridge Computervertrieb" und
+    "powerBridge Computer Vertriebs GmbH" vergleichbar werden."""
+    text = _norm(name)
+    text = _RECHTSFORM.sub(" ", text)
+    return re.sub(r"[^a-z0-9]", "", text)
+
+
+def titel_aus_headline(headline, firmenname, firmen_domain="") -> dict:
+    """{"titel", "firma_in_headline", "grund"} oder leeres titel.
+
+    Regel vom 25.08.2026, bewusst eng: eine headline darf den Titel NUR
+    dann belegen, wenn sie einen echten Chef-Titel traegt, der Form
+    "<Titel> bei/at <Firma>" folgt UND die dort genannte Firma unsere
+    ist. Alles andere - Selbstbeschreibungen, ein blosses "CEO", ein
+    "Founder" ohne Firma - zaehlt weiterhin nicht.
+
+    Grund fuer die Regel: FullEnrich fuellt employment[].title bei
+    kleinen deutschen Firmen fast nie, schreibt die Funktion aber oft in
+    die headline ("Geschäftsführer bei SYSCON GmbH"). Gemessen am
+    25.08.2026: 3 von 5 zurueckgegebenen Personen."""
+    leer = {"titel": "", "firma_in_headline": "", "grund": ""}
+    text = (headline or "").strip()
+    if not text:
+        return leer
+
+    niedrig = _norm(text)
+    treffer = None
+    for kandidat in EXEC_TITEL:
+        stelle = niedrig.find(_norm(kandidat))
+        if stelle >= 0:
+            treffer = (kandidat, stelle)
+            break
+    if not treffer:
+        return {**leer, "grund": "kein Chef-Titel in der headline"}
+
+    teile = _TRENNER.split(text, maxsplit=1)
+    if len(teile) < 2:
+        return {**leer,
+                "grund": f"Titel '{treffer[0]}' ohne 'bei/at <Firma>'"}
+    kopf, firmenteil = teile[0], teile[1]
+    # Der Titel muss VOR dem Trenner stehen, sonst ist er nicht die
+    # Funktion dieser Person bei dieser Firma.
+    if _norm(treffer[0]) not in _norm(kopf):
+        return {**leer,
+                "grund": f"Titel steht nicht vor 'bei/at' ({kopf[:40]})"}
+
+    unser_kern = _firmenkern(firmenname)
+    headline_kern = _firmenkern(firmenteil)
+    if len(unser_kern) < 4:
+        return {**leer, "grund": "unser Firmenname zu kurz zum Vergleich"}
+    if unser_kern not in headline_kern and headline_kern not in unser_kern:
+        return {**leer,
+                "grund": f"headline nennt '{firmenteil[:45]}', "
+                         f"wir suchen '{firmenname[:45]}'"}
+
+    return {"titel": kopf.strip(" ,-|·"),
+            "firma_in_headline": firmenteil.strip(),
+            "grund": f"headline nennt '{kopf.strip()}' bei "
+                     f"'{firmenteil.strip()[:45]}' - Firma stimmt überein"}
+
+
 def _aktueller_titel(person: dict) -> tuple:
     """(titel, headline, firmenname, firmen_domain, linkedin).
 
@@ -316,15 +403,31 @@ def _aktueller_titel(person: dict) -> tuple:
             firmenname, firmen_domain, linkedin)
 
 
-def entscheider_waehlen(personen: list) -> tuple:
-    """(gewaehlt, alternativen) - nie blind der erste Treffer."""
+def entscheider_waehlen(personen: list, firma: dict | None = None) -> tuple:
+    """(gewaehlt, alternativen) - nie blind der erste Treffer.
+
+    `firma` wird nur fuer die eng gefasste headline-Regel gebraucht
+    (Auftrag 25.08.2026): fehlt employment[].title, darf der Titel aus
+    der headline kommen - aber NUR in der Form "<Chef-Titel> bei
+    <unsere Firma>". Ohne `firma` bleibt es beim alten Verhalten."""
     bewertet = []
     for person in personen or []:
         if not isinstance(person, dict):
             continue
         titel, headline, firmenname, firmen_domain, linkedin = \
             _aktueller_titel(person)
+        titel_quelle = "employment.title" if titel else ""
+        headline_beleg = ""
+        if not titel and firma:
+            aus_headline = titel_aus_headline(
+                headline, firma.get("name"), firmen_domain)
+            if aus_headline["titel"]:
+                titel = aus_headline["titel"]
+                titel_quelle = "headline (Firma stimmt überein)"
+                headline_beleg = aus_headline["grund"]
         bewertet.append({
+            "titel_quelle": titel_quelle,
+            "headline_beleg": headline_beleg,
             "name": person.get("full_name")
                     or f"{person.get('first_name','')} "
                        f"{person.get('last_name','')}".strip(),
@@ -706,7 +809,7 @@ EXPORT_SPALTEN = [
     "fullenrich_company_found", "fullenrich_company_name",
     "company_match_status", "company_match_score",
     "decision_maker", "title", "headline", "linkedin",
-    "decision_maker_status",
+    "decision_maker_status", "title_source", "headline_evidence",
     "individual_work_email", "generic_company_email",
     "private_personal_email",
     "personal_email", "personal_email_status",
@@ -737,6 +840,8 @@ def _export_zeile(z: dict) -> list:
         z["decision_maker_name"], z["decision_maker_title"],
         (z["decision_maker_headline"] or "")[:120], z["decision_maker_linkedin"],
         z.get("decision_maker_status", ""),
+        z.get("decision_maker_title_source", ""),
+        (z.get("decision_maker_headline_evidence") or "")[:150],
         z.get("individual_work_email", ""),
         z.get("generic_company_email", ""),
         z.get("private_personal_email", ""),
@@ -872,6 +977,8 @@ def _leere_zeile(firma, test_run_id) -> dict:
         "decision_maker_title": "", "decision_maker_headline": "",
         "decision_maker_linkedin": "", "decision_maker_rank": None,
         "decision_maker_reason": "", "decision_maker_status": "",
+        "decision_maker_title_source": "",
+        "decision_maker_headline_evidence": "",
         "alternative_candidates": "",
         "individual_work_email": "", "generic_company_email": "",
         "private_personal_email": "",
@@ -1123,7 +1230,7 @@ def _eine_firma(quelle, firma, zeile, roh_speichern, such_credits=None):
 
     personen = quelle.personen_suchen(domain, TITEL_VARIANTEN)
     such_credits[0] += PREIS_SUCHTREFFER * len(personen)
-    gewaehlt, alternativen = entscheider_waehlen(personen)
+    gewaehlt, alternativen = entscheider_waehlen(personen, firma)
 
     status, punkte, belege = firmen_abgleich(firma, fe_firma, gewaehlt)
     zeile["company_match_status"] = status
@@ -1144,6 +1251,9 @@ def _eine_firma(quelle, firma, zeile, roh_speichern, such_credits=None):
     zeile["decision_maker_linkedin"] = gewaehlt["linkedin"]
     zeile["decision_maker_rank"] = gewaehlt["rang"]
     zeile["decision_maker_reason"] = gewaehlt.get("rang_grund", "")
+    zeile["decision_maker_title_source"] = gewaehlt.get("titel_quelle", "")
+    zeile["decision_maker_headline_evidence"] = gewaehlt.get(
+        "headline_beleg", "")
     zeile["alternative_candidates"] = json.dumps(
         [{"name": a["name"], "titel": a["titel"], "rang": a["rang"]}
          for a in alternativen], ensure_ascii=False)

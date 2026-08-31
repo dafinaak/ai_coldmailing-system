@@ -17,7 +17,35 @@ sys.path.insert(0, str(PROJEKT))
 
 from pipeline.anrede_spalte import baue_anrede  # noqa: E402
 
-LAUF = PROJEKT / "laeufe/leadquellen/zona32-dropcontact-2026-08-21"
+ZONEN = {
+    "32": {"lauf": "zona32-dropcontact-2026-08-21",
+           "quellen": ["zona32-herford-2026-08-21",
+                       "zona32-overpass-2026-08-21"]},
+    "33": {"lauf": "zona33-dropcontact-2026-08-28",
+           "quellen": ["zona33-bielefeld-2026-08-25"]},
+    "34": {"lauf": "zona34-dropcontact-2026-08-28",
+           "quellen": ["zona34-kassel-2026-08-28"]},
+    "35": {"lauf": "zona35-dropcontact-2026-08-28",
+           "quellen": ["zona35-giessen-2026-08-28"]},
+}
+
+# Nga cili mjet erdhi vertet secili vrapim. Kjo shkruhet ne kolonen
+# "Quelle - Firma", prandaj duhet te jete e sakte per cdo vrapim - jo e
+# hamendesuar nga emri i zones.
+QUELLE_FIRMA = {
+    "zona32-herford-2026-08-21": "Google Maps (Apify, 21.08.2026)",
+    "zona32-overpass-2026-08-21": "Overpass/OSM (21.08.2026)",
+    "zona33-bielefeld-2026-08-25": "Google Maps (Apify, 21.08.2026)",
+    "zona34-kassel-2026-08-28": "Google Maps (Apify, 28.08.2026)",
+    "zona35-giessen-2026-08-28": "Google Maps (Apify, 28.08.2026)",
+}
+ZONE = "32"
+for _a in sys.argv[1:]:
+    if _a.startswith("--zone="):
+        ZONE = _a.split("=", 1)[1]
+if ZONE not in ZONEN:
+    sys.exit(f"Unbekannte Zone {ZONE!r}")
+LAUF = PROJEKT / "laeufe/leadquellen" / ZONEN[ZONE]["lauf"]
 
 KOPF = [
     "Nr", "Firma", "Person", "Position", "E-Mail", "Anrede", "Hinweis",
@@ -54,7 +82,7 @@ def rolle_saeubern(rohe_rolle):
 def firmen_index():
     """Kodi postar, qyteti dhe pozita vijne nga vrapimet e mbledhjes."""
     index = {}
-    for ordner in ("zona32-herford-2026-08-21", "zona32-overpass-2026-08-21"):
+    for ordner in ZONEN[ZONE]["quellen"]:
         pfad = PROJEKT / "laeufe/leadquellen" / ordner / "firmen.json"
         if not pfad.exists():
             continue
@@ -140,9 +168,7 @@ def bauen():
 
         ort_daten = index.get(
             (firma.get("domain") or firma.get("name") or "").lower(), {})
-        quelle_firma = ("Google Maps (Apify, 21.08.2026)"
-                        if ort_daten.get("lauf", "").startswith("zona32-herford")
-                        else "Overpass/OSM (21.08.2026)")
+        quelle_firma = QUELLE_FIRMA.get(ort_daten.get("lauf", ""), "?")
 
         blatt.append([
             nummer, firma.get("name", ""), person, position,
@@ -185,7 +211,7 @@ def bauen():
         kb.column_dimensions[spalte].width = breite
 
     stempel = datetime.now().strftime("%Y%m%d-%H%M")
-    ziel = PROJEKT / f"IT-Liste-Emails-Zona32-FERTIG-{stempel}.xlsx"
+    ziel = PROJEKT / f"IT-Liste-Emails-Zona{ZONE}-FERTIG-{stempel}.xlsx"
     wb.save(ziel)
     return ziel, nummer, ohne_position, len(kontrolle)
 

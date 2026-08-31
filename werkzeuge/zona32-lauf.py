@@ -504,6 +504,16 @@ def main():
             LAUF = PROJEKT / "laeufe/leadquellen" / arg.split("=", 1)[1]
         elif arg.startswith("--firmen="):
             quelle_datei = arg.split("=", 1)[1]
+        elif arg.startswith("--plz="):
+            # Welche Postleitzahlen-Liste gilt. Ohne das waere der Lauf
+            # fest auf Zone 32 verdrahtet.
+            globals()["PLZ_LISTE"] = (
+                PROJEKT / "laeufe/leadquellen" / arg.split("=", 1)[1])
+        elif arg.startswith("--dataset="):
+            # Ein anderer Apify-Rohdatensatz (Apify-Format, nicht unseres).
+            # Zone 34 kam aus einem eigenen Lauf, nicht aus dem vom 21.08.
+            globals()["DATASET"] = (
+                PROJEKT / "laeufe/leadquellen" / arg.split("=", 1)[1])
     LAUF.mkdir(parents=True, exist_ok=True)
     log("=" * 62)
     log("ZONA 32 (Herford) - Hapi 1: profil + automatizim + impressum")

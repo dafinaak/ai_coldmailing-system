@@ -35,8 +35,27 @@ from pipeline.anrede_spalte import aus_lauf  # noqa: E402
 from pipeline.config import lade_globale_sperrlisten_eintraege  # noqa: E402
 from pipeline.sources.dropcontact import DropcontactSource  # noqa: E402
 
-LAEUFE = ["zona32-herford-2026-08-21", "zona32-overpass-2026-08-21"]
-LAUF = PROJEKT / "laeufe/leadquellen/zona32-dropcontact-2026-08-21"
+# Zone per --zone umschaltbar, damit derselbe Ablauf fuer 32, 33 ...
+# gilt statt fest auf eine Zone verdrahtet zu sein.
+ZONEN = {
+    "32": {"laeufe": ["zona32-herford-2026-08-21",
+                      "zona32-overpass-2026-08-21"],
+           "lauf": "zona32-dropcontact-2026-08-21"},
+    "33": {"laeufe": ["zona33-bielefeld-2026-08-25"],
+           "lauf": "zona33-dropcontact-2026-08-28"},
+    "34": {"laeufe": ["zona34-kassel-2026-08-28"],
+           "lauf": "zona34-dropcontact-2026-08-28"},
+    "35": {"laeufe": ["zona35-giessen-2026-08-28"],
+           "lauf": "zona35-dropcontact-2026-08-28"},
+}
+ZONE = "32"
+for _a in sys.argv[1:]:
+    if _a.startswith("--zone="):
+        ZONE = _a.split("=", 1)[1]
+if ZONE not in ZONEN:
+    sys.exit(f"Unbekannte Zone {ZONE!r} - bekannt: {', '.join(ZONEN)}")
+LAEUFE = ZONEN[ZONE]["laeufe"]
+LAUF = PROJEKT / "laeufe/leadquellen" / ZONEN[ZONE]["lauf"]
 
 
 def log(*teile):
@@ -167,7 +186,7 @@ def ergebnisse_bauen(kontakte, mails):
 
 def main():
     log("=" * 62)
-    log("ZONA 32 - Hapi 2: Dropcontact + Anrede")
+    log(f"ZONA {ZONE} - Hapi 2: Dropcontact + Anrede")
     log("Asnje email nuk dergohet. Instantly i paprekur.")
     log("=" * 62)
 
@@ -187,7 +206,7 @@ def main():
         json.dumps(firmen, ensure_ascii=False, indent=1), encoding="utf-8")
 
     stempel = datetime.now().strftime("%Y%m%d-%H%M")
-    ziel = PROJEKT / f"IT-Liste-Emails-Zona32-{stempel}.xlsx"
+    ziel = PROJEKT / f"IT-Liste-Emails-Zona{ZONE}-{stempel}.xlsx"
     aus_lauf(ergebnis_datei, ziel)
     log("=" * 62)
     log(f"DOSJA: {ziel}")

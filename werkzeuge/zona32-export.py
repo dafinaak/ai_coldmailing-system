@@ -21,11 +21,37 @@ from pathlib import Path
 PROJEKT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJEKT))
 
-PLZ_LISTE = PROJEKT / "laeufe/leadquellen/plz-liste-oliver-zona32.txt"
-LAEUFE = [
-    PROJEKT / "laeufe/leadquellen/zona32-herford-2026-08-21",
-    PROJEKT / "laeufe/leadquellen/zona32-overpass-2026-08-21",
-]
+# Welche Zone exportiert wird - per --zone umschaltbar, damit derselbe
+# Export fuer 32, 33 ... funktioniert statt fest verdrahtet zu sein.
+ZONEN = {
+    "32": {"plz": "plz-liste-oliver-zona32.txt",
+           "laeufe": ["zona32-herford-2026-08-21",
+                      "zona32-overpass-2026-08-21"],
+           "name": "zona32-herford"},
+    # Shtesa e MailCom-it eshte vrapim i vecante, por i kaloi te njejtat
+    # kontrolle - prandaj hyn ketu, ndryshe do te dukej "not_checked".
+    "33": {"plz": "plz-liste-oliver-zona33.txt",
+           "laeufe": ["zona33-bielefeld-2026-08-25",
+                      "zona33-mailcom-2026-08-28"],
+           "name": "zona33-bielefeld"},
+    "34": {"plz": "plz-liste-oliver-zona34.txt",
+           "laeufe": ["zona34-kassel-2026-08-28",
+                      "zona34-mailcom-2026-08-28"],
+           "name": "zona34-kassel"},
+    "35": {"plz": "plz-liste-oliver-zona35.txt",
+           "laeufe": ["zona35-giessen-2026-08-28",
+                      "zona35-mailcom-2026-08-28"],
+           "name": "zona35-giessen"},
+}
+ZONE = "32"
+for _a in sys.argv[1:]:
+    if _a.startswith("--zone="):
+        ZONE = _a.split("=", 1)[1]
+if ZONE not in ZONEN:
+    sys.exit(f"Unbekannte Zone {ZONE!r} - bekannt: {', '.join(ZONEN)}")
+
+PLZ_LISTE = PROJEKT / "laeufe/leadquellen" / ZONEN[ZONE]["plz"]
+LAEUFE = [PROJEKT / "laeufe/leadquellen" / o for o in ZONEN[ZONE]["laeufe"]]
 
 KOPF = [
     "Nr",
@@ -94,7 +120,7 @@ def bauen(nur_zone=True):
 
     wb = openpyxl.Workbook()
     blatt = wb.active
-    blatt.title = "Zona 32 - Hapi 1"
+    blatt.title = f"Zona {ZONE} - Hapi 1"
     blatt.append(KOPF)
 
     zeilen = firmen = mit_person = 0
@@ -199,7 +225,7 @@ def bauen(nur_zone=True):
         get_column_letter(nummer)
 
     stempel = datetime.now().strftime("%Y%m%d-%H%M")
-    name = ("zona32-herford" if nur_zone else "master-komplett")
+    name = (ZONEN[ZONE]["name"] if nur_zone else "master-komplett")
     ziel = PROJEKT / f"{name}-hapi1-{stempel}.xlsx"
     wb.save(ziel)
     return ziel, zeilen, firmen, mit_person

@@ -14,8 +14,25 @@ from pathlib import Path
 PROJEKT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJEKT))
 
-LAEUFE = ["zona32-herford-2026-08-21", "zona32-overpass-2026-08-21"]
-ERGEBNISSE = (PROJEKT / "laeufe/leadquellen/zona32-dropcontact-2026-08-21"
+ZONEN = {
+    "32": {"laeufe": ["zona32-herford-2026-08-21",
+                      "zona32-overpass-2026-08-21"],
+           "lauf": "zona32-dropcontact-2026-08-21"},
+    "33": {"laeufe": ["zona33-bielefeld-2026-08-25"],
+           "lauf": "zona33-dropcontact-2026-08-28"},
+    "34": {"laeufe": ["zona34-kassel-2026-08-28"],
+           "lauf": "zona34-dropcontact-2026-08-28"},
+    "35": {"laeufe": ["zona35-giessen-2026-08-28"],
+           "lauf": "zona35-dropcontact-2026-08-28"},
+}
+ZONE = "32"
+for _a in sys.argv[1:]:
+    if _a.startswith("--zone="):
+        ZONE = _a.split("=", 1)[1]
+if ZONE not in ZONEN:
+    sys.exit(f"Unbekannte Zone {ZONE!r} - bekannt: {', '.join(ZONEN)}")
+LAEUFE = ZONEN[ZONE]["laeufe"]
+ERGEBNISSE = (PROJEKT / "laeufe/leadquellen" / ZONEN[ZONE]["lauf"]
               / "ergebnisse.json")
 
 

@@ -39,3 +39,47 @@
   comment: >-
     GRTNR.IT - Firma von Achim Gärtner. Ganze Domain gesperrt, damit auch
     eine andere Adresse dieser Firma nie wieder angeschrieben wird.
+
+# --- 31.08.2026: Dafinas Fund in den Listen 33 und 34 -------------------
+# Diese sechs Firmen gehören nicht ins Zielprofil: sie entwickeln oder
+# verkaufen eigene Software, sind Produktpartner für eine enge Branche
+# (Steuerkanzleien, Salesforce) oder reine Security-Anbieter. Vier davon
+# kamen über die "zweite Chance" in pipeline/branchen_filter.py wieder
+# herein, zwei über das normale KI-Urteil. Der Filter wird nachgeschärft;
+# bis dahin und darüber hinaus sperrt dieser Eintrag sie zuverlässig.
+- domain: mibema-software.de
+  reason: Passt nicht ins Zielprofil
+  comment: >-
+    Mibema Software UG - Softwareentwickler. Stand als Nr. 18 in der
+    Liste Zone 34, von Dafina am 31.08.2026 aussortiert.
+- domain: graphisoft-kassel.de
+  reason: Passt nicht ins Zielprofil
+  comment: >-
+    GRAPHISOFT Center Kassel, CAD intern GmbH - CAD-Softwarevertrieb.
+    Stand als Nr. 34 in der Liste Zone 34, von Dafina aussortiert.
+- domain: elastify.net
+  reason: Passt nicht ins Zielprofil
+  comment: >-
+    elastify GmbH & Co. KG - Salesforce-Partner. Stand als Nr. 46 in der
+    Liste Zone 34, von Dafina aussortiert.
+- domain: elastify.eu
+  reason: Passt nicht ins Zielprofil
+  comment: >-
+    Zweite Domain von elastify: die Webseite läuft auf elastify.net, die
+    gefundene Adresse aber auf elastify.eu. Beide gesperrt.
+- domain: netgo-tax.de
+  reason: Passt nicht ins Zielprofil
+  comment: >-
+    netgo tax GmbH - Anbieter für Steuerkanzleien. Stand als Nr. 23 in
+    der Liste Zone 34, von Dafina aussortiert.
+- domain: bluvit.de
+  reason: Passt nicht ins Zielprofil
+  comment: >-
+    BLUVIT GmbH - reiner Security-Anbieter. Stand als Nr. 25 in der
+    Liste Zone 34, von Dafina aussortiert.
+- domain: kisocon.de
+  reason: Passt nicht ins Zielprofil
+  comment: >-
+    kisocon Kirchensoftware & Consulting - Softwarehersteller für eine
+    enge Branche. Stand als Nr. 75 in der Liste Zone 33, von Dafina
+    aussortiert.

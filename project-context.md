@@ -632,6 +632,37 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
 - Publikimi te serveri U SHTY (21.08.2026, vendim i Dafinës: "lere
   njehere mos e publiko"). Ndërtimi te `deploy/DEPLOY.md` mbetet i
   gatshëm; të dhënat e zonës 32 rrinë vetëm lokalisht.
+- **31.08.2026 — filtri i firmave me softuer të vetin.** Dafina gjeti
+  gjashtë firma të gabuara në listat 33 e 34 (Mibema, GRAPHISOFT Kassel,
+  elastify, netgo tax, BLUVIT, kisocon). Katër kishin hyrë nga hapi
+  "shansi i dytë", që i kthente brenda zhvilluesit e softuerit sapo faqja
+  përmendte edhe mirëmbajtje IT.
+  - Rregulli i ri është te `AGENTS.md` dhe vlen për **të gjitha zonat**,
+    edhe të vjetrat: jashtë kush zhvillon/shet softuer të vet, kush ka
+    produkt për një degë të ngushtë, partnerët e produkteve të huaja
+    (Salesforce, SAP, DATEV) dhe firmat me sigurinë si thelb. Mirëmbajtja
+    e Microsoft 365 mbetet brenda.
+  - Kodi: `pipeline/branchen_filter.py` ka ndalesën e re të fortë
+    `eigene_software` (kategoria e drejtorisë, pa kosto) dhe prompt të
+    rishkruar; hapi "shansi i dytë" u hoq nga
+    `werkzeuge/zona32-lauf.py`. 1308 teste jeshile.
+  - Gjashtë firmat janë te `sperrliste-global.yaml`.
+  - Rishikimi i listave 32–34 (241 kontakte): rregulli i fortë heq 61,
+    gjykimi i ri do të hiqte edhe 62. **Vendim i Dafinës: u hoqën vetëm
+    të 61-tat**, të tjerat mbetën për shqyrtim.
+  - **01.09.2026 — heqja u plotësua.** Dafina pyeti çka mbeti brenda dhe
+    doli se nga 180 kontaktet vetëm 118 ishin IT klasike; të 62-tat e
+    tjera (19 softuer, 18 siguri, 8 tregti, 8 produkt dege, 6 tjetër,
+    2 hoster, 1 e paqartë) i hoqi edhe ato. **Listat tash: 40 / 49 /
+    29 = 118 kontakte**, të gjitha me email, të numëruara pa vrima.
+    Raporti me arsyen e secilës heqje:
+    https://claude.ai/code/artifact/d839a897-8ab4-4d27-ac11-ca4a408c7103
+  - Instantly u kontrollua vetëm me lexim: listat e zonave nuk janë atje,
+    asnjë fushatë nuk është aktive.
+  - E hapur: fushata "Partnerschafts-Anfrage IT-Dienstleister PLR 30-31"
+    te Instantly ka 277 adresa, po vetëm 4 përputhen me skedarin
+    PLR 30-39 që kemi këtu — duket ndërtuar nga një version tjetër i
+    listës. Nuk u prek.
 
 ## Entscheidungen
 

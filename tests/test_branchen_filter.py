@@ -136,21 +136,87 @@ def test_olivers_beschwerdefaelle_fliegen_ohne_ki_raus(name, kategorien):
     assert grund in ("niederlassung", "branchenfremd"), f"{name} rutscht durch!"
 
 
-def test_zweite_chance_fragt_nur_nach_fremd_it_betreuung():
-    """Rueckgewinn-Lauf (30.07.2026): Grenzfaelle (Software-Hersteller,
-    Berater) werden mit EINER Frage nachgeprueft - betreut die Firma
-    fremde IT? Automations-Anbieter bleiben trotzdem draussen."""
-    from pipeline.branchen_filter import ZWEITE_CHANCE_SYSTEM
+# Dafinas Fund vom 31.08.2026 --------------------------------------------
+# Sechs Firmen standen in den fertigen Listen der Zonen 33 und 34, obwohl
+# sie eigene Software entwickeln/verkaufen, ein Nischenprodukt vertreten
+# oder im Kern Security-Anbieter sind. Vier kamen ueber die "zweite
+# Chance" herein - genau den Weg, den Dafinas Regel jetzt schliesst.
+
+DAFINAS_SOFTWAREFAELLE = [
+    ("Mibema Software UG (haftungsbeschränkt)",
+     ["Softwareentwickler/-hersteller"]),
+    ("GRAPHISOFT Center Kassel, CAD intern GmbH",
+     ["Softwareentwickler/-hersteller", "IT-Berater"]),
+    ("elastify GmbH & Co. KG",
+     ["Softwareentwickler/-hersteller", "Unternehmensberater", "IT-Berater"]),
+    ("kisocon Kirchensoftware & Consulting",
+     ["Softwareentwickler/-hersteller", "IT-Berater",
+      "Schulungsinstitut für Software"]),
+]
+
+
+@pytest.mark.parametrize("name,kategorien", DAFINAS_SOFTWAREFAELLE)
+def test_eigene_software_fliegt_ohne_ki_raus(name, kategorien):
+    """Das Verzeichnis nennt diese Firmen selbst "Softwareentwickler/
+    -hersteller" - das reicht, dafuer braucht es kein KI-Urteil."""
+    grund = harter_ausschluss({"name": name, "categories": kategorien})
+    assert grund == "eigene_software", f"{name} rutscht durch!"
+
+
+def test_eigene_software_spart_den_ki_aufruf():
+    """Auch mit IT-Betreuung im Webtext: die harte Regel greift vorher.
+    Genau diese Kombination hatte die 'zweite Chance' hereingelassen."""
     ki = _FakeKI('{"passt": true, "typ": "Softwarehaus mit Managed Services", '
                  '"grund": "betreut zusaetzlich Kunden-IT"}')
-    ergebnis = firma_bewerten(firma(), webtext="Wir entwickeln Software und "
-                              "betreuen die IT unserer Kunden", ki=ki,
-                              system=ZWEITE_CHANCE_SYSTEM)
-    assert ergebnis["passt"] is True
+    ergebnis = firma_bewerten(
+        firma(name="Mibema Software UG",
+              categories=["Softwareentwickler/-hersteller"]),
+        webtext="Wir entwickeln Software und betreuen die IT unserer Kunden",
+        ki=ki)
+    assert ergebnis["passt"] is False
+    assert ergebnis["typ"] == "eigene_software"
+    assert ki.prompts == []
+
+
+def test_eigene_software_wird_nur_an_der_kategorie_erkannt():
+    """Der Firmenname darf NICHT ausschlaggebend sein: "Eulah IT -
+    Systemhaus fuer Digitalisierung, Software & IT" ist ein echtes
+    Systemhaus und muss zur KI weitergehen, nicht hart rausfliegen."""
+    assert harter_ausschluss(firma(
+        name="Eulah IT - Systemhaus für Digitalisierung, Software & IT",
+        categories=["IT-Dienstleister", "Computerservice"])) is None
+
+
+def test_normales_systemhaus_bleibt_von_der_neuen_regel_unberuehrt():
+    assert harter_ausschluss(firma(
+        name="Pietsch IT GmbH",
+        categories=["IT-Berater", "Computerservice"])) is None
+
+
+def test_eigene_software_steht_in_den_ausschlussgruenden():
+    assert "eigene_software" in AUSSCHLUSS_GRUENDE
+
+
+def test_prompt_nennt_dafinas_neue_ausschluesse():
+    """BLUVIT (Security) und netgo tax (DATEV-Partner fuer Kanzleien)
+    tragen keine Software-Kategorie - sie muessen am Prompt scheitern.
+    Microsoft-365-Betreuung bleibt ausdruecklich erlaubt, sonst wuerde
+    die Regel echte Systemhaeuser mitreissen."""
+    ki = _FakeKI('{"passt": true, "typ": "IT-Service", "grund": "ok"}')
+    firma_bewerten(firma(), webtext="Systembetreuung", ki=ki)
     system, _ = ki.prompts[0]
-    assert "IT ANDERER Unternehmen" in system
-    assert "Automation" in system          # Wettbewerber bleiben ausgeschlossen
-    assert "Managed Services" in system
+    for pflicht in ["EIGENER Software", "Branchen-", "Salesforce", "DATEV",
+                    "im Kern IT-Sicherheit", "Microsoft 365"]:
+        assert pflicht in system, f"'{pflicht}' fehlt im Prompt"
+
+
+def test_zweite_chance_ist_abgeschafft():
+    """Die 'zweite Chance' holte Software-Hersteller zurueck, sobald sie
+    zusaetzlich IT betreuten. Dafinas Regel vom 31.08.2026 sagt das
+    Gegenteil, also ist der Schritt ersatzlos entfernt - dieser Test
+    haelt ihn fern."""
+    import pipeline.branchen_filter as bf
+    assert not hasattr(bf, "ZWEITE_CHANCE_SYSTEM")
 
 
 # Wettbewerber-Pruefung (Olivers Fund "Michael Wessel", 30.07.2026) -------

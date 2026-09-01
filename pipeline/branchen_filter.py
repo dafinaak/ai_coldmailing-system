@@ -10,12 +10,21 @@ WAS eine Firma tatsaechlich anbietet.
 Zwei Stufen:
 
 1. Harte Regeln (kostenlos, ohne Netz): Niederlassungen/Filialen
-   (Olivers Vorgabe "nur die Zentrale") und klar branchenfremde
-   Kategorien. Diese Faelle brauchen kein KI-Urteil.
+   (Olivers Vorgabe "nur die Zentrale"), klar branchenfremde Kategorien
+   und Firmen mit eigener Software (Dafina, 31.08.2026). Diese Faelle
+   brauchen kein KI-Urteil.
 2. KI-Urteil je Firma: Name, Kategorien und der sichtbare Text der
    Firmen-Webseite gehen an das Modell, das nach Olivers Profil
    entscheidet - inklusive der Frage, ob die Firma SELBST Automationen
    anbietet (Wettbewerber).
+
+Es gab bis zum 31.08.2026 eine dritte Stufe, die "zweite Chance": sie
+holte ausgeschlossene Software-Hersteller zurueck, sobald deren Webseite
+auch IT-Betreuung nannte. Ueber sie kamen vier der sechs Firmen herein,
+die Dafina aus den Listen 33 und 34 aussortiert hat. Ihre Regel sagt das
+Gegenteil - eigene Software heisst raus, auch mit Betreuung -, deshalb
+ist die Stufe ersatzlos entfernt (Gegentest:
+tests/test_branchen_filter.py::test_zweite_chance_ist_abgeschafft).
 
 Zuverlaessigkeit zuerst: Was die KI nicht eindeutig als passend
 bezeichnet, gilt als NICHT passend (typ "unsicher") und wird im Bericht
@@ -24,7 +33,8 @@ aufgefuehrt - lieber eine Firma zu wenig anschreiben als eine falsche.
 import json
 import re
 
-AUSSCHLUSS_GRUENDE = ("niederlassung", "branchenfremd", "unsicher")
+AUSSCHLUSS_GRUENDE = ("niederlassung", "branchenfremd", "eigene_software",
+                      "unsicher")
 
 # Olivers Vorgabe: bei Filialisten/Niederlassungen nur die Zentrale.
 _NIEDERLASSUNG = re.compile(
@@ -47,9 +57,27 @@ _FREMD = (
 )
 
 
+# Dafinas Regel (31.08.2026): Firmen mit eigener Software gehoeren nicht
+# ins Zielprofil - auch nicht, wenn sie zusaetzlich IT betreuen. Geprueft
+# wird bewusst NUR die Kategorie aus dem Verzeichnis, nicht der Name:
+# "Software" im Namen traegt auch ein echtes Systemhaus ("Eulah IT -
+# Systemhaus fuer Digitalisierung, Software & IT"), die Kategorie
+# dagegen ist die Einordnung des Verzeichnisses selbst.
+_EIGENE_SOFTWARE = (
+    "softwareentwickl", "softwarehersteller", "software-hersteller",
+    "softwareanbieter", "software-anbieter", "softwarehaus",
+    "softwarevertrieb", "software-vertrieb", "software publisher",
+    "software development", "schulungsinstitut für software",
+)
+
+
 def _text_von(firma: dict) -> str:
     return " ".join([firma.get("name", "")] +
                     [str(k) for k in firma.get("categories") or []]).lower()
+
+
+def _kategorien_von(firma: dict) -> str:
+    return " ".join(str(k) for k in firma.get("categories") or []).lower()
 
 
 def harter_ausschluss(firma: dict):
@@ -60,6 +88,8 @@ def harter_ausschluss(firma: dict):
     text = _text_von(firma)
     if any(wort in text for wort in _FREMD):
         return "branchenfremd"
+    if any(wort in _kategorien_von(firma) for wort in _EIGENE_SOFTWARE):
+        return "eigene_software"
     return None
 
 
@@ -75,7 +105,18 @@ ihrer Geschäftskunden betreut:
 
 AUSSCHLÜSSE (passt = false), auch wenn "IT" im Namen steht:
 - reiner Computerhandel: Verkauf von Hardware oder Software als Ware
-- Software-Hersteller/Produktfirmen (eigenes Produkt statt Betreuung)
+- Firmen mit EIGENER Software oder mit Software-Entwicklung als
+  Angebot: Entwickler, Hersteller, Anbieter eines eigenen Produkts,
+  ebenso Auftrags-/Individualentwicklung für Kunden - AUCH dann, wenn
+  sie zusätzlich Support, Wartung oder Schulung anbieten
+- Anbieter eines Branchen-/Nischenprodukts (Software für Steuerkanzleien,
+  Kirchen, Arztpraxen, CAD, Logistik und Ähnliches)
+- Beratungs- und Vertriebspartner eines FREMDEN Produkts (Salesforce-,
+  SAP-, DATEV-Partner, ERP-/CRM-Einführung): das ist Projektgeschäft am
+  Produkt, keine laufende IT-Betreuung
+- Firmen, deren Angebot im Kern IT-Sicherheit ist (Security-Beratung,
+  Pentest, Schwachstellenscan, ISMS/ISO 27001, NIS-2, externer ISB/CISO)
+  - auch wenn "Managed IT" als Nebenpunkt daneben steht
 - Rechenzentren, Colocation
 - reine Elektro-/Leitungs-Installationsunternehmen
 - Hoster, Webhosting, Internet-Provider, Internet-Dienstleister
@@ -85,28 +126,14 @@ AUSSCHLÜSSE (passt = false), auch wenn "IT" im Namen steht:
 - Webdesign-/Marketing-/Werbeagenturen ohne IT-Betreuung
 - alles Branchenfremde (Handel, Handwerk, Beratung, Medizin, Bildung ...)
 
+AUSDRÜCKLICH DRIN, damit die Regeln oben keine echten Systemhäuser
+mitreißen:
+- laufende Betreuung von Microsoft 365, Cloud-Arbeitsplätzen, Servern,
+  Netzwerken und Endgeräten - das ist normales IT-Betreuungsgeschäft,
+  auch wenn dabei fremde Produkte eingerichtet und gepflegt werden
+
 Im Zweifel passt = false. Sei streng: Nur klar erkennbare
 IT-Dienstleister mit Betreuungsgeschäft bekommen true."""
-
-
-ZWEITE_CHANCE_SYSTEM = """Du prüfst einen GRENZFALL nach. Diese Firma wurde
-zuvor als Software-Hersteller, Software-Entwickler oder als Berater ohne
-klaren Betreuungsfokus eingeordnet und deshalb ausgeschlossen. Jetzt
-zählt nur EINE Frage:
-
-Betreut diese Firma die IT ANDERER Unternehmen als Dienstleistung?
-Also: Managed Services, IT-Support, Wartung, Systembetreuung,
-Netzwerk-/Server-Betrieb, Hotline, Systemhaus-Leistungen - egal ob
-zusätzlich zu eigenen Softwareprodukten.
-
-passt = true, wenn solche Betreuungsleistungen erkennbar angeboten werden.
-passt = false, wenn die Firma ausschließlich eigene Produkte verkauft
-oder entwickelt, reiner Händler ist, oder wenn sie SELBST Automationen /
-Prozessautomatisierung / RPA / KI-Automatisierung anbietet
-(Wettbewerber), oder wenn nichts Belastbares erkennbar ist.
-
-Antworte AUSSCHLIESSLICH mit:
-{"passt": true|false, "typ": "<kurze Einordnung>", "grund": "<ein Satz>"}"""
 
 
 WETTBEWERBER_SYSTEM = """Du prüfst EINE Frage: Bietet diese Firma selbst
@@ -186,7 +213,7 @@ def ist_wettbewerber(firma: dict, webtext: str, ki) -> dict:
 
 def firma_bewerten(firma: dict, webtext: str, ki, system=None) -> dict:
     """Bewertet EINE Firma. Gibt {"passt", "typ", "grund", "quelle"}.
-    Mit system=ZWEITE_CHANCE_SYSTEM laeuft die Grenzfall-Nachpruefung."""
+    "system" erlaubt einen kampagnen-eigenen Prompt statt SYSTEM_PROMPT."""
     grund = harter_ausschluss(firma)
     if grund:
         return {"passt": False, "typ": grund,

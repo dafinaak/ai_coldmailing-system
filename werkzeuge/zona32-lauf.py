@@ -35,8 +35,7 @@ from pipeline.env import lade_dotenv  # noqa: E402
 
 lade_dotenv(PROJEKT / ".env")
 
-from pipeline.branchen_filter import (  # noqa: E402
-    firma_bewerten, ZWEITE_CHANCE_SYSTEM)
+from pipeline.branchen_filter import firma_bewerten  # noqa: E402
 from pipeline.automation_klassifikation import (  # noqa: E402
     urteile_je_firma, laden as pool_laden)
 from pipeline.decision_maker import sort_by_priority  # noqa: E402
@@ -56,10 +55,6 @@ PREIS_AUS = 1.60
 
 GLEICHZEITIG = 8
 
-# Sa shkronja teksti faqeje duhen qe nje gjykim te quhet i mbeshtetur ne
-# prove. Nen kete prag faqja eshte praktikisht e palexueshme (banner
-# cookie-sh, guaske vetem-JS) dhe cdo gjykim do te ishte hamendje.
-MIN_BELEG = 300
 
 
 # --------------------------------------------------------------- ndihmesa
@@ -286,74 +281,14 @@ def profil_pruefen(firmen, webtexte, ki):
     return urteile
 
 
-# Kategorite ku nje "jo" i shpejte eshte i rrezikshem: prodhuesit e
-# softuerit dhe konsulentet shpesh e mbajne edhe IT-ne e klienteve.
-_GRENZFALL = re.compile(
-    r"software|entwickl|hersteller|berater|beratung|produkt|"
-    r"programmier|it-dienstleist|systemhaus", re.I)
-
-
-def zweite_chance(firmen, webtexte, profil, ki):
-    """Rikontroll i rasteve kufitare me ZWEITE_CHANCE_SYSTEM - prompt qe
-    ekziston ne kod qe nga fillimi, por s'ishte lidhur kurre me nje rruge
-    ekzekutimi (vetem testet e perdornin). Pyet vetem: a e mbajne IT-ne e
-    firmave te tjera si sherbim? Mbron nga hedhja e tepert, qe eshte
-    rreziku kryesor per qellimin 1 te Oliverit (100%)."""
-    zusatz = lesen("02b-zweite-chance.json", {})
-    kandidaten = []
-    for firma in firmen:
-        schluessel = firma["domain"] or firma["name"].lower()
-        urteil = profil.get(schluessel) or {}
-        if urteil.get("passt") or schluessel in zusatz:
-            continue
-        # Rregullat e forta (dege, krejt tjeter dege) nuk rikontrollohen.
-        if urteil.get("quelle") == "regel":
-            continue
-        # Pa tekst te vertete faqeje rikontrolli do te ishte hamendje nga
-        # emri dhe kategoria - pikerisht gabimi qe eichung-u i 20.08.2026
-        # e ndaloi. 50 shkronja (banner cookie-sh, faqe vetem-JS) nuk jane
-        # prove; nen MIN_BELEG firma mbetet jashte dhe automatizimi e
-        # shenon "unsicher" gjithsesi.
-        if len((webtexte.get(firma["domain"], "") or "").strip()) < MIN_BELEG:
-            continue
-        text = f"{urteil.get('typ','')} {' '.join(firma.get('categories') or [])}"
-        if _GRENZFALL.search(text):
-            kandidaten.append(firma)
-
-    if kandidaten:
-        log(f"3b/6 rikontroll i {len(kandidaten)} rasteve kufitare ...")
-        sperre = threading.Lock()
-
-        def eine(firma):
-            schluessel = firma["domain"] or firma["name"].lower()
-            try:
-                urteil = firma_bewerten(firma, webtexte.get(firma["domain"], ""),
-                                        ki, system=ZWEITE_CHANCE_SYSTEM)
-            except Exception as fehler:      # noqa: BLE001
-                urteil = {"passt": False, "typ": "fehler",
-                          "grund": f"Fehler: {fehler}", "quelle": "fehler"}
-            urteil["quelle"] = "zweite-chance"
-            with sperre:
-                zusatz[schluessel] = urteil
-            return urteil
-
-        with ThreadPoolExecutor(max_workers=GLEICHZEITIG) as pool:
-            for nummer, _ in enumerate(pool.map(eine, kandidaten), 1):
-                if nummer % 50 == 0:
-                    log(f"    ... {nummer}/{len(kandidaten)}")
-                    schreiben("02b-zweite-chance.json", zusatz)
-        schreiben("02b-zweite-chance.json", zusatz)
-
-    gerettet = 0
-    for schluessel, urteil in zusatz.items():
-        if urteil.get("passt"):
-            profil[schluessel] = urteil
-            gerettet += 1
-    passt = sum(1 for u in profil.values() if u.get("passt"))
-    log(f"3b/6 rikontroll: {gerettet} firma u kthyen brenda profilit "
-        f"-> gjithsej {passt} brenda profilit")
-    schreiben("02-profil.json", profil)
-    return profil
+# Hapi "shansi i dyte" u hoq me 31.08.2026 me urdher te Dafines.
+# Ai i kthente brenda zhvilluesit e softuerit sapo faqja e tyre permendte
+# edhe mirembajtje IT - dhe pikerisht nga aty hyne kater nga gjashte
+# firmat qe ajo i gjeti gabim ne listat 33 dhe 34 (Mibema, GRAPHISOFT,
+# elastify, kisocon). Rregulli i ri thote te kunderten: softuer i vet
+# do te thote jashte, edhe me mirembajtje. Shih pipeline/branchen_filter.py
+# dhe rregullin te AGENTS.md. Skedaret 02b-zweite-chance.json nga rrjedhat
+# e vjetra mbeten aty ku jane, si histori.
 
 
 # ------------------------------------------------- 4. automatizimi (qellimi 4)
@@ -531,7 +466,6 @@ def main():
     log(f"    modeli i KI-se: {ki.model} ({ki.anbieter})")
 
     profil = profil_pruefen(firmen, webtexte, ki)
-    profil = zweite_chance(firmen, webtexte, profil, ki)
     automation = automation_pruefen(firmen, webtexte, ki)
 
     kandidaten = []

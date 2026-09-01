@@ -39,6 +39,38 @@ menjëherë** dhe pyet a duhet ndaluar. Mos e nis kurrë vetë; ndalja
 bëhet vetëm me fjalën e saj, sepse mund ta ketë nisur dikush tjetër me
 qëllim.
 
+## Kush nuk hyn në listë: firmat me softuer të vetin (nga 31.08.2026)
+
+Ne i shkruajmë vetëm firmave që **mirëmbajnë IT-në e firmave tjera si
+shërbim** — rrjeta, server, kompjuterë, përkrahje, managed services.
+
+Jashtë mbeten, edhe nëse në faqe shkruajnë se bëjnë përkrahje IT:
+
+- firmat që zhvillojnë ose shesin **softuer të vetin** (zhvillues,
+  prodhues, shitës softueri, edhe kur ofrojnë mirëmbajtje për produktin
+  e vet)
+- firmat me produkt për **një degë të ngushtë** (p.sh. softuer për
+  kancelari tatimore, softuer për kisha, CAD)
+- **partnerët e produkteve të huaja** (Salesforce, SAP, DATEV e të
+  ngjashme) — aty puna është rreth produktit, jo mirëmbajtje e vazhdueshme
+- firmat ku **thelbi i ofertës është siguria** (pentest, ISO 27001,
+  NIS-2, ISB/CISO i jashtëm), edhe kur përmendin "Managed IT" anash
+
+Mbetet brenda: mirëmbajtja e Microsoft 365 dhe e vendeve të punës në
+cloud — ajo është punë IT normale, jo produkt i huaj.
+
+Rregulli vlen për **të gjitha zonat** — për ato që do t'i bëjmë dhe
+njësoj për ato që i kemi bërë më herët. Kur rregulli ndryshon, listat e
+gatshme rishikohen sipas tij; nuk mbetet asgjë e vjetër e pandryshuar
+vetëm se ka dalë para se ta shkruanim rregullin.
+
+Pse u shkrua: më 31.08.2026 Dafina gjeti gjashtë firma të tilla në
+tabelat e zonave 33 dhe 34 (Mibema, GRAPHISOFT Kassel, elastify,
+netgo tax, BLUVIT, kisocon). Katër prej tyre kishin hyrë nga hapi
+"shansi i dytë" te `pipeline/branchen_filter.py`, që i kthen brenda
+zhvilluesit e softuerit nëse ofrojnë edhe përkrahje — pikërisht ata që
+nuk i duam. Të gjashtat janë në `sperrliste-global.yaml`.
+
 ## Zuverlässigkeit zuerst
 
 Zuverlässigkeit hat in diesem Projekt höchste Priorität — vor

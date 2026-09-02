@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from pathlib import Path
+import sqlite3
 import yaml
 
 PFLICHTFELDER = ["name", "zielgruppe", "angebot", "tonalitaet",
@@ -155,10 +156,15 @@ def load_kunde(path) -> Kunde:
                  versand_modus=modus)
 
 def lade_globale_sperrlisten_eintraege(daten_dir) -> list[dict]:
-    """Liest alte Zeichenketten und neue strukturierte Sperrlisten-Eintraege."""
+    """Liest alte Zeichenketten und neue strukturierte Sperrlisten-Eintraege.
+
+    Dazu kommen die Widersprueche aus historie.db - ohne YAML-Datei sind
+    sie die einzige Quelle, deshalb wird hier nicht mehr frueh mit einer
+    leeren Liste abgebrochen.
+    """
     pfad = Path(daten_dir) / "sperrliste-global.yaml"
     if not pfad.exists():
-        return []
+        return _opt_outs_aus_historie(daten_dir)
     inhalt = yaml.safe_load(pfad.read_text(encoding="utf-8")) or []
     if not isinstance(inhalt, list):
         raise ValueError(
@@ -195,7 +201,37 @@ def lade_globale_sperrlisten_eintraege(daten_dir) -> list[dict]:
             "email": eintrag.get("email") if hat_email else "",
             "reason": reason, "comment": comment, "legacy": False,
         })
+    ergebnis.extend(_opt_outs_aus_historie(daten_dir))
     return ergebnis
+
+
+def _opt_outs_aus_historie(daten_dir) -> list[dict]:
+    """Widersprueche aus historie.db kommen ueber denselben Weg zur Wirkung
+    wie die YAML-Eintraege.
+
+    Seit 28.08.2026 (Weg A) wird ein Opt-Out in historie.db festgehalten,
+    damit es einen Neubau von master.db ueberlebt. Es darf aber KEINEN
+    zweiten, parallelen Schutz geben - sonst haengt es davon ab, welchen
+    von beiden eine Stelle im Code gerade fragt. Deshalb liefert diese
+    Funktion sie hier mit ein, und alle bisherigen Aufrufer wirken
+    unveraendert weiter.
+    """
+    try:
+        from pipeline.historie_db import opt_outs
+    except ImportError:          # pragma: no cover - nur bei Teil-Installation
+        return []
+    try:
+        eintraege = opt_outs(daten_dir)
+    except sqlite3.DatabaseError:
+        # Eine kaputte Historie-Datei darf den Versand nicht durchwinken,
+        # aber auch nicht stumm bleiben.
+        raise
+    return [{"domain": e["domain"], "email": e["email"],
+             "reason": "opt-out",
+             "comment": f"Widerspruch vom {e['datum']}"
+                        + (f" ({e['weg']})" if e["weg"] else ""),
+             "legacy": False}
+            for e in eintraege]
 
 
 def lade_globale_sperrliste(daten_dir) -> list[str]:

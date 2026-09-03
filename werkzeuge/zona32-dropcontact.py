@@ -45,8 +45,23 @@ ZONEN = {
            "lauf": "zona33-dropcontact-2026-08-28"},
     "34": {"laeufe": ["zona34-kassel-2026-08-28"],
            "lauf": "zona34-dropcontact-2026-08-28"},
-    "35": {"laeufe": ["zona35-giessen-2026-08-28"],
-           "lauf": "zona35-dropcontact-2026-08-28"},
+    # Zona 35 u mblodh me DY burime, si zona 32 - prandaj ketu duhen te
+    # dyja. Me vetem Maps do te binin jashte firmat qe i njeh vetem OSM.
+    "35": {"laeufe": ["zona35-giessen-2026-08-28",
+                      "zona35-overpass-2026-09-02"],
+           "lauf": "zona35-dropcontact-2026-09-02"},
+    "36": {"laeufe": ["zona36-fulda-2026-09-01",
+                      "zona36-overpass-2026-09-02"],
+           "lauf": "zona36-dropcontact-2026-09-02"},
+    "37": {"laeufe": ["zona37-goettingen-2026-09-01",
+                      "zona37-overpass-2026-09-02"],
+           "lauf": "zona37-dropcontact-2026-09-02"},
+    "38": {"laeufe": ["zona38-braunschweig-2026-09-01",
+                      "zona38-overpass-2026-09-03"],
+           "lauf": "zona38-dropcontact-2026-09-03"},
+    "39": {"laeufe": ["zona39-magdeburg-2026-09-01",
+                      "zona39-overpass-2026-09-03"],
+           "lauf": "zona39-dropcontact-2026-09-03"},
 }
 ZONE = "32"
 for _a in sys.argv[1:]:
@@ -119,6 +134,55 @@ def gesperrt_filtern(kontakte):
     return frei
 
 
+def nach_namen_zuordnen(dc, request_id, anfragen):
+    """Rreshtat e nje batch-i te paguar, lidhur me EMER + domain.
+
+    Perdoret kur lista e sotme s'ka me te njejten gjatesi si atehere -
+    p.sh. sepse nje firme ka hyre ne listen e bllokimit ne mes. Lidhja me
+    numer rendor do te jepte pergjigjen e njeriut te gabuar; lidhja me
+    emer ose gjen te njejtin njeri, ose s'gjen asgje.
+
+    Nuk shpenzohet asnje kredit: batch-i eshte paguar, kjo eshte vetem
+    marrje e rezultatit."""
+    from pipeline.sources.dropcontact import _beste_email, _zusatzfelder
+
+    def kyc(vorname, nachname, website):
+        return (str(vorname or "").strip().casefold(),
+                str(nachname or "").strip().casefold(),
+                domain_von(website))
+
+    zeilen, sipas_domain = {}, {}
+    for zeile in dc.zeilen_holen(request_id):
+        zeilen[kyc(zeile.get("first_name"), zeile.get("last_name"),
+                   zeile.get("website"))] = zeile
+        # Ne kete rrjedhe dergohet NJE person per firme, prandaj domain-i
+        # e identifikon rreshtin po aq mire sa emri - dhe mban edhe ata
+        # ku Dropcontact-i e ktheu emrin pak ndryshe nga sa e derguam
+        # ("Hans-Peter" kunder "Hans Peter"). Nese nje domain del dy here,
+        # ai s'perdoret: aty s'do te dinim cili rresht i takon kujt.
+        d = domain_von(zeile.get("website"))
+        if d:
+            sipas_domain[d] = None if d in sipas_domain else zeile
+
+    ergebnisse, gjetur, me_domain = [], 0, 0
+    for anfrage in anfragen:
+        zeile = zeilen.get(kyc(anfrage.get("first_name"),
+                               anfrage.get("last_name"),
+                               anfrage.get("website")))
+        if zeile is None:
+            zeile = sipas_domain.get(domain_von(anfrage.get("website")))
+            if zeile is not None:
+                me_domain += 1
+        mail = _beste_email(zeile.get("email", [])) if zeile else None
+        if mail:
+            mail = {**mail, "felder": _zusatzfelder(zeile)}
+            gjetur += 1
+        ergebnisse.append(mail)
+    log(f"    u lidhen {gjetur} nga {len(anfragen)} kontakte"
+        f"{f' ({me_domain} me domain, se emri ndryshonte)' if me_domain else ''}")
+    return ergebnisse
+
+
 def dropcontact_laufen(kontakte, dc):
     """Batch i vetem. request_id ruhet menjehere pas dorezimit."""
     LAUF.mkdir(parents=True, exist_ok=True)
@@ -134,8 +198,18 @@ def dropcontact_laufen(kontakte, dc):
     if id_datei.exists():
         gespeichert = json.loads(id_datei.read_text(encoding="utf-8"))
         request_id = gespeichert["request_id"]
-        gesendet = [(nr, anfragen[nr]) for nr in gespeichert["gesendet_nr"]]
+        nummern = gespeichert["gesendet_nr"]
         log(f"3/5 batch tashme i paguar, po merret sërish: {request_id}")
+        if nummern and max(nummern) >= len(anfragen):
+            # Lista e sotme eshte me e shkurter se ajo e batch-it: dicka
+            # doli jashte ne mes, zakonisht nga lista e bllokimit (zonat
+            # 32/33/34 u bene para se te shtoheshin gjashte firmat me
+            # 31.08.2026). Numrat e ruajtur s'vlejne me, prandaj rreshtat
+            # e paguar lidhen me EMER + domain. Asnje kredit i ri.
+            log(f"    lista ka ndryshuar ({len(anfragen)} sot kunder "
+                f"{max(nummern) + 1} atehere) - po lidhet me emer")
+            return nach_namen_zuordnen(dc, request_id, anfragen)
+        gesendet = [(nr, anfragen[nr]) for nr in nummern]
     else:
         log(f"3/5 po dorezohet batch-i te Dropcontact: {len(anfragen)} persona ...")
         request_id, gesendet = dc.batch_abgeben(anfragen)
@@ -172,6 +246,11 @@ def ergebnisse_bauen(kontakte, mails):
             "plz": firma.get("plz", ""),
             "ort": firma.get("ort", ""),
             "rolle": person.get("rolle", ""),
+            # Gjithcka tjeter qe ktheu Dropcontact-i per kete person:
+            # telefoni i tij, LinkedIn, numri i punetoreve, adresa zyrtare.
+            # Paguhet me te njejtin kredit si email-i, prandaj hedhja e
+            # tyre ishte pagese per te dhena qe i fshinim vete.
+            "dropcontact": mail.get("felder") or {},
             "leads": [{
                 "first_name": person.get("vorname", ""),
                 "last_name": person.get("nachname", ""),

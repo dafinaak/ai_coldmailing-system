@@ -22,7 +22,6 @@ skripti bie, rezultatet e paguara merren perseri me te njejtin id.
 ASNJE email nuk dergohet. Instantly nuk preket fare.
 """
 import json
-import math
 import sys
 import time
 from datetime import datetime
@@ -38,62 +37,39 @@ lade_dotenv(PROJEKT / ".env")
 import os  # noqa: E402
 import requests  # noqa: E402
 
+from pipeline import zonen  # noqa: E402
+
 ACTOR = "compass~crawler-google-places"
 
-# Qendra dhe rrezja per cdo zone. Te dyja jane zgjedhur qe rrethi t'i
-# mbuloje skajet e zones pa e fryre siperfaqen - sepse cdo vend i gjetur
-# jashte zones paguhet njesoj si nje brenda saj.
-ZONEN = {
-    # Willingen (34508) ne perendim, Bad Karlshafen (34385) ne veri,
-    # Neukirchen (34626) ne jug; me i larguari bie rreth 46 km.
-    "34": {"mitte": (51.25, 9.25), "radius": 52,
-           "plz": "plz-liste-oliver-zona34.txt",
-           "lauf": "zona34-kassel-2026-08-28"},
-    # Lichtenfels (35104) ne veri, Hungen (35410) ne jug, Breidenbach
-    # (35236) ne perendim, Ulrichstein (35327) ne lindje; me i larguari
-    # bie rreth 46 km.
-    "35": {"mitte": (50.81, 8.83), "radius": 48,
-           "plz": "plz-liste-oliver-zona35.txt",
-           "lauf": "zona35-giessen-2026-08-28"},
-}
+# Qendrat, rrezet dhe listat postare rrijne tash te pipeline/zonen.py, qe
+# Overpass-i dhe Gelbe Seiten-i te punojne me te njejtin rreth. Tri kopje
+# te te njejtit numer jane rruga ne te cilen nje zone mblidhet heshtazi me
+# rrethin e gabuar.
+ZONEN = zonen.ZONEN
 
-# Te njejtat fjale kerkimi si me 21.08.2026, qe zona 34 te mblidhet me te
-# njejtin kriter si 32 dhe 33 - perndryshe listat s'do te ishin te
-# krahasueshme.
-SUCHBEGRIFFE = [
-    "IT-Dienstleister", "IT-Service", "Computerservice", "IT-Systemhaus",
-    "EDV-Dienstleistungen", "IT-Support", "Netzwerktechnik",
-    "Softwareentwicklung", "IT-Sicherheit", "Cloud-Dienstleistungen",
-]
+# Te njejtat fjale kerkimi si me 21.08.2026, qe cdo zone te mblidhet me te
+# njejtin kriter - perndryshe listat s'do te ishin te krahasueshme. Rrijne
+# te pipeline/zonen.py, sepse Gelbe Seiten-i i perdor po ato.
+SUCHBEGRIFFE = zonen.SUCHBEGRIFFE
 
 # Sa vende lejohen per cdo fjale kerkimi. Ky numer eshte freni i kostos:
 # 10 fjale x KUFI = maksimumi i vendeve, dhe cdo vend kushton PREIS_PRO_ORT.
 # Vendoset me --kufi= kur buxheti i mbetur eshte i ngushte.
 KUFI_PER_KERKIM = 140
-PREIS_PRO_ORT = 0.003          # tarifa BRONZE e llogarise sone
+# Tarifa varet nga plani i llogarise dhe duhet lexuar, jo hamendesuar:
+# me 01.09.2026 llogaria ishte FREE (0.004 USD/vend), me 02.09.2026 u
+# pagua plani STARTER dhe tarifa ra ne BRONZE (0.003 USD/vend).
+PREIS_PRO_ORT = 0.003          # tarifa BRONZE (plani STARTER, nga 02.09.2026)
 
 
 def log(*teile):
     print(f"[{datetime.now():%H:%M:%S}]", *teile, flush=True)
 
 
-def kreis_polygon(lat, lon, radius_km, punkte=24):
-    """Rreth i afruar me shume kende, ne formatin GeoJSON qe pret Apify."""
-    grad_lat = radius_km / 111.32
-    grad_lon = radius_km / (111.32 * math.cos(math.radians(lat)))
-    ring = []
-    for nummer in range(punkte):
-        winkel = 2 * math.pi * nummer / punkte
-        ring.append([round(lon + grad_lon * math.cos(winkel), 6),
-                     round(lat + grad_lat * math.sin(winkel), 6)])
-    ring.append(ring[0])                      # unaza duhet te mbyllet
-    return {"type": "Polygon", "coordinates": [ring]}
-
-
 def eingabe(zone):
     return {
         "searchStringsArray": SUCHBEGRIFFE,
-        "customGeolocation": kreis_polygon(*zone["mitte"], zone["radius"]),
+        "customGeolocation": zonen.kreis_polygon(*zone["mitte"], zone["radius"]),
         "maxCrawledPlacesPerSearch": KUFI_PER_KERKIM,
         "language": "de",
         "searchMatching": "all",
@@ -140,13 +116,33 @@ def lauf_starten(token, zone):
     return daten["id"]
 
 
+def mit_wiederholung(was, url, timeout, versuche=5):
+    """Nje kerkese qe nuk e humb nje vrapim TE PAGUAR per shkak te rrjetit.
+
+    Me 02.09.2026 vrapimi i zones 35 perfundoi mire te Apify, por skripti
+    ra me ReadTimeout duke pyetur per statusin - vrapimi ishte paguar dhe
+    dalja u hodh. Prandaj: cdo gabim rrjeti provohet perseri, me pritje
+    qe rritet. Vetem nese s'ia del as pas `versuche` heresh, ndalet."""
+    for numer in range(1, versuche + 1):
+        try:
+            antwort = requests.get(url, timeout=timeout)
+            antwort.raise_for_status()
+            return antwort.json()
+        except (requests.Timeout, requests.ConnectionError) as gabim:
+            if numer == versuche:
+                raise
+            pritje = 10 * numer
+            log(f"    rrjeti ra te {was} ({type(gabim).__name__}) - "
+                f"provë {numer}/{versuche}, po pres {pritje}s")
+            time.sleep(pritje)
+
+
 def warten(token, run_id):
     while True:
-        antwort = requests.get(
+        daten = mit_wiederholung(
+            "statusi",
             f"https://api.apify.com/v2/actor-runs/{run_id}?token={token}",
-            timeout=60)
-        antwort.raise_for_status()
-        daten = antwort.json()["data"]
+            timeout=60)["data"]
         if daten["status"] not in ("READY", "RUNNING"):
             return daten
         log(f"    ende duke vrapuar ... ({daten['status']})")
@@ -154,11 +150,10 @@ def warten(token, run_id):
 
 
 def holen(token, dataset_id):
-    antwort = requests.get(
+    return mit_wiederholung(
+        "dataset",
         f"https://api.apify.com/v2/datasets/{dataset_id}/items"
         f"?token={token}&clean=true&format=json", timeout=300)
-    antwort.raise_for_status()
-    return antwort.json()
 
 
 def main():

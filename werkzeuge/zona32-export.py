@@ -38,20 +38,50 @@ ZONEN = {
            "laeufe": ["zona34-kassel-2026-08-28",
                       "zona34-mailcom-2026-08-28"],
            "name": "zona34-kassel"},
-    "35": {"plz": "plz-liste-oliver-zona35.txt",
-           "laeufe": ["zona35-giessen-2026-08-28",
-                      "zona35-mailcom-2026-08-28"],
-           "name": "zona35-giessen"},
 }
 ZONE = "32"
 for _a in sys.argv[1:]:
     if _a.startswith("--zone="):
         ZONE = _a.split("=", 1)[1]
-if ZONE not in ZONEN:
-    sys.exit(f"Unbekannte Zone {ZONE!r} - bekannt: {', '.join(ZONEN)}")
 
-PLZ_LISTE = PROJEKT / "laeufe/leadquellen" / ZONEN[ZONE]["plz"]
-LAEUFE = [PROJEKT / "laeufe/leadquellen" / o for o in ZONEN[ZONE]["laeufe"]]
+# Zonat 32-34 rrijne te shkruara me dore me siper, qe eksportet e vjetra
+# te dalin saktesisht si me pare. Per zonat e reja (35 e tutje) dosjet
+# gjenden vete: cdo vrapim i zones quhet "zona<NR>-<burimi>-<data>", pra
+# nje burim i ri (Overpass, Gelbe Seiten) hyn ne eksport pa e prekur kete
+# skedar. Ndryshe do te harrohej nje dosje dhe firmat e saj do te dilnin
+# heshtazi si "not_checked".
+if ZONE in ZONEN:
+    PLZ_LISTE = PROJEKT / "laeufe/leadquellen" / ZONEN[ZONE]["plz"]
+    LAEUFE = [PROJEKT / "laeufe/leadquellen" / o for o in ZONEN[ZONE]["laeufe"]]
+    NAME = ZONEN[ZONE]["name"]
+else:
+    from pipeline import zonen as _zonen
+    try:
+        _zone = _zonen.zone(ZONE)
+    except KeyError as _gabim:
+        sys.exit(str(_gabim))
+    PLZ_LISTE = _zonen.plz_datei(ZONE)
+    # Gelbe Seiten mbetet jashte (vendim i Dafines, 02.09.2026): zonat
+    # 32, 33 dhe 34 u bene me dy burime - Maps dhe Overpass - dhe zonat e
+    # reja behen njesoj. Prova te zona 35 dha 68 firma te reja, por vetem
+    # 9 mbeten pas filtrit te profilit IT. Te dhenat e mbledhura rrijne ne
+    # disk; ato thjesht nuk hyjne ne eksport.
+    LAEUFE = sorted(
+        o for o in (PROJEKT / "laeufe/leadquellen").glob(f"zona{ZONE}-*")
+        if (o / "firmen.json").exists() and "-gelbeseiten-" not in o.name)
+    if not LAEUFE:
+        sys.exit(f"Zona {ZONE}: asnje dosje vrapimi me firmen.json - "
+                 f"nis se pari mbledhjen (zonen-maps.py / zonen-overpass.py).")
+    # Emri i dosjes pa shkronja te veçanta: "Gießen" -> "giessen",
+    # "Göttingen" -> "goettingen". Nje "ö" ne emrin e skedarit del i
+    # koduar ndryshe ne sisteme te ndryshme dhe skedari nuk gjendet me -
+    # pikerisht ashtu si emertohen edhe dosjet e vrapimeve.
+    _stadt = _zone["stadt"].lower()
+    for _nga, _ne in (("ä", "ae"), ("ö", "oe"), ("ü", "ue"), ("ß", "ss")):
+        _stadt = _stadt.replace(_nga, _ne)
+    NAME = f"zona{ZONE}-{_stadt}"
+    ZONEN[ZONE] = {"plz": PLZ_LISTE.name,
+                   "laeufe": [o.name for o in LAEUFE], "name": NAME}
 
 KOPF = [
     "Nr",

@@ -1,343 +1,352 @@
-# Projekt: AI Coldmailing System
+# Projekti: AI Coldmailing System
 
-## Worum es geht
+> Ky dokument u përkthye i tëri nga gjermanishtja në shqip më 01.09.2026, me
+> urdhër të Dafinës. Përmbajtja nuk u ndryshua — vetëm gjuha. Origjinali
+> gjermanisht kthehet nga git nëse duhet ndonjëherë. Emrat e dosjeve, komandat,
+> emrat e fushave të Oliverit dhe emrat e fushatave mbeten ashtu si janë, sepse
+> ashtu shkruhen edhe në kod e në Instantly.
 
-Das interne Team-Tool ersetzt die Wholix-Oberfläche schrittweise. Es führt
-von Angebot und Lead-Suche über KI-Texte und Freigabe bis zum Versand.
-Instantly bleibt darunter der Versand-Motor für Versand, Anwärmen und
-Zustellbarkeit. Die Wholix-Bildschirmfotos sind die Vorlage für Aussehen und
-Bedienung; der genaue Umfang steht in `docs/wholix-nachbau-roadmap.md`.
+## Për çka bëhet fjalë
 
-Zuverlässigkeit steht vor Tempo und Kosten: Daten kommen aus stabilen,
-bezahlten Schnittstellen; jede E-Mail wird vor Versand geprüft. Tests und
-sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
+Mjeti i brendshëm i ekipit e zëvendëson hap pas hapi ndërfaqen e Wholix-it. Të
+çon nga oferta dhe kërkimi i lead-eve, te tekstet me AI dhe miratimi, deri te
+dërgimi. Instantly mbetet poshtë motori i dërgimit — dërgimi, ngrohja e kutive
+postare dhe zbritja në inbox. Fotot e ekranit të Wholix-it janë shembulli për
+pamjen dhe përdorimin; sa saktësisht ribëhet, shkruan te
+`docs/wholix-nachbau-roadmap.md`.
 
-## Aktueller Stand
+Besueshmëria vjen para shpejtësisë dhe para kursimit: të dhënat vijnë nga
+ndërfaqe të qëndrueshme e të paguara; çdo email kontrollohet para se të niset.
+Testet dhe provat e dukshme punojnë me të dhëna prove, kurrë me marrës të
+vërtetë.
 
-- Interface lokal starten (seit 11.08.2026): `./start-web.sh` im
-  Projektordner, dann http://127.0.0.1:8000. Das Skript liest die .env und
-  setzt DATEN_DIR auf den Projektordner. Hintergrund: web/main.py liest die
-  .env selbst NICHT (nur die Pipeline tut das über pipeline/env.py) — ohne
-  das Skript bricht uvicorn mit "Fehlende Umgebungsvariable" ab. In der .env
-  stehen dafür WEB_SECRET (Cookie-Signatur) und WEB_COOKIE_SECURE=0 (lokal
-  ohne HTTPS; auf dem Server gehört dort 1 hin). Anmeldung über users.yaml
-  im Projektordner (nicht im Repo).
-- Das Repo liegt seit dem 04.08.2026 auf GitHub:
-  https://github.com/kkrasnniqi-ket/ai-coldmailing-system (privat, Konto
-  von Keti). Push läuft über das aktive gh-Konto `kkrasnniqi-ket`;
-  Commit-Autor ist global auf Keti eingestellt. Schlüssel (.env),
-  users.yaml und HAR-Mitschnitte bleiben per .gitignore draußen.
-- Die erste Pipeline und das Team-Interface sind gebaut. Instantly wird
-  weiter als Versand-Motor genutzt.
-- Phase 1 des Wholix-Nachbaus (Kampagnenübersicht und -detail) ist gebaut:
-  Live-Werte werden lesend aus Instantly aufbereitet, fehlende Werte werden
-  nicht erfunden, und der Link führt zu den Kampagnen-Einstellungen in
-  Instantly.
-- Phase 2 des Wholix-Nachbaus ist gebaut: Freigabe je Empfänger und
-  E-Mail-Schritt, Suche, Filter, Sammelaktionen, einzelne Neuerzeugung,
-  vollständige Übergabesperre, lesender Instantly-Stand und die erweiterte
-  globale Sperrliste.
-- Der vereinbarte kleine Teil von Phase 3 ist gebaut: Im internen Postfach
-  kann das Team auf eine bestehende empfangene Instantly-Mail antworten.
-  Das Absenderkonto ist sichtbar und kommt aus den belegten Instantly-Daten.
-  Eine 15 Minuten gültige Signatur bindet Kontakt und Mail; ein atomarer
-  Einmalverbrauch verhindert wiederholten Versand mit demselben Beleg.
-  Bei einem unklaren Ausgang gibt es keine automatische Wiederholung und
-  keinen neuen Sendeknopf, bis der Verlauf in Instantly geprüft wurde.
-- Frische Gesamtkontrolle am 22.07.2026: 518 Tests grün. Einen einzigen
-  langen Testprozess beendet das System wiederholt ohne Testfehler und ohne
-  Abschlussmeldung; deshalb wurden alle Tests vollständig in sieben frischen
-  Blöcken ausgeführt. Die einzige Warnung ist die bekannte
-  Starlette-Abkündigung im TestClient.
-- Die Sichtprüfung lief lokal mit festen Testdaten. Desktop und 390-px-
-  Ansichten von Übersicht und Detail sind festgehalten. Bei 390 px liegt die
-  Navigation oben; die Übersicht hat volle Inhaltsbreite, keinen Dokument-
-  Überlauf und nur die Tabelle scrollt intern.
-- Am 22.07.2026 wurde Phase 1 zusätzlich rein lesend gegen das echte
-  Instantly-Konto geprüft. Die fünf geprüften GET-Endpunkte für Kampagne,
-  Kennzahlen, Schrittwerte, Konten-Tageswerte und Postfächer antworteten mit
-  HTTP 200; es wurden keine Namen, Adressen oder Kennzahlen ausgegeben und
-  keine Daten verändert. Instantly lieferte für den heutigen Tageszeitraum
-  keine Zeile, daher zeigt das Tool den Tagesverbrauch zuverlässig als
-  unbekannt statt als erfundene Null.
-- Die Kampagnenansicht nutzt die Empfängerzahl von Instantly. Die Zahl des
-  zuletzt freigegebenen Laufs wird im Detail getrennt gezeigt. Der heutige
-  Versand wird aus der täglichen Konten-Auswertung nur für die verwendeten
-  Absenderpostfächer summiert. Die Absender werden als Pflichtfilter
-  übergeben; der Zeitraum reicht von heute bis zum Folgetag. Ein Ausfall
-  dieser einzelnen Auswertung macht die übrigen Live-Werte nicht unbekannt.
-- Ein zuletzt bekannter Postfachstand bleibt bei einem späteren Lesefehler
-  sichtbar und wird mit der Fehlerzeit gekennzeichnet. Kampagnentabelle,
-  Fehlermeldungen und Zahlenfarben sind auch für Tastatur und Lesesoftware
-  verständlich geprüft.
-- Die Sichtprüfung für Phase 2 lief nur mit festen lokalen Testdaten. Die
-  Nachweise liegen unter `.superpowers/phase-2/`: Freigabeübersicht,
-  Prüftabelle, Textdialog, schreibgeschützte Übergabe, Sperrliste sowie beide
-  390-px-Ansichten. Auf 390 px gibt es keinen seitlichen Überlauf der ganzen
-  Seite; nur die breiten Tabellen scrollen in ihrem eigenen Bereich.
-- Der dauerhafte Arbeitsnachweis steht in Jira unter `AP-199` und ist als
-  erledigt markiert.
-- Kontrollierter End-to-End-Test am 23.07.2026: Eine eigene Instantly-
-  Testkampagne hatte genau einen Absender, einen Schritt, Tageslimit eins und
-  `ingeborgmarder@gmail.com` als einzigen Empfänger. Die Mail wurde um 10:09
-  Uhr zugestellt, die einmalige Testantwort um 10:10 Uhr von Instantly
-  übernommen und im eigenen Postfach sichtbar angezeigt. Die Kampagne wurde
-  direkt nach dem Versand pausiert.
-- Der Live-Test fand und belegte drei Instantly-Abweichungen, die behoben
-  wurden: `/leads/list` erwartet den Filter `campaign`, Aktivieren/Pausieren
-  darf keinen JSON-Inhaltstyp ohne Inhalt senden und echte E-Mail-Schritte
-  kommen als `0_0_0`, `0_1_0`, `0_2_0`. Die Korrekturen sind mit zuerst
-  fehlschlagenden Gegentests abgesichert.
-- Frische Gesamtkontrolle am 23.07.2026: 520 Tests grün in einem vollständigen
-  Lauf. Es bleibt nur die bekannte Starlette-Abkündigungswarnung.
-- Der Nachweis zum kontrollierten End-to-End-Test steht in Jira unter
-  `AP-200` und ist als erledigt markiert.
-- Frische Gesamtkontrolle der Antwortfunktion am 23.07.2026: 550 Tests grün
-  in einem vollständigen Lauf. Es bleibt nur dieselbe bekannte
-  Starlette/httpx-Abkündigungswarnung.
-- Die sichtbare Prüfung nutzte ausschließlich feste lokale Testdaten und
-  eine Demo ohne Versandroute. Die Nachweise liegen unter
-  `.superpowers/phase_3/`: `postfach-antwort-desktop.png`,
-  `postfach-antwort-390.png`, `postfach-antwort-erfolg-desktop.png` und
-  `postfach-antwort-unklar-390.png`. Desktop und 390-px-Ansicht haben keinen
-  seitlichen Seitenüberlauf; beim unklaren Ausgang bleiben Entwurf und
-  Hinweis sichtbar, aber Antwortfeld und Sendeknopf fehlen.
-- Für den Bau und die lokale Prüfung wurde keine echte E-Mail versendet und
-  kein Gmail-/Microsoft-Zugang eingerichtet oder gespeichert.
-- Anbieter-Vergleich vorbereitet (23.07.2026): Bevor der CRM-Ausbau beginnt,
-  soll der Datenanbieter für deutsche Kleinfirmen per Messung entschieden
-  werden. Dafür ist alles Lokale gebaut und mit Tests belegt (577 Tests grün):
-  ein Prospeo-Baustein (`pipeline/sources/prospeo.py`, Suche über die
-  Firmen-Domain plus Anreicherung nur geprüfter Mails) und ein
-  wiederaufnehmbarer Vergleichs-Läufer (`pipeline/vergleich.py`), der Weg A
-  (Apify→Prospeo) und Weg B (Apify→Hunter→Dropcontact) über dieselbe
-  Apify-Firmenliste schickt und Bericht + Rohdaten in einen Lauf-Ordner
-  schreibt. Achtung Benennung: im älteren Code von `pipeline/sourcing.py`
-  heißt Hunter→Dropcontact noch „Weg A"; im Vergleich gilt die neue
-  Benennung aus dem Auftrag (Weg A = Prospeo). Es wurde noch keine echte
-  Anbieter-Abfrage ausgeführt; es fehlen die Schlüssel PROSPEO_API_KEY,
-  HUNTER_API_KEY und DROPCONTACT_API_KEY sowie Leonards Okay für den
-  Guthaben-Verbrauch (Gratis-Kontingente laut offiziellen Seiten am
-  23.07.2026: Prospeo 100 Credits/Monat, Hunter 50 Credits/Monat,
-  Dropcontact 50 Gratis-Credits).
-- Kaskade nach Chef-Vorgabe gebaut (23.07.2026, per Leonard übermittelt):
-  Google Maps liefert die Firmen (übernommen wird v. a. die Website),
-  danach versuchen die Anbieter-Stufen aus `anbieter_reihenfolge` in der
-  Kunden-Datei NACHEINANDER den Entscheider mit geprüfter persönlicher
-  Mail zu finden („findet Stufe 1 nur 80 von 100, versucht Stufe 2 die
-  restlichen 20"); wer übrig bleibt, bekommt info@ — neu: vor der
-  Übernahme über Hunters Email Verifier geprüft (invalid/disposable/
-  unknown wird verworfen, Ausgang „info_ungueltig"). Der Bericht zählt
-  je Stufe, wer geliefert hat (`deckung.je_stufe`), und der
-  Vergleichsbericht rechnet die Kombination beider Wege aus
-  („Kaskade"-Abschnitt). Standard bleibt einstufig Hunter→Dropcontact,
-  bis der Anbieter-Vergleich die Reihenfolge festlegt. 592 Tests grün.
-- Messlauf am 23.07.2026 mit echten Gratis-Konten über die 20 echten
-  Firmen (IT-Dienstleister Hannover, Liste vom 21.07.): Weg A (Prospeo)
-  6 geprüfte persönliche Mails, Weg B (Hunter→Dropcontact) 7; auf den
-  16 von beiden geprüften Firmen je 6 (37,5 %), Kombination 8 von 16
-  (50 %) — jeder Weg rettet Firmen, die der andere nicht kennt. Keine
-  fremden Domains. Vier Firmen blieben bei Weg A offen (Tageslimit des
-  Prospeo-Gratis-Kontos), bewusst nicht nachgezogen. Qualitäts-Vorbehalt:
-  einige Treffer tragen Titel wie „Product Owner"/„Director" (kein
-  Inhaber) — Handprüfung durch Leonard steht aus. Live-Funde behoben:
-  Prospeo-„NO_RESULTS" ist kein Fehler, Prospeo drosselt (~45 Suchen/Tag
-  frei), Dropcontact braucht bis ~2 Minuten Abholzeit, deutsche
-  Titelformen („Geschäftsführender Gesellschafter") und falsche Freunde
-  („Product Owner") im Rollen-Abgleich. Ergebnisse liegen unter
-  `laeufe/vergleich-anbieter/2026-07-23-prospeo-20-firmen-v2/`
-  (bericht.md mit Handprüfungs-Spalte). Echten Credit-Verbrauch in den
-  Anbieter-Dashboards gegenprüfen, bevor Preise je Kontakt gerechnet
-  werden.
-- Kontrollierter Live-Test am 23.07.2026: Das neue Antwortfeld sendete genau
-  eine klar gekennzeichnete Testantwort über Instantly von
-  `email@seo-poleposition.online` an das eigene Testkonto
-  `ingeborgmarder@gmail.com`. Instantly bestätigte den Versand, die
-  ausgehende Nachricht erschien direkt im internen Verlauf und Gmail zeigte
-  sie um 11:42 Uhr als dritte Nachricht desselben Threads. Gmail war dabei
-  nur das Testziel und wurde weiterhin nicht an das Tool angebunden.
+## Gjendja tash
 
-- Messung „Impressum-Name → Dropcontact" am 23.07.2026 (Olivers Frage nach
-  dem Weg zu 80 %): Bei 6 der 8 Lücken-Firmen stand der Chef-Name im
-  Impressum; aus allen 6 Namen baute und prüfte Dropcontact eine
-  persönliche Mail (100 %). Neue Gesamtabdeckung 14 von 16 Firmen
-  (87,5 %) — über dem 80-%-Ziel. Details und Vorbehalte (Handarbeit,
-  JavaScript-Impressum, abweichende Mail-Domains, veraltbare Impressen):
+- **01.09.2026 — DataWarehouse i Oliverit: 45/45 fushat ekzistojnë dhe
+  mbushen vetë.**
+  - Katër fusha që ishin bosh u mbushën: Bundesland 93% (`pipeline/bundesland.py`,
+    shikim në regjistrin publik të kodeve postare, i ruajtur në
+    `daten/plz-bundesland.json` — rindërtimi nuk shkon kurrë në internet),
+    Anzahl Mitarbeiter 51% (MailCom, në breza jo si numër i saktë),
+    Kurz-Beschreibung 22% (`pipeline/beschreibung_llm.py`, nga webteksti që
+    kemi tashmë në disk), Entscheider-Bereich 84% (`pipeline/bereich.py`).
+  - CEO/Inhaber u rregullua: 201 firma kishin formula ligjore
+    ("Vertreten durch") në vend të emrit. Tash 847 emra të pastër.
+  - Blloku 3 (historiku i kontaktimit) u ndërtua si bazë e ndarë:
+    `daten/historie.db` me tri tabela. Bosh sepse asnjë fushatë s'është nisur.
+  - Gjendja e provuar: 1.387 teste jeshile (vrapim i plotë, 01.09.2026).
+  - Mbetet e hapur: gjysma e dytë e fushës "Entscheider-Bereich (für welches
+    Produkt)" kërkon një listë produktesh — tash ka vetëm një ofertë.
+  - Jira: AP-223.
+- Si niset ndërfaqja lokalisht (nga 11.08.2026): `./start-web.sh` te dosja e
+  projektit, pastaj http://127.0.0.1:8000. Skripta e lexon `.env` dhe e vendos
+  DATEN_DIR te dosja e projektit. Sfondi: `web/main.py` NUK e lexon vetë `.env`
+  (atë e bën vetëm pipeline-i përmes `pipeline/env.py`) — pa skriptë, uvicorn
+  ndalet me "Fehlende Umgebungsvariable". Për këtë te `.env` rrinë WEB_SECRET
+  (nënshkrimi i cookie-t) dhe WEB_COOKIE_SECURE=0 (lokalisht pa HTTPS; te
+  serveri aty duhet 1). Hyrja bëhet me `users.yaml` te dosja e projektit (jo në
+  repo).
+- Repo-ja rri që nga 04.08.2026 në GitHub:
+  https://github.com/kkrasnniqi-ket/ai-coldmailing-system (privat, llogaria e
+  Ketit). Push-i shkon me llogarinë aktive gh `kkrasnniqi-ket`; autori i
+  commit-it është vendosur globalisht te Keti. Çelësat (`.env`), `users.yaml`
+  dhe regjistrimet HAR mbeten jashtë me `.gitignore`.
+- Pipeline-i i parë dhe ndërfaqja e ekipit janë ndërtuar. Instantly përdoret
+  edhe më tej si motor dërgimi.
+- Faza 1 e ribërjes së Wholix-it (pamja e fushatave dhe detaji) është ndërtuar:
+  vlerat live merren vetëm me lexim nga Instantly, vlerat që mungojnë nuk
+  shpiken, dhe lidhja të çon te rregullimet e fushatës në Instantly.
+- Faza 2 e ribërjes së Wholix-it është ndërtuar: miratim për çdo marrës dhe çdo
+  hap emaili, kërkim, filtra, veprime të grumbulluara, rigjenerim i një teksti
+  të vetëm, bllokim i plotë pas dorëzimit, gjendja e Instantly-t vetëm me
+  lexim, dhe lista e zgjeruar globale e bllokimit.
+- Pjesa e vogël e rënë dakord e Fazës 3 është ndërtuar: te posta e brendshme
+  ekipi mund t'i përgjigjet një emaili të marrë nga Instantly. Llogaria
+  dërguese duket dhe vjen nga të dhënat e provuara të Instantly-t. Një
+  nënshkrim i vlefshëm 15 minuta e lidh kontaktin me emailin; një konsum i
+  vetëm dhe atomik pengon dërgimin e përsëritur me të njëjtën provë. Nëse
+  përfundimi është i paqartë, nuk ka përsëritje automatike dhe nuk ka buton të
+  ri dërgimi derisa historiku të kontrollohet në Instantly.
+- Kontroll i plotë i freskët më 22.07.2026: 518 teste jeshile. Një proces të
+  vetëm e të gjatë testimi sistemi e mbyllte herë pas here pa gabime dhe pa
+  njoftim përfundimtar; prandaj të gjitha testet u ekzekutuan plotësisht në
+  shtatë blloqe të freskëta. Paralajmërimi i vetëm është ai i njohuri i
+  Starlette te TestClient.
+- Kontrolli me sy u bë lokalisht me të dhëna prove të fiksuara. Pamjet desktop
+  dhe 390 px të listës dhe detajit janë ruajtur. Në 390 px navigimi rri lart;
+  lista ka gjerësinë e plotë të përmbajtjes, pa dalje horizontale të dokumentit,
+  dhe vetëm tabela lëviz brenda vetes.
+- Më 22.07.2026 Faza 1 u kontrollua edhe vetëm me lexim kundër llogarisë së
+  vërtetë të Instantly-t. Të pesë pikat GET të kontrolluara — fushata, treguesit,
+  vlerat e hapave, vlerat ditore të llogarive dhe kutitë postare — u përgjigjën
+  me HTTP 200; nuk u nxor asnjë emër, adresë a tregues dhe nuk u ndryshua asnjë
+  e dhënë. Instantly nuk dha asnjë rresht për ditën e sotme, prandaj mjeti e
+  tregon konsumin ditor ndershëm si të panjohur, jo si zero të shpikur.
+- Pamja e fushatës përdor numrin e marrësve nga Instantly. Numri i vrapimit të
+  fundit të miratuar tregohet veçmas te detaji. Dërgimi i sotëm mblidhet nga
+  vlerësimi ditor i llogarive vetëm për kutitë dërguese që përdoren. Dërguesit
+  jepen si filtër i detyrueshëm; periudha shkon nga sot deri nesër. Nëse ky
+  vlerësim i vetëm bie, vlerat e tjera live nuk bëhen të panjohura.
+- Një gjendje e fundit e njohur e kutisë postare mbetet e dukshme edhe kur
+  leximi i mëvonshëm dështon, dhe shënohet me kohën e gabimit. Tabela e
+  fushatave, mesazhet e gabimit dhe ngjyrat e numrave janë kontrolluar që të
+  jenë të kuptueshme edhe me tastierë e me lexues ekrani.
+- Kontrolli me sy për Fazën 2 u bë vetëm me të dhëna prove lokale. Provat rrinë
+  te `.superpowers/phase-2/`: pamja e miratimeve, tabela e kontrollit, dialogu i
+  tekstit, dorëzimi i mbrojtur nga shkrimi, lista e bllokimit dhe të dyja pamjet
+  390 px. Në 390 px nuk ka dalje anësore të tërë faqes; vetëm tabelat e gjera
+  lëvizin brenda hapësirës së vet.
+- Prova e përhershme e punës rri në Jira te `AP-199` dhe është shënuar si e
+  kryer.
+- Test i kontrolluar nga fillimi në fund më 23.07.2026: një fushatë prove e
+  jona në Instantly kishte saktësisht një dërgues, një hap, limit ditor një dhe
+  `ingeborgmarder@gmail.com` si të vetmin marrës. Emaili u dorëzua në 10:09,
+  përgjigjja e vetme e provës u morr nga Instantly në 10:10 dhe u shfaq te posta
+  jonë. Fushata u pauzua menjëherë pas dërgimit.
+- Testi live gjeti dhe provoi tri devijime të Instantly-t, që u rregulluan:
+  `/leads/list` kërkon filtrin `campaign`, aktivizimi/pauzimi nuk guxon të
+  dërgojë lloj-përmbajtje JSON pa përmbajtje, dhe hapat e vërtetë të emailit
+  vijnë si `0_0_0`, `0_1_0`, `0_2_0`. Rregullimet janë mbrojtur me teste që në
+  fillim dështonin.
+- Kontroll i plotë i freskët më 23.07.2026: 520 teste jeshile në një vrapim të
+  plotë. Mbetet vetëm paralajmërimi i njohur i Starlette.
+- Prova për testin e kontrolluar nga fillimi në fund rri në Jira te `AP-200` dhe
+  është shënuar si e kryer.
+- Kontroll i plotë i freskët i funksionit të përgjigjes më 23.07.2026: 550 teste
+  jeshile në një vrapim të plotë. Mbetet i njëjti paralajmërim i njohur
+  Starlette/httpx.
+- Kontrolli i dukshëm përdori vetëm të dhëna prove lokale të fiksuara dhe një
+  demo pa rrugë dërgimi. Provat rrinë te `.superpowers/phase_3/`:
+  `postfach-antwort-desktop.png`, `postfach-antwort-390.png`,
+  `postfach-antwort-erfolg-desktop.png` dhe `postfach-antwort-unklar-390.png`.
+  Desktop dhe pamja 390 px nuk kanë dalje anësore; kur përfundimi është i
+  paqartë, drafti dhe shënimi mbeten të dukshëm, po fusha e përgjigjes dhe
+  butoni i dërgimit mungojnë.
+- Për ndërtimin dhe kontrollin lokal nuk u dërgua asnjë email i vërtetë dhe nuk
+  u lidh e nuk u ruajt asnjë qasje Gmail/Microsoft.
+- Krahasimi i ofruesve u përgatit (23.07.2026): para se të fillojë zgjerimi i
+  CRM-së, ofruesi i të dhënave për firmat e vogla gjermane duhet vendosur me
+  matje. Për këtë u ndërtua gjithçka lokale dhe u mbulua me teste (577 teste
+  jeshile): një pjesë Prospeo (`pipeline/sources/prospeo.py`, kërkim mbi
+  domain-in e firmës plus pasurim vetëm i emaileve të kontrolluar) dhe një
+  vrapues krahasimi i rifillueshëm (`pipeline/vergleich.py`), që Rrugën A
+  (Apify→Prospeo) dhe Rrugën B (Apify→Hunter→Dropcontact) i dërgon mbi të
+  njëjtën listë firmash nga Apify dhe shkruan raportin plus të dhënat e papërpunuara
+  në një dosje vrapimi. Kujdes me emërtimin: te kodi i vjetër i
+  `pipeline/sourcing.py` Hunter→Dropcontact quhet ende "Weg A"; te krahasimi
+  vlen emërtimi i ri nga porosia (Rruga A = Prospeo). Ende nuk u bë asnjë
+  pyetje e vërtetë te ofruesit; mungojnë çelësat PROSPEO_API_KEY,
+  HUNTER_API_KEY dhe DROPCONTACT_API_KEY, si dhe okay-i i Leonardit për
+  konsumin e kredive (kuotat falas sipas faqeve zyrtare më 23.07.2026: Prospeo
+  100 kredite/muaj, Hunter 50 kredite/muaj, Dropcontact 50 kredite falas).
+- Kaskada u ndërtua sipas porosisë së shefit (23.07.2026, përcjellë nga
+  Leonardi): Google Maps i jep firmat (merret sidomos faqja e internetit),
+  pastaj hapat e ofruesve nga `anbieter_reihenfolge` te dosja e klientit
+  provojnë NJËRI PAS TJETRIT ta gjejnë vendimmarrësin me email personal të
+  kontrolluar ("nëse hapi 1 gjen vetëm 80 nga 100, hapi 2 i provon 20 e
+  mbetura"); kush mbetet, merr info@ — e re: para se të merret, kontrollohet me
+  Email Verifier të Hunter-it (invalid/disposable/unknown hidhet, përfundimi
+  "info_ungueltig"). Raporti numëron për çdo hap kush dha rezultat
+  (`deckung.je_stufe`), dhe raporti i krahasimit e llogarit kombinimin e të dy
+  rrugëve (pjesa "Kaskade"). Standardi mbetet një hap i vetëm
+  Hunter→Dropcontact, derisa krahasimi i ofruesve ta caktojë radhën. 592 teste
+  jeshile.
+- Vrapim matës më 23.07.2026 me llogari falas të vërteta mbi 20 firma të
+  vërteta (ofrues IT në Hannover, lista e 21.07): Rruga A (Prospeo) 6 email
+  personalë të kontrolluar, Rruga B (Hunter→Dropcontact) 7; mbi 16 firmat që i
+  kontrolluan të dyja, nga 6 secila (37,5%), kombinimi 8 nga 16 (50%) — secila
+  rrugë shpëton firma që tjetra nuk i njeh. Asnjë domain i huaj. Katër firma
+  mbetën të hapura te Rruga A (limiti ditor i llogarisë falas Prospeo), me
+  qëllim nuk u rimorën. Rezervë cilësie: disa gjetje kanë tituj si "Product
+  Owner"/"Director" (jo pronar) — kontrolli me dorë nga Leonardi mbetet. Gjetje
+  live që u rregulluan: "NO_RESULTS" i Prospeo-s nuk është gabim, Prospeo
+  ngadalëson (~45 kërkime/ditë falas), Dropcontact-it i duhen deri ~2 minuta për
+  marrje, format gjermane të titujve ("Geschäftsführender Gesellschafter") dhe
+  shokët e rremë ("Product Owner") te krahasimi i roleve. Rezultatet rrinë te
+  `laeufe/vergleich-anbieter/2026-07-23-prospeo-20-firmen-v2/` (`bericht.md` me
+  kolonën e kontrollit me dorë). Konsumi i vërtetë i kredive duhet kontrolluar
+  te panelet e ofruesve para se të llogariten çmimet për kontakt.
+- Test live i kontrolluar më 23.07.2026: fusha e re e përgjigjes dërgoi
+  saktësisht një përgjigje prove qartë të shënuar përmes Instantly-t nga
+  `email@seo-poleposition.online` te llogaria jonë e provës
+  `ingeborgmarder@gmail.com`. Instantly e konfirmoi dërgimin, mesazhi dalës u
+  shfaq menjëherë te historiku i brendshëm dhe Gmail-i e tregoi në 11:42 si
+  mesazhin e tretë të të njëjtit thread. Gmail-i ishte vetëm caku i provës dhe
+  as atëherë nuk u lidh me mjetin.
+
+- Matja "emri nga impressum → Dropcontact" më 23.07.2026 (pyetja e Oliverit për
+  rrugën deri te 80%): te 6 nga 8 firmat me boshllëk, emri i shefit ishte te
+  impressum-i; nga të 6 emrat Dropcontact ndërtoi dhe kontrolloi një email
+  personal (100%). Mbulimi i ri gjithsej 14 nga 16 firma (87,5%) — mbi cakun
+  80%. Detajet dhe rezervat (punë dore, impressum me JavaScript, domain-e
+  emaili të ndryshme, impressume që vjetrohen):
   `laeufe/vergleich-anbieter/2026-07-23-prospeo-20-firmen-v2/impressum-messung.md`.
-  Der BAU der Impressum-Stufe ist NICHT begonnen — er braucht Olivers
-  Okay (berührt die Projektregel „kein selbst gebautes Fundament") und
-  einen abgesegneten Bauplan.
+  NDËRTIMI i hapit të impressum-it NUK ka filluar — kërkon okay-in e Oliverit
+  (prek rregullin e projektit "asnjë themel i ndërtuar vetë") dhe një plan të
+  miratuar.
 
-- Olivers Großauftrag (24./27.07.2026) ist gebaut und wartet nur noch auf
-  die API-Schlüssel der neuen Firmen-Konten: Impressum-Stufe (KI liest
-  Chef-Namen, Dropcontact prüft; alle Messlauf-Sonderfälle als Tests),
-  Listen-Import (319er-Liste PLR 30–39 liegt unter
-  `laeufe/plr30-39/firmen.json`), wiederaufnehmbares Großlauf-Skript
-  (`python -m pipeline.grosslauf`) mit Dubletten-Meldung und Bericht im
-  Oliver-Format. Kaskade des Laufs: prospeo → impressum → info@
-  (ungeprüft markiert, Prüfung vor Versand über künftiges
-  Hunter-Firmenkonto von x@redschlag.de). Abos: Prospeo Starter 49 $ +
-  Dropcontact Starter 29 €, Kets Karte, von Oliver freigegeben.
-  616 Tests grün, Stand committet.
+- Porosia e madhe e Oliverit (24./27.07.2026) është ndërtuar dhe pret vetëm
+  çelësat API të llogarive të reja të firmës: hapi i impressum-it (AI lexon
+  emrin e shefit, Dropcontact kontrollon; të gjitha rastet e veçanta të vrapimit
+  matës si teste), importi i listës (lista 319-she PLR 30–39 rri te
+  `laeufe/plr30-39/firmen.json`), skripta e rifillueshme e vrapimit të madh
+  (`python -m pipeline.grosslauf`) me njoftim dublikatash dhe raport në formatin
+  e Oliverit. Kaskada e vrapimit: prospeo → impressum → info@ (e shënuar si e
+  pakontrolluar, kontrolli para dërgimit me llogarinë e ardhshme Hunter të
+  x@redschlag.de). Abonimet: Prospeo Starter 49 $ + Dropcontact Starter 29 €,
+  karta e Ketit, të miratuara nga Oliveri. 616 teste jeshile, gjendja e
+  commit-uar.
 
-- Versandstart-Vorbereitung am 28.07.2026 (Bauplan:
-  `docs/bauplan-versandstart-it-dienstleister.md`, Olivers 3-Stufen-Sequenz:
-  `docs/email-sequenz-it-dienstleister.md`): Alle API-Schlüssel liegen in
-  der `.env` und funktionieren (Instantly-Schlüssel neu, getestet; Achtung:
-  Cloudflare blockt Python-urllib ohne Browser-Kennung — sieht aus wie 403).
-  Gebaut und grün (603 Tests): Hunter-Prüfung der info@-Adressen im
-  Großlauf (Pflicht-Schlüssel), Kampagnen-Baukasten mit echtem Namen/
-  Absendern/Betreffs je Stufe, Lead-Import mit {{anrede}}-Variable samt
-  harter Sperre gegen fehlende Anreden, Text-Wache
-  (`python -m pipeline.kampagnen_pruefung`, Referenz unter
-  `laeufe/plr30-39/kampagne-referenz.json`). Die Kampagne
-  „Partnerschafts-Anfrage IT-Dienstleister PLR 30-39"
-  (id e9f33e56-d753-49ce-92c8-b6915808e969) ist als inaktiver Entwurf in
-  Instantly angelegt: echte Texte in den Stufen (Weg B), Abstände 7+7 Tage,
-  20/Tag, Mo–Fr 8–19 Uhr, Absender-Anzeigename „Oliver Redschlag".
-- Wholix-Anschreiben gesichert (28.07.2026, Olivers Auftrag vom 26.07.):
-  alle 194 Sequenzen (Body 1–3, Status, 5 Antworten) plus Master-Prompt
-  liegen unter `wholix-export/`. Erkenntnis: Follow-ups 2/3 waren feste
-  Prompt-Vorlagen, individuell generiert wurde nur Mail 1.
+- Përgatitja e nisjes së dërgimit më 28.07.2026 (plani:
+  `docs/bauplan-versandstart-it-dienstleister.md`, sekuenca 3-hapëshe e
+  Oliverit: `docs/email-sequenz-it-dienstleister.md`): të gjithë çelësat API
+  rrinë te `.env` dhe punojnë (çelësi i Instantly-t i ri, i testuar; kujdes:
+  Cloudflare e bllokon Python-urllib pa shenjë shfletuesi — duket si 403). U
+  ndërtua dhe është jeshile (603 teste): kontrolli me Hunter i adresave info@ te
+  vrapimi i madh (çelës i detyrueshëm), grupi i ndërtimit të fushatës me emër,
+  dërgues e subjekte të vërteta për çdo hap, importi i lead-eve me variablën
+  {{anrede}} bashkë me bllokim të fortë kur mungon përshëndetja, roja e tekstit
+  (`python -m pipeline.kampagnen_pruefung`, referenca te
+  `laeufe/plr30-39/kampagne-referenz.json`). Fushata "Partnerschafts-Anfrage
+  IT-Dienstleister PLR 30-39" (id e9f33e56-d753-49ce-92c8-b6915808e969) është
+  krijuar si draft joaktiv te Instantly: tekste të vërteta te hapat (Rruga B),
+  distanca 7+7 ditë, 20/ditë, hënë–premte 8–19, emri i shfaqur i dërguesit
+  "Oliver Redschlag".
+- Tekstet e Wholix-it u ruajtën (28.07.2026, porosia e Oliverit e 26.07): të
+  gjitha 194 sekuencat (Body 1–3, statusi, 5 përgjigje) plus prompt-i kryesor
+  rrinë te `wholix-export/`. Mësim: follow-up-et 2 dhe 3 ishin shabllone të
+  fiksuara prompt-i; individualisht gjenerohej vetëm emaili i parë.
 
-- Leadquellen-Fundament gebaut und Voll-Scrape gelaufen (29.07.2026,
-  Olivers Auftrag; Bauplan: `docs/bauplan-leadquellen-fundament.md`):
-  Drei neue Quellen-Bausteine (Gelbe Seiten via Apify-Firmenkonto,
-  OpenStreetMap/Overpass mit Ausweich-Server, Google-Maps-Gebietsraster
-  asynchron) plus Fusions-Baustein mit Olivers Branchen-Ausschlüssen.
-  Ergebnis: **1.481 einzigartige IT-Dienstleister der PLR 30+31**
-  (`laeufe/leadquellen/plr-30-31/`), alte 319er-Liste nur noch
-  Auffüller (56 übernommen, GF-Hinweise erhalten). Scrape-Kosten ~7 $.
-- Anbieter-Lage neu (29.07.2026): Prospeo-Konto bei deren API-Umbau
-  stillgelegt (Schlüssel tot, Login tot) -> Kaskade läuft ohne Prospeo,
-  Impressum-KI ist Hauptstufe. OpenRouter tot -> KI läuft über Leonards
-  OpenAI-Schlüssel (KI_MODELL=gpt-4.1-mini). Dropcontact: neues Konto,
-  500 Credits/Monat -> Adress-Bau in Monats-Paketen à ~450 Firmen
-  (passt zu Olivers 20/Tag). Hunter frei: 50 Suchen + 100 Prüfungen.
-  North Data gestrichen (hat keine E-Mails, nur Namen).
-- Endgültige Versandliste steht (11.08.2026): Oliver hatte seine
-  Streichungen im 450er-Paket FARBLICH markiert (rot) statt Zeilen zu
-  löschen — ein CSV-Export verliert diese Farben, deshalb braucht es
-  immer die .xlsx. 56 rote Firmen; 47 davon hatten wir am 30.07. schon
-  aussortiert (Einigkeit), 9 waren noch drin und sind jetzt raus.
-  Ergebnis: `laeufe/leadquellen/plr-30-31/paket-1/versandliste-endgueltig.xlsx`
-  mit 320 Zeilen / 317 Firmen (drei Firmen stehen doppelt mit zwei
-  Webseiten — CM Systemhaus, Veniris, S2-Datentechnik; welche URL gilt,
-  ist noch von Hand zu entscheiden). Werkzeuge dafür neu:
-  `pipeline/oliver_markierungen.py` (report / streichen / ungesehen) und
-  `pipeline/liste_als_json.py`.
-- Anrede: Werkzeug `pipeline/anrede_spalte.py` steht (Regel wie geplant,
-  lieber neutral als falsch). WICHTIG, am 11.08.2026 im Probelauf
-  gelernt: Die Anrede darf erst NACH dem Datenlauf gebaut werden. Wird
-  sie aus der Firmenliste gebaut, nimmt sie den ERSTEN im Impressum
-  genannten Chef - der Datenlauf erreicht aber oft einen anderen. Bei
-  20 Firmen hätten so 3 Kontakte den falschen Namen in der Anrede
-  gehabt (IKN: Giffhorn statt Kassebom, comNET: Peters statt Frings,
-  List + Lohr: List statt Lohr). Deshalb gilt der Modus
-  `anrede_spalte.py aus-lauf <ergebnisse.json>`; die Anrede-Spalte in
-  `versandliste-endgueltig.xlsx` ist nur ein Entwurf und wird ersetzt.
-- Voller Datenlauf FERTIG (11.08.2026): 317 Firmen, **214 persönliche
-  geprüfte Mails (67,5 %)**, 65 geprüfte info@, 23 info@ als nicht
-  zustellbar verworfen, 15 offen. Versandfertige Tabelle:
-  `paket-1/versandfertig-final.xlsx` (279 Kontakte, davon 214 mit
-  Anrede sofort versandfertig; Blatt "Zur Kontrolle" sammelt 115
-  Fälle für einen menschlichen Blick).
-  Die Quote liegt unter den 90 % des Probelaufs, und das ist echt, nicht
-  technisch: 10 Firmen ohne Treffer wurden gegengeprüft, indem sie
-  einzeln (alter Weg) noch einmal durch Dropcontact liefen - 0 von 10
-  lieferten auch dort etwas. Die ersten 20 waren die grossen Firmen der
-  alten kuratierten Liste; der Rest sind Ein-Personen-Betriebe, die
-  Dropcontact schlicht nicht kennt. Das Impressum-Lesen selbst lief
-  sauber: 261 von 263 Webseiten gaben einen Namen her.
-- Neuer Motor `pipeline/schnelllauf.py` (11.08.2026): gleiche Kaskade,
-  gleiche Prüfungen, aber Webseiten parallel und Dropcontact im Batch
-  (dessen API nimmt eine ganze Liste; wir haben sie immer mit genau
-  einem Namen benutzt). 263 Firmen in ~12 Minuten statt ~4 Stunden.
-  Credits bleiben gleich, weil je Runde nur der ERSTE Impressum-Name
-  gefragt wird und nur leer ausgegangene Firmen den zweiten kosten.
-  Zwei Lehren, beide mit Tests festgenagelt:
-  (1) Ein Batch ist bezahlt, sobald Dropcontact ihn annimmt. Das alte
-  2-Minuten-Fenster reichte für 100 Namen nicht, der Lauf warf einen
-  bezahlten Batch weg (per request_id von Hand zurückgeholt). Jetzt:
-  eigenes 15-Minuten-Fenster, request_id landet VOR dem Abholen auf der
-  Platte, und `zwischenstand.json` hält gelesene Webseiten, bezahlte
-  Adressen und offene Aufträge fest. Beim nächsten Start wurden so 103
-  Adressen gratis nachgeholt.
-  (2) Die Zuordnungs-Wache darf nicht zu eng sein: Dropcontact dreht
-  Vor- und Nachnamen ("Peter-Christoph Haider" -> "Haider
-  Peter-Christoph"). Abgebrochen wird nur, wenn WEDER Name NOCH Domain
-  passen; abweichende Namen werden als Hinweis am Kontakt vermerkt.
-- Drei Entscheidungen zur Versandliste (Keti, 11.08.2026):
-  (1) Die 65 info@-Adressen werden angeschrieben, mit einer Anrede ohne
-  Namen. Das Mail-Muster steht fest als "Guten Tag {{anrede}}," - dort
-  passt "Sehr geehrte Damen und Herren" nicht hinein, "zusammen" schon.
-  Also `anrede = "zusammen"` -> "Guten Tag zusammen,".
-  (2) Die 36 abweichenden Mail-Domains werden ohne Handprüfung
-  akzeptiert. Sie stehen weiter im Blatt "Zur Kontrolle", falls später
-  doch jemand draufschauen will; auffällig sind vor allem
-  kleinert-pcservice (gmx.eu, Freemailer) und Bell (bell.net aus einem
-  falsch geteilten Namen).
-  (3) Die 119 Firmen, die Oliver nie gesehen hat, gehen NICHT vorab zu
-  ihm. 96 davon stehen in der Versandliste (78 mit persönlicher Mail) -
-  sie würden also ohne seine Freigabe angeschrieben. Vor der Aktivierung
-  ist das der Punkt, an dem es Leonard/Oliver auffallen kann.
-- Kontakte in Instantly geladen (13.08.2026): Die 279 Kontakte aus
-  `paket-1/versandfertig-final.xlsx` liegen in der Kampagne
-  `e9f33e56-d753-49ce-92c8-b6915808e969`. Sie heißt jetzt
-  "Partnerschafts-Anfrage IT-Dienstleister PLR 30-31" (vorher 30-39 -
-  der Name stammte noch aus der alten 319er-Liste). Die Kampagne war
-  leer und ist weiterhin **Status 0, also schlafend**; es wurde nichts
-  versendet. Instantly hat aus den 279 hochgeladenen Zeilen **277**
-  gemacht: die beiden doppelten Adressen (bergemann@nexave.de und
-  maik.bandolie@kesolutions.gmbh, je zwei Firmen) hat es selbst
-  zusammengeführt - niemand bekommt zwei Mails. Alle 277 tragen eine
-  gefüllte {{anrede}}.
-  Nächste Schritte vor dem Aktivieren: fünf Beispiel-Mails ansehen,
-  echte Testmail an ein eigenes Postfach, Text-Wache laufen lassen,
-  danach Freigabe durch Leonard/Oliver.
-- Kontrollierte Zustellprobe (13.08.2026): Eine eigene Test-Kampagne
-  `7924e36f-e80d-4772-8bd6-e74c19832065` ("[TEST] Zustellprobe PLR
-  30-31") mit EINEM Empfänger (d.keqmezi@digitaldiamonds.agency), einem
-  Schritt und Tageslimit 1 hat um 11:23 Uhr eine echte Mail von
-  `email@poleposition-automation.online` verschickt - Betreff und
-  Anrede von Instantly korrekt zusammengesetzt. Direkt danach pausiert
-  (Status 2). Die echte Kampagne blieb dabei unberührt und schlafend.
-  Vorher lief die Text-Wache gegen `laeufe/plr30-39/kampagne-referenz.json`:
-  keine Abweichungen.
-- Sperre gegen Doppel-Läufe repariert (13.08.2026): Prozessnummern
-  werden vom Betriebssystem wiederverwendet - eine Sperrdatei trug die
-  Nummer 802, die inzwischen Notion gehörte, und hätte diesen Kunden
-  dauerhaft blockiert. `_pid_lebt()` prüft jetzt zusätzlich, ob unter
-  der Nummer wirklich ein "python -m pipeline"-Lauf steckt; die
-  Sperrdatei notiert außerdem den Startzeitpunkt (alte Dateien mit
-  nackter Zahl bleiben lesbar). Betraf nicht nur den Assistenten,
-  sondern jeden Lauf und auch die Status-Anzeige.
-- Hunter-Kontingent: **stellt sich am 02.09.2026 von selbst zurück**
-  (Free-Plan, am 13.08. geprüft: 50/50 Suchen und 100/100 Prüfungen
-  verbraucht). Es blockiert NICHTS am Versand - die 277 Kontakte in
-  Instantly sind alle geprüft. Betroffen sind nur 15 Firmen, die
-  ausschließlich eine selbst geratene info@-Adresse hätten; die warten
-  bis September oder gehen dauerhaft auf die Anruf/Brief-Liste.
-  Dropcontact kann das nicht ersetzen: es beantwortet "wie lautet die
-  Adresse dieser Person", nicht "existiert diese Adresse" (am 13.08.
-  gegengeprüft - für eine der 15 Firmen lieferte es gar nichts).
-- Hunter-Kontingent für diesen Abrechnungszeitraum ist aufgebraucht
-  (100 Verifikationen/Monat, HTTP 429). Betrifft nur info@-Adressen;
-  die 214 persönlichen Mails prüft Dropcontact selbst. Die 15 offenen
-  Firmen warten auf neues Kontingent - ungeprüft geht nichts raus.
-- Probelauf 20 Firmen aus der endgültigen Liste (11.08.2026):
-  18 persönliche geprüfte Mails (90 %), 2 geprüfte info@, keine Fehler.
-  Zwei Firmen brauchten einen zweiten Anlauf (Dropcontact antwortete
-  nicht rechtzeitig) - der Wiederaufnahme-Lauf holte beide nach.
-  Ergebnis unter `paket-1/probelauf-20/`, versandfertige Tabelle in
-  `probelauf-20/versandfertig-20.xlsx`.
-- Offen bei Oliver: 119 Firmen der Versandliste kamen nach seiner
-  Prüfung aus der Reserve dazu, er hat sie nie gesehen. Sie liegen für
-  ihn getrennt in `paket-1/fuer-oliver-neue-119.xlsx`.
-- Probelauf-Endstand (29.07.2026): 9 von 10 Firmen mit persönlicher,
-  geprüfter Chef-Mail (90 %), 1 geprüfte info@. Kurzmeldungs-Baustein
-  für Olivers tägliche Zahlen gebaut (`python -m pipeline.kurzmeldung`).
-  Namens-Lauf (Impressum-KI über alle 1.481) läuft; Ergebnis unter
+- Themeli i burimeve të lead-eve u ndërtua dhe scrape-i i plotë vrapoi
+  (29.07.2026, porosia e Oliverit; plani:
+  `docs/bauplan-leadquellen-fundament.md`): tri pjesë të reja burimi (Gelbe
+  Seiten përmes llogarisë Apify të firmës, OpenStreetMap/Overpass me server
+  rezervë, rrjeti i zonave të Google Maps në mënyrë asinkrone) plus pjesa e
+  bashkimit me përjashtimet e degëve të Oliverit. Rezultati: **1.481 ofrues IT
+  unikë të PLR 30+31** (`laeufe/leadquellen/plr-30-31/`), lista e vjetër 319-she
+  vetëm mbushëse (56 të marrë, shënimet për drejtuesit të ruajtura). Kostoja e
+  scrape-it ~7 $.
+- Gjendja e re e ofruesve (29.07.2026): llogaria Prospeo u ndal gjatë ndryshimit
+  të API-së së tyre (çelësi i vdekur, login-i i vdekur) → kaskada vrapon pa
+  Prospeo, AI-ja e impressum-it është hapi kryesor. OpenRouter i vdekur → AI-ja
+  vrapon me çelësin OpenAI të Leonardit (KI_MODELL=gpt-4.1-mini). Dropcontact:
+  llogari e re, 500 kredite/muaj → ndërtimi i adresave në pako mujore prej ~450
+  firmash (përputhet me 20/ditë të Oliverit). Hunter falas: 50 kërkime + 100
+  kontrolle. North Data u hoq (nuk ka email, vetëm emra).
+- Lista përfundimtare e dërgimit është gati (11.08.2026): Oliveri i kishte
+  shënuar heqjet e veta te pakoja 450-she ME NGJYRË (kuq) në vend që t'i fshinte
+  rreshtat — një eksport CSV i humb ato ngjyra, prandaj duhet gjithmonë .xlsx.
+  56 firma të kuqe; 47 prej tyre i kishim nxjerrë tashmë më 30.07 (pajtim),
+  9 ishin ende brenda dhe tash dolën. Rezultati:
+  `laeufe/leadquellen/plr-30-31/paket-1/versandliste-endgueltig.xlsx` me 320
+  rreshta / 317 firma (tri firma rrinë dy herë me dy faqe interneti — CM
+  Systemhaus, Veniris, S2-Datentechnik; cila URL vlen, vendoset ende me dorë).
+  Veglat e reja për këtë: `pipeline/oliver_markierungen.py` (report / streichen /
+  ungesehen) dhe `pipeline/liste_als_json.py`.
+- Përshëndetja (Anrede): vegla `pipeline/anrede_spalte.py` është gati (rregulli
+  si u planifikua, më mirë neutral se gabim). E RËNDËSISHME, mësuar më
+  11.08.2026 në vrapimin e provës: përshëndetja guxon të ndërtohet vetëm PAS
+  vrapimit të të dhënave. Nëse ndërtohet nga lista e firmave, merr shefin e PARË
+  të përmendur te impressum-i — po vrapimi i të dhënave shpesh arrin dikë tjetër.
+  Te 20 firma, kështu 3 kontakte do të kishin emrin e gabuar te përshëndetja
+  (IKN: Giffhorn në vend të Kassebom, comNET: Peters në vend të Frings, List +
+  Lohr: List në vend të Lohr). Prandaj vlen mënyra
+  `anrede_spalte.py aus-lauf <ergebnisse.json>`; kolona e përshëndetjes te
+  `versandliste-endgueltig.xlsx` është vetëm draft dhe zëvendësohet.
+- Vrapimi i plotë i të dhënave I KRYER (11.08.2026): 317 firma, **214 email
+  personalë të kontrolluar (67,5%)**, 65 info@ të kontrolluar, 23 info@ të
+  hedhura si të padërgueshëm, 15 të hapura. Tabela e gatshme për dërgim:
+  `paket-1/versandfertig-final.xlsx` (279 kontakte, prej tyre 214 me përshëndetje
+  gati për dërgim menjëherë; fleta "Zur Kontrolle" mbledh 115 raste për një sy
+  njeriu).
+  Kuota është nën 90% e vrapimit të provës, dhe kjo është e vërtetë, jo teknike:
+  10 firma pa gjetje u kontrolluan sërish duke i çuar një nga një (rruga e
+  vjetër) përsëri nëpër Dropcontact — 0 nga 10 dhanë diçka edhe atje. Të parat 20
+  ishin firmat e mëdha të listës së vjetër të kuruar; pjesa tjetër janë biznese
+  njëpersonëshe që Dropcontact-i thjesht nuk i njeh. Vetë leximi i impressum-it
+  vrapoi pastër: 261 nga 263 faqe dhanë një emër.
+- Motori i ri `pipeline/schnelllauf.py` (11.08.2026): e njëjta kaskadë, të
+  njëjtat kontrolle, po faqet paralelisht dhe Dropcontact në grupe (API-ja e tij
+  merr një listë të tërë; ne e kishim përdorur gjithmonë me një emër të vetëm).
+  263 firma për ~12 minuta në vend të ~4 orëve. Kreditet mbeten njësoj, sepse
+  për çdo raund pyetet vetëm emri i PARË i impressum-it dhe vetëm firmat që
+  dolën bosh e kushtojnë të dytin.
+  Dy mësime, të dyja të ngulura me teste:
+  (1) Një grup është i paguar sapo Dropcontact-i e pranon. Dritarja e vjetër
+  2-minutëshe nuk mjaftonte për 100 emra, dhe vrapimi hodhi tutje një grup të
+  paguar (u kthye me dorë përmes `request_id`). Tash: dritare e vet 15-minutëshe,
+  `request_id` zbret në disk PARA se të merret rezultati, dhe
+  `zwischenstand.json` mban faqet e lexuara, adresat e paguara dhe porositë e
+  hapura. Në nisjen e radhës u rimorën kështu 103 adresa falas.
+  (2) Roja e përputhjes nuk guxon të jetë shumë e ngushtë: Dropcontact-i i
+  ndërron emrin dhe mbiemrin ("Peter-Christoph Haider" → "Haider
+  Peter-Christoph"). Ndërpritet vetëm kur NUK përputhet AS emri AS domain-i;
+  emrat që ndryshojnë shënohen si vërejtje te kontakti.
+- Tri vendime për listën e dërgimit (Keti, 11.08.2026):
+  (1) Të 65 adresave info@ u shkruhet, me një përshëndetje pa emër. Shablloni i
+  emailit është i fiksuar si "Guten Tag {{anrede}}," — aty "Sehr geehrte Damen
+  und Herren" nuk hyn, po "zusammen" po. Pra `anrede = "zusammen"` → "Guten Tag
+  zusammen,".
+  (2) Të 36 domain-et e ndryshme të emailit pranohen pa kontroll me dorë. Ato
+  rrinë ende te fleta "Zur Kontrolle", nëse dikush do të shikojë më vonë; më të
+  dukshmet janë kleinert-pcservice (gmx.eu, freemailer) dhe Bell (bell.net nga
+  një emër i ndarë gabim).
+  (3) Të 119 firmat që Oliveri nuk i ka parë kurrë NUK i shkojnë atij paraprakisht.
+  96 prej tyre rrinë te lista e dërgimit (78 me email personal) — pra do t'u
+  shkruhej pa miratimin e tij. Para aktivizimit, kjo është pika ku Leonardi ose
+  Oliveri mund ta vënë re.
+- Kontaktet u ngarkuan te Instantly (13.08.2026): të 279 kontaktet nga
+  `paket-1/versandfertig-final.xlsx` rrinë te fushata
+  `e9f33e56-d753-49ce-92c8-b6915808e969`. Ajo tash quhet
+  "Partnerschafts-Anfrage IT-Dienstleister PLR 30-31" (më parë 30-39 — emri
+  vinte ende nga lista e vjetër 319-she). Fushata ishte bosh dhe mbetet
+  **status 0, pra e fjetur**; nuk u dërgua asgjë. Nga 279 rreshtat e ngarkuar
+  Instantly bëri **277**: dy adresat e dyfishta (bergemann@nexave.de dhe
+  maik.bandolie@kesolutions.gmbh, secila te dy firma) i bashkoi vetë — askush
+  nuk merr dy email. Të 277-tat kanë një {{anrede}} të mbushur.
+  Hapat e ardhshëm para aktivizimit: shiko pesë email shembull, dërgo një email
+  prove të vërtetë te një kuti e jona, lësho rojën e tekstit, pastaj miratimi
+  nga Leonardi/Oliveri.
+- Provë e kontrolluar dërgimi (13.08.2026): një fushatë prove e jona
+  `7924e36f-e80d-4772-8bd6-e74c19832065` ("[TEST] Zustellprobe PLR 30-31") me
+  NJË marrës (d.keqmezi@digitaldiamonds.agency), një hap dhe limit ditor 1
+  dërgoi në 11:23 një email të vërtetë nga
+  `email@poleposition-automation.online` — subjekti dhe përshëndetja u
+  bashkuan saktë nga Instantly. Menjëherë pas kësaj u pauzua (status 2).
+  Fushata e vërtetë mbeti e paprekur dhe e fjetur. Para saj vrapoi roja e
+  tekstit kundër `laeufe/plr30-39/kampagne-referenz.json`: pa devijime.
+- Bllokimi kundër vrapimeve të dyfishta u rregullua (13.08.2026): numrat e
+  proceseve i riciklon sistemi operativ — një dosje bllokimi mbante numrin 802,
+  që ndërkohë i takonte Notion-it, dhe do ta kishte bllokuar përgjithmonë atë
+  klient. `_pid_lebt()` tash kontrollon edhe a fshihet vërtet nën atë numër një
+  vrapim "python -m pipeline"; dosja e bllokimit shënon veç kësaj edhe kohën e
+  nisjes (dosjet e vjetra me numër të zhveshur mbeten të lexueshme). Prekte jo
+  vetëm asistentin, po çdo vrapim dhe edhe pamjen e statusit.
+- Kuota e Hunter-it: **kthehet vetë më 02.09.2026** (plani falas, kontrolluar më
+  13.08: 50/50 kërkime dhe 100/100 kontrolle të shpenzuara). Nuk bllokon ASGJË
+  te dërgimi — të 277 kontaktet te Instantly janë të gjitha të kontrolluara. Të
+  prekura janë vetëm 15 firma që do të kishin vetëm një adresë info@ të
+  hamendësuar; ato presin shtatorin ose shkojnë përgjithmonë te lista e
+  telefonatave/letrave. Dropcontact-i nuk e zëvendëson dot: ai i përgjigjet
+  pyetjes "cila është adresa e këtij personi", jo "a ekziston kjo adresë"
+  (kontrolluar më 13.08 — për njërën nga 15 firmat nuk dha fare asgjë).
+- Kuota e Hunter-it për këtë periudhë faturimi është e shterur (100
+  verifikime/muaj, HTTP 429). Prek vetëm adresat info@; të 214 emailet personale
+  i kontrollon vetë Dropcontact-i. Të 15 firmat e hapura presin kuotën e re — pa
+  kontroll nuk del asgjë.
+- Vrapim prove me 20 firma nga lista përfundimtare (11.08.2026): 18 email
+  personalë të kontrolluar (90%), 2 info@ të kontrolluar, pa gabime. Dy firmave
+  u duhej një provë e dytë (Dropcontact-i nuk u përgjigj në kohë) — vrapimi i
+  rifillimit i mori të dyja. Rezultati te `paket-1/probelauf-20/`, tabela e
+  gatshme për dërgim te `probelauf-20/versandfertig-20.xlsx`.
+- E hapur te Oliveri: 119 firma të listës së dërgimit hynë nga rezerva pas
+  kontrollit të tij, ai nuk i ka parë kurrë. Për të rrinë veçmas te
+  `paket-1/fuer-oliver-neue-119.xlsx`.
+- Gjendja përfundimtare e vrapimit të provës (29.07.2026): 9 nga 10 firma me
+  email personal të kontrolluar të shefit (90%), 1 info@ i kontrolluar. U
+  ndërtua pjesa e njoftimit të shkurtër për numrat ditorë të Oliverit
+  (`python -m pipeline.kurzmeldung`). Vrapimi i emrave (AI-ja e impressum-it mbi
+  të gjitha 1.481) është duke vrapuar; rezultati te
   `laeufe/leadquellen/plr-30-31/namenslauf.json`.
 - Dokumentimi për Oliverin (19.08.2026 paradite):
   `docs/workflow-documentation.docx` + `docs/workflow-diagram.png` —
@@ -664,85 +673,98 @@ sichtbare Nachweise benutzen Testdaten, niemals echte Empfänger.
     PLR 30-39 që kemi këtu — duket ndërtuar nga një version tjetër i
     listës. Nuk u prek.
 
-## Entscheidungen
+## Vendimet
 
-- Instantly bleibt der unsichtbare Versand-Motor. Das Tool liest seine Daten
-  für die Kampagnenansicht; echte Schreibaktionen sind nicht Teil der
-  lokalen Prüfungen.
-- Das Gmail-Testkonto dient ausschließlich als ungefährliches Testpostfach.
-  Es wird nicht dauerhaft mit dem Tool verbunden. Eine direkte Gmail-
-  Anmeldung, gespeicherte Google-Zugänge oder ein dauerhafter Mail-Abgleich
-  sind nicht freigegeben.
-- Der erfolgreiche End-to-End-Test ändert daran nichts: Gmail war nur
-  Empfänger und Absender der manuellen Testantwort. Unser Tool erhielt keinen
-  Gmail-Zugang; Versand und Antwortabruf liefen ausschließlich über Instantly.
-- Am 23.07.2026 wurde der verkleinerte Umfang von Phase 3 festgelegt:
-  Das interne Postfach darf über den offiziellen Instantly-Endpunkt auf eine
-  bestehende empfangene Kampagnenmail antworten. Es gibt weiterhin keine
-  direkte Gmail-/Microsoft-Verbindung, keinen freien Mailversand und keinen
-  vollständigen Postfach-Abgleich.
-- Der Bau und sein Nachweis stehen in Jira unter `AP-201`; die Aufgabe ist
-  mit dem vollständigen Test- und Sichtnachweis als erledigt markiert.
-- Der testgetriebene Bauplan steht unter
-  `docs/superpowers/plans/2026-07-23-instantly-antworten.md` und wurde
-  vollständig umgesetzt.
-- Kampagnen-Einstellungen (Tageslimit, Sendefenster, Signatur und ähnliche
-  Werte) werden nicht im Tool nachgebaut. Der Weg dafür ist der Link nach
-  Instantly.
-- Verlässliche Instantly-Felder werden gezeigt. Für „fehlgeschlagen" und
-  nicht getrennt gelieferte Warteschlangen-Zustände zeigt die Oberfläche
-  keinen geschätzten Wert.
-- Instantly und der freigegebene Lauf bleiben getrennte Datenquellen: Live-
-  Kennzahlen und Warteschlange beruhen auf Instantly; der lokale Lauf wird
-  nur als eigener Vergleichswert gezeigt.
-- Der Warteschlangenring verrechnet Unzustellbare nicht als eigene Gruppe.
-  Er zeigt nur „versendet" und den Rest „nicht getrennt verfügbar".
-  Unzustellbare stehen mit einem Überschneidungshinweis getrennt darunter.
-- Die zusammengefasste Zahl aktiver Kampagnen wird nur berechnet, wenn alle
-  berücksichtigten Kampagnen einen bekannten Status haben.
-- Die neun am 22.07.2026 gestrichenen Wholix-Funktionen bleiben gestrichen;
-  insbesondere keine Benutzerverwaltung, Calls, Notizen oder AI-Chat.
-- In Phase 2 zeigt jede Prüftabelle genau eine E-Mail-Runde. Jeder der drei
-  Schritte wird einzeln bestätigt; mehrere Empfänger können gesammelt
-  bestätigt werden. An Instantly geht weiterhin nur die vollständig
-  bestätigte Runde.
-- Ein ungeeigneter Text wird nicht frei bearbeitet, sondern genau für diesen
-  Schritt neu erzeugt. Unbekannte Instantly-Zustände bleiben unbekannt.
-- Die globale Sperrliste erhält Grund und Kommentar sowie Muster wie
-  `*.bund.de`; alte einfache YAML-Einträge bleiben lesbar.
-- Die Instantly-Abfrage der Freigabe ist rein lesend und konservativ. Nur bei
-  genau einer ausgehenden E-Mail in einem Verlauf wird eine Antwort diesem
-  Schritt zugeordnet. Bei mehreren möglichen Schritten bleibt die Zuordnung
-  unbekannt, während der belegbare Gesamtstand sichtbar bleibt.
-- Nach der Übergabe ist die E-Mail-Runde im Tool schreibgeschützt. Eine
-  einzelne Neuerzeugung macht nur den betroffenen Schritt wieder offen.
+- Instantly mbetet motori i padukshëm i dërgimit. Mjeti i lexon të dhënat e tij
+  për pamjen e fushatave; veprimet e vërteta të shkrimit nuk janë pjesë e
+  kontrolleve lokale.
+- Llogaria e provës Gmail shërben vetëm si kuti postare prove pa rrezik. Ajo nuk
+  lidhet përgjithmonë me mjetin. Një hyrje direkte në Gmail, qasje Google të
+  ruajtura ose një krahasim i vazhdueshëm i postës nuk janë të miratuara.
+- Testi i suksesshëm nga fillimi në fund nuk e ndryshon këtë: Gmail-i ishte
+  vetëm marrësi dhe dërguesi i përgjigjes manuale të provës. Mjeti ynë nuk mori
+  asnjë qasje në Gmail; dërgimi dhe marrja e përgjigjes shkuan vetëm përmes
+  Instantly-t.
+- Më 23.07.2026 u caktua vëllimi i zvogëluar i Fazës 3: posta e brendshme guxon
+  t'i përgjigjet, përmes pikës zyrtare të Instantly-t, një emaili fushate që
+  është marrë tashmë. Vazhdon të mos ketë lidhje direkte Gmail/Microsoft, as
+  dërgim të lirë emailesh, as krahasim të plotë të kutisë postare.
+- Ndërtimi dhe prova e tij rrinë në Jira te `AP-201`; detyra është shënuar e
+  kryer me provën e plotë të testeve dhe të pamjes.
+- Plani i ndërtimit i drejtuar nga testet rri te
+  `docs/superpowers/plans/2026-07-23-instantly-antworten.md` dhe u zbatua i
+  tëri.
+- Rregullimet e fushatës (limiti ditor, dritarja e dërgimit, nënshkrimi dhe
+  vlera të ngjashme) nuk ribëhen te mjeti. Rruga për to është lidhja drejt
+  Instantly-t.
+- Tregohen vetëm fushat e besueshme të Instantly-t. Për "të dështuara" dhe për
+  gjendjet e radhës që nuk vijnë të ndara, ndërfaqja nuk tregon asnjë vlerë të
+  vlerësuar.
+- Instantly dhe vrapimi i miratuar mbeten burime të ndara të dhënash: treguesit
+  live dhe radha mbështeten te Instantly; vrapimi lokal tregohet vetëm si vlerë
+  krahasimi më vete.
+- Unaza e radhës nuk i llogarit të padërgueshmit si grup të vetin. Ajo tregon
+  vetëm "të dërguara" dhe pjesën tjetër "jo e ndarë në dispozicion". Të
+  padërgueshmit rrinë veçmas poshtë me një shënim mbivendosjeje.
+- Numri i përmbledhur i fushatave aktive llogaritet vetëm kur të gjitha fushatat
+  e marra parasysh kanë status të njohur.
+- Të nëntë funksionet e Wholix-it të hequra më 22.07.2026 mbeten të hequra;
+  sidomos pa menaxhim përdoruesish, pa telefonata, pa shënime dhe pa AI-chat.
+- Te Faza 2 çdo tabelë kontrolli tregon saktësisht një raund emailesh. Secili
+  nga tre hapat konfirmohet veç e veç; disa marrës mund të konfirmohen bashkë.
+  Te Instantly shkon edhe më tej vetëm raundi i konfirmuar plotësisht.
+- Një tekst i papërshtatshëm nuk përpunohet lirshëm, po rigjenerohet saktësisht
+  për atë hap. Gjendjet e panjohura të Instantly-t mbeten të panjohura.
+- Lista globale e bllokimit merr arsye dhe koment, si dhe shabllone si
+  `*.bund.de`; hyrjet e vjetra të thjeshta YAML mbeten të lexueshme.
+- Pyetja te Instantly për miratimin është vetëm lexim dhe konservative. Vetëm
+  kur në një histori ka saktësisht një email dalës, një përgjigje i caktohet
+  atij hapi. Kur ka disa hapa të mundshëm, caktimi mbetet i panjohur, ndërsa
+  gjendja e përgjithshme e provueshme mbetet e dukshme.
+- Pas dorëzimit, raundi i emailit është i mbrojtur nga shkrimi te mjeti. Një
+  rigjenerim i vetëm e hap sërish vetëm hapin e prekur.
 
-- CRM-Grundsatzentscheidungen getroffen (Leonard, 29.07.2026) — damit
-  ist der CRM-Bau entsperrt, sobald er drankommt: (1) Kontakte fließen
-  automatisch ins CRM, aber NUR wer geantwortet hat; (2) Verkaufsstufen
-  wie Wholix, deutsch beschriftet (gegen die Screenshots prüfen);
-  (3) Einzelnutzer Leonard; (4) Speicher: SQLite-Datenbankdatei im
-  Datenverzeichnis. Die Wholix-Screenshots liegen wieder im Projekt
-  (Ordner "wholix interface screenshots", von Leonards Desktop kopiert).
+- **Baza rri te Rruga A (Dafina, 01.09.2026).** Baza kryesore `master.db`
+  rindërtohet e tëra nga dosjet çdo vrapim (`DROP` + `CREATE`); çdo kolonë
+  llogaritet përsëri. Ndryshimet që i bën njeriu nuk rrinë aty — ato rrinë
+  te `historie.db`, dosje krejt e ndarë (vendim i mëparshëm i Dafinës,
+  28.08.2026).
+  Pse: sot askush nuk shkruan me dorë në bazë, çdo kolonë del nga dosjet, dhe
+  rindërtimi zgjat 0,3 sekonda për 7.777 firma. Përfitimi u pa po atë ditë —
+  një gabim te 201 firma (CEO/Inhaber) u rregullua thjesht duke u rindërtuar.
+  Kur duhet rishikuar: kur interface-i të fillojë të shkruajë direkt në bazë.
+  Atëherë duhet Rruga B — kolonat ndahen në "të shkruara nga njeriu" dhe "të
+  llogaritura nga sistemi", dhe sistemi nuk i prek kurrë të parat. Çmimi i B-së
+  që duhet pranuar me vetëdije: një korrigjim i formulës nuk shkon më te
+  rreshtat e vjetër. Rruga C (vetëm shtim, pa fshirje) u refuzua.
+- Vendimet themelore për CRM-në janë marrë (Leonard, 29.07.2026) — me këtë
+  ndërtimi i CRM-së është i zhbllokuar sapo t'i vijë radha: (1) kontaktet
+  rrjedhin vetë te CRM-ja, po VETËM kush ka dhënë përgjigje; (2) shkallët e
+  shitjes si te Wholix, të etiketuara gjermanisht (të kontrollohen kundër fotove
+  të ekranit); (3) përdorues i vetëm Leonardi; (4) ruajtja: një dosje baze
+  SQLite te dosja e të dhënave. Fotot e ekranit të Wholix-it rrinë sërish te
+  projekti (dosja "wholix interface screenshots", e kopjuar nga desktopi i
+  Leonardit).
 
-## Nächste Schritte
+## Hapat e ardhshëm
 
-Fahrplan Versandstart (Basis ist jetzt die NEUE 1.481er-Liste, nicht
-mehr die alte 319er — Details in beiden Bauplänen unter `docs/`):
+Plani i nisjes së dërgimit (baza tash është lista e RE 1.481-she, jo më e
+vjetra 319-she — detajet te të dy planet nën `docs/`):
 
-- Namens-Lauf abwarten (läuft), dann Monats-Paket 1 (~450 Firmen mit
-  gefundenem Namen, priorisiert) durch den Dropcontact-Adress-Bau —
-  daraus Olivers Ergebnis-Auswertung (Gesamt, Quote, Anruf/Brief-Liste).
-- Danach Anrede-Spalte je Kontakt füllen (Claude, neutral bei Unsicherheit)
-  und komplett zur Kontrolle vorlegen.
-- Geprüfte Kontakte mit Anrede in die Kampagne laden
-  (`import_leads_mit_anrede`), 5 Beispiel-Mails plus echte Testmail an ein
-  eigenes Test-Postfach zeigen, Text-Wache laufen lassen.
-- Erst nach Freigabe durch Leonard/Oliver aktivieren; danach täglich
-  Kurzmeldung mit den Zahlen an Oliver (Zuständigkeit für das Beantworten
-  der Antworten vor dem Start klären).
-- Später/parallel: CRM-Ausbau als eigenes Arbeitspaket entwerfen; weitere
-  Wholix-Bereiche bleiben gestrichen, solange die Scope-Entscheidungen
-  nicht ausdrücklich geändert werden.
-- Schreibende Versand- oder Postfachprüfungen nur mit ausdrücklicher
-  Freigabe und Testkonten.
+- Të pritet vrapimi i emrave (është duke vrapuar), pastaj pakoja mujore 1
+  (~450 firma me emër të gjetur, të prioritizuara) përmes ndërtimit të adresave
+  me Dropcontact — nga aty del vlerësimi i rezultatit për Oliverin (gjithsej,
+  kuota, lista e telefonatave/letrave).
+- Pastaj të mbushet kolona e përshëndetjes për çdo kontakt (Claude, neutral kur
+  ka pasiguri) dhe të paraqitet e plotë për kontroll.
+- Kontaktet e kontrolluara me përshëndetje të ngarkohen te fushata
+  (`import_leads_mit_anrede`), të tregohen 5 email shembull plus një email prove
+  i vërtetë te një kuti postare e jona e provës, dhe të lëshohet roja e tekstit.
+- Të aktivizohet vetëm pas miratimit nga Leonardi/Oliveri; pastaj çdo ditë
+  njoftimi i shkurtër me numrat te Oliveri (kush është përgjegjës për t'u
+  përgjigjur përgjigjeve, të sqarohet para nisjes).
+- Më vonë ose paralelisht: zgjerimi i CRM-së të projektohet si pako pune e
+  vetën; pjesët e tjera të Wholix-it mbeten të hequra, për sa kohë vendimet e
+  vëllimit nuk ndryshohen shprehimisht.
+- Kontrollet me shkrim të dërgimit ose të kutisë postare, vetëm me miratim të
+  qartë dhe me llogari prove.

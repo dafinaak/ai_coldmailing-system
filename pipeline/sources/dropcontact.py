@@ -47,6 +47,31 @@ ENRICH_URL = "https://api.dropcontact.com/v1/enrich/all"
 BRAUCHBARE_QUALIFIKATION = "nominative@pro"
 
 
+# Was wir selbst mitgeschickt haben oder schon anders fuehren - das
+# gehoert nicht in die Zusatzfelder, sonst stuende dieselbe Angabe zweimal
+# in der Zeile und niemand wuesste, welche gilt.
+EIGENE_FELDER = frozenset((
+    "first_name", "last_name", "full_name", "company", "website", "email",
+    "custom_fields",
+))
+
+
+def _zusatzfelder(zeile: dict) -> dict:
+    """Alles, was Dropcontact ausser der Adresse zurueckgibt.
+
+    Dropcontact rechnet "pay on success" ab: ein Credit je verifizierter
+    Adresse - und Telefonnummer, LinkedIn-Profil und Firmendaten stecken
+    in derselben bezahlten Zeile. Bis 03.09.2026 las diese Klasse nur
+    "email" und warf den Rest weg; ueber die acht Zonen waren das 202
+    Telefonnummern und 110 LinkedIn-Profile, alle bereits bezahlt.
+
+    Leere Werte fallen raus: ein leeres Feld ist keine Information, und
+    stuende es drin, waere spaeter nicht mehr zu sehen, ob Dropcontact
+    nichts wusste oder ob wir nicht gefragt haben."""
+    return {name: wert for name, wert in (zeile or {}).items()
+            if name not in EIGENE_FELDER and wert not in (None, "", [], {})}
+
+
 def _beste_email(email_liste: list):
     """Waehlt aus Dropcontacts "email"-Liste die erste persoenliche,
     verifizierte Firmen-Adresse (nominative@pro). Gibt das {email,
@@ -314,6 +339,7 @@ class DropcontactSource:
             _pruefe_zuordnung(anfrage, zeile, request_id)
             mail = _beste_email(zeile.get("email", []))
             if mail:
+                mail = {**mail, "felder": _zusatzfelder(zeile)}
                 hinweis = _namens_hinweis(anfrage, zeile)
                 if hinweis:
                     mail = {**mail, "hinweis": hinweis}
@@ -330,7 +356,18 @@ class DropcontactSource:
         """
         url = f"{ENRICH_URL}/{request_id}"
         for abfrage in range(1, self.batch_max_abfragen + 1):
-            antwort = self.session.get(url, headers=self._headers, timeout=60)
+            try:
+                antwort = self.session.get(url, headers=self._headers,
+                                           timeout=120)
+            except (requests.Timeout, requests.ConnectionError):
+                # Das Netz, nicht der Batch. Der Batch ist bezahlt und
+                # bleibt liegen - also weiterversuchen statt aufgeben.
+                # Am 03.09.2026 lief Zone 32 dreimal in diesen Fehler und
+                # gab jedes Mal ein bezahltes Ergebnis auf.
+                if abfrage == self.batch_max_abfragen:
+                    raise
+                time.sleep(self.batch_wartezeit)
+                continue
             if antwort.status_code >= 400:
                 raise RuntimeError(
                     f"Dropcontact antwortet mit {antwort.status_code} auf {url}: "

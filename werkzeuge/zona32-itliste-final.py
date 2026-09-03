@@ -8,6 +8,7 @@ Anrede-n nga dosja qe e ndertoi anrede_spalte.aus_lauf(), qe teksti i
 pershendetjes te jete saktesisht i njejti si te lista e vjeter.
 """
 import json
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -16,6 +17,9 @@ PROJEKT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJEKT))
 
 from pipeline.anrede_spalte import baue_anrede  # noqa: E402
+from pipeline.config import lade_globale_sperrlisten_eintraege  # noqa: E402
+from pipeline.sperrliste_pruefung import (  # noqa: E402
+    gesperrte_domains, ist_gesperrt)
 
 ZONEN = {
     "32": {"lauf": "zona32-dropcontact-2026-08-21",
@@ -25,8 +29,21 @@ ZONEN = {
            "quellen": ["zona33-bielefeld-2026-08-25"]},
     "34": {"lauf": "zona34-dropcontact-2026-08-28",
            "quellen": ["zona34-kassel-2026-08-28"]},
-    "35": {"lauf": "zona35-dropcontact-2026-08-28",
-           "quellen": ["zona35-giessen-2026-08-28"]},
+    "35": {"lauf": "zona35-dropcontact-2026-09-02",
+           "quellen": ["zona35-giessen-2026-08-28",
+                       "zona35-overpass-2026-09-02"]},
+    "36": {"lauf": "zona36-dropcontact-2026-09-02",
+           "quellen": ["zona36-fulda-2026-09-01",
+                       "zona36-overpass-2026-09-02"]},
+    "37": {"lauf": "zona37-dropcontact-2026-09-02",
+           "quellen": ["zona37-goettingen-2026-09-01",
+                       "zona37-overpass-2026-09-02"]},
+    "38": {"lauf": "zona38-dropcontact-2026-09-03",
+           "quellen": ["zona38-braunschweig-2026-09-01",
+                       "zona38-overpass-2026-09-03"]},
+    "39": {"lauf": "zona39-dropcontact-2026-09-03",
+           "quellen": ["zona39-magdeburg-2026-09-01",
+                       "zona39-overpass-2026-09-03"]},
 }
 
 # Nga cili mjet erdhi vertet secili vrapim. Kjo shkruhet ne kolonen
@@ -37,7 +54,16 @@ QUELLE_FIRMA = {
     "zona32-overpass-2026-08-21": "Overpass/OSM (21.08.2026)",
     "zona33-bielefeld-2026-08-25": "Google Maps (Apify, 21.08.2026)",
     "zona34-kassel-2026-08-28": "Google Maps (Apify, 28.08.2026)",
-    "zona35-giessen-2026-08-28": "Google Maps (Apify, 28.08.2026)",
+    "zona35-giessen-2026-08-28": "Google Maps (Apify, 02.09.2026)",
+    "zona35-overpass-2026-09-02": "Overpass/OSM (02.09.2026)",
+    "zona36-fulda-2026-09-01": "Google Maps (Apify, 02.09.2026)",
+    "zona36-overpass-2026-09-02": "Overpass/OSM (02.09.2026)",
+    "zona37-goettingen-2026-09-01": "Google Maps (Apify, 02.09.2026)",
+    "zona37-overpass-2026-09-02": "Overpass/OSM (02.09.2026)",
+    "zona38-braunschweig-2026-09-01": "Google Maps (Apify, 02.09.2026)",
+    "zona38-overpass-2026-09-03": "Overpass/OSM (03.09.2026)",
+    "zona39-magdeburg-2026-09-01": "Google Maps (Apify, 02.09.2026)",
+    "zona39-overpass-2026-09-03": "Overpass/OSM (03.09.2026)",
 }
 ZONE = "32"
 for _a in sys.argv[1:]:
@@ -47,11 +73,17 @@ if ZONE not in ZONEN:
     sys.exit(f"Unbekannte Zone {ZONE!r}")
 LAUF = PROJEKT / "laeufe/leadquellen" / ZONEN[ZONE]["lauf"]
 
+# Kolonat 1-17 jane saktesisht ato te IT-Liste-Emails-Zona32-FERTIG, qe
+# lista te lexohet si me pare. Pas tyre vijne te dhenat qe Dropcontact-i
+# i kthen me te njejtin kredit si email-in (vendim i Dafines, 03.09.2026:
+# "gjithcka qe kthen") - deri me 03.09 hidheshin poshte pa i pare askush.
 KOPF = [
     "Nr", "Firma", "Person", "Position", "E-Mail", "Anrede", "Hinweis",
     "Telefon (Person)", "Telefon (Firma)", "Webseite", "PLZ", "Ort",
     "Quelle - Firma", "Quelle - Person", "Quelle - Position",
     "Quelle - E-Mail", "Quelle - Telefon",
+    "LinkedIn (Person)", "LinkedIn (Firma)", "Mitarbeiter",
+    "Adresse (Handelsregister)", "PLZ (HR)", "Ort (HR)", "Land",
 ]
 
 KOPF_FUELL = "FF1F3A56"
@@ -79,8 +111,55 @@ def rolle_saeubern(rohe_rolle):
     return text, ""
 
 
+def nummer_normal(text):
+    """Vetem shifrat, pa prefiksin e shtetit dhe pa zeron e pare - qe
+    '0641 350 99 48 0' dhe '+49 641 35099480' te njihen si i njejti
+    numer. Pa kete, i njejti numer i shkruar ndryshe do te dukej si dy
+    linja te ndryshme."""
+    ziffern = re.sub(r"\D", "", text or "")
+    if ziffern.startswith("00"):
+        ziffern = ziffern[2:]
+    if ziffern.startswith("49"):
+        ziffern = ziffern[2:]
+    return ziffern.lstrip("0")
+
+
+def telefone_waehlen(impressum, firma):
+    """Kthen (telefon_person, telefon_firma).
+
+    Ne te dhenat tona NUK ka numer personal: te pipeline-i cdo person i
+    te njejtit impressum merr te njejtin numer, ate te faqes. Pra kemi
+    nje numer per firme nga DY burime - impressum-i dhe Google Maps.
+
+    Prandaj kolona e personit mbushet vetem kur numri i impressum-it
+    eshte VERTET nje numer tjeter (vendim i Dafines, 03.09.2026) - pra
+    kur ka gjasa te jete nje linje e dyte. Perjashtohen:
+      - numrat e cunguar nga nxjerrja (p.sh. '+49 (0) 5703' - vetem
+        prefiksi i qytetit, jo numer per t'u thirrur);
+      - rastet ku njeri eshte fillimi i tjetrit (mungon vetem
+        prapashtesa: '45775' kunder '45775-0').
+    Kur s'ka numer te dyte, kolona e personit rri bosh dhe numri i
+    vetem qe kemi shkon te kolona e firmes - aty ku i takon."""
+    imp_n, firma_n = nummer_normal(impressum), nummer_normal(firma)
+    imp_ok = len(imp_n) >= 7
+    if imp_ok and firma_n and imp_n != firma_n \
+            and not imp_n.startswith(firma_n) and not firma_n.startswith(imp_n):
+        return impressum, firma
+    if firma:
+        return "", firma
+    return "", (impressum if imp_ok else "")
+
+
 def firmen_index():
-    """Kodi postar, qyteti dhe pozita vijne nga vrapimet e mbledhjes."""
+    """Kodi postar, qyteti, pozita DHE telefonat vijne nga vrapimet e
+    mbledhjes.
+
+    Telefonat jane dy gjera te ndryshme dhe duhen mbajtur ndare:
+    "telefon" i firmes eshte centralja (Maps ose impressum), kurse
+    telefoni i personit eshte ai qe qendron te impressum-i pikerisht
+    ne rreshtin e atij njeriu. Deri me 02.09.2026 lista i shkruante te
+    dyja kolonat nga e njejta fushe, prandaj dilnin gjithmone identike -
+    dhe centralja dukej si linje direkte e personit."""
     index = {}
     for ordner in ZONEN[ZONE]["quellen"]:
         pfad = PROJEKT / "laeufe/leadquellen" / ordner / "firmen.json"
@@ -90,6 +169,14 @@ def firmen_index():
             index[(firma.get("domain") or firma.get("name") or "").lower()] = {
                 "plz": firma.get("plz") or "",
                 "ort": firma.get("ort") or "",
+                "telefon_firma": firma.get("telefon") or "",
+                # Cdo vendimmarres me numrin e vet, i gjetur me emer -
+                # jo thjesht i pari i listes, se Dropcontact-i mund te
+                # kete kthyer nje tjeter person te se njejtes firme.
+                "personen": {
+                    f"{p.get('vorname','')} {p.get('nachname','')}".strip().lower():
+                        p.get("telefon") or ""
+                    for p in (firma.get("entscheider") or [])},
                 "lauf": ordner,
             }
     return index
@@ -140,6 +227,19 @@ def bauen():
                   f"({(firma.get('leads') or [{}])[0].get('email')})")
     daten = [f for f in daten if f in beste.values()]
 
+    # Porta e fundit para se lista te shkoje kund. Bllokimi vlen edhe per
+    # rezultate te vjetra: batch-et e zonave 32/33/34 rrodhen me 21 e 28
+    # gusht, kurse gjashte firmat u bllokuan me 31.08.2026 - pa kete
+    # kontroll ato dilnin ne liste sikur asgje te mos kishte ndodhur.
+    domains = gesperrte_domains(lade_globale_sperrlisten_eintraege(str(PROJEKT)))
+    frei = [f for f in daten if not ist_gesperrt(f.get("website"), domains)]
+    if len(frei) != len(daten):
+        print(f"Lista e bllokimit hoqi {len(daten) - len(frei)} firma:")
+        for f in daten:
+            if ist_gesperrt(f.get("website"), domains):
+                print(f"    bllokuar: {f.get('name')} ({f.get('website')})")
+    daten = frei
+
     kontrolle = []
     nummer = 0
     ohne_position = 0
@@ -149,7 +249,10 @@ def bauen():
             continue
         nummer += 1
         person = f"{lead.get('first_name','')} {lead.get('last_name','')}".strip()
-        anrede, grund = baue_anrede(person)
+        # Cka ktheu Dropcontact-i per kete person, pervec email-it. Vjen me
+        # te njejtin kredit; deri me 03.09.2026 hidhej poshte.
+        dc = firma.get("dropcontact") or {}
+        anrede, grund = baue_anrede(person, civility=dc.get("civility"))
 
         position, positions_hinweis = rolle_saeubern(firma.get("rolle"))
         if not position:
@@ -170,16 +273,42 @@ def bauen():
             (firma.get("domain") or firma.get("name") or "").lower(), {})
         quelle_firma = QUELLE_FIRMA.get(ort_daten.get("lauf", ""), "?")
 
+        # Telefoni i personit merret me emrin e tij; nese ai njeri s'ka
+        # numer te vetin te impressum-i, kolona mbetet BOSH. Me pare aty
+        # binte centralja e firmes, dhe nje qendrore dukej si linje
+        # direkte - lexuesi s'kishte si ta dallonte.
+        telefon_person, telefon_firma = telefone_waehlen(
+            ort_daten.get("personen", {}).get(person.lower(), ""),
+            ort_daten.get("telefon_firma", "") or firma.get("telefon", ""))
+
+        # Numri i Dropcontact-it eshte i lidhur me kete person konkret,
+        # kurse ai i impressum-it eshte numri i faqes. Prandaj i pari ka
+        # perparesi te kolona e personit.
+        if dc.get("phone"):
+            telefon_person = dc["phone"]
+            quelle_telefon = "Dropcontact"
+        elif telefon_person:
+            quelle_telefon = "Impressum"
+        elif telefon_firma:
+            quelle_telefon = "Firma (Maps/Impressum)"
+        else:
+            quelle_telefon = "—"
+
         blatt.append([
             nummer, firma.get("name", ""), person, position,
             lead.get("email", ""), anrede, hinweis,
-            firma.get("telefon", ""), firma.get("telefon", ""),
+            telefon_person, telefon_firma,
             firma.get("website", ""),
             ort_daten.get("plz", ""), ort_daten.get("ort", ""),
             quelle_firma, "Impressum + KI",
             "Impressum (wörtlich)" if position else "—",
             "Dropcontact (gebaut + verifiziert)",
-            "Impressum" if firma.get("telefon") else "—",
+            quelle_telefon,
+            # Fushat e Dropcontact-it, te paguara me te njejtin kredit.
+            dc.get("linkedin", ""), dc.get("company_linkedin", ""),
+            dc.get("nb_employees", ""),
+            dc.get("siret_address", ""), dc.get("siret_zip", ""),
+            dc.get("siret_city", ""), dc.get("country", ""),
         ])
 
     for zelle in blatt[1]:
@@ -191,7 +320,8 @@ def bauen():
     blatt.auto_filter.ref = blatt.dimensions
 
     breiten = [5, 36, 24, 26, 36, 22, 46, 20, 20, 34, 8, 18,
-               30, 18, 22, 32, 14]
+               30, 18, 22, 32, 14,
+               40, 40, 12, 34, 10, 18, 8]
     for spalte, breite in enumerate(breiten, 1):
         blatt.column_dimensions[get_column_letter(spalte)].width = breite
 

@@ -33,6 +33,9 @@ import sqlite3
 from datetime import datetime
 from pathlib import Path
 
+from pipeline.bereich import aus_rolle as bereich_aus_rolle
+from pipeline.bundesland import (nachschlagen as bundesland_nachschlagen,
+                                 speicher_lesen as bundesland_speicher)
 from pipeline.decision_maker import rank_role
 from pipeline.firmen_filter import stadt
 
@@ -118,7 +121,10 @@ def _json_liste(pfad: Path) -> list:
 def _firma_uebernehmen(bekannt: dict, neu: dict) -> None:
     """Leere Felder auffuellen - nie ueberschreiben (Olivers Regel)."""
     for feld in ("name", "website", "domain", "address", "plz", "ort",
-                 "telefon", "vorhandene_email", "gf_name_liste"):
+                 "telefon", "vorhandene_email", "gf_name_liste",
+                 # Ohne diese drei ginge die Anreicherung wieder verloren,
+                 # sobald dieselbe Firma in zwei Laeufen steht.
+                 "mitarbeiter", "rechtsform", "beschreibung"):
         if not bekannt.get(feld) and neu.get(feld):
             bekannt[feld] = neu[feld]
     for kat in neu.get("categories") or []:
@@ -148,6 +154,78 @@ def _leads_je_firma(lauf_pfad: Path) -> dict:
         domain = str(lead.get("email", "")).split("@")[-1].lower()
         daten.setdefault(domain, []).append(lead)
     return daten
+
+
+# Wer zaehlt als "CEO/Inhaber"? ROLE_GROUPS in pipeline/decision_maker.py
+# ist nach Rang sortiert: 0 Inhaber, 1 CEO, 2 Geschaeftsfuehrer, 3
+# Gruender - das ist die Eigentuemer-/Leitungsebene. Rang 4 (Leiter,
+# Prokurist, Head of, Partner) gehoert NICHT dazu: ein Abteilungsleiter
+# ist Entscheider, aber nicht der Inhaber der Firma.
+CHEF_RANG = 3
+
+# Der Vorstand einer AG/SE leitet die Firma - er steht in ROLE_GROUPS aber
+# in derselben Gruppe wie "Leiter" und "Prokurist" und faellt sonst raus.
+CHEF_EXTRA = ("vorstand",)
+
+# Der Aufsichtsrat kontrolliert den Vorstand, er leitet nicht. "Aufsichts-
+# ratvorsitzender" enthaelt "vorstand" nicht, "Vorstandvorsitzender" aber
+# schon - deshalb wird hier ausdruecklich ausgeschlossen.
+KEIN_CHEF = ("aufsichtsrat", "beirat")
+
+# "Vertreten durch: Max Mueller" im Impressum benennt den gesetzlichen
+# Vertreter - das IST in der Praxis die Geschaeftsfuehrung. Die Person
+# zaehlt also als Chef, die Formel selbst ist aber kein Titel: der Name
+# bleibt, die Formel faellt weg.
+VERTRETUNG = ("vertreten durch", "vertretungsberechtigt")
+
+# Diese Formeln sagen dagegen NICHTS ueber die Leitung: wer nach §55 RStV
+# fuer den Inhalt der Webseite verantwortlich ist, kann jede beliebige
+# Person im Haus sein. Kein Titel und kein Beleg fuer Fuehrung.
+NUR_INHALT = ("inhaltlich", "verantwortlich f", "dienstanbieter",
+              "veranwortlich")
+
+KEINE_ROLLE = VERTRETUNG + NUR_INHALT
+
+
+def _ist_chef(rolle: object) -> bool:
+    """Leitet diese Person die Firma?"""
+    text = str(rolle or "").casefold()
+    if any(k in text for k in KEIN_CHEF):
+        return False
+    if any(k in text for k in CHEF_EXTRA + VERTRETUNG):
+        return True
+    return rank_role(rolle) <= CHEF_RANG
+
+
+def _rolle_oder_leer(rolle: object) -> str:
+    """Rechtsformeln sind keine Funktionsbezeichnung - dann lieber nichts."""
+    text = str(rolle or "").strip()
+    return "" if any(k in text.casefold() for k in KEINE_ROLLE) else text
+
+
+def _ceo_owner(firma: dict, personen: list) -> str:
+    """Olivers Feld "CEO/Inhaber".
+
+    Bisher wurde nur "entscheider_primaer" gelesen - das steht selten in
+    den Dateien, deshalb war das Feld zu 91% leer. Die Angabe steckt aber
+    meist schon in den Entscheidern.
+
+    Es wird NICHTS erfunden: wer keine Fuehrungsrolle im Impressum stehen
+    hat, kommt hier auch nicht hinein, und eine Rechtsformel wie
+    "Vertreten durch" wird nicht als Position ausgegeben.
+    """
+    def eintrag(name, rolle):
+        return " - ".join(t for t in (name, _rolle_oder_leer(rolle)) if t)
+
+    primaer = firma.get("entscheider_primaer") or {}
+    if primaer.get("name") and not any(
+            k in str(primaer.get("rolle") or "").casefold() for k in KEIN_CHEF):
+        return eintrag(primaer.get("name"), primaer.get("rolle"))
+
+    chefs = [p for p in personen if _ist_chef(p.get("rolle"))]
+    if chefs:
+        return eintrag(chefs[0].get("name"), chefs[0].get("rolle"))
+    return firma.get("gf_name_liste", "")
 
 
 def _entscheider_zeilen(firma: dict, leads: list) -> list:
@@ -229,6 +307,10 @@ def bauen(daten_dir=".") -> dict:
     daten_dir = Path(daten_dir)
     firmen: dict = {}
     herkuenfte: dict = {}
+    # Nur nachgeschlagen, nie abgefragt: ein Neubau darf nicht an einem
+    # fremden Dienst haengen. Gefuellt wird der Speicher getrennt mit
+    # werkzeuge/bundesland-fuellen.py.
+    plz_speicher = bundesland_speicher(daten_dir)
 
     for ordner, pfad in _sammlungen(daten_dir):
         zeit = _zeit(pfad)
@@ -279,29 +361,29 @@ def bauen(daten_dir=".") -> dict:
     for kennung, firma in firmen.items():
         personen = _entscheider_zeilen(firma, firma.get("leads") or [])
         eligible, grund = _eligibility(firma, personen)
-        primaer = firma.get("entscheider_primaer") or {}
-        ceo_owner = " - ".join(
-            t for t in (primaer.get("name"),
-                        primaer.get("rolle")) if t) or firma.get(
-                            "gf_name_liste", "")
+        ceo_owner = _ceo_owner(firma, personen)
         allgemein = firma.get("vorhandene_email", "")
         for lead in firma.get("leads") or []:
             if lead.get("source") == "info@":
                 allgemein = allgemein or lead.get("email", "")
         cursor = db.execute(
             """INSERT INTO companies (kennung, name, domain, website,
-               strasse, plz, ort, telefon, email_allgemein, sektor,
-               keywords, ceo_owner, offers_automation_services,
+               strasse, plz, ort, bundesland, telefon, email_allgemein,
+               sektor, keywords, beschreibung, mitarbeiter, ceo_owner,
+               offers_automation_services,
                automation_check_reason, automation_checked_at,
                campaign_eligible, ineligibility_reason, completeness,
                created_at, updated_at, last_enriched_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (kennung, firma.get("name", ""), firma.get("domain", ""),
              firma.get("website", ""), _strasse(firma.get("address")),
-             firma.get("plz", ""), stadt(firma), firma.get("telefon", ""),
+             firma.get("plz", ""), stadt(firma),
+             bundesland_nachschlagen(firma.get("plz"), plz_speicher),
+             firma.get("telefon", ""),
              allgemein,
              ", ".join(str(k) for k in (firma.get("categories") or [])[:5]),
              ", ".join(str(k) for k in firma.get("categories") or []),
+             firma.get("beschreibung", ""), firma.get("mitarbeiter", ""),
              ceo_owner,
              firma.get("offers_automation_services") or "not_checked",
              firma.get("automation_check_reason", ""),
@@ -327,7 +409,8 @@ def bauen(daten_dir=".") -> dict:
                  person["nachname"], person["rolle"], person["email"],
                  person["email_art"], person.get("telefon", "") or "",
                  person["linkedin"],
-                 person["quelle"], person["status"], "", jetzt))
+                 person["quelle"], person["status"],
+                 bereich_aus_rolle(person["rolle"]), jetzt))
             anzahl_personen += 1
 
     db.commit()
@@ -354,9 +437,51 @@ KOPF_FIRMEN = [
     "Webseite",
 ]
 _AE = ("A", "B", "C", "D", "E")
+
+# Olivers Liste sieht Entscheider A-E vor, also fuenf Spalten. Gespeichert
+# werden trotzdem alle - es gibt Firmen mit acht Personen. Wird jemand
+# nicht mehr exportiert, sagt "Weitere Entscheider" wie viele es sind,
+# damit niemand die Liste fuer vollstaendig haelt.
+KOPF_WEITERE = ["Weitere Entscheider"]
+
+# Die drei Gruppen aus historie.db. Sie stehen bewusst NICHT in der
+# companies-Tabelle: die wird bei jedem Lauf neu gebaut, diese Angaben
+# duerfen das ueberleben (Entscheidung Dafina 28.08.2026, Weg A).
+KOPF_HISTORIE = [
+    "Rausgegeben an (Name, Art, Datum)",
+    "1. Kontakt", "2. Kontakt", "3. Kontakt",
+    "Opt-Out (Datum, Weg)",
+]
+
 KOPF_SYSTEM = ["Automatisierungs-Anbieter", "Kampagnenfähig",
                "Ausschlussgrund", "Vollständigkeit %",
                "Zuletzt angereichert"]
+
+
+def _kontakt_text(kontakt: dict) -> str:
+    """Olivers "1./2./3. Kontakt" als ein lesbares Feld."""
+    teile = [kontakt.get("produkt"), kontakt.get("durch_wen"),
+             kontakt.get("weg"), kontakt.get("resultat"),
+             kontakt.get("datum"), kontakt.get("absender_email")]
+    return ", ".join(str(t) for t in teile if t)
+
+
+def _historie_spalten(eintrag: dict) -> list:
+    """Fuenf Spalten je Firma - leer, solange nichts passiert ist."""
+    eintrag = eintrag or {}
+    uebergaben = "; ".join(
+        ", ".join(str(t) for t in (u.get("name"), u.get("art_der_person"),
+                                   u.get("datum")) if t)
+        for u in eintrag.get("uebergaben") or [])
+
+    nach_nummer = {k.get("nummer"): k for k in eintrag.get("kontakte") or []}
+    kontakte = [_kontakt_text(nach_nummer[n]) if n in nach_nummer else ""
+                for n in (1, 2, 3)]
+
+    opt_out = eintrag.get("opt_out") or {}
+    opt_text = ", ".join(str(t) for t in (opt_out.get("datum"),
+                                          opt_out.get("weg")) if t)
+    return [uebergaben] + kontakte + [opt_text]
 
 
 def export_excel(daten_dir=".", ziel=None):
@@ -376,8 +501,11 @@ def export_excel(daten_dir=".", ziel=None):
         kopf += [f"{buchstabe}) Bereich", f"{buchstabe}) Name",
                  f"{buchstabe}) Rolle", f"{buchstabe}) Tel",
                  f"{buchstabe}) E-Mail"]
-    kopf += KOPF_SYSTEM
+    kopf += KOPF_WEITERE + KOPF_HISTORIE + KOPF_SYSTEM
     blatt.append(kopf)
+
+    from pipeline.historie_db import historie as _historie
+    verlauf = _historie(daten_dir)
 
     for firma in db.execute("SELECT * FROM companies ORDER BY name"):
         quellen = db.execute(
@@ -390,7 +518,8 @@ def export_excel(daten_dir=".", ziel=None):
             """SELECT * FROM decision_makers WHERE company_id=?
                ORDER BY id""", (firma["id"],)).fetchall()
         zeile = [
-            datenquelle, firma["sektor"], firma["name"], "", firma["keywords"],
+            datenquelle, firma["sektor"], firma["name"],
+            firma["beschreibung"] or "", firma["keywords"],
             firma["mitarbeiter"] or "", firma["ceo_owner"], firma["strasse"],
             firma["ort"], firma["plz"], firma["bundesland"] or "",
             firma["land"], firma["telefon"], firma["email_allgemein"],
@@ -403,6 +532,9 @@ def export_excel(daten_dir=".", ziel=None):
                           p["telefon"] or "", p["email"]]
             else:
                 zeile += ["", "", "", "", ""]
+        zusatz = len(personen) - len(_AE)
+        zeile += [str(zusatz) if zusatz > 0 else ""]
+        zeile += _historie_spalten(verlauf.get(firma["kennung"]))
         zeile += [firma["offers_automation_services"],
                   "ja" if firma["campaign_eligible"] else "nein",
                   firma["ineligibility_reason"],

@@ -12,10 +12,10 @@ Matet mbi nje zone ku Maps-i ka rrjedhur TASHME (34 Kassel, 33 Bielefeld,
 32 Herford). Keshtu "e re" do te thote vertet "Maps s'e kishte", dhe nuk
 paguhet asnje vrapim Maps per hir te proves.
 
-CMIMI (lexuar te Apify me 01.09.2026, llogaria jone eshte plani FREE):
-    Gelbe Seiten  0.002  USD / rezultat
-    Google Maps   0.004  USD / vend
-Pra Gelbe Seiten eshte GJYSMA e cmimit te Maps-it per rezultat.
+CMIMI (llogaria eshte plani STARTER / tarifa BRONZE nga 02.09.2026):
+    Gelbe Seiten  0.00178  USD / rezultat
+    Google Maps   0.003    USD / vend
+Pra Gelbe Seiten kushton rreth 60% te cmimit te Maps-it per rezultat.
 
 SIGURI: pa argumentin --nise kjo vegel NUK shpenzon asgje. Ajo vetem
 llogarit dhe e shtyp sa do te kushtonte. Vetem --nise e nis vertet.
@@ -47,8 +47,8 @@ from pipeline import zonen  # noqa: E402
 from pipeline.firmen_sammeln import _bestand_schluessel  # noqa: E402
 from pipeline.sources.gelbe_seiten import GelbeSeitenQuelle  # noqa: E402
 
-PREIS_PRO_ERGEBNIS = 0.002     # tarifa FREE e llogarise sone (01.09.2026)
-PREIS_MAPS_PRO_ORT = 0.004     # per krahasim ne raportin perfundimtar
+PREIS_PRO_ERGEBNIS = 0.00178   # tarifa BRONZE (plani STARTER, nga 02.09.2026)
+PREIS_MAPS_PRO_ORT = 0.003     # per krahasim ne raportin perfundimtar
 
 # Sa jep nje faqe e Gelbe Seiten-it (vezhguar te mini-vrapimi i 29.07.2026).
 ERGEBNISSE_PRO_SEITE = 10
@@ -106,7 +106,7 @@ def main():
     log(f"Faqe per fjale:     {faqe}")
     log(f"Maksimumi rezultat: {max_ergebnisse}  (~{ERGEBNISSE_PRO_SEITE}/faqe)")
     log(f"Kosto maksimale:    {max_kosten:.2f} USD  "
-        f"({PREIS_PRO_ERGEBNIS} USD/rezultat, plani FREE)")
+        f"({PREIS_PRO_ERGEBNIS} USD/rezultat, tarifa BRONZE)")
     log(f"Kode postare zone:  {len(kodet)}")
 
     if not nise:

@@ -41,9 +41,6 @@ from pipeline import zonen  # noqa: E402
 
 ACTOR = "compass~crawler-google-places"
 
-# Qendra dhe rrezja per cdo zone. Te dyja jane zgjedhur qe rrethi t'i
-# mbuloje skajet e zones pa e fryre siperfaqen - sepse cdo vend i gjetur
-# jashte zones paguhet njesoj si nje brenda saj.
 # Qendrat, rrezet dhe listat postare rrijne tash te pipeline/zonen.py, qe
 # Overpass-i dhe Gelbe Seiten-i te punojne me te njejtin rreth. Tri kopje
 # te te njejtit numer jane rruga ne te cilen nje zone mblidhet heshtazi me
@@ -59,10 +56,10 @@ SUCHBEGRIFFE = zonen.SUCHBEGRIFFE
 # 10 fjale x KUFI = maksimumi i vendeve, dhe cdo vend kushton PREIS_PRO_ORT.
 # Vendoset me --kufi= kur buxheti i mbetur eshte i ngushte.
 KUFI_PER_KERKIM = 140
-# Tarifa varet nga plani i llogarise. Me 01.09.2026 u lexua te Apify:
-# llogaria jone eshte FREE, jo BRONZE - pra 0.004 USD/vend, jo 0.003.
-# Ketu qendronte 0.003 dhe e ulte parashikimin per nje te treten.
-PREIS_PRO_ORT = 0.004          # tarifa FREE e llogarise sone (01.09.2026)
+# Tarifa varet nga plani i llogarise dhe duhet lexuar, jo hamendesuar:
+# me 01.09.2026 llogaria ishte FREE (0.004 USD/vend), me 02.09.2026 u
+# pagua plani STARTER dhe tarifa ra ne BRONZE (0.003 USD/vend).
+PREIS_PRO_ORT = 0.003          # tarifa BRONZE (plani STARTER, nga 02.09.2026)
 
 
 def log(*teile):
@@ -119,13 +116,33 @@ def lauf_starten(token, zone):
     return daten["id"]
 
 
+def mit_wiederholung(was, url, timeout, versuche=5):
+    """Nje kerkese qe nuk e humb nje vrapim TE PAGUAR per shkak te rrjetit.
+
+    Me 02.09.2026 vrapimi i zones 35 perfundoi mire te Apify, por skripti
+    ra me ReadTimeout duke pyetur per statusin - vrapimi ishte paguar dhe
+    dalja u hodh. Prandaj: cdo gabim rrjeti provohet perseri, me pritje
+    qe rritet. Vetem nese s'ia del as pas `versuche` heresh, ndalet."""
+    for numer in range(1, versuche + 1):
+        try:
+            antwort = requests.get(url, timeout=timeout)
+            antwort.raise_for_status()
+            return antwort.json()
+        except (requests.Timeout, requests.ConnectionError) as gabim:
+            if numer == versuche:
+                raise
+            pritje = 10 * numer
+            log(f"    rrjeti ra te {was} ({type(gabim).__name__}) - "
+                f"provë {numer}/{versuche}, po pres {pritje}s")
+            time.sleep(pritje)
+
+
 def warten(token, run_id):
     while True:
-        antwort = requests.get(
+        daten = mit_wiederholung(
+            "statusi",
             f"https://api.apify.com/v2/actor-runs/{run_id}?token={token}",
-            timeout=60)
-        antwort.raise_for_status()
-        daten = antwort.json()["data"]
+            timeout=60)["data"]
         if daten["status"] not in ("READY", "RUNNING"):
             return daten
         log(f"    ende duke vrapuar ... ({daten['status']})")
@@ -133,11 +150,10 @@ def warten(token, run_id):
 
 
 def holen(token, dataset_id):
-    antwort = requests.get(
+    return mit_wiederholung(
+        "dataset",
         f"https://api.apify.com/v2/datasets/{dataset_id}/items"
         f"?token={token}&clean=true&format=json", timeout=300)
-    antwort.raise_for_status()
-    return antwort.json()
 
 
 def main():

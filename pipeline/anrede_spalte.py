@@ -69,8 +69,21 @@ def waehle_person(gf_feld: str) -> tuple[str, int]:
     return teile[0], len(teile)
 
 
-def baue_anrede(person: str) -> tuple[str, str]:
-    """Return (anrede, grund). Empty anrede means: needs a human."""
+# Was Dropcontact als "civility" zurueckgibt. Alles andere ist uns
+# unbekannt und darf die Anrede nicht bestimmen - eine erfundene Anrede
+# waere schlechter als die geratene, die sie ersetzt.
+CIVILITY = {"MR": "Herr", "MRS": "Frau"}
+
+
+def baue_anrede(person: str, civility: str | None = None) -> tuple[str, str]:
+    """Return (anrede, grund). Empty anrede means: needs a human.
+
+    "civility" ist das Geschlecht, wie Dropcontact es in derselben
+    bezahlten Zeile wie die Adresse mitliefert. Es schlaegt die Namensliste,
+    weil es eine Angabe ist und die Liste nur eine Vermutung: ein Vorname,
+    der nicht darauf steht, fiel bisher stillschweigend auf "Herr" durch.
+    Am 03.09.2026 standen dadurch vierzehn Frauen als "Herr" in den Listen -
+    in einer Kaltmail ist das die erste Zeile, die jemand liest."""
     wort = person.split()
     if len(wort) < 2:
         return "", "kein vollstaendiger Name"
@@ -81,6 +94,10 @@ def baue_anrede(person: str) -> tuple[str, str]:
     vorname = wort[0]
     nachname = " ".join(wort[1:])
     schluessel = vorname.lower().split("-")[0]
+
+    bekannt = CIVILITY.get(str(civility or "").strip().upper())
+    if bekannt:
+        return f"{bekannt} {nachname}", f"{bekannt} laut Dropcontact"
 
     if schluessel in UNKLAR:
         return f"{vorname} {nachname}", "Vorname nicht eindeutig - neutral"

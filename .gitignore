@@ -27,3 +27,4 @@ kontakte.db-shm
 # gehoert nicht ins Repo. Gleiches gilt fuer den Excel-Export daraus.
 daten/master.db
 firmen-master.xlsx
+gelbeseiten-arkiv/

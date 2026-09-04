@@ -3,15 +3,20 @@
 #
 # Perdorimi:  ./werkzeuge/zonen-komplett.sh 36
 #
-# DY BURIME, si te zonat 32, 33 dhe 34 (vendim i Dafines, 02.09.2026).
-# Gelbe Seiten u provua te zona 35 dhe DOLI JASHTE: nga 68 firmat e reja
-# mbeten vetem 9 pas filtrit te profilit IT. Vegla mbetet e ndertuar
-# (werkzeuge/zonen-gelbeseiten.py) por nuk hyn ne kete zinxhir.
+# DY BURIME: Google Maps dhe Overpass/OSM.
+#
+# Gelbe Seiten U HOQ me 04.09.2026 me urdher te Dafines ("nuk na kryen
+# pune"). U provua mbi te teta zonat me 03.09: ~$2 te Apify-t, rreth 560
+# firma te reja - dhe ZERO kontakte ne listat finale. Thuajse asnje
+# s'kalonte profilin IT (te zona 35: 9 nga 68), dhe ato pak qe kalonin
+# Dropcontact-i s'ua gjeti email-in. Vegla mbetet e ndertuar
+# (werkzeuge/zonen-gelbeseiten.py) nese ndonjehere provohet ne rajone
+# tjera, por nuk hyn me ne kete zinxhir.
 #
 # Cka ben, me radhe:
 #   1. Google Maps (Apify, paguhet)   - nese vrapimi eshte nisur me pare,
 #                                       merret ai i paguari, pa kosto te re
-#   2. Overpass/OSM (falas)           - kapercehet nese eshte bere sot
+#   2. Overpass/OSM (falas)           - kapercehet nese ekziston tashme
 #   3. Filtri i profilit IT mbi te DY burimet veç e veç
 #      (pa kete hap firmat dalin ne Excel si "not_checked")
 #   4. Eksporti Excel i zones
@@ -56,7 +61,7 @@ $PY werkzeuge/zona32-lauf.py --lauf="$LAUF_MAPS" --plz="$PLZ" \
     --dataset="apify-ds-$DSID.json"
 
 if [ -n "$OVP" ] && [ -f "$OVP/firmen.json" ]; then
-  echo "--- Overpass ($(basename "$OVP")) ---"
+  echo "--- $(basename "$OVP") ---"
   $PY werkzeuge/zona32-lauf.py --lauf="$(basename "$OVP")" --plz="$PLZ" \
       --firmen="$OVP/firmen.json"
 fi

@@ -71,6 +71,35 @@ netgo tax, BLUVIT, kisocon). Katër prej tyre kishin hyrë nga hapi
 zhvilluesit e softuerit nëse ofrojnë edhe përkrahje — pikërisht ata që
 nuk i duam. Të gjashtat janë në `sperrliste-global.yaml`.
 
+**Saktësim (Dafina, 03.09.2026): faqja vendos, jo kategoria e hartës.**
+Kategoria e Google Maps "Softwareentwickler/-hersteller" nuk e nxjerr
+një firmë jashtë vetvetiu — Google u jep firmave 4–5 kategori dhe firma
+IT klasike shpesh e kanë edhe atë. Vendos teksti i faqes, i gjykuar me
+rregullin e mësipërm (softuer i vet = jashtë, edhe me përkrahje).
+Kategoria mbetet vetëm si shenjë për gjykuesin. Kjo nuk është "shansi i
+dytë" i vjetër — ai përdorte një prompt të butë; ky përdor rregullin e
+rreptë. Pse: më 03.09.2026, te rigjykimi i zonave 32–34, kategoria e
+hartës vetëm hidhte poshtë 61 firma; faqja e konfirmoi për 49 dhe i
+ktheu brenda 12 firma IT të vërteta (Computer live, Deltatec, ELAAX,
+IT-HAUS, Klanke, Wulf Systems ...).
+
+## Gelbe Seiten nuk përdoret më (nga 04.09.2026)
+
+Burimet për mbledhjen e firmave janë **Google Maps dhe Overpass/OSM**.
+Gelbe Seiten doli nga zinxhiri me urdhër të Dafinës: "nuk na kryen punë".
+
+Pse: u provua mbi të tetë zonat 32–39 më 03.09.2026, me rreth $2 te
+Apify. Solli ~560 firma të reja që Maps e Overpass nuk i kishin — dhe
+prej tyre **zero** arritën në listat përfundimtare. Thuajse asnjë nuk
+kalon profilin IT (te zona 35: 9 nga 68), dhe ato pak që kalojnë,
+Dropcontact-i nuk ua gjen email-in personal. Email-at që i kthen vetë
+Gelbe Seiten janë kryesisht `info@` — pra jashtë rregullit tonë.
+
+Vegla `werkzeuge/zonen-gelbeseiten.py` mbetet e ndërtuar nëse ndonjëherë
+provohet në rajone të tjera, por nuk hyn në zinxhir. Të dhënat e
+mbledhura rrijnë te `gelbeseiten-arkiv/`, jashtë `laeufe/`, që as
+ndërtimi i `master.db` të mos i marrë.
+
 ## Zuverlässigkeit zuerst
 
 Zuverlässigkeit hat in diesem Projekt höchste Priorität — vor

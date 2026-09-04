@@ -61,11 +61,11 @@ else:
     except KeyError as _gabim:
         sys.exit(str(_gabim))
     PLZ_LISTE = _zonen.plz_datei(ZONE)
-    # Gelbe Seiten mbetet jashte (vendim i Dafines, 02.09.2026): zonat
-    # 32, 33 dhe 34 u bene me dy burime - Maps dhe Overpass - dhe zonat e
-    # reja behen njesoj. Prova te zona 35 dha 68 firma te reja, por vetem
-    # 9 mbeten pas filtrit te profilit IT. Te dhenat e mbledhura rrijne ne
-    # disk; ato thjesht nuk hyjne ne eksport.
+    # Gelbe Seiten mbetet JASHTE (vendim i Dafines, 04.09.2026): u provua
+    # mbi te teta zonat dhe dha zero kontakte. Dosjet e saj rrijne te
+    # gelbeseiten-arkiv/ jashte laeufe/, prandaj as ky glob as ndertimi i
+    # master.db nuk i sheh; kontrolli ketu eshte fre i dyte, per rastin
+    # kur dikush i kthen brenda pa e ditur pse dolen.
     LAEUFE = sorted(
         o for o in (PROJEKT / "laeufe/leadquellen").glob(f"zona{ZONE}-*")
         if (o / "firmen.json").exists() and "-gelbeseiten-" not in o.name)

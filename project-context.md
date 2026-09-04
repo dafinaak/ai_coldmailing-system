@@ -22,6 +22,40 @@ vërtetë.
 
 ## Gjendja tash
 
+- **02–04.09.2026 — Zonat 32–39 të gatshme për Oliverin: 268 kontakte
+  me email personal, të kontrolluara.** Skedarët:
+  `IT-Liste-Emails-Zona<NR>-FERTIG-20260904-0918.xlsx` (8 lista) dhe
+  raporti i kontrollit `Listen-Pruefbericht-20260904-0939.xlsx`.
+  - Burimet: Google Maps (245) + Overpass/OSM (23). **Gelbe Seiten u hoq
+    nga zinxhiri më 04.09.2026** me urdhër të Dafinës — u provua mbi të
+    tetë zonat (~$2 Apify), solli ~560 firma të reja dhe **0 kontakte**.
+    Rigjenerimi pa të dha saktësisht të njëjtat 268, që e vërteton. Vegla
+    mbetet; të dhënat te `gelbeseiten-arkiv/` jashtë `laeufe/`. Rregulli:
+    AGENTS.md.
+  - Rigjykimi i profilit (03–04.09): zonat 32–34 ishin gjykuar në gusht me
+    rregullin e vjetër + "shansin e dytë". Me rregullin e 31.08 dolën
+    jashtë 110 nga 250 rreshta (softuer i vet, siguri, SAP, hosting,
+    elektrikë). **Vendim Dafina 03.09: faqja vendos, jo kategoria e
+    hartës** — `harter_ausschluss()` s'e hedh më "Softwareentwickler" pa
+    gjyq, kategoria shkon si shenjë te AI (`software_hinweis()`). Shih
+    AGENTS.md. Vegla: `werkzeuge/listen-nachpruefung.py`.
+  - Porta të reja te lista (`zona32-itliste-final.py`): lista e bllokimit
+    edhe te porta e fundit (6 firma të bllokuara kishin kaluar), profili
+    IT si qëndron sot, dhe dublikata mes zonave (zona me numër më të vogël
+    e mban — 22 njerëz dilnin në dy lista). Kontrolli:
+    `werkzeuge/listen-pruefung.py` (format, dublikata, faqe të gjalla).
+  - Dropcontact: tash lexohen edhe telefoni, LinkedIn, civility,
+    Handelsregister (paguhen me të njëjtin kredit; 14 gra dilnin "Herr").
+    Dërgimet ruhen me emër — askush s'pyetet dy herë (200 ridërgime kot
+    më 03.09). Ngarkimi i krediteve s'u pajtua me "pay on success"
+    (411→391 për 7 email) — për t'u parë te konsolla.
+  - E hapur: zona 32 pa telefona/LinkedIn nga Dropcontact — batch-i i
+    21.08 (`dunhcupmapumfrx`) nuk kthen përgjigje (3 përpjekje); rimerret
+    më vonë falas. Për Dafinën për sy: 5 faqe që s'hapen, 5 email me
+    domain tjetër nga faqja, 12 firma me seli zyrtare jashtë zonës.
+  - Buxhetet 04.09: Apify ~$5.7 nga $19 (cikli deri 01.10, plani STARTER
+    në llogarinë e Pole Position), Dropcontact 391 kredite.
+  - 1.409 teste jeshile. Asnjë commit — gjithçka në working tree.
 - **01.09.2026 — DataWarehouse i Oliverit: 45/45 fushat ekzistojnë dhe
   mbushen vetë.**
   - Katër fusha që ishin bosh u mbushën: Bundesland 93% (`pipeline/bundesland.py`,

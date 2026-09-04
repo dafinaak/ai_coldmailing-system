@@ -33,8 +33,9 @@ aufgefuehrt - lieber eine Firma zu wenig anschreiben als eine falsche.
 import json
 import re
 
-AUSSCHLUSS_GRUENDE = ("niederlassung", "branchenfremd", "eigene_software",
-                      "unsicher")
+# "eigene_software" stand hier bis 03.09.2026 als harter Grund; seitdem
+# urteilt die KI anhand der Webseite (siehe software_hinweis).
+AUSSCHLUSS_GRUENDE = ("niederlassung", "branchenfremd", "unsicher")
 
 # Olivers Vorgabe: bei Filialisten/Niederlassungen nur die Zentrale.
 _NIEDERLASSUNG = re.compile(
@@ -58,11 +59,24 @@ _FREMD = (
 
 
 # Dafinas Regel (31.08.2026): Firmen mit eigener Software gehoeren nicht
-# ins Zielprofil - auch nicht, wenn sie zusaetzlich IT betreuen. Geprueft
-# wird bewusst NUR die Kategorie aus dem Verzeichnis, nicht der Name:
-# "Software" im Namen traegt auch ein echtes Systemhaus ("Eulah IT -
-# Systemhaus fuer Digitalisierung, Software & IT"), die Kategorie
-# dagegen ist die Einordnung des Verzeichnisses selbst.
+# ins Zielprofil - auch nicht, wenn sie zusaetzlich IT betreuen.
+#
+# Praezisierung (Dafina, 03.09.2026): das entscheidet die WEBSEITE, nicht
+# die Verzeichnis-Kategorie. Vom 31.08. bis 03.09. warf eine harte Regel
+# jede Firma raus, deren Google-Maps-Kategorie "Softwareentwickler/
+# -hersteller" enthielt - ohne die Seite zu lesen. Google vergibt vier bis
+# fuenf Kategorien je Firma, und echte Systemhaeuser tragen diese oft mit.
+# Bei der Nachpruefung der Zonen 32-34 traf die harte Regel 61 Firmen;
+# die Webseite bestaetigte 49 davon und holte 12 echte IT-Dienstleister
+# zurueck (Computer live, Deltatec, ELAAX, IT-HAUS, Klanke, Wulf Systems).
+# Die Kategorie steht weiter im Prompt - als Hinweis fuer die KI, nicht
+# als Urteil. Der Ausschluss selbst steht im SYSTEM_PROMPT (eigene
+# Software = raus, auch mit Support) und wird an der Seite geprueft.
+#
+# Diese Kategorie-Woerter loesen den Hinweis aus (software_hinweis()).
+# Bewusst nur Kategorien, nicht der Name: "Software" im Namen traegt auch
+# ein echtes Systemhaus ("Eulah IT - Systemhaus fuer Digitalisierung,
+# Software & IT").
 _EIGENE_SOFTWARE = (
     "softwareentwickl", "softwarehersteller", "software-hersteller",
     "softwareanbieter", "software-anbieter", "softwarehaus",
@@ -88,9 +102,28 @@ def harter_ausschluss(firma: dict):
     text = _text_von(firma)
     if any(wort in text for wort in _FREMD):
         return "branchenfremd"
-    if any(wort in _kategorien_von(firma) for wort in _EIGENE_SOFTWARE):
-        return "eigene_software"
+    # "Softwareentwickler/-hersteller" als Verzeichnis-Kategorie ist hier
+    # KEIN harter Ausschluss mehr (Dafina, 03.09.2026: die Webseite
+    # entscheidet, nicht die Karte). Die Kategorie geht als Hinweis an die
+    # KI - siehe software_hinweis() und firma_bewerten().
     return None
+
+
+def software_hinweis(firma: dict) -> str:
+    """Hinweis fuer die KI, wenn das Verzeichnis die Firma als Software-
+    Entwickler/-Hersteller fuehrt. Google vergibt vier bis fuenf
+    Kategorien je Firma, und ein klassisches Systemhaus traegt oft auch
+    diese - am 03.09.2026 hatte die Kategorie allein 61 Firmen der Zonen
+    32-34 aussortiert, von denen die Webseite 12 als reine IT-Betreuer
+    auswies (Computer live, Deltatec, ELAAX, IT-HAUS, Klanke, Wulf Systems).
+    Deshalb: die Kategorie schaerft den Blick, sie faellt kein Urteil."""
+    if any(wort in _kategorien_von(firma) for wort in _EIGENE_SOFTWARE):
+        return ("Hinweis: Das Verzeichnis führt die Firma als Softwareentwickler/"
+                "-hersteller. Prüfe am Webseitentext besonders, ob sie EIGENE "
+                "Software oder Softwareentwicklung anbietet - dann passt = false, "
+                "auch mit Support. Zeigt die Webseite nur klassische IT-Betreuung "
+                "ohne eigenes Produkt, gilt die Webseite.")
+    return ""
 
 
 SYSTEM_PROMPT = """Du prüfst, ob eine Firma zum Zielprofil einer
@@ -224,10 +257,12 @@ def firma_bewerten(firma: dict, webtext: str, ki, system=None) -> dict:
                      if webtext.strip() else
                      "Kein Text von der Webseite verfügbar (keine Webseite "
                      "erreichbar) - urteile nur nach Name und Kategorien.")
+    hinweis = software_hinweis(firma)
     prompt = (f"Firma: {firma.get('name', '')}\n"
               f"Kategorien (aus Verzeichnissen): {kategorien}\n"
-              f"Webseite: {firma.get('website') or 'keine'}\n\n"
-              f"{webseite_teil}")
+              f"Webseite: {firma.get('website') or 'keine'}\n"
+              + (f"{hinweis}\n" if hinweis else "")
+              + f"\n{webseite_teil}")
 
     antwort = ki.frage(system or SYSTEM_PROMPT, prompt)
     treffer = re.search(r"\{.*\}", antwort or "", re.S)

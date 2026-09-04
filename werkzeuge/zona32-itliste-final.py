@@ -7,7 +7,9 @@ Merr rezultatin e gatshem te Dropcontact-it (ergebnisse.json) dhe
 Anrede-n nga dosja qe e ndertoi anrede_spalte.aus_lauf(), qe teksti i
 pershendetjes te jete saktesisht i njejti si te lista e vjeter.
 """
+import glob
 import json
+import os
 import re
 import sys
 from datetime import datetime
@@ -21,14 +23,21 @@ from pipeline.config import lade_globale_sperrlisten_eintraege  # noqa: E402
 from pipeline.sperrliste_pruefung import (  # noqa: E402
     gesperrte_domains, ist_gesperrt)
 
+# "quellen" jane dosjet e mbledhjes nga vijne kodi postar, qyteti dhe
+# telefonat. DY burime per zone: Maps dhe Overpass. Gelbe Seiten u hoq me
+# 04.09.2026 me urdher te Dafines (zero kontakte mbi te teta zonat).
+# "lauf" nuk perdoret me per lexim - lista i bashkon VETE te gjitha
+# dosjet "zona<NR>-dropcontact-*" te zones.
 ZONEN = {
     "32": {"lauf": "zona32-dropcontact-2026-08-21",
            "quellen": ["zona32-herford-2026-08-21",
                        "zona32-overpass-2026-08-21"]},
     "33": {"lauf": "zona33-dropcontact-2026-08-28",
-           "quellen": ["zona33-bielefeld-2026-08-25"]},
+           "quellen": ["zona33-bielefeld-2026-08-25",
+                       "zona33-overpass-2026-09-03"]},
     "34": {"lauf": "zona34-dropcontact-2026-08-28",
-           "quellen": ["zona34-kassel-2026-08-28"]},
+           "quellen": ["zona34-kassel-2026-08-28",
+                       "zona34-overpass-2026-09-03"]},
     "35": {"lauf": "zona35-dropcontact-2026-09-02",
            "quellen": ["zona35-giessen-2026-08-28",
                        "zona35-overpass-2026-09-02"]},
@@ -54,6 +63,8 @@ QUELLE_FIRMA = {
     "zona32-overpass-2026-08-21": "Overpass/OSM (21.08.2026)",
     "zona33-bielefeld-2026-08-25": "Google Maps (Apify, 21.08.2026)",
     "zona34-kassel-2026-08-28": "Google Maps (Apify, 28.08.2026)",
+    "zona33-overpass-2026-09-03": "Overpass/OSM (03.09.2026)",
+    "zona34-overpass-2026-09-03": "Overpass/OSM (03.09.2026)",
     "zona35-giessen-2026-08-28": "Google Maps (Apify, 02.09.2026)",
     "zona35-overpass-2026-09-02": "Overpass/OSM (02.09.2026)",
     "zona36-fulda-2026-09-01": "Google Maps (Apify, 02.09.2026)",
@@ -166,18 +177,34 @@ def firmen_index():
         if not pfad.exists():
             continue
         for firma in json.loads(pfad.read_text(encoding="utf-8")):
-            index[(firma.get("domain") or firma.get("name") or "").lower()] = {
-                "plz": firma.get("plz") or "",
-                "ort": firma.get("ort") or "",
-                "telefon_firma": firma.get("telefon") or "",
+            kennung = (firma.get("domain") or firma.get("name") or "").lower()
+            # Fushat bosh mbushen nga burimi tjeter, te plotat nuk prishen:
+            # OSM shpesh s'e ka kodin postar, kurse Maps po - dhe anasjelltas
+            # per telefonin. Mbishkrimi i thjeshte i humbte te dyja radhazi.
+            vjeter = index.get(kennung, {})
+            index[kennung] = {
+                # E verteta e profilit, si qendron SOT ne dosjen e
+                # mbledhjes. Nese nje rigjykim e ka nxjerre firmen jashte,
+                # lista duhet ta dije - rezultati i Dropcontact-it nuk e
+                # mban kete informacion.
+                "profil_passt": (bool(firma.get("profil_passt"))
+                                 if "profil_passt" in firma
+                                 else vjeter.get("profil_passt", True)),
+                "profil_typ": firma.get("profil_typ") or vjeter.get("profil_typ", ""),
+                "plz": firma.get("plz") or vjeter.get("plz") or "",
+                "ort": firma.get("ort") or vjeter.get("ort") or "",
+                "telefon_firma": (firma.get("telefon")
+                                  or vjeter.get("telefon_firma") or ""),
                 # Cdo vendimmarres me numrin e vet, i gjetur me emer -
                 # jo thjesht i pari i listes, se Dropcontact-i mund te
                 # kete kthyer nje tjeter person te se njejtes firme.
-                "personen": {
-                    f"{p.get('vorname','')} {p.get('nachname','')}".strip().lower():
-                        p.get("telefon") or ""
-                    for p in (firma.get("entscheider") or [])},
-                "lauf": ordner,
+                "personen": {**vjeter.get("personen", {}),
+                             **{f"{p.get('vorname','')} "
+                                f"{p.get('nachname','')}".strip().lower():
+                                p.get("telefon") or ""
+                                for p in (firma.get("entscheider") or [])}},
+                # Burimi i pare qe e njohu firmen mbetet burimi i saj.
+                "lauf": vjeter.get("lauf") or ordner,
             }
     return index
 
@@ -187,7 +214,21 @@ def bauen():
     from openpyxl.styles import Alignment, Font, PatternFill
     from openpyxl.utils import get_column_letter
 
-    daten = json.loads((LAUF / "ergebnisse.json").read_text(encoding="utf-8"))
+    # Nje zone mund te kete disa vrapime Dropcontact-i: zonat 33 e 34 u
+    # plotesuan me 03.09.2026 me burimin Overpass, dhe ata kontakte te
+    # rinj shkuan ne dosje te vet qe te vjetrit te mos paguheshin serish.
+    # Lista i mbledh te gjitha - perndryshe gjysma e punes s'do te dukej.
+    daten = []
+    dosjet = sorted((PROJEKT / "laeufe/leadquellen").glob(
+        f"zona{ZONE}-dropcontact-*/ergebnisse.json"))
+    for pfad in dosjet:
+        daten.extend(json.loads(pfad.read_text(encoding="utf-8")))
+    if not daten:
+        sys.exit(f"Zona {ZONE}: asnje rezultat Dropcontact-i. "
+                 f"Nis se pari werkzeuge/zona32-dropcontact.py --zone={ZONE}")
+    if len(dosjet) > 1:
+        print(f"U bashkuan {len(dosjet)} vrapime Dropcontact-i: "
+              f"{', '.join(p.parent.name for p in dosjet)}")
     index = firmen_index()
 
     wb = openpyxl.Workbook()
@@ -239,6 +280,58 @@ def bauen():
             if ist_gesperrt(f.get("website"), domains):
                 print(f"    bllokuar: {f.get('name')} ({f.get('website')})")
     daten = frei
+
+    # Porta e dyte e fundit: profili IT si qendron SOT. Rezultati i
+    # Dropcontact-it u be kur firma kalonte filtrin; nese me vone nje
+    # rigjykim me rregullin e ri (AGENTS.md, 31.08.2026) e nxori jashte,
+    # ai njeri s'guxon te dale ne liste vetem se email-i i tij u pagua.
+    def profil_sot(f):
+        e = index.get((f.get("domain") or f.get("name") or "").lower(), {})
+        return e.get("profil_passt", True)
+    frei = [f for f in daten if profil_sot(f)]
+    if len(frei) != len(daten):
+        print(f"Profili IT (rigjykuar) hoqi {len(daten) - len(frei)} firma:")
+        for f in daten:
+            if not profil_sot(f):
+                e = index.get((f.get("domain") or f.get("name") or "").lower(), {})
+                print(f"    jashte profilit: {f.get('name')} - {e.get('profil_typ', '')}")
+    daten = frei
+
+    # Porta e trete: i njejti njeri ne DY zona. Nje firme me dy zyra bie
+    # ne dy lista, dhe personi i saj do te merrte dy email nga e njejta
+    # fushate - gabimi i 17.08.2026, tash mes zonave. Rregulli: zona me
+    # numrin me te vogel e mban; kjo liste kontrollon listat e fundit te
+    # zonave me numer me te vogel. Kontrolli i 03.09.2026 gjeti 22 te tille.
+    tjeter = set()
+    for z_tjeter in sorted(ZONEN):
+        if z_tjeter >= ZONE:
+            break
+        fs = sorted(glob.glob(str(PROJEKT / f"IT-Liste-Emails-Zona{z_tjeter}-FERTIG-*.xlsx")),
+                    key=os.path.getmtime)
+        if not fs:
+            continue
+        ws_t = openpyxl.load_workbook(fs[-1]).active
+        for r in range(2, ws_t.max_row + 1):
+            email = str(ws_t.cell(r, 5).value or "").strip().casefold()
+            person = str(ws_t.cell(r, 3).value or "").strip().casefold()
+            if email:
+                tjeter.add(("email", email))
+            if person:
+                tjeter.add(("person", person))
+    if tjeter:
+        para = len(daten)
+        mbetur = []
+        for f in daten:
+            lead = (f.get("leads") or [{}])[0]
+            email = str(lead.get("email") or "").strip().casefold()
+            person = person_schluessel(f)
+            if ("email", email) in tjeter or ("person", person) in tjeter:
+                print(f"    tashme ne nje zone me te vogel: {person} ({email})")
+            else:
+                mbetur.append(f)
+        if len(mbetur) != para:
+            print(f"Dublikata mes zonave hoqi {para - len(mbetur)} persona.")
+        daten = mbetur
 
     kontrolle = []
     nummer = 0
@@ -299,7 +392,11 @@ def bauen():
             lead.get("email", ""), anrede, hinweis,
             telefon_person, telefon_firma,
             firma.get("website", ""),
-            ort_daten.get("plz", ""), ort_daten.get("ort", ""),
+            # OSM shpesh s'e ka kodin postar; atehere merret adresa
+            # zyrtare nga Handelsregister-i (Dropcontact), e cila eshte
+            # edhe me e sigurt se ajo e hartes.
+            ort_daten.get("plz") or dc.get("siret_zip", ""),
+            ort_daten.get("ort") or dc.get("siret_city", ""),
             quelle_firma, "Impressum + KI",
             "Impressum (wörtlich)" if position else "—",
             "Dropcontact (gebaut + verifiziert)",

@@ -504,8 +504,14 @@ def sammeln_cli(ort, radius_km, dienste, limit_pro_suche, ordner=None,
     from pipeline.firmen_sammeln import (ordnername, plz_liste_lesen, sammeln,
                                           sammeln_bis_ziel, speichern)
     from pipeline.sources.apify_maps import ApifyMapsSource
-    from pipeline.sources.gelbe_seiten import GelbeSeitenQuelle
     from pipeline.sources.overpass import OverpassQuelle
+
+    # Gelbe Seiten wird hier NICHT gefragt (Entscheidung Dafina 04.09.2026):
+    # auf allen acht Zonen 32-39 getestet, rund 560 neue Firmen und null
+    # Kontakte in den fertigen Listen - bezahlt bei Apify fuer nichts. Das
+    # Werkzeug werkzeuge/zonen-gelbeseiten.py bleibt fuer einen Versuch in
+    # anderen Regionen, gehoert aber nicht in die Kette. Dieser Befehl ist
+    # auch der, den Schritt 3 des Formulars startet.
 
     codes = None
     if plz_liste_datei:
@@ -534,8 +540,8 @@ def sammeln_cli(ort, radius_km, dienste, limit_pro_suche, ordner=None,
     apify_key = os.environ.get("APIFY_API_KEY")
     if not apify_key:
         raise SystemExit(
-            "Fehlende Umgebungsvariable: APIFY_API_KEY. Ohne sie koennen "
-            "Google Maps und Gelbe Seiten nicht abgefragt werden.")
+            "Fehlende Umgebungsvariable: APIFY_API_KEY. Ohne sie kann "
+            "Google Maps nicht abgefragt werden.")
 
     if ziel_anzahl:
         wo = ("den Postleitzahlen der Liste" if codes
@@ -545,7 +551,6 @@ def sammeln_cli(ort, radius_km, dienste, limit_pro_suche, ordner=None,
         firmen, bericht = sammeln_bis_ziel(
             ort, radius_km, dienste, ziel_anzahl,
             maps=ApifyMapsSource(apify_key),
-            gelbe_seiten=GelbeSeitenQuelle(apify_key),
             overpass=OverpassQuelle(), daten_dir=".",
             plz_liste=codes)
     else:
@@ -553,7 +558,6 @@ def sammeln_cli(ort, radius_km, dienste, limit_pro_suche, ordner=None,
         firmen, bericht = sammeln(
             ort, radius_km, dienste,
             maps=ApifyMapsSource(apify_key),
-            gelbe_seiten=GelbeSeitenQuelle(apify_key),
             overpass=OverpassQuelle(),
             limit_pro_suche=limit_pro_suche)
 

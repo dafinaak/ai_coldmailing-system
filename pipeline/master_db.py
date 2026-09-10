@@ -36,6 +36,7 @@ from pathlib import Path
 from pipeline.bereich import aus_rolle as bereich_aus_rolle
 from pipeline.bundesland import (nachschlagen as bundesland_nachschlagen,
                                  speicher_lesen as bundesland_speicher)
+from pipeline import stamm_db
 from pipeline.decision_maker import rank_role
 from pipeline.firmen_filter import stadt
 
@@ -47,6 +48,11 @@ DROP TABLE IF EXISTS company_sources;
 DROP TABLE IF EXISTS decision_makers;
 CREATE TABLE companies (
     id INTEGER PRIMARY KEY,
+    -- `id` is a row number: it shifts as soon as a company is added,
+    -- dropped or sorted differently. `firma_uid` comes from stamm.db
+    -- and never moves - that is the id an outside system may keep
+    -- (Entscheidung Dafina 08.09.2026, Phase 2).
+    firma_uid TEXT NOT NULL,
     kennung TEXT UNIQUE NOT NULL,
     name TEXT, domain TEXT, website TEXT,
     strasse TEXT, plz TEXT, ort TEXT, bundesland TEXT,
@@ -73,6 +79,7 @@ CREATE TABLE decision_makers (
     email TEXT, email_art TEXT, telefon TEXT, linkedin TEXT,
     quelle TEXT, status TEXT, bereich TEXT, created_at TEXT
 );
+CREATE INDEX idx_companies_firma_uid ON companies(firma_uid);
 """
 
 # "Rolandstr. 2-3, 30161 Hannover" -> "Rolandstr. 2-3"
@@ -351,6 +358,12 @@ def bauen(daten_dir=".") -> dict:
                          "automation_check_reason", "automation_checked_at"):
                 satz[feld] = urteil.get(feld, "")
 
+    # Die bleibenden Firmen-IDs. stamm.db wird dabei NICHT neu gebaut -
+    # sie ueberlebt jeden Neubau, genau wie historie.db. Zusammengefasst
+    # wird hier nichts: eine kennung = eine firma_uid, ein Zusammenlegen
+    # passiert nur von Hand ueber stamm_db.set_alias().
+    uids = stamm_db.uids_fuer(daten_dir, firmen.keys())
+
     ziel = daten_dir / DB_NAME
     ziel.parent.mkdir(parents=True, exist_ok=True)
     db = sqlite3.connect(ziel)
@@ -367,15 +380,17 @@ def bauen(daten_dir=".") -> dict:
             if lead.get("source") == "info@":
                 allgemein = allgemein or lead.get("email", "")
         cursor = db.execute(
-            """INSERT INTO companies (kennung, name, domain, website,
+            """INSERT INTO companies (firma_uid, kennung, name, domain,
+               website,
                strasse, plz, ort, bundesland, telefon, email_allgemein,
                sektor, keywords, beschreibung, mitarbeiter, ceo_owner,
                offers_automation_services,
                automation_check_reason, automation_checked_at,
                campaign_eligible, ineligibility_reason, completeness,
                created_at, updated_at, last_enriched_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-            (kennung, firma.get("name", ""), firma.get("domain", ""),
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (uids[kennung],
+             kennung, firma.get("name", ""), firma.get("domain", ""),
              firma.get("website", ""), _strasse(firma.get("address")),
              firma.get("plz", ""), stadt(firma),
              bundesland_nachschlagen(firma.get("plz"), plz_speicher),
@@ -431,10 +446,23 @@ def bauen(daten_dir=".") -> dict:
 # ------------------------------------------------------------------ Export
 
 KOPF_FIRMEN = [
-    "Datenquelle (woher, wann)", "Sektor", "Firma", "Kurzbeschreibung",
-    "Auswahl-Stichworte", "Mitarbeiterzahl", "CEO/Inhaber", "Straße",
+    # Olivers Liste faengt mit "ID" an. Ohne sie im Export wuerde die
+    # ID nur in der Datenbank stehen, und die zwei Uebergabewege
+    # (Excel heute, Postgres spaeter) sagten Verschiedenes ueber
+    # dieselbe Firma - genau das Auseinanderlaufen, gegen das firma_uid
+    # gebaut wurde (Entscheidung Dafina 08.09.2026).
+    "ID",
+    # "Branche" und "www" statt "Sektor" und "Webseite": Olivers eigene
+    # Bezeichnungen aus seiner Feldliste (Entscheidung Dafina 08.09.2026,
+    # Variante 3 - nur die echten Abweichungen werden uebernommen,
+    # Schreibweisen wie Straße/Strasse bleiben wie sie sind).
+    # Nur der Spaltenname aendert sich, der Inhalt kommt unveraendert
+    # aus companies.sektor bzw. companies.website.
+    "Daten-Ursprung (woher/von wem, wann)", "Branche", "Firma",
+    "Kurzbeschreibung",
+    "Selektions-Keywords", "Mitarbeiterzahl", "CEO/Inhaber", "Straße",
     "Ort", "PLZ", "Bundesland", "Land", "Tel", "E-Mail (allgemein)",
-    "Webseite",
+    "www",
 ]
 _AE = ("A", "B", "C", "D", "E")
 
@@ -498,8 +526,14 @@ def export_excel(daten_dir=".", ziel=None):
     blatt.title = "Firmen-Master"
     kopf = list(KOPF_FIRMEN)
     for buchstabe in _AE:
-        kopf += [f"{buchstabe}) Bereich", f"{buchstabe}) Name",
-                 f"{buchstabe}) Rolle", f"{buchstabe}) Tel",
+        # Olivers eigene Bezeichnungen (Dafina 08.09.2026). NUR die
+        # Ueberschrift aendert sich. "(fuer welches Produkt)" ist Teil
+        # SEINES Feldnamens - geliefert wird weiterhin genau das, was
+        # bisher unter "Bereich" stand: der Bereich der Person aus ihrer
+        # Rolle (pipeline/bereich.py). Ein Produkt wird nicht erfunden.
+        kopf += [f"{buchstabe}) Entscheider-Bereich (für welches Produkt)",
+                 f"{buchstabe}) Name",
+                 f"{buchstabe}) Entscheider-Position", f"{buchstabe}) Tel",
                  f"{buchstabe}) E-Mail"]
     kopf += KOPF_WEITERE + KOPF_HISTORIE + KOPF_SYSTEM
     blatt.append(kopf)
@@ -518,6 +552,7 @@ def export_excel(daten_dir=".", ziel=None):
             """SELECT * FROM decision_makers WHERE company_id=?
                ORDER BY id""", (firma["id"],)).fetchall()
         zeile = [
+            firma["firma_uid"],
             datenquelle, firma["sektor"], firma["name"],
             firma["beschreibung"] or "", firma["keywords"],
             firma["mitarbeiter"] or "", firma["ceo_owner"], firma["strasse"],

@@ -20,6 +20,8 @@
 #   3. Filtri i profilit IT mbi te DY burimet veç e veç
 #      (pa kete hap firmat dalin ne Excel si "not_checked")
 #   4. Eksporti Excel i zones
+#   5. Raporti i burimeve (vetem lexim): sa solli Maps, sa OSM, sa i
+#      kishim me pare - Jira AP-215, pipeline/zone_sources.py
 #
 # Ndalet me heren e pare qe nje hap deshton - qe te mos vazhdohet mbi
 # nje mbledhje gjysmake dhe te dale nje Excel qe duket i plote por s'eshte.
@@ -33,14 +35,14 @@ PY=.venv/bin/python
 L=laeufe/leadquellen
 SOT=$(date +%Y-%m-%d)
 
-echo "########## ZONA $ZONA - 1/4 Google Maps ##########"
+echo "########## ZONA $ZONA - 1/5 Google Maps ##########"
 $PY werkzeuge/zonen-maps.py --zone="$ZONA" --kufi=110
 
 # Emri i dataset-it del nga run-id-ja e ruajtur, jo nga hamendja.
 LAUF_MAPS=$($PY -c "import sys;sys.path.insert(0,'.');from pipeline import zonen;print(zonen.zone('$ZONA')['lauf'])")
 DSID=$($PY -c "import json;print(json.load(open('$L/$LAUF_MAPS/apify-run-id.json'))['dataset_id'])")
 
-echo "########## ZONA $ZONA - 2/4 Overpass/OSM (falas) ##########"
+echo "########## ZONA $ZONA - 2/5 Overpass/OSM (falas) ##########"
 # Kontrollohet CDO dosje Overpass e zones, jo vetem ajo e sotme. Me
 # vetem daten e sotme, nje rinisje te nesermen krijonte nje dosje te
 # dyte me te njejtat firma: baza i merrte te dyja dhe ato te padala
@@ -53,7 +55,7 @@ else
   OVP="$L/zona$ZONA-overpass-$SOT"
 fi
 
-echo "########## ZONA $ZONA - 3/4 filtri i profilit IT ##########"
+echo "########## ZONA $ZONA - 3/5 filtri i profilit IT ##########"
 PLZ=$($PY -c "import sys;sys.path.insert(0,'.');from pipeline import zonen;print(zonen.zone('$ZONA')['plz'])")
 
 echo "--- Maps ---"
@@ -66,5 +68,8 @@ if [ -n "$OVP" ] && [ -f "$OVP/firmen.json" ]; then
       --firmen="$OVP/firmen.json"
 fi
 
-echo "########## ZONA $ZONA - 4/4 Excel ##########"
+echo "########## ZONA $ZONA - 4/5 Excel ##########"
 $PY werkzeuge/zona32-export.py --zone="$ZONA"
+
+echo "########## ZONA $ZONA - 5/5 raporti i burimeve ##########"
+$PY werkzeuge/zone-source-report.py --zone="$ZONA"

@@ -18,6 +18,7 @@ from pathlib import Path
 PROJEKT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJEKT))
 
+from pipeline import zonen  # noqa: E402
 from pipeline.anrede_spalte import baue_anrede  # noqa: E402
 from pipeline.config import lade_globale_sperrlisten_eintraege  # noqa: E402
 from pipeline.sperrliste_pruefung import (  # noqa: E402
@@ -297,6 +298,28 @@ def bauen():
                 print(f"    jashte profilit: {f.get('name')} - {e.get('profil_typ', '')}")
     daten = frei
 
+    # Porta e zones: firma hyn vetem me kod postar nga lista e zones.
+    # OSM kerkon ne katrorin e tere rajonit postar (zona 35: rreze 120 km,
+    # kurse zona ka 48), dhe firmat e tij pa kod postar hynin si "brenda
+    # zones". Me 04.09.2026 dolen keshtu 23 rreshta ne listat e gatshme
+    # qe s'ishin te provuar ne zonen e vet - tre prej tyre Maps i njeh ne
+    # nje zone tjeter. Vendim i Dafines, 10.09.2026: pa kod postar nga
+    # lista, jashte. Kodi i Handelsregister-it nuk vlen si prove: ai eshte
+    # selia, jo zyra qe kerkuam.
+    kodet = set(zonen.plz_kodes(ZONE))
+
+    def ne_zone(f):
+        e = index.get((f.get("domain") or f.get("name") or "").lower(), {})
+        return e.get("plz", "") in kodet
+    frei = [f for f in daten if ne_zone(f)]
+    if len(frei) != len(daten):
+        print(f"Porta e zones hoqi {len(daten) - len(frei)} firma "
+              f"pa kod postar nga lista:")
+        for f in daten:
+            if not ne_zone(f):
+                print(f"    jashte zones: {f.get('name')} ({f.get('website')})")
+    daten = frei
+
     # Porta e trete: i njejti njeri ne DY zona. Nje firme me dy zyra bie
     # ne dy lista, dhe personi i saj do te merrte dy email nga e njejta
     # fushate - gabimi i 17.08.2026, tash mes zonave. Rregulli: zona me
@@ -392,10 +415,11 @@ def bauen():
             lead.get("email", ""), anrede, hinweis,
             telefon_person, telefon_firma,
             firma.get("website", ""),
-            # OSM shpesh s'e ka kodin postar; atehere merret adresa
-            # zyrtare nga Handelsregister-i (Dropcontact), e cila eshte
-            # edhe me e sigurt se ajo e hartes.
-            ort_daten.get("plz") or dc.get("siret_zip", ""),
+            # Pas portes se zones cdo firme e ka kodin postar nga lista.
+            # Deri me 10.09.2026 ketu binte kodi i Handelsregister-it kur
+            # OSM s'kishte kod - keshtu dolen kode nga Wuppertal e Mainz.
+            # Selia zyrtare mbetet te kolonat e veta "... (HR)".
+            ort_daten.get("plz", ""),
             ort_daten.get("ort") or dc.get("siret_city", ""),
             quelle_firma, "Impressum + KI",
             "Impressum (wörtlich)" if position else "—",

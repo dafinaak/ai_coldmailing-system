@@ -100,6 +100,91 @@ provohet në rajone të tjera, por nuk hyn në zinxhir. Të dhënat e
 mbledhura rrijnë te `gelbeseiten-arkiv/`, jashtë `laeufe/`, që as
 ndërtimi i `master.db` të mos i marrë.
 
+**Plotësim (10.09.2026):** më 04.09 Gelbe Seiten doli vetëm nga vegla e
+zonave. Komanda e përgjithshme `python -m pipeline sammeln` — ajo që e
+nis edhe hapi 3 i formularit — e pyeste ende dhe e paguante te Apify.
+Tash as ajo nuk e pyet më, dhe formulari shkruan "Google Maps und
+OpenStreetMap". E ruan testi `tests/test_collect_without_gelbe_seiten.py`.
+
+## Në zonë hyn vetëm firma me kod postar nga lista (nga 10.09.2026)
+
+Një firmë i takon një zone vetëm nëse një nga burimet e zonës (Maps, OSM,
+MailCom) ia jep kodin postar, dhe ai kod është në listën e Oliverit për
+atë zonë. Firma pa kod postar nuk hyn — as në listë, as në raportin e
+burimeve. Kodi i Handelsregister-it (Dropcontact) nuk vlen si provë:
+ai është selia zyrtare, jo zyra që kërkuam.
+
+Ku zbatohet: mbledhja me listë kodesh (`sammeln_bis_ziel` te
+`pipeline/firmen_sammeln.py`), porta e zonës te
+`werkzeuge/zona32-itliste-final.py` dhe raporti
+`pipeline/zone_sources.py`.
+
+Pse u shkrua (vendim i Dafinës, 10.09.2026): OSM kërkohet në katrorin e
+tërë rajonit postar (te zona 35 rreze 120 km, kurse zona ka 48), dhe
+firmat e tij pa kod postar mbaheshin si "brenda zonës". Te listat e
+04.09 dolën kështu 23 rreshta që nuk ishin të provuar në zonën e vet,
+disa me kod postar nga Wuppertal, Mainz e Frankfurti. Tre prej tyre
+Maps i njeh në një zonë tjetër, dhe tash dalin aty. Çmimi që pranohet:
+humbin edhe disa firma që ndoshta janë brenda zonës, po pa kod postar
+nuk e dimë.
+
+## Identiteti i firmës: pa bashkim automatik (nga 08.09.2026)
+
+Çdo firmë ka një numër që nuk ndërron kurrë — `firma_uid`. Ai rri te
+`daten/stamm.db`, një bazë që nuk fshihet asnjëherë, si `historie.db`.
+
+Rregullat, të vendosura nga Dafina:
+
+- **një `kennung` = një `firma_uid`.** Asgjë nuk bashkohet vetvetiu.
+- **Pa bashkim automatik me emër + PLZ.** As me emër, as me emër dhe
+  kod postar bashkë.
+- **Bashkimi bëhet vetëm me dorë**, përmes `stamm_db.set_alias()`, dhe
+  zhbëhet me `stamm_db.alias_loesen()`.
+- **`stamm.db` është e përhershme.** Pa `DROP`, pa fshirje — njësoj si
+  `historie.db`. E ruan një test:
+  `tests/test_stamm_db.py::test_schema_has_no_drop_and_no_delete`.
+- **Dedupe i email-eve nuk preket** — ai mbetet aty ku ishte, te
+  `pipeline/dedupe.py`. Kjo është punë tjetër.
+- **`stamm_db` nuk pastron më shumë se `master_db`.** `master_db._kennung()`
+  i bën shkronjat e vogla dhe nuk i heq hapësirat; prandaj `stamm_db` bën
+  vetëm shkronjat e vogla. Nëse do t'i hiqte hapësirat, `'eq24pay.de '` dhe
+  `'eq24pay.de'` — dy rreshta të ndarë te `companies` — do të merrnin një
+  `firma_uid` të vetëm, dhe UPSERT-i i Fazës 6 do ta mbante atë që vjen i
+  fundit, varësisht nga rendi i leximit. Oliveri do të shihte një rresht që
+  ndryshon pa arsye mes sinkronizimeve. Hapësira mbetet pjesë e identitetit;
+  bashkimi bëhet me `set_alias()` si çdo bashkim tjetër.
+
+Rrjedh një premtim që Faza 6 mbështetet mbi të: **asnjë dy rreshta te
+`companies` nuk kanë të njëjtin `firma_uid` pa e bashkuar dikush me dorë.**
+E ruan `tests/test_master_db_firma_uid.py::test_no_two_rows_share_an_id_without_set_alias`.
+
+**`stamm.db` duhet të ketë kopje ruajtjeje (backup). Kjo nuk është
+zgjedhje.** `firma_uid` është hash i `kennung`-ut, prandaj për firmat e
+**pabashkuara** ai do të dilte i njëjti edhe pa bazën. Për firmat e
+**bashkuara** jo: pas `set_alias()`, "8thsense" mban uid-in e
+`8thsense.de` — një lidhje që nuk rrjedh nga kennung-u i vet dhe nuk
+llogaritet dot nga asgjë. Nëse `stamm.db` humbet dhe dikush i
+"rikthen" uid-at duke rillogaritur hash-et, të gjitha bashkimet
+zhbëhen pa u parë nga askush, kurse Postgres-i mbetet i lidhur me uid-e
+që s'i prodhon më asnjë llogaritje. Pra humbja e `stamm.db` nuk është e
+zhurmshme — është e qetë dhe pjesërisht e gabuar, që është më keq.
+Lista e bashkimeve merret me `stamm_db.aliase()`; mbaje të shkruar.
+
+Pse pa bashkim automatik: dy firma mund ta kenë të njëjtin emër dhe të
+njëjtin kod postar e prapë të jenë dy firma. Një bashkim i gabuar i fut
+njerëzit e një firme nën tjetrën pa u vënë re fare — dhe pastaj oferta
+i shkon firmës së gabuar. Një bashkim i humbur kushton vetëm një rresht
+të dyfishtë, që njeriu e sheh dhe e ndreq. Prandaj rregulli i rreptë.
+
+`companies.id` te `master.db` **nuk është identitet** — është numër
+rreshti dhe lëviz sa herë shtohet a hiqet një firmë. Asnjë sistem
+jashtë nuk guxon ta ruajë atë. Ruhet `firma_uid`.
+
+Provuar më 08.09.2026 mbi të dhënat e vërteta: te dy ndërtime me radhë,
+të 10.183 `companies.id` ndryshuan dhe **0** `firma_uid` ndryshuan;
+10.184 kennung të ndryshme dhanë 10.184 uid të ndryshme — pra zero
+bashkime automatike.
+
 ## Zuverlässigkeit zuerst
 
 Zuverlässigkeit hat in diesem Projekt höchste Priorität — vor

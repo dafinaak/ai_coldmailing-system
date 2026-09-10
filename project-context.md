@@ -22,6 +22,36 @@ vërtetë.
 
 ## Gjendja tash
 
+- **10.09.2026 — Jira AP-215 (mbledhja sipas kodeve postare) e mbyllur.**
+  Asnjë commit — gjithçka në working tree.
+  - Gelbe Seiten doli edhe nga komanda `python -m pipeline sammeln`, që e
+    nis hapi 3 i formularit — deri sot e pyeste ende dhe e paguante te
+    Apify. Teksti i formularit u ndreq. Test:
+    `tests/test_collect_without_gelbe_seiten.py`. Shih AGENTS.md.
+  - **Rregull i ri (Dafina, opsioni A): në zonë hyn vetëm firma me kod
+    postar nga lista.** OSM kërkohej në katrorin e tërë rajonit postar
+    (zona 35: rreze 120 km, zona 48), dhe firmat e tij pa kod postar
+    mbaheshin si "brenda zonës". Tash i heq mbledhja me listë kodesh, porta
+    e zonës te `zona32-itliste-final.py` dhe raporti. Shih AGENTS.md.
+  - **Listat u rindërtuan:** `IT-Liste-Emails-Zona<NR>-FERTIG-20260910-1121.xlsx`,
+    248 kontakte (ishin 268). Krahasuar rresht për rresht me ato të
+    04.09: dolën 23 rreshtat pa kod postar në zonën e vet (17 te zona
+    35), hynë 3 firma në zonën e duhur (25help te 33, Systemhaus Cramer
+    te 34, your admins te 36), 0 qeliza tjera ndryshuan. Listat e 04.09
+    mbeten në dosje, të paprekura. Raporti i kontrollit
+    `Listen-Pruefbericht-20260904-0939.xlsx` u përket listave të vjetra.
+  - Raporti i burimeve për çdo zonë: `pipeline/zone_sources.py`,
+    `werkzeuge/zone-source-report.py` (vetëm lexim), hapi 5 i
+    `zonen-komplett.sh`. Zonat 32–39 bashkë: 4.908 firma të reja të
+    provuara në zonë — Maps vetëm 3.617, MailCom vetëm 929 (zonat 33,
+    34), OSM vetëm 198, disa burime bashkë 164; 595 firma pa kod postar
+    të lëna jashtë. Numrat e vjetër të `sammelbericht.json` të OSM-it për
+    zonat 38/39 ("0 të reja") ishin të gabuar: u numëruan kundrejt asaj
+    që ishte në disk atë ditë.
+  - E hapur: nëse listat e 04.09 i janë dhënë Oliverit, atij i duhet
+    thënë se 23 rreshta dolën (dhe cilët). AP-210 (kontrolli i bazës për
+    vendimmarrësit) nuk është bërë; pret fjalën e Dafinës.
+  - 1.458 teste jeshile, 90 të kaluara (Postgres, Docker-i i fikur).
 - **02–04.09.2026 — Zonat 32–39 të gatshme për Oliverin: 268 kontakte
   me email personal, të kontrolluara.** Skedarët:
   `IT-Liste-Emails-Zona<NR>-FERTIG-20260904-0918.xlsx` (8 lista) dhe
@@ -709,6 +739,59 @@ vërtetë.
 
 ## Vendimet
 
+- **08.09.2026 — Faza 2: identiteti i firmës.** Çdo firmë ka `firma_uid`, një
+  numër që nuk lëviz kurrë, i ruajtur te `daten/stamm.db` (bazë e përhershme, si
+  `historie.db`). Një `kennung` = një `firma_uid`; asgjë nuk bashkohet vetvetiu
+  — as me emër, as me emër + PLZ. Bashkimi bëhet vetëm me dorë me
+  `stamm_db.set_alias()` dhe zhbëhet me `alias_loesen()`. `companies.id` te
+  `master.db` mbetet vetëm numër rreshti dhe nuk guxon të ruhet nga jashtë.
+  Dedupe i email-eve nuk u prek — rri te `pipeline/dedupe.py`. Rregulli i plotë
+  dhe arsyeja te `AGENTS.md`. `firma_uid` doli edhe si kolona e parë "ID" te
+  eksporti Excel, që dorëzimi i sotëm dhe Postgres-i i nesërm të mos tregojnë
+  gjëra të ndryshme për të njëjtën firmë. Oliveri duhet njoftuar se pamja e
+  tabelës ndryshoi.
+- **08.09.2026 — Faza 3: Postgres në Docker, skema dhe rolet.** Ngrihet me
+  `docker compose --env-file .env -f deploy/docker-compose.postgres.yml up -d`.
+  Porti rri **vetëm te 127.0.0.1** — në server nuk hapet asnjë port derisa të
+  vendoset si lidhet Oliveri. Dy skema në një bazë: `kern` (firma, entscheider,
+  firma_quelle) dhe `historie` (kontakt, uebergabe, opt_out). `firma_uid` është
+  çelësi primar dhe vjen nga `stamm.db`; Postgres nuk e gjeneron kurrë. Dy
+  role: `coldmail_sync` (shkruan `kern`, te `historie` vetëm lexon dhe shton) dhe
+  `coldmail_read` (vetëm lexon). Kërkesa e Fazës 4 për `zusammengelegt_in` u fut
+  që tash te skema, po ashtu `historie.kontakt` pa kufirin 1–3. Pamja
+  datawarehouse nuk u ndërtua — ajo mbetet Faza 4.
+- **08.09.2026 — Faza 4: pamja `datawarehouse`.** Oliveri lexon
+  `SELECT * FROM datawarehouse;` dhe merr 46 kolona në rendin e vet: 16 fusha
+  firme + 25 për A–E + "Rausgegeben an" + tri kontakte + opt-out. A–E të
+  sheshuara; vendimmarrësi i gjashtë mbetet te `kern.entscheider` po nuk
+  shfaqet. Fushat pa burim rrinë NULL — pamja nuk mbush asgjë. Firmat e
+  bashkuara (`zusammengelegt_in` i mbushur) nuk dalin fare. Opt-out-i vetëm me
+  email gjendet përmes domain-it të email-it kundrejt `kennung` — vetëm lexim,
+  historia nuk preket. `coldmail_read` lexon pamjen; `coldmail_sync` nuk ka
+  leje mbi të.
+- **08./09.09.2026 — emrat e kolonave (Dafina).** Lista e vetë Oliverit
+  ("AW: DataWarehouse – Datenbank-Felder") ka saktësisht **46** fusha, pra numri
+  është i konfirmuar. Nga emrat u morën ata të tijtë kudo ku dallimi është i
+  vërtetë: `Datenquelle (woher, wann)→Daten-Ursprung (woher/von wem, wann)`,
+  `Sektor→Branche`, `Auswahl-Stichworte→Selektions-Keywords`, `Webseite→www`,
+  `A–E) Bereich→A–E) Entscheider-Bereich (für
+  welches Produkt)`, `A–E) Rolle→A–E) Entscheider-Position`. Mbetën si ishin
+  dallimet vetëm drejtshkrimore: `Straße` (ai shkruan Strasse),
+  `Kurzbeschreibung`, `Mitarbeiterzahl`, `E-Mail (allgemein)`, dhe kokjet e
+  shkurtra `1./2./3. Kontakt` — kllapat e gjata te lista e tij përshkruajnë
+  përmbajtjen e fushës, nuk janë emra kolonash. Te blloku A–E vetëm dy nga pesë
+  kolonat e mbajnë parashtesën "Entscheider-" — zgjedhje e vetëdijshme e
+  Dafinës, jo harresë; nuk barazohet për simetri. Ndryshimi preku vetëm kokjen:
+  529.516 qeliza të dhënash u krahasuan para/pas, **0 ndryshuan**.
+  `(für welches Produkt)` është pjesë e emrit të tij; vlera mbetet ajo e
+  `bereich` nga roli — produkt nuk shpiket. Mbetet e hapur vetëm nëse Oliveri
+  i pranon emrat që i mbajtëm.
+- **Kërkesë për Fazën 4 (skema), e shënuar më 08.09.2026 që të mos harrohet:**
+  kur një `firma_uid` zhduket nga burimi sepse u bashkua me `set_alias()`,
+  rreshti i tij te Postgres mbetet jetim. Skema duhet ta zgjidhë këtë që tash,
+  jo në Fazën 6 kur është vonë. Preferenca: **të mos fshihet**, por të shënohet
+  me `zusammengelegt_in` që tregon uid-in mbijetues — fshirja e heq gjurmën,
+  kurse shënimi e mban historinë e vjetër të lexueshme.
 - Instantly mbetet motori i padukshëm i dërgimit. Mjeti i lexon të dhënat e tij
   për pamjen e fushatave; veprimet e vërteta të shkrimit nuk janë pjesë e
   kontrolleve lokale.
@@ -781,6 +864,38 @@ vërtetë.
   Leonardit).
 
 ## Hapat e ardhshëm
+
+### Detyrë e veçantë: tri gjëra PARA Fazës 5 (hapur 08.09.2026)
+
+Sync-u i Fazës 5 do t'i bartë të dhënat ashtu siç janë, prandaj këto
+shikohen para tij, jo pas.
+
+1. **833 firma me prejardhje `gelbe_seiten` rrinë ende te `master.db`.**
+   Rregulli i 04.09.2026 te `AGENTS.md` thotë se ato të dhëna dolën jashtë
+   `laeufe/` pikërisht që ndërtimi i `master.db` të mos i marrë. Nëse i mban
+   prapë, atëherë ose rregulli nuk u zbatua plotësisht, ose `master.db` nuk
+   është rindërtuar që nga ajo datë, ose ka një rrugë të dytë leximi që nuk
+   e ka parasysh askush. Të tria duhen sqaruar para se pasqyra t'ia dërgojë
+   ata rreshta Oliverit. Gjetur gjatë matjes së `Mitarbeiterzahl` më
+   08.09.2026 (numri vetë nuk varet prej tyre: 49,1 % me gjithçka, 49,9 %
+   pa to).
+2. **Një test i web-it shkruan në dosjen e vërtetë të projektit**, jo në atë
+   të përkohshme. Te `entwuerfe/` ka mbeturina nga 12 gushti e këtej dhe 62
+   sosh kanë hyrë në git. Çdo vrapim i suitës lë skedarë të rinj.
+3. **Venv-i ka dy vende.** `./.venv/bin/pip` shkruan te
+   `/Users/.../Desktop/AI Coldmailing system/.venv/` — projekti u zhvendos në
+   `Documents` po venv-i mbeti i lidhur me shtegun e vjetër. Instalimet duhen
+   bërë me `./.venv/bin/python -m pip install ...`, ndryshe paketa shkon në
+   vend që s'e sheh askush.
+
+### Fazat e Postgres-it
+
+Faza 5 është sync-u (SQLite → Postgres). Vendimi për rreshtat jetimë te
+`zusammengelegt_in` është marrë tashmë dhe rri te "Vendimet". Numri 46 i
+kolonave pret konfirmimin e Oliverit — teksti i pyetjes iu përgatit Dafinës
+më 08.09.2026.
+
+### Nisja e dërgimit
 
 Plani i nisjes së dërgimit (baza tash është lista e RE 1.481-she, jo më e
 vjetra 319-she — detajet te të dy planet nën `docs/`):

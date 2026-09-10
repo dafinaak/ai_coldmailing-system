@@ -211,6 +211,23 @@ def test_plz_liste_sucht_jede_betroffene_region():
     assert bericht["grund_ende"] == "quellen_erschoepft"
 
 
+def test_plz_liste_behaelt_keine_firma_ohne_plz():
+    # Ohne Postleitzahl ist nicht belegt, dass die Firma in der bestellten
+    # Zone sitzt: OSM sucht im Quadrat der ganzen Region (Zone 35: 120 km
+    # Radius statt 48). Am 04.09.2026 standen so 23 Firmen in den fertigen
+    # Listen, die nicht in ihrer Zone lagen. Entscheidung Dafina
+    # 10.09.2026: raus - und im Bericht gezaehlt, nicht still verschluckt.
+    maps = GebietsMaps([[firma(1, plz="10115"), firma(2, plz="")]])
+
+    firmen, bericht = sammeln_bis_ziel(
+        "", 0, ["IT-Service"], 500, maps=maps, tabelle=TABELLE,
+        plz_liste=["10115"])
+
+    assert [f["name"] for f in firmen] == ["Firma 1"]
+    assert bericht["einzigartig"] == 1
+    assert bericht["ohne_plz_verworfen"] == 1
+
+
 def test_plz_liste_fragt_gelbe_seiten_je_region_mit_dem_regionsort():
     # Deutschlandweit stellt die Sammlung EINE "Deutschland"-Abfrage.
     # Bei einer PLZ-Liste waere das viel zu grob bezahlt - hier gehoert

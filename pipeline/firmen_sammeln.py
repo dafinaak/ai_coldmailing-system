@@ -367,6 +367,17 @@ def sammeln_bis_ziel(ort, radius_km, dienste, ziel_anzahl, *, maps=None,
                           else ("",) if deutschlandweit
                           else gebiete[0]["praefixe"])
         firmen, bericht = fusionieren(alle_listen, praefix_filter)
+        if codes:
+            # Die Fusion laesst Firmen OHNE PLZ drin. Bei einer PLZ-Liste
+            # waere das ein Loch: OSM sucht im Quadrat der ganzen Region
+            # (Zone 35: 120 km Radius statt 48), und am 04.09.2026 standen
+            # so 23 Firmen in den fertigen Listen, die nicht in ihrer Zone
+            # lagen. Ohne PLZ ist nicht belegt, dass die Firma auf einem
+            # der bestellten Codes sitzt - also raus, und gezaehlt
+            # (Entscheidung Dafina 10.09.2026).
+            ohne_plz = sum(1 for f in firmen if not f.get("plz"))
+            firmen = [f for f in firmen if f.get("plz")]
+            bericht["ohne_plz_verworfen"] = ohne_plz
         einzigartig = len(firmen)
         geliefert = sum(len(liste) for liste in listen)
         je_gebiet.append({"gebiet": gebiet["label"], "geliefert": geliefert,

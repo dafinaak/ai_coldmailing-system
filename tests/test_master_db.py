@@ -161,9 +161,9 @@ def test_export_traegt_olivers_spalten_und_a_bis_e(daten):
     zeilen = [list(r) for r in blatt.iter_rows(values_only=True)]
     kopf = zeilen[0]
 
-    for spalte in ("Sektor", "Firma", "CEO/Inhaber", "Straße", "Ort", "PLZ",
-                   "Land", "Tel", "E-Mail (allgemein)", "Webseite",
-                   "A) Name", "A) Rolle", "A) E-Mail", "B) Name",
+    for spalte in ("Branche", "Firma", "CEO/Inhaber", "Straße", "Ort", "PLZ",
+                   "Land", "Tel", "E-Mail (allgemein)", "www",
+                   "A) Name", "A) Entscheider-Position", "A) E-Mail", "B) Name",
                    "E) E-Mail", "Automatisierungs-Anbieter",
                    "Kampagnenfähig", "Ausschlussgrund"):
         assert spalte in kopf, spalte

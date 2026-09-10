@@ -155,27 +155,67 @@ DAFINAS_SOFTWAREFAELLE = [
 ]
 
 
+# Praezisierung Dafina, 03.09.2026: die Verzeichnis-Kategorie allein
+# entscheidet NICHT mehr - die Webseite entscheidet, geprueft mit der
+# strengen Regel. Beim Nachpruefen der Zonen 32-34 hatte die Kategorie
+# 61 Firmen aussortiert; die Webseite bestaetigte das fuer 49 und holte
+# 12 echte Systemhaeuser zurueck. Die Kategorie bleibt ein Hinweis an die
+# KI, damit sie bei solchen Firmen genau hinsieht.
+
 @pytest.mark.parametrize("name,kategorien", DAFINAS_SOFTWAREFAELLE)
-def test_eigene_software_fliegt_ohne_ki_raus(name, kategorien):
-    """Das Verzeichnis nennt diese Firmen selbst "Softwareentwickler/
-    -hersteller" - das reicht, dafuer braucht es kein KI-Urteil."""
-    grund = harter_ausschluss({"name": name, "categories": kategorien})
-    assert grund == "eigene_software", f"{name} rutscht durch!"
+def test_software_kategorie_ist_kein_harter_ausschluss_mehr(name, kategorien):
+    """Die Kategorie schickt die Firma zur KI - sie wirft sie nicht raus."""
+    assert harter_ausschluss({"name": name, "categories": kategorien}) is None
 
 
-def test_eigene_software_spart_den_ki_aufruf():
-    """Auch mit IT-Betreuung im Webtext: die harte Regel greift vorher.
-    Genau diese Kombination hatte die 'zweite Chance' hereingelassen."""
-    ki = _FakeKI('{"passt": true, "typ": "Softwarehaus mit Managed Services", '
-                 '"grund": "betreut zusaetzlich Kunden-IT"}')
+def test_software_kategorie_geht_als_hinweis_an_die_ki():
+    ki = _FakeKI('{"passt": false, "typ": "Softwarehersteller", '
+                 '"grund": "entwickelt eigene Software"}')
+    firma_bewerten(
+        firma(name="Mibema Software UG",
+              categories=["Softwareentwickler/-hersteller"]),
+        webtext="Wir entwickeln Software", ki=ki)
+    assert len(ki.prompts) == 1
+    _system, prompt = ki.prompts[0]
+    assert "Softwareentwickler/-hersteller" in prompt
+    assert "Hinweis" in prompt
+
+
+def test_ohne_software_kategorie_kein_hinweis():
+    ki = _FakeKI('{"passt": true, "typ": "IT-Systemhaus", "grund": "betreut IT"}')
+    firma_bewerten(firma(name="Pietsch IT GmbH",
+                         categories=["IT-Berater", "Computerservice"]),
+                   webtext="Wir betreuen die IT unserer Kunden", ki=ki)
+    _system, prompt = ki.prompts[0]
+    assert "Hinweis" not in prompt
+
+
+def test_webseite_mit_eigener_software_faellt_trotz_it_betreuung_raus():
+    """Die strenge Regel bleibt: eigene Software = raus, auch mit Support.
+    Genau das hatte die alte 'zweite Chance' mit ihrem weichen Prompt
+    uebersehen - hier urteilt die KI mit dem strengen SYSTEM_PROMPT."""
+    ki = _FakeKI('{"passt": false, "typ": "Softwarehersteller mit Support", '
+                 '"grund": "eigenes Produkt, Support nur dazu"}')
     ergebnis = firma_bewerten(
         firma(name="Mibema Software UG",
               categories=["Softwareentwickler/-hersteller"]),
         webtext="Wir entwickeln Software und betreuen die IT unserer Kunden",
         ki=ki)
     assert ergebnis["passt"] is False
-    assert ergebnis["typ"] == "eigene_software"
-    assert ki.prompts == []
+    assert ergebnis["quelle"] == "ki"
+
+
+def test_webseite_mit_reiner_it_betreuung_bleibt_trotz_kategorie_drin():
+    """Der Fall Computer live / Deltatec / Klanke: Karte sagt Software,
+    Webseite zeigt reine IT-Betreuung ohne Produkt - die Webseite gilt."""
+    ki = _FakeKI('{"passt": true, "typ": "IT-Dienstleister mit Managed Services", '
+                 '"grund": "laufende Betreuung, kein eigenes Produkt"}')
+    ergebnis = firma_bewerten(
+        firma(name="Computer live oHG",
+              categories=["Softwareentwickler/-hersteller", "Computerservice"]),
+        webtext="Managed Services, Netzwerk- und Serverbetreuung für Firmen",
+        ki=ki)
+    assert ergebnis["passt"] is True
 
 
 def test_eigene_software_wird_nur_an_der_kategorie_erkannt():
@@ -193,8 +233,8 @@ def test_normales_systemhaus_bleibt_von_der_neuen_regel_unberuehrt():
         categories=["IT-Berater", "Computerservice"])) is None
 
 
-def test_eigene_software_steht_in_den_ausschlussgruenden():
-    assert "eigene_software" in AUSSCHLUSS_GRUENDE
+def test_eigene_software_ist_kein_harter_grund_mehr():
+    assert "eigene_software" not in AUSSCHLUSS_GRUENDE
 
 
 def test_prompt_nennt_dafinas_neue_ausschluesse():

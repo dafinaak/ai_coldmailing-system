@@ -53,6 +53,19 @@ SUCHBEGRIFFE = [
 ]
 
 ZONEN = {
+    # Nachgetragen am 03.09.2026 fuer den Gelbe-Seiten-Nachschlag. Die
+    # Maps-Sammlung vom 21.08. lief noch ueber den alten Bielefeld-Kreis.
+    # Schieder-Schwalenberg (32816) im Suedosten, 39,9 km weit.
+    "32": {"mitte": (52.14, 8.80), "radius": 42, "stadt": "Herford",
+           "plz": "plz-liste-oliver-zona32.txt",
+           "lauf": "zona32-herford-2026-08-21"},
+    # Nachgetragen am 03.09.2026: Zone 33 wurde am 25.08. nur ueber Maps
+    # gesammelt, Overpass lief dort nie. Fuer den freien Nachschlag
+    # braucht sie denselben Kreis wie die anderen.
+    # Brakel (33034) im Suedosten, 46,3 km weit.
+    "33": {"mitte": (51.89, 8.58), "radius": 48, "stadt": "Bielefeld",
+           "plz": "plz-liste-oliver-zona33.txt",
+           "lauf": "zona33-bielefeld-2026-08-25"},
     # Willingen (34508) im Westen, Bad Karlshafen (34385) im Norden,
     # Ottrau (34633) im Sueden - die aeusserste liegt 50,3 km weit.
     "34": {"mitte": (51.25, 9.25), "radius": 52, "stadt": "Kassel",

@@ -157,10 +157,12 @@ def firmen_laden(quelle_datei=None):
         firmen, gesehen = [], set()
         for f in roh:
             kode = str(f.get("plz") or "").strip()
-            # OSM shpesh s'e ka fare kodin postar. Ato hyjne (kutia
-            # gjeografike garanton zonen, siç e ka vendosur vete
-            # burimi Overpass), por shenohen si te pakonfirmuara qe
-            # askush te mos i lexoje si te verifikuara.
+            # OSM shpesh s'e ka fare kodin postar. Ato mbahen ketu vetem
+            # me shenjen "plz_bestaetigt": False - kutia e Overpass-it NUK
+            # e garanton zonen, ajo eshte katrori i tere rajonit postar
+            # (zona 35: rreze 120 km, zona vete 48). Nga 10.09.2026
+            # mbledhja me liste kodesh s'i sjell me fare, dhe porta e zones
+            # te zona32-itliste-final.py i mban jashte listave.
             if kode and kode not in kodet:
                 continue
             f = dict(f)

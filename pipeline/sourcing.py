@@ -61,6 +61,7 @@ from pipeline.models import Lead
 from datetime import datetime
 
 from pipeline.decision_maker import build_entscheider, sort_by_priority
+from pipeline.dropcontact_register import REUSED_SOURCE, reused_note
 from pipeline.sources.apify_maps import ApifyMapsSource
 from pipeline.sources.hunter import HunterSource
 from pipeline.sources.dropcontact import DropcontactSource
@@ -273,7 +274,8 @@ def _verifizierte_email(person: dict, firma: dict, dropcontact) -> dict | None:
         person.get("first_name", ""), person.get("last_name", ""),
         firma.get("website", ""), company=firma.get("name", ""))
     if ergebnis:
-        return {"wert": ergebnis["email"], "quelle": "dropcontact"}
+        quelle, notizen = _herkunft(ergebnis, "dropcontact")
+        return {"wert": ergebnis["email"], "quelle": quelle, "notizen": notizen}
     if person.get("email") and person.get("verification_status") == "valid":
         return {"wert": person["email"], "quelle": "hunter"}
     return None
@@ -303,7 +305,8 @@ def _entscheider_kontakte(firma: dict, kontakt_rollen: list, max_pro_firma: int,
                 "first_name": person.get("first_name", ""),
                 "last_name": person.get("last_name", ""),
                 "email": email["wert"], "title": person.get("title", ""),
-                "source": email["quelle"]})
+                "source": email["quelle"],
+                "notizen": email.get("notizen") or []})
     return kontakte
 
 
@@ -371,12 +374,44 @@ def _impressum_kontakte(firma: dict, max_pro_firma: int, impressum,
         mail = dropcontact.email_bauen(person["vorname"], person["nachname"],
                                        ziel_website, company=firma.get("name", ""))
         if mail:
+            quelle, notizen = _herkunft(mail, "impressum")
             kontakte.append({
                 "first_name": person["vorname"], "last_name": person["nachname"],
                 "email": mail["email"],
                 "title": _impressum_titel(person),
-                "source": "impressum"})
+                "source": quelle, "notizen": notizen})
     return kontakte
+
+
+def _herkunft(mail: dict, quelle: str) -> tuple:
+    """(source, notizen) of a contact. An address taken over from the
+    Dropcontact register says so - with the run and the day it was
+    checked - and carries a source the register never reads back."""
+    if mail.get("reused_from"):
+        return REUSED_SOURCE, [reused_note(mail)]
+    return quelle, []
+
+
+class _MitRegister:
+    """Dropcontact, but the register is asked first (Jira AP-216).
+
+    Only email_bauen - the question for ONE person - is intercepted;
+    everything else goes to the real source unchanged. The bundled
+    question is split by _batch_mit_wiederaufnahme itself."""
+
+    def __init__(self, dropcontact, register):
+        self._dropcontact = dropcontact
+        self._register = register
+
+    def email_bauen(self, first_name, last_name, website, company=""):
+        known, mail = self._register.reuse(first_name, last_name, website)
+        if known:
+            return mail
+        return self._dropcontact.email_bauen(first_name, last_name, website,
+                                             company=company)
+
+    def __getattr__(self, name):
+        return getattr(self._dropcontact, name)
 
 
 def _impressum_titel(person: dict) -> str:
@@ -473,7 +508,7 @@ def _impressum_lesen(firma: dict, impressum) -> dict | None:
 
 
 def _impressum_gebuendelt(firmen: list, impressum, dropcontact, max_pro_firma,
-                          batch_speicher=None) -> tuple[dict, dict]:
+                          batch_speicher=None, register=None) -> tuple[dict, dict]:
     """Impressum-Stufe fuer ALLE Firmen - mit EINER Dropcontact-Anfrage.
 
     Vorher fragte jede Firma einzeln bei Dropcontact an und wartete auf
@@ -537,19 +572,47 @@ def _impressum_gebuendelt(firmen: list, impressum, dropcontact, max_pro_firma,
 
         print(f"Dropcontact: {len(anfragen)} Namen in einer Anfrage "
               f"(Runde {runde + 1})")
-        mails = _batch_mit_wiederaufnahme(dropcontact, anfragen, batch_speicher)
+        mails = _batch_mit_wiederaufnahme(dropcontact, anfragen, batch_speicher,
+                                          register)
         for (i, person), mail in zip(gehoert_zu, mails):
             if mail:
+                quelle, notizen = _herkunft(mail, "impressum")
                 kontakte_je_firma[i].append({
                     "first_name": person["vorname"],
                     "last_name": person["nachname"],
                     "email": mail["email"],
                     "title": _impressum_titel(person),
-                    "source": "impressum"})
+                    "source": quelle, "notizen": notizen})
     return kontakte_je_firma, fehler, gelesen
 
 
-def _batch_mit_wiederaufnahme(dropcontact, anfragen, batch_speicher):
+def _batch_mit_wiederaufnahme(dropcontact, anfragen, batch_speicher,
+                              register=None):
+    """Ask the register first, then pay only for the rest (Jira AP-216).
+
+    Returns one entry per request, in order. A person the register knows
+    is not sent: found before -> the earlier address, asked before
+    without a result -> None. Only the unknown ones go into the paid
+    batch - which keeps its crash-safe handling (_batch_bezahlen).
+    """
+    zeilen: list = [None] * len(anfragen)
+    offen = list(range(len(anfragen)))
+    if register is not None:
+        beantwortet, offen = register.split(anfragen)
+        for nr, mail in beantwortet.items():
+            zeilen[nr] = mail
+        if beantwortet:
+            print(f"Dropcontact: {len(beantwortet)} people known from earlier "
+                  f"runs - not paid for again")
+    if offen:
+        bezahlt = _batch_bezahlen(dropcontact, [anfragen[nr] for nr in offen],
+                                  batch_speicher)
+        for nr, mail in zip(offen, bezahlt):
+            zeilen[nr] = mail
+    return zeilen
+
+
+def _batch_bezahlen(dropcontact, anfragen, batch_speicher):
     """Einen Dropcontact-Batch abgeben und abholen - abbruchfest.
 
     Zwischen Abgeben und Abholen liegt die Wartezeit, und in ihr sind die
@@ -805,7 +868,7 @@ class BatchSpeicher:
 def source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
                   apify_source=None, hunter_source=None, dropcontact_source=None,
                   prospeo_key=None, prospeo_source=None,
-                  impressum_quelle=None, lauf_dir=None) -> tuple:
+                  impressum_quelle=None, lauf_dir=None, register=None) -> tuple:
     """Fuehrt alle Stufen aus und liefert (leads, deckung, firmen_mit_ausgang):
     - leads: Liste von pipeline.models.Lead (bestehende Form, downstream
       unveraendert nutzbar).
@@ -839,6 +902,9 @@ def source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
     apify = apify_source or ApifyMapsSource(apify_key)
     hunter = hunter_source or HunterSource(hunter_key)
     dropcontact = dropcontact_source or DropcontactSource(dropcontact_key)
+    if register is not None:
+        # Jira AP-216: every stage asks the register before it pays.
+        dropcontact = _MitRegister(dropcontact, register)
     max_pro_firma = getattr(kunde, "max_kontakte_pro_firma", None) or MAX_KONTAKTE_PRO_FIRMA_STANDARD
     stufen = _stufen_bauen(kunde, hunter, dropcontact, prospeo_key,
                            prospeo_source, impressum_quelle, max_pro_firma)
@@ -876,7 +942,7 @@ def source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
     if nur_impressum:
         teil_kontakte, teil_fehler, teil_gelesen = _impressum_gebuendelt(
             [firmen[i] for i in aktive], impressum_quelle, dropcontact,
-            max_pro_firma, batch_speicher)
+            max_pro_firma, batch_speicher, register)
         gebuendelt = {aktive[j]: k for j, k in teil_kontakte.items()}
         lese_fehler = {aktive[j]: f for j, f in teil_fehler.items()}
         impressum_gelesen = {aktive[j]: g for j, g in teil_gelesen.items()}
@@ -982,7 +1048,8 @@ def source_leads(kunde, limit, apify_key, hunter_key, dropcontact_key,
                 leads.append(Lead(
                     first_name=k["first_name"], last_name=k["last_name"],
                     email=k["email"], company=firmenname, title=k["title"],
-                    website=firma["website"], source=k["source"]))
+                    website=firma["website"], source=k["source"],
+                    notizen=list(k.get("notizen") or [])))
             firmen_mit_kontakt += 1
             ausgang = "mit_entscheider"
             je_stufe[liefernde_stufe] += 1

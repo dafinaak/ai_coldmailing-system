@@ -37,7 +37,9 @@ import json
 import re
 from pathlib import Path
 
-from pipeline.zonen import PLZ_ORDNER
+from pipeline.dropcontact_register import person_key
+from pipeline.guthaben import verbrauch
+from pipeline.zonen import PLZ_ORDNER, PROJEKT
 
 _ZONE_FOLDER = re.compile(r"^zona(\d+)-")
 
@@ -63,9 +65,8 @@ def _collection_folders(leadquellen_dir) -> list:
                   if "gelbeseiten" not in pfad.parent.name)
 
 
-def zone_source_report(zone, leadquellen_dir=PLZ_ORDNER) -> dict:
-    """Count the companies of one zone per source, known and new apart."""
-    zone = str(zone).strip()
+def _zone_folders(zone: str, leadquellen_dir) -> tuple:
+    """(the zone's own collection folders, the earlier ones)."""
     own, earlier = [], []
     for folder in _collection_folders(leadquellen_dir):
         match = _ZONE_FOLDER.match(folder.name)
@@ -80,13 +81,34 @@ def zone_source_report(zone, leadquellen_dir=PLZ_ORDNER) -> dict:
         raise ValueError(
             f"Zone {zone}: no collection folder zona{zone}-* with a "
             f"firmen.json in {leadquellen_dir}")
+    return own, earlier
+
+
+def _confirmed(own: list) -> dict:
+    """kennung -> True when one of the zone's records gives it a PLZ."""
+    confirmed: dict = {}
+    for folder in own:
+        for company in _companies(folder):
+            key = _kennung(company)
+            if key:
+                # Maps records carry no flag: every one of them had a PLZ
+                # from the zone list. Only OSM marks a firm without one.
+                confirmed[key] = (confirmed.get(key, False)
+                                  or company.get("plz_bestaetigt", True)
+                                  is not False)
+    return confirmed
+
+
+def zone_source_report(zone, leadquellen_dir=PLZ_ORDNER) -> dict:
+    """Count the companies of one zone per source, known and new apart."""
+    zone = str(zone).strip()
+    own, earlier = _zone_folders(zone, leadquellen_dir)
 
     known = set()
     for folder in earlier:
         known.update(key for key in map(_kennung, _companies(folder)) if key)
 
     sources_of: dict = {}
-    confirmed: dict = {}
     for folder in own:
         for company in _companies(folder):
             key = _kennung(company)
@@ -94,10 +116,7 @@ def zone_source_report(zone, leadquellen_dir=PLZ_ORDNER) -> dict:
                 continue
             tags = company.get("quellen") or [company.get("quelle") or "?"]
             sources_of.setdefault(key, set()).update(tags)
-            # Maps records carry no flag: every one of them had a PLZ from
-            # the zone list. Only OSM marks a firm it found without one.
-            confirmed[key] = (confirmed.get(key, False)
-                              or company.get("plz_bestaetigt", True) is not False)
+    confirmed = _confirmed(own)
     left_out = sum(1 for key in sources_of if not confirmed[key])
     sources_of = {key: tags for key, tags in sources_of.items()
                   if confirmed[key]}
@@ -126,6 +145,127 @@ def zone_source_report(zone, leadquellen_dir=PLZ_ORDNER) -> dict:
         "sources": dict(sorted(per_source.items())),
         "new_from_several_sources": new_from_several,
     }
+
+
+def _read_json(path: Path):
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def zone_enrichment_report(zone, leadquellen_dir=PLZ_ORDNER,
+                           daten_dir=None) -> dict:
+    """From the companies of one zone down to the e-mails, with the cost.
+
+    Jira AP-216. Until 10.09.2026 these numbers were counted by hand.
+
+        companies            proven in the zone - same count as the
+                             source report
+        eligible             IT profile fits, automation check said "no"
+        with_decision_maker  eligible, with a named person and a website:
+                             the ones the Dropcontact step may ask about
+        asked                people sent in the zone's paid Dropcontact runs
+        emails_found         addresses Dropcontact built in those runs
+        reused_free          addresses taken over from the register, not paid
+        ai_cost_usd          every AI call of the zone (kosten.json) - also
+                             for firms that fell out later: it was spent
+        credits              what the paid runs cost, from the balance before
+                             and after each one (pipeline.guthaben.verbrauch);
+                             None when no run's cost is known
+        credit_runs_unknown  paid runs whose cost cannot be told - every run
+                             from before 10.09.2026, when no balance was kept
+    """
+    zone = str(zone).strip()
+    own, _ = _zone_folders(zone, leadquellen_dir)
+    confirmed = _confirmed(own)
+
+    # The same merge as werkzeuge/zona32-dropcontact.py: an empty field is
+    # filled from the next source, a filled one is never overwritten.
+    merged: dict = {}
+    for folder in own:
+        for company in _companies(folder):
+            key = _kennung(company)
+            if not key or not confirmed.get(key):
+                continue
+            if key not in merged:
+                merged[key] = dict(company)
+                continue
+            for field, value in company.items():
+                if not merged[key].get(field) and value:
+                    merged[key][field] = value
+
+    eligible = [c for c in merged.values() if c.get("profil_passt")
+                and c.get("offers_automation_services") == "no"]
+    with_decision_maker = [
+        c for c in eligible
+        if c.get("website") and (c.get("entscheider") or [{}])[0].get("vorname")
+        and (c.get("entscheider") or [{}])[0].get("nachname")]
+
+    ai_cost = sum(float((_read_json(folder / "kosten.json") or {})
+                        .get("kosten_usd") or 0) for folder in own)
+
+    asked, paid, reused, known_cost, unknown = 0, set(), set(), [], 0
+    for run in sorted(Path(leadquellen_dir).glob(f"zona{zone}-dropcontact-*")):
+        request = _read_json(run / "request-id.json")
+        if isinstance(request, dict):
+            asked += len(request.get("gesendet_nr") or [])
+            cost = verbrauch(request.get("request_id"),
+                             daten_dir or PROJEKT)
+            if cost is None:
+                unknown += 1
+            else:
+                known_cost.append(cost)
+        for company in _read_json(run / "ergebnisse.json") or []:
+            for lead in company.get("leads") or []:
+                if lead.get("email"):
+                    key = person_key(lead.get("first_name"),
+                                     lead.get("last_name"),
+                                     company.get("website"))
+                    (reused if company.get("wiederverwendet_aus")
+                     else paid).add(key)
+
+    return {
+        "zone": zone,
+        "companies": sum(1 for ok in confirmed.values() if ok),
+        "eligible": len(eligible),
+        "with_decision_maker": len(with_decision_maker),
+        "asked": asked,
+        "emails_found": len(paid),
+        "reused_free": len(reused - paid),
+        "ai_cost_usd": round(ai_cost, 4),
+        "credits": sum(known_cost) if known_cost or not unknown else None,
+        "credit_runs_unknown": unknown,
+    }
+
+
+def format_enrichment(report: dict) -> str:
+    """The enrichment lines of one zone, for the terminal."""
+    if report["credits"] is None:
+        credits = "not recorded"
+    else:
+        credits = str(report["credits"])
+        if report["credit_runs_unknown"]:
+            credits += (f" (+ {report['credit_runs_unknown']} runs not "
+                        f"recorded)")
+    lines = [
+        f"  enrichment: {report['eligible']} of {report['companies']} "
+        f"eligible, {report['with_decision_maker']} with a named decision "
+        f"maker, {report['asked']} asked at Dropcontact, "
+        f"{report['emails_found']} e-mails paid for, "
+        f"{report['reused_free']} reused free",
+        f"  cost: AI ${report['ai_cost_usd']:.2f}, Dropcontact credits: "
+        f"{credits}",
+    ]
+    emails = report["emails_found"] + report["reused_free"]
+    if emails:
+        line = f"  per e-mail: AI ${report['ai_cost_usd'] / emails:.3f}"
+        if (report["credits"] is not None and not report["credit_runs_unknown"]
+                and report["emails_found"]):
+            line += (f", {report['credits'] / report['emails_found']:.1f} "
+                     f"credits per paid e-mail")
+        lines.append(line)
+    return "\n".join(lines)
 
 
 def format_report(report: dict) -> str:

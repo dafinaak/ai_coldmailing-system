@@ -2,6 +2,7 @@ import argparse, json, os, sys
 from collections import Counter
 from pathlib import Path
 from pipeline.config import load_kunde, lade_globale_sperrliste
+from pipeline.dropcontact_register import load_register
 from pipeline.env import lade_dotenv, brauche_env as _brauche_env, brauche_env_eines_von as _brauche_env_eines_von
 from pipeline.run_store import RunStore
 from pipeline.sourcing import source_leads
@@ -100,7 +101,12 @@ def lauf(kunde_pfad: str, limit: int, fortsetzen: str | None, neu_ab: str | None
             # Der Laufordner ist der Merkzettel fuer einen abgegebenen,
             # noch nicht abgeholten Dropcontact-Auftrag: stirbt der Lauf
             # in der Wartezeit, sind die Credits sonst verloren.
-            lauf_dir=store.run_dir, **zusatz)
+            lauf_dir=store.run_dir,
+            # Jira AP-216: wer schon einmal bezahlt oder ohne Ergebnis
+            # gefragt wurde, wird nicht noch einmal bezahlt. Der eigene
+            # Laufordner bleibt draussen - sein Merkzettel regelt das.
+            register=load_register(LAEUFE.parent, exclude=[store.run_dir]),
+            **zusatz)
         store.save_step("leads", {"leads": [l.__dict__ for l in gefunden], "deckung": deckung})
         # Apollo-422-Fix: Stufe-1-Firmenliste + Pro-Firma-Ausgang separat
         # persistieren (firmen.json), damit ein spaeterer Blick in den

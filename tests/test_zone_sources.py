@@ -13,7 +13,7 @@ import json
 
 import pytest
 
-from pipeline.zone_sources import zone_source_report
+from pipeline.zone_sources import zone_enrichment_report, zone_source_report
 
 
 def _company(name, domain, source, plz_confirmed=True):
@@ -104,3 +104,93 @@ def test_a_zone_without_collection_folders_is_an_error(leadquellen):
     # A silent zero would read like "the sources found nothing".
     with pytest.raises(ValueError):
         zone_source_report("40", leadquellen)
+
+
+# --- Enrichment per zone (Jira AP-216) -----------------------------------
+# From the companies of a zone down to the e-mails, with what it cost.
+# Until 10.09.2026 these numbers were counted by hand.
+
+
+def _firm(domain, profile=True, automation="no", manager=None, plz="33602",
+          confirmed=True):
+    return {"name": domain, "domain": domain, "website": f"https://{domain}",
+            "plz": plz, "plz_bestaetigt": confirmed, "profil_passt": profile,
+            "offers_automation_services": automation,
+            "entscheider": ([{"vorname": manager[0], "nachname": manager[1]}]
+                            if manager else []),
+            "quelle": "maps", "quellen": ["maps"]}
+
+
+@pytest.fixture
+def enrichment(tmp_path):
+    root = tmp_path / "leadquellen"
+    _folder(root, "zona33-bielefeld-2026-08-25", [
+        _firm("a.de", manager=("Anna", "Alt")),
+        _firm("b.de"),                                    # nobody named
+        _firm("c.de", profile=False, manager=("Carl", "Chef")),
+        _firm("d.de", automation="yes", manager=("Dora", "Dach")),
+        _firm("f.de", manager=("Fritz", "Form"))])
+    (root / "zona33-bielefeld-2026-08-25" / "kosten.json").write_text(
+        json.dumps({"kosten_usd": 0.30}), encoding="utf-8")
+    # OSM, no postal code: not part of the zone, so not counted anywhere.
+    _folder(root, "zona33-overpass-2026-09-03", [
+        _firm("e.de", plz="", confirmed=False, manager=("Emil", "Eck"))])
+    (root / "zona33-overpass-2026-09-03" / "kosten.json").write_text(
+        json.dumps({"kosten_usd": 0.20}), encoding="utf-8")
+    # A paid batch: two people asked, Anna found.
+    paid = root / "zona33-dropcontact-2026-08-28"
+    paid.mkdir()
+    (paid / "request-id.json").write_text(json.dumps(
+        {"request_id": "r1", "gesendet_nr": [0, 1]}), encoding="utf-8")
+    (paid / "ergebnisse.json").write_text(json.dumps([
+        {"website": "https://a.de", "leads": [
+            {"first_name": "Anna", "last_name": "Alt", "email": "anna@a.de"}]}]),
+        encoding="utf-8")
+    # A later run that only took an address over from the register.
+    reused = root / "zona33-dropcontact-2026-09-10"
+    reused.mkdir()
+    (reused / "ergebnisse.json").write_text(json.dumps([
+        {"website": "https://f.de",
+         "wiederverwendet_aus": {"lauf": "zona34-dropcontact-2026-08-28",
+                                 "datum": "2026-08-28"},
+         "leads": [{"first_name": "Fritz", "last_name": "Form",
+                    "email": "fritz@f.de"}]}]), encoding="utf-8")
+    return root
+
+
+def _credit_history(daten_dir, *entries):
+    from pipeline.guthaben import merken
+    for request_id, credits_left in entries:
+        merken(credits_left, daten_dir, request_id=request_id)
+
+
+def test_enrichment_funnel_of_a_zone(enrichment, tmp_path):
+    report = zone_enrichment_report("33", enrichment, daten_dir=tmp_path)
+
+    # a, b, c, d, f - the OSM firm without a postal code is not in it.
+    assert report["companies"] == 5
+    # c fails the IT profile, d offers automation.
+    assert report["eligible"] == 3
+    assert report["with_decision_maker"] == 2        # a and f
+    assert report["asked"] == 2
+    assert report["emails_found"] == 1               # Anna, paid for
+    assert report["reused_free"] == 1                # Fritz, from the register
+    # Every AI call of the zone counts - also for firms that fell out
+    # later: the money was spent.
+    assert report["ai_cost_usd"] == pytest.approx(0.50)
+
+
+def test_credits_come_from_the_balance_before_and_after(enrichment, tmp_path):
+    _credit_history(tmp_path, ("r1", 391), ("r9", 380))
+
+    report = zone_enrichment_report("33", enrichment, daten_dir=tmp_path)
+
+    assert report["credits"] == 11
+    assert report["credit_runs_unknown"] == 0
+
+
+def test_runs_before_the_balance_was_kept_say_so(enrichment, tmp_path):
+    report = zone_enrichment_report("33", enrichment, daten_dir=tmp_path)
+
+    assert report["credits"] is None
+    assert report["credit_runs_unknown"] == 1

@@ -128,6 +128,30 @@ Maps i njeh në një zonë tjetër, dhe tash dalin aty. Çmimi që pranohet:
 humbin edhe disa firma që ndoshta janë brenda zonës, po pa kod postar
 nuk e dimë.
 
+## Askush nuk paguhet dy herë te Dropcontact-i (nga 10.09.2026)
+
+Para çdo pyetjeje te Dropcontact-i pyetet regjistri
+(`pipeline/dropcontact_register.py`), në çdo rrugë: vegla e zonave,
+fushata (`lauf`), motori i shpejtë dhe `grosslauf`. Regjistri nuk është
+bazë e re — i lexon dosjet që vrapimet i shkruajnë gjithsesi.
+
+Rregullat, të vendosura nga Dafina:
+
+- **Email i gjetur më parë, jo më i vjetër se 90 ditë → ripërdoret**, pa
+  pagesë, me shënimin nga cili vrapim dhe cilën ditë u kontrollua.
+- **I pyetur më parë pa rezultat, brenda 90 ditëve → nuk pyetet prapë.**
+- **Më i vjetër se 90 ditë → pyetet prapë**, që çdo adresë të jetë e
+  kontrolluar brenda 90 ditëve para dërgimit.
+- **Email-i i ripërdorur e mban datën e kontrollit të vërtetë.** Nuk
+  "rinohet" nga vrapimi që e ripërdor — ndryshe afati 90-ditor do të
+  zgjatej pa u vënë re.
+
+Pse u shkrua: më 10.09.2026 doli se 19 persona ishin paguar në më shumë
+se një zonë — 22 pagesa të tepërta — sepse çdo zonë shikonte vetëm
+vrapimet e veta. Riluajtja e historisë tregoi se regjistri do të kishte
+kursyer 31 pagesa (22 mes zonave + 9 të paguara tashmë te PLR 30-31 ose
+te fushatat).
+
 ## Identiteti i firmës: pa bashkim automatik (nga 08.09.2026)
 
 Çdo firmë ka një numër që nuk ndërron kurrë — `firma_uid`. Ai rri te

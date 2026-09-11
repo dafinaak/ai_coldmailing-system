@@ -38,6 +38,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from pipeline.config import Kunde
+from pipeline.dropcontact_register import REUSED_SOURCE, load_register, reused_note
 from pipeline.env import lade_dotenv, brauche_env, brauche_env_eines_von
 from pipeline.ki import KI
 from pipeline.sources.dropcontact import DropcontactSource
@@ -205,26 +206,41 @@ def _offene_auftraege_abholen(dropcontact, stand: Zwischenstand, fortschritt):
 
 
 def _adressen_holen(anfragen: list, dropcontact, stand: Zwischenstand,
-                    batch: int, fortschritt) -> list:
+                    batch: int, fortschritt, register=None) -> list:
     """Ask Dropcontact for a list of people; returns one entry per request.
 
     All batches are handed over FIRST and written down, then collected.
     Dropcontact works on them side by side, so the long wait happens once
     for all of them instead of once per batch - and a crash in between
     cannot lose them, because the request_ids are already on disk.
+
+    Before that, this run's own cache and then the Dropcontact register
+    are asked (Jira AP-216). What the register answers is NOT written to
+    the cache: the cache counts as this run's own answers, so a reused
+    address would get this run's date and outlive its 90 days.
     """
     ergebnisse: list = [None] * len(anfragen)
     zu_fragen = []
+    aus_register = 0
     for nr, anfrage in enumerate(anfragen):
         bekannt, mail = stand.adresse(anfrage)
+        if not bekannt and register is not None:
+            bekannt, mail = register.reuse(anfrage["first_name"],
+                                           anfrage["last_name"],
+                                           anfrage.get("website"))
+            aus_register += bekannt
         if bekannt:
             ergebnisse[nr] = mail
         else:
             zu_fragen.append((nr, anfrage))
 
-    if len(zu_fragen) < len(anfragen):
-        fortschritt(f"  {len(anfragen) - len(zu_fragen)} Adressen schon bezahlt "
+    aus_zwischenstand = len(anfragen) - len(zu_fragen) - aus_register
+    if aus_zwischenstand:
+        fortschritt(f"  {aus_zwischenstand} Adressen schon bezahlt "
                     f"- aus dem Zwischenstand übernommen.")
+    if aus_register:
+        fortschritt(f"  {aus_register} people known from earlier runs "
+                    f"- not paid for again.")
     if not zu_fragen:
         return ergebnisse
 
@@ -253,7 +269,8 @@ def _adressen_holen(anfragen: list, dropcontact, stand: Zwischenstand,
 
 
 def _adressen_bauen(firmen: list, gelesen: dict, dropcontact, max_pro_firma: int,
-                    batch: int, stand: Zwischenstand, fortschritt) -> dict:
+                    batch: int, stand: Zwischenstand, fortschritt,
+                    register=None) -> dict:
     """Phase 2 - Dropcontact in rounds, one round per manager position."""
     _offene_auftraege_abholen(dropcontact, stand, fortschritt)
     kontakte: dict = {nr: [] for nr in range(len(firmen))}
@@ -281,15 +298,20 @@ def _adressen_bauen(firmen: list, gelesen: dict, dropcontact, max_pro_firma: int
 
         runde += 1
         fortschritt(f"  Dropcontact Runde {runde}: {len(anfragen)} Personen")
-        treffer = _adressen_holen(anfragen, dropcontact, stand, batch, fortschritt)
+        treffer = _adressen_holen(anfragen, dropcontact, stand, batch,
+                                  fortschritt, register)
         for (nr, person), mail in zip(herkunft, treffer):
             if mail:
+                if mail.get("reused_from"):
+                    quelle, notizen = REUSED_SOURCE, [reused_note(mail)]
+                else:
+                    quelle = "impressum"
+                    notizen = [mail["hinweis"]] if mail.get("hinweis") else []
                 kontakte[nr].append({
                     "first_name": person["vorname"],
                     "last_name": person["nachname"],
                     "email": mail["email"], "title": _impressum_titel(person),
-                    "source": "impressum",
-                    "notizen": [mail["hinweis"]] if mail.get("hinweis") else []})
+                    "source": quelle, "notizen": notizen})
 
 
 def _eintrag_bauen(firma: dict, gefunden: list, gelesen, kunde, hunter) -> dict:
@@ -419,7 +441,7 @@ def _ausgeschlossene_firma(firma: dict, urteil: dict) -> dict:
 
 def lauf_ausfuehren(firmen: list, kunde, dropcontact, impressum, hunter=None,
                     vorhandene=None, arbeiter=16, batch=100, lauf_dir=None,
-                    fortschritt=print) -> list:
+                    fortschritt=print, register=None) -> list:
     """Run the whole list. Finished companies are skipped, errors retried."""
     alte = {_schluessel(e): e for e in (vorhandene or [])}
     offen = [f for f in firmen
@@ -446,7 +468,8 @@ def lauf_ausfuehren(firmen: list, kunde, dropcontact, impressum, hunter=None,
     gelesen_teil = _seiten_lesen(weiter, impressum, arbeiter, stand,
                                  fortschritt)
     kontakte_teil = _adressen_bauen(weiter, gelesen_teil, dropcontact,
-                                    max_pro_firma, batch, stand, fortschritt)
+                                    max_pro_firma, batch, stand, fortschritt,
+                                    register)
     # Zurueck auf die Nummern der vollen Liste uebersetzen.
     gelesen = {nr: gelesen_teil.get(j) for j, (nr, _) in enumerate(geprueft)}
     kontakte = {nr: kontakte_teil.get(j) for j, (nr, _) in enumerate(geprueft)}
@@ -498,7 +521,11 @@ def main(argv=None):
         ImpressumQuelle(KI()),
         HunterSource(os.environ["HUNTER_API_KEY"]),
         vorhandene=lauf_laden(args.lauf),
-        arbeiter=args.arbeiter, batch=args.batch, lauf_dir=args.lauf)
+        arbeiter=args.arbeiter, batch=args.batch, lauf_dir=args.lauf,
+        # Jira AP-216: nobody this project paid for already is paid again.
+        # This run's own folder stays out - its cache already covers it.
+        register=load_register(Path(__file__).resolve().parent.parent,
+                               exclude=[args.lauf]))
 
     lauf_speichern(args.lauf, ergebnisse, dubletten_finden(firmen))
     z = zusammenfassung(ergebnisse)

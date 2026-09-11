@@ -102,7 +102,7 @@ def _schluessel(f: dict) -> str:
 
 def lauf_ausfuehren(firmen: list, kunde, prospeo, dropcontact, impressum,
                     hunter=None, vorhandene=None, fortschritt=print,
-                    nach_firma=None) -> list:
+                    nach_firma=None, register=None) -> list:
     """Fuehrt die Kaskade Firma fuer Firma aus (je Firma ein eigener
     source_leads-Aufruf mit Ein-Firmen-Liste - so bleibt der Lauf nach
     jeder Firma speicherbar und wiederaufnehmbar). Firmen mit frueherem
@@ -123,7 +123,9 @@ def lauf_ausfuehren(firmen: list, kunde, prospeo, dropcontact, impressum,
             # mehr als Empfaenger (siehe pipeline.campaign_eligibility).
             hunter_source=hunter if hunter is not None else object(),
             dropcontact_source=dropcontact, prospeo_source=prospeo,
-            impressum_quelle=impressum)
+            impressum_quelle=impressum,
+            # Jira AP-216: wer schon bezahlt wurde, wird nicht erneut bezahlt.
+            register=register)
         eintrag = {**mit_ausgang[0],
                    "leads": [l.__dict__ for l in leads]}
         ergebnisse.append(eintrag)
@@ -269,10 +271,13 @@ def main(argv=None):
     vorhandene = lauf_laden(args.lauf)
     if vorhandene:
         print(f"Setze bestehenden Lauf fort ({len(vorhandene)} Firmen gespeichert).")
+    from pipeline.dropcontact_register import load_register
     ergebnisse = lauf_ausfuehren(
         firmen, kunde, prospeo, dropcontact, impressum, hunter=hunter,
         vorhandene=vorhandene,
-        nach_firma=lambda erg: lauf_speichern(args.lauf, erg, dubletten))
+        nach_firma=lambda erg: lauf_speichern(args.lauf, erg, dubletten),
+        register=load_register(Path(__file__).resolve().parent.parent,
+                               exclude=[args.lauf]))
     lauf_speichern(args.lauf, ergebnisse, dubletten)
     z = zusammenfassung(ergebnisse)
     print(f"\nFertig: {z['firmen_gesamt']} Firmen, {z['persoenliche_mail']} "

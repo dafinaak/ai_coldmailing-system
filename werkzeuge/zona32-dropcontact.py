@@ -31,8 +31,10 @@ from pipeline.env import lade_dotenv  # noqa: E402
 lade_dotenv(PROJEKT / ".env")
 
 import os  # noqa: E402
+from pipeline import zonen  # noqa: E402
 from pipeline.anrede_spalte import aus_lauf  # noqa: E402
 from pipeline.config import lade_globale_sperrlisten_eintraege  # noqa: E402
+from pipeline.dropcontact_register import load_register  # noqa: E402
 from pipeline.sources.dropcontact import DropcontactSource  # noqa: E402
 
 # Zone per --zone umschaltbar, damit derselbe Ablauf fuer 32, 33 ...
@@ -40,9 +42,10 @@ from pipeline.sources.dropcontact import DropcontactSource  # noqa: E402
 # DY burime per cdo zone: Maps dhe Overpass. Gelbe Seiten u hoq me
 # 04.09.2026 me urdher te Dafines - shih werkzeuge/zonen-komplett.sh.
 #
-# "lauf" eshte dosja e vrapimit TE RADHES. Dosjet e meparshme te se
-# njejtes zone i lexon schon_angereichert() dhe i mban jashte ata qe jane
-# paguar ose pyetur tashme; keshtu asnje njeri s'paguhet dy here.
+# "lauf" eshte dosja e vrapimit TE RADHES. Kush eshte paguar ose pyetur
+# tashme - ne CDO zone, ne vrapimin e madh ose ne nje fushate - e di
+# regjistri (pipeline/dropcontact_register.py, Jira AP-216); keshtu
+# asnje njeri s'paguhet dy here.
 ZONEN = {
     "32": {"laeufe": ["zona32-herford-2026-08-21",
                       "zona32-overpass-2026-08-21"],
@@ -70,6 +73,9 @@ ZONEN = {
            "lauf": "zona39-dropcontact-2026-09-04"},
 }
 ZONE = "32"
+# --nur-zeigen: tregon ke do ta riperdorte, ke do ta kapercente dhe ke
+# do ta pyeste - pa dorezuar asgje te Dropcontact-i dhe pa shkruar asgje.
+NUR_ZEIGEN = "--nur-zeigen" in sys.argv[1:]
 for _a in sys.argv[1:]:
     if _a.startswith("--zone="):
         ZONE = _a.split("=", 1)[1]
@@ -113,8 +119,14 @@ def kontakte_sammeln():
                     bashke[feld] = wert
             firmen[kennung] = bashke
 
+    # Porta e zones (vendim i Dafines, 10.09.2026): pa kod postar nga
+    # lista, firma s'eshte e provuar ne zone dhe lista perfundimtare e
+    # hedh jashte - pra as Dropcontact-i s'guxon te paguhet per te.
+    kodet = set(zonen.plz_kodes(ZONE))
     kontakte = []
     for firma in firmen.values():
+        if (firma.get("plz") or "") not in kodet:
+            continue
         if not firma.get("profil_passt"):
             continue
         if firma.get("offers_automation_services") != "no":
@@ -129,56 +141,45 @@ def kontakte_sammeln():
     return kontakte
 
 
-def schon_angereichert(kontakte):
-    """Heq ata qe nje vrapim i meparshem i kesaj zone i ka pasuruar tashme.
+def register_pruefen(kontakte):
+    """Ndan kontaktet sipas regjistrit te Dropcontact-it (Jira AP-216).
 
-    Kur nje zone plotesohet me nje burim te ri (03.09.2026: Overpass te
-    zonat 33 e 34, qe ishin bere vetem me Maps), kontaktet e vjetra rrijne
-    ne liste. Pa kete kontroll do te dorezoheshin edhe ata nje here te
-    dyte - dhe Dropcontact-i paguhet per rezultat, jo per pyetje te re.
-    Aty do te ishin rreth 157 kredite te djegura per te dhena qe i kemi.
+    Deri me 10.09.2026 ketu shikoheshin vetem vrapimet e se njejtes zone,
+    dhe 19 persona u paguan ne me shume se nje zone - 22 pagesa te
+    teperta. Tash shikohet cdo pergjigje qe kemi, ne cdo zone, ne
+    vrapimin e madh dhe ne fushata:
 
-    Shikohen te gjitha dosjet "zona<NR>-dropcontact-*" pervec asaj te
-    tanishmes; celesi eshte emri + domain-i, si kudo tjeter."""
-    tashme = set()
-    wurzel = PROJEKT / "laeufe/leadquellen"
-    # 1) Kush ka marre email me pare - nga rezultatet.
-    for pfad in sorted(wurzel.glob(f"zona{ZONE}-dropcontact-*/ergebnisse.json")):
-        if pfad.parent == LAUF:
-            continue
-        try:
-            for f in json.loads(pfad.read_text(encoding="utf-8")):
-                lead = (f.get("leads") or [{}])[0]
-                tashme.add((str(lead.get("first_name") or "").casefold(),
-                            str(lead.get("last_name") or "").casefold(),
-                            domain_von(f.get("website"))))
-        except (OSError, ValueError):
-            continue
-    # 2) Kush eshte PYETUR me pare, pavaresisht pergjigjes - nga kerkesat.
-    #    Dropcontact-i nuk ndryshon nga dita ne dite; i njejti emer me te
-    #    njejtin domain jep te njejten pergjigje. Nje deshtim i ripyetur
-    #    eshte kohe e humbur dhe, ne rastin me te keq, kredit i humbur.
-    #    Vrapimet e vjetra s'e kane kete liste (u shtua me 03.09.2026) -
-    #    ato mbulohen vetem nga pika 1.
-    for pfad in sorted(wurzel.glob(f"zona{ZONE}-dropcontact-*/request-id.json")):
-        if pfad.parent == LAUF:
-            continue
-        try:
-            for a in json.loads(pfad.read_text(encoding="utf-8")).get("gesendet") or []:
-                tashme.add((str(a.get("first_name") or "").casefold(),
-                            str(a.get("last_name") or "").casefold(),
-                            domain_von(a.get("website"))))
-        except (OSError, ValueError):
-            continue
-    if not tashme:
-        return kontakte
-    frei = [k for k in kontakte
-            if (str(k["person"].get("vorname") or "").casefold(),
-                str(k["person"].get("nachname") or "").casefold(),
-                domain_von(k["firma"].get("website"))) not in tashme]
-    log(f"    tashme te pasuruara me pare: {len(kontakte) - len(frei)} "
-        f"(nuk paguhen serish), mbeten {len(frei)}")
-    return frei
+      - email i gjetur me pare ne KETE zone -> eshte tashme te rezultatet
+        e zones, nuk shkruhet prape;
+      - email i gjetur gjetiu, jo me i vjeter se 90 dite -> merret pa
+        pagese dhe shkruhet te rezultati i ketij vrapimi me shenjen
+        "wiederverwendet_aus";
+      - i pyetur me pare pa rezultat -> nuk pyetet prape brenda 90 diteve;
+      - te tjeret -> pyeten.
+
+    Dosja e ketij vrapimi (LAUF) mbetet jashte regjistrit: nese vrapimi ra
+    pasi pagoi, ai e merr prape batch-in e vet dhe s'guxon t'i kaperceje
+    ata qe i pagoi. Kthen (zu_fragen, wiederverwendet), ku wiederverwendet
+    eshte [(kontakt, mail)]."""
+    register = load_register(PROJEKT, exclude=[LAUF])
+    anfragen = [{"first_name": k["person"]["vorname"],
+                 "last_name": k["person"]["nachname"],
+                 "website": k["firma"].get("website", "")} for k in kontakte]
+    beantwortet, offen = register.split(anfragen)
+    eigene_zone = f"zona{ZONE}-dropcontact-"
+    wiederverwendet, schon_hier, ohne_ergebnis = [], 0, 0
+    for nr, mail in sorted(beantwortet.items()):
+        if mail is None:
+            ohne_ergebnis += 1
+        elif mail["reused_from"].startswith(eigene_zone):
+            schon_hier += 1
+        else:
+            wiederverwendet.append((kontakte[nr], mail))
+    log(f"3/6 regjistri: {schon_hier} tashme te kjo zone, "
+        f"{len(wiederverwendet)} merren falas nga nje vrapim tjeter, "
+        f"{ohne_ergebnis} te pyetur pa rezultat (nuk pyeten prape), "
+        f"{len(offen)} per t'u pyetur")
+    return [kontakte[nr] for nr in offen], wiederverwendet
 
 
 def gesperrt_filtern(kontakte):
@@ -202,7 +203,7 @@ def gesperrt_filtern(kontakte):
         for k in blockiert:
             log(f"    BLLOKUAR: {k['firma'].get('name')} "
                 f"({domain_von(k['firma'].get('website'))})")
-    log(f"2/5 sperrlista: {len(blockiert)} te bllokuara, {len(frei)} vazhdojne")
+    log(f"2/6 sperrlista: {len(blockiert)} te bllokuara, {len(frei)} vazhdojne")
     return frei
 
 
@@ -291,7 +292,7 @@ def dropcontact_laufen(kontakte, dc):
         gespeichert = json.loads(id_datei.read_text(encoding="utf-8"))
         request_id = gespeichert["request_id"]
         nummern = gespeichert["gesendet_nr"]
-        log(f"3/5 batch tashme i paguar, po merret sërish: {request_id}")
+        log(f"4/6 batch tashme i paguar, po merret sërish: {request_id}")
         if nummern and max(nummern) >= len(anfragen):
             # Lista e sotme eshte me e shkurter se ajo e batch-it: dicka
             # doli jashte ne mes, zakonisht nga lista e bllokimit (zonat
@@ -303,7 +304,7 @@ def dropcontact_laufen(kontakte, dc):
             return nach_namen_zuordnen(dc, request_id, anfragen)
         gesendet = [(nr, anfragen[nr]) for nr in nummern]
     else:
-        log(f"3/5 po dorezohet batch-i te Dropcontact: {len(anfragen)} persona ...")
+        log(f"4/6 po dorezohet batch-i te Dropcontact: {len(anfragen)} persona ...")
         request_id, gesendet = dc.batch_abgeben(anfragen)
         if request_id is None:
             log("    asnje person i vlefshem - ndalim.")
@@ -321,6 +322,10 @@ def dropcontact_laufen(kontakte, dc):
                           "website": a.get("website", "")}
                          for _, a in gesendet],
             "zeit": datetime.now().isoformat(timespec="seconds"),
+            # Gjendja e krediteve kur u dorezua batch-i (Jira AP-216).
+            # Kostoja e tij = kjo gjendje minus ajo e dorezimit te radhes;
+            # e llogarit pipeline/guthaben.py:verbrauch() me request_id.
+            "credits_left": dc.credits_left,
         }, ensure_ascii=False, indent=1), encoding="utf-8")
         log(f"    request_id u ruajt: {request_id} "
             f"({len(gesendet)} persona te paguar)")
@@ -364,6 +369,18 @@ def ergebnisse_bauen(kontakte, mails):
     return firmen
 
 
+def wiederverwendet_bauen(wiederverwendet):
+    """Te njejtat rreshta si ergebnisse_bauen(), per email-et e marra nga
+    regjistri - me shenjen nga cili vrapim erdhen, qe raporti i zones t'i
+    numeroje si falas dhe askush te mos i lexoje si pagese e re."""
+    firmen = ergebnisse_bauen([k for k, _ in wiederverwendet],
+                              [m for _, m in wiederverwendet])
+    for firma, (_, mail) in zip(firmen, wiederverwendet):
+        firma["wiederverwendet_aus"] = {"lauf": mail["reused_from"],
+                                        "datum": mail["reused_date"]}
+    return firmen
+
+
 def main():
     log("=" * 62)
     log(f"ZONA {ZONE} - Hapi 2: Dropcontact + Anrede")
@@ -371,17 +388,33 @@ def main():
     log("=" * 62)
 
     kontakte = kontakte_sammeln()
-    log(f"1/5 kontakte te pranueshme: {len(kontakte)}")
-    kontakte = schon_angereichert(kontakte)
+    log(f"1/6 kontakte te pranueshme: {len(kontakte)}")
     kontakte = gesperrt_filtern(kontakte)
+    kontakte, wiederverwendet = register_pruefen(kontakte)
 
-    dc = DropcontactSource(os.environ["DROPCONTACT_API_KEY"])
-    mails = dropcontact_laufen(kontakte, dc)
+    if NUR_ZEIGEN:
+        for k, mail in wiederverwendet:
+            log(f"    falas nga {mail['reused_from']} ({mail['reused_date']}): "
+                f"{k['person']['vorname']} {k['person']['nachname']} - "
+                f"{k['firma'].get('name')}")
+        for k in kontakte:
+            log(f"    do te pyetej: {k['person']['vorname']} "
+                f"{k['person']['nachname']} - {k['firma'].get('name')}")
+        log("--nur-zeigen: asgje nuk u dorezua, asgje nuk u shkrua.")
+        return
+
+    mails = []
+    if kontakte:
+        dc = DropcontactSource(os.environ["DROPCONTACT_API_KEY"])
+        mails = dropcontact_laufen(kontakte, dc)
     gefunden = sum(1 for m in mails if m)
-    log(f"4/5 email personale te verifikuara: {gefunden} nga {len(kontakte)} "
-        f"({100*gefunden/max(1,len(kontakte)):.0f}%)")
+    log(f"5/6 email personale te verifikuara: {gefunden} nga {len(kontakte)} "
+        f"({100*gefunden/max(1,len(kontakte)):.0f}%), falas nga regjistri: "
+        f"{len(wiederverwendet)}")
 
-    firmen = ergebnisse_bauen(kontakte, mails)
+    firmen = (ergebnisse_bauen(kontakte, mails)
+              + wiederverwendet_bauen(wiederverwendet))
+    LAUF.mkdir(parents=True, exist_ok=True)
     ergebnis_datei = LAUF / "ergebnisse.json"
     ergebnis_datei.write_text(
         json.dumps(firmen, ensure_ascii=False, indent=1), encoding="utf-8")

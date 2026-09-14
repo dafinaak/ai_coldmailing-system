@@ -22,6 +22,29 @@ vërtetë.
 
 ## Gjendja tash
 
+- **10.09.2026 — Jira AP-216 (waterfall-i i pasurimit) e mbyllur.** Plani dhe provat:
+  `docs/plan-ap216-waterfall-2026-09-10.md`. Asnjë commit, 0 kredite të
+  harxhuara gjatë punës.
+  - **Regjistri i Dropcontact-it** (`pipeline/dropcontact_register.py`): çdo
+    përgjigje që e kemi — zonat, vrapimi i madh (`zwischenstand.json`),
+    fushatat (`leads.json`). Ripërdorim deri në 90 ditë, pa ripyetje të
+    atyre pa rezultat; rregulli te AGENTS.md. E pyesin të katër rrugët:
+    vegla e zonave, `lauf`, `schnelllauf`, `grosslauf`. Riluajtja e historisë:
+    do të kishte kursyer 31 pagesa.
+  - Vegla e zonave: `--nur-zeigen` (tregon kë do ta ripërdorte/pyeste, pa
+    dorëzuar asgjë) dhe porta e zonës (pa kod postar nga lista → nuk
+    paguhet). Kujdes: rreth 176 persona "për t'u pyetur" janë të pyetur
+    para 03.09 pa listë emrash — pyetja pa rezultat nuk kushton kredit.
+  - **Kreditet për kërkesë:** `dropcontact-guthaben-verlauf.jsonl` (në dosjen
+    e projektit, vetëm shtim) me `request_id`; `guthaben.verbrauch()`. Të 18
+    vrapimet e vjetra të zonave dalin "not recorded".
+  - **Raporti i pasurimit** te `werkzeuge/zone-source-report.py`: 32–39 →
+    5.121 firma, 678 të pranueshme, 502 me emër, 913 pyetje, 404 email të
+    paguara (382 persona unikë + 22 të dyfishta), AI $5.02.
+  - `docs/waterfall-uebersicht.md` u përditësua (pa Gelbe Seiten, MailCom,
+    regjistri, kostot). Rendi përfundimtar i burimeve mbetet te AP-213
+    (Blocked).
+  - 1.482 teste jeshile, 90 të kaluara (Postgres, Docker-i i fikur).
 - **10.09.2026 — Jira AP-215 (mbledhja sipas kodeve postare) e mbyllur.**
   Asnjë commit — gjithçka në working tree.
   - Gelbe Seiten doli edhe nga komanda `python -m pipeline sammeln`, që e

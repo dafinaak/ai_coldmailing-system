@@ -115,7 +115,9 @@ def _guthaben_merken(antwort: dict) -> None:
         return
     try:
         from pipeline.guthaben import merken
-        merken(antwort["credits_left"])
+        # Mit der Auftragsnummer: so laesst sich spaeter sagen, was genau
+        # dieser Auftrag gekostet hat (pipeline.guthaben.verbrauch, AP-216).
+        merken(antwort["credits_left"], request_id=antwort.get("request_id"))
     except Exception:      # noqa: BLE001 - eine Notiz darf nie einen Lauf kosten
         pass
 
@@ -203,6 +205,14 @@ class DropcontactSource:
         self.max_abfragen = max_abfragen    # so oft wird auf das Ergebnis gepollt
         self.batch_wartezeit = batch_wartezeit
         self.batch_max_abfragen = batch_max_abfragen
+        # Last balance Dropcontact reported - a run writes it next to its
+        # request_id, so its cost can be told later (Jira AP-216).
+        self.credits_left = None
+
+    def _guthaben(self, daten: dict) -> None:
+        _guthaben_merken(daten)
+        if "credits_left" in (daten or {}):
+            self.credits_left = daten["credits_left"]
 
     @property
     def _headers(self):
@@ -279,7 +289,7 @@ class DropcontactSource:
         if daten.get("error") or not daten.get("request_id"):
             grund = daten.get("reason") or daten.get("error") or "unbekannt"
             raise RuntimeError(f"Dropcontact lehnt den Batch ab: {grund}")
-        _guthaben_merken(daten)
+        self._guthaben(daten)
         return daten["request_id"], gesendet
 
     def adressen_pruefen(self, adressen: list) -> list:
@@ -315,7 +325,7 @@ class DropcontactSource:
         if daten.get("error") or not daten.get("request_id"):
             grund = daten.get("reason") or daten.get("error") or "unbekannt"
             raise RuntimeError(f"Dropcontact lehnt die Prüfung ab: {grund}")
-        _guthaben_merken(daten)
+        self._guthaben(daten)
 
         zeilen = self.zeilen_holen(daten["request_id"])
         if len(zeilen) != len(sauber):
@@ -398,7 +408,7 @@ class DropcontactSource:
         if daten.get("error") or not daten.get("request_id"):
             grund = daten.get("reason") or daten.get("error") or "unbekannt"
             raise RuntimeError(f"Dropcontact lehnt den Batch ab: {grund}")
-        _guthaben_merken(daten)
+        self._guthaben(daten)
         return daten["request_id"]
 
     def _ergebnis_holen(self, request_id: str) -> dict | None:

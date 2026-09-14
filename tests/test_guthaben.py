@@ -6,7 +6,7 @@ und ein Schreibfehler darf niemals einen bezahlten Lauf mitreissen.
 """
 import json
 
-from pipeline.guthaben import merken, stand
+from pipeline.guthaben import merken, stand, verbrauch, verlauf
 from pipeline.sources.dropcontact import DropcontactSource
 from tests.test_dropcontact import FakeResponse, FakeSession
 
@@ -64,6 +64,63 @@ def test_dropcontact_merkt_sich_den_stand_beim_abgeben(tmp_path, monkeypatch):
                            "website": "https://a.de"}])
 
     assert stand(tmp_path)["credits_left"] == 42
+
+
+# --- Verbrauch je Auftrag (Jira AP-216, 10.09.2026) -----------------------
+# Bis hier wusste das Projekt nur den LETZTEN Stand. Was ein einzelner
+# Lauf gekostet hat, stand nirgends. Dropcontact rechnet erst beim
+# Bearbeiten ab ("pay on success"), also zeigt der Stand beim Abgeben
+# eines Auftrags das Guthaben VOR ihm - und der Stand beim naechsten
+# Auftrag das Guthaben danach. Die Anzahl gefundener Mails ist dafuer
+# kein Ersatz: am 03.09.2026 kosteten 7 Mails 20 Credits.
+
+
+def test_jeder_gesehene_stand_kommt_in_den_verlauf(tmp_path):
+    merken(200, tmp_path, request_id="r1")
+    merken(150, tmp_path, request_id="r2")
+
+    assert [(e["request_id"], e["credits_left"]) for e in verlauf(tmp_path)] \
+        == [("r1", 200), ("r2", 150)]
+
+
+def test_verbrauch_ist_der_abstand_zum_naechsten_auftrag(tmp_path):
+    merken(200, tmp_path, request_id="r1")
+    merken(150, tmp_path, request_id="r2")
+    merken(150, tmp_path, request_id="r3")
+
+    assert verbrauch("r1", tmp_path) == 50
+    assert verbrauch("r2", tmp_path) == 0
+
+
+def test_verbrauch_bleibt_offen_solange_nichts_danach_kam(tmp_path):
+    # Der letzte Auftrag ist erst bekannt, wenn der naechste abgegeben
+    # wird - bis dahin ist die Antwort ehrlich "offen", nicht 0.
+    merken(200, tmp_path, request_id="r1")
+
+    assert verbrauch("r1", tmp_path) is None
+    assert verbrauch("gibt-es-nicht", tmp_path) is None
+
+
+def test_aufgeladenes_guthaben_ist_kein_negativer_verbrauch(tmp_path):
+    # Zwischen zwei Auftraegen wurde nachgekauft: der Abstand sagt dann
+    # nichts ueber den Auftrag - lieber offen als eine falsche Zahl.
+    merken(100, tmp_path, request_id="r1")
+    merken(600, tmp_path, request_id="r2")
+
+    assert verbrauch("r1", tmp_path) is None
+
+
+def test_dropcontact_kennt_seinen_letzten_stand(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    session = FakeSession([FakeResponse(200, {
+        "error": False, "request_id": "r1", "success": True, "credits_left": 42})])
+    quelle = DropcontactSource("key", session=session, batch_wartezeit=0)
+
+    quelle.batch_abgeben([{"first_name": "Anna", "last_name": "Muster",
+                           "website": "https://a.de"}])
+
+    assert quelle.credits_left == 42
+    assert verlauf(tmp_path)[-1]["request_id"] == "r1"
 
 
 def test_fehlende_zahl_stoert_den_lauf_nicht(tmp_path, monkeypatch):

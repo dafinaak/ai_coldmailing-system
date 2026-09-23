@@ -22,6 +22,23 @@ vërtetë.
 
 ## Gjendja tash
 
+- **23.09.2026 — AP-210 (kontrolli i bazës) dhe AP-223 (fushat e
+  DataWarehouse-it) të mbyllura.** Asnjë ndryshim strukture, vetëm lexim.
+  - Kontrolli i plotë: `docs/kontroll-baza-vendimmarresit-2026-09-23.md`
+    (fushat e vendimmarrësit, email/telefon/celular, prejardhja, disa
+    persona për firmë, ndërfaqja dhe eksporti). Numrat nga baza e 07.09:
+    10.183 firma, 933 persona.
+  - Tri gjërat që duhen ditur para ndryshimit të strukturës: **154 email
+    të paguara nuk janë në bazë** (zonat 35–39 e disa të tjera); lista e
+    vendimmarrësve zëvendësohet nga vrapimi i ri, pra një email a telefon
+    i vjetër mund të humbasë; telefoni i firmës dhe i personit nuk janë
+    të ndarë në përmbajtje (43 persona mbajnë centralën). Celulari nuk ka
+    burim — pret AP-213.
+  - AP-223: të gjitha fushat mbushen vetë. Sot: Bundesland 92%,
+    Mitarbeiterzahl 49%, Kurzbeschreibung 33%, CEO/Inhaber 1.044,
+    Entscheider-Bereich 81%. Mbetet vetëm gjysma e fushës "për cilin
+    produkt", që kërkon listë produktesh — kemi një ofertë.
+  - 1.572 teste jeshile (vrapim i plotë 23.09, me Postgres-in e ndezur).
 - **10.09.2026 — Jira AP-216 (waterfall-i i pasurimit) e mbyllur.** Plani dhe provat:
   `docs/plan-ap216-waterfall-2026-09-10.md`. Asnjë commit, 0 kredite të
   harxhuara gjatë punës.
@@ -887,6 +904,24 @@ vërtetë.
   Leonardit).
 
 ## Hapat e ardhshëm
+
+### Zonat e reja 40–69 (Jira AP-246, "To Do", shtuar 23.09.2026)
+
+Dafina dha listën e re të kodeve postare: **2.096 kode, 20 rajone, 35
+qytete, pesë landë** — Düsseldorf, Köln, Dortmund, Essen, Duisburg,
+Frankfurt, Mannheim, Heidelberg e të tjera. Lista rri te
+`daten/plz-liste-oliver-40-69.csv` (jo te `laeufe/`, se ajo dosje nuk
+shkon në git dhe një listë u fshi një herë pa u vënë re).
+
+Puna është e njëjta si te zonat 32–39: mbledhje me Maps e OSM, filtri i
+profilit IT, kontrolli i automatizimit, impressum-i për vendimmarrësin,
+Dropcontact për email-in personal, dhe një Excel për çdo zonë.
+
+Para nisjes duhen dy vendime të Dafinës: sa zona bëhen njëherësh dhe me
+çfarë radhe, dhe buxheti. Zona është shumë më e dendur se e kaluara
+(2.096 kode kundrejt 521; vetëm Kölni ka 366), Maps paguhet për çdo
+rezultat (matur: 6,17 $ për 2.058 rezultate), dhe Dropcontact-i kishte
+rreth 390 kredite më 03.09 — do të duhen më shumë.
 
 ### Detyrë e veçantë: tri gjëra PARA Fazës 5 (hapur 08.09.2026)
 

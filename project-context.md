@@ -22,6 +22,48 @@ vërtetë.
 
 ## Gjendja tash
 
+- **29.09.2026 — Zona 41 (Mönchengladbach, Neuss, Kaarst, Dormagen) e
+  gatshme: 20 kontakte.** Lista:
+  `IT-Liste-Emails-Zona41-FERTIG-20260929-1135.xlsx` (24 kolonat e njëjta).
+  - **Disa rrathë në një zonë.** Një rreth rreth katër qyteteve do të
+    ishte 21 km dhe do të hynte thellë në Düsseldorf, ku kufiri prej 110
+    do të harxhohej. Tash `pipeline/zonen.py` pranon `kreise` (një rreth
+    për qytet), dhe Apify-t i shkon një `MultiPolygon` (e mbështet aktori,
+    README "Custom search area"). Zonat 32–40 i shkojnë Apify-t saktësisht
+    si më parë — e ruan testi. Rrathët e zonës 41: MG 8 km, Neuss 5,5,
+    Kaarst 4, Dormagen 5.
+  - **Ripërdorim i vendeve të paguara.** `maps_dazu` te `pipeline/zonen.py`:
+    dataset-i i zonës 40 lexohet edhe për zonën 41 (99 vende në Neuss,
+    Kaarst, Dormagen; 89 i gjeti edhe vrapimi i ri, 10 erdhën vetëm prej
+    tij). `zona32-lauf.py --dataset=a.json,b.json` lexon disa dataset-e,
+    një vend i dyfishtë numërohet një herë.
+  - **Kufi parash për vrapim.** `zonen-maps.py --max-usd=` (te zinxhiri:
+    `MAX_USD=2.40 ./werkzeuge/zonen-komplett.sh 41`) i kalon Apify-t
+    `maxTotalChargeUsd`. Nëse vrapimi e prek kufirin, run-id-ja riemërohet
+    `apify-run-id-e-paplote.json`, zinxhiri ndalet, dhe nisja e radhës bën
+    kërkim të plotë.
+  - Maps: 621 vende për **1,86 $** (kufiri 2,40 nuk u prek), 448 brenda
+    zonës (72%; te zona 40 ishin 56%). Vetëm 3 nga 10 fjalë e prekën
+    kufirin 110 (te zona 40: 9). Rrethi i Neuss-it prapë preku pak
+    Düsseldorf-in (Bilk, Oberkassel — rreth 120 vende jashtë zonës).
+  - Gjithsej 460 firma (447 të reja), 38 të pranueshme, 33 me vendimmarrës.
+    AI 0,45 $. Dropcontact: 20 nga 33 (61%).
+  - 2 nga 20 kontaktet janë vetëm falë listës së ndrequr: netpoint
+    (41069) dhe IT-Consult Geromy (41239, Rheydt). Te zona 40 po ashtu 1:
+    xpert.IT (40489).
+  - Kontrolli: 2 email me domain tjetër të së njëjtës firmë (webmad,
+    megabit), te credativ fusha e telefonit ka dy numra bashkë. Asnjë faqe
+    e vdekur, asnjë dublikatë. Raporti:
+    `Listen-Pruefbericht-20260929-1136.xlsx`.
+  - Baza: 11.199 firma, 1.075 vendimmarrës, 328 kampanjefähig.
+  - 1.495 teste jeshile (3 të reja te `tests/test_zonen.py`), 90 të
+    kaluara (Postgres, Docker-i i fikur).
+  - Buxhetet: Apify 0,62 $ deri më 01.10, pastaj 19 $. Dropcontact: 298 në
+    dorëzimin e zonës 41 (të 33-at rezervohen në dorëzim, pastaj kthehen
+    disa), pra rreth 300 kredite.
+  - **Ndreqje e numrit të zonës 40:** Dropcontact-i nuk merr vetëm email-et
+    e gjetura. Nga 392 para zonës 40 mbetën 331 para zonës 41, pra zona 40
+    kushtoi **61 kredite** për 53 email, jo 53 si u shkrua në mëngjes.
 - **29.09.2026 — Zona 40 (Düsseldorf) e gatshme si provë, lista e kodeve
   40–69 e ndrequr.** Jira AP-246 kaloi në "In Progress" (me koment).
   - **Lista e kodeve:** nga 2.096 kode, 1.619 nuk ekzistojnë (ishin radhë
@@ -58,10 +100,10 @@ vërtetë.
   - Baza pas rindërtimit: 10.752 firma, 1.032 vendimmarrës.
   - 1.492 teste jeshile, 90 të kaluara (Postgres, Docker-i i fikur).
   - Buxhetet pas zonës 40: Apify rreth 2,48 $ deri më 01.10 (pastaj 19 $
-    në muaj). Dropcontact dha 319 kredite në dorëzim; me kthimin e 20
-    personave pa email duhet të mbeten rreth 340. Që nga 03.09 (391) s'ka
-    pasur rinovim: para batch-it ishin 392, pra të 500-at mujore nuk kanë
-    ardhur ende këtë muaj.
+    në muaj). Dropcontact dha 319 kredite në dorëzim (73 të rezervuara);
+    zona 40 kushtoi në fund 61 kredite (shih zonën 41). Që nga 03.09 (391)
+    s'ka pasur rinovim: para batch-it ishin 392, pra të 500-at mujore nuk
+    kanë ardhur ende këtë muaj.
 - **23.09.2026 — AP-210 (kontrolli i bazës) dhe AP-223 (fushat e
   DataWarehouse-it) të mbyllura.** Asnjë ndryshim strukture, vetëm lexim.
   - Kontrolli i plotë: `docs/kontroll-baza-vendimmarresit-2026-09-23.md`
@@ -865,7 +907,9 @@ vërtetë.
   mbetet i paprekur, Oliverit i shkon shënimi se çka ndryshoi. Rregulli
   është te `AGENTS.md`. (2) Së pari vetëm zona 40 si provë, me të njëjtën
   rrugë si 32–39 (kufiri 110 për fjalë); për 19 zonat e tjera vendoset me
-  numrat e saj.
+  numrat e saj. (3) Pas provës: "vazhdo me tjera kode me radhë" — zonat
+  vazhdojnë me radhë (41, 42, 44 ...), njësoj si zona 40, brenda
+  buxhetit mujor.
 - **08.09.2026 — Faza 2: identiteti i firmës.** Çdo firmë ka `firma_uid`, një
   numër që nuk lëviz kurrë, i ruajtur te `daten/stamm.db` (bazë e përhershme, si
   `historie.db`). Një `kennung` = një `firma_uid`; asgjë nuk bashkohet vetvetiu
@@ -994,34 +1038,45 @@ vërtetë.
 
 ### Zonat e reja 40–69 (Jira AP-246, "In Progress" që nga 29.09.2026)
 
-Zona 40 është gati (shih "Gjendja tash", 29.09). Mbeten 19 zona: 41, 42,
-44, 45, 47, 48, 50, 51, 52, 53, 55, 60, 63, 64, 65, 66, 67, 68, 69. Kodet
+Zonat 40 dhe 41 janë gati (shih "Gjendja tash", 29.09). Dafina tha më
+29.09: "vazhdo me tjera kode me radhë" — pra zonat me radhë, njësoj si
+40. Mbeten 18: 42, 44, 45, 47, 48, 50, 51, 52, 53, 55, 60, 63, 64, 65,
+66, 67, 68, 69. **E radhës: zona 42** (Wuppertal, Solingen, Remscheid),
+më së shpejti më 02.10 — Apify ka vetëm 0,62 $ deri më 01.10. Kodet
 vijnë nga `daten/plz-liste-oliver-40-69-corrected.csv`; origjinali
 `daten/plz-liste-oliver-40-69.csv` nuk përdoret më për zonat.
 
-Si shtohet një zonë (si te zona 40): skedari i kodeve
+Si shtohet një zonë (si te zonat 40 e 41): skedari i kodeve
 `laeufe/leadquellen/plz-liste-oliver-zona<NR>.txt` nga lista e ndrequr,
-rreshti te `pipeline/zonen.py` (qendra, rrezja që e mbulon kodin më të
-largët, testet e `tests/test_zonen.py` e kontrollojnë), rreshtat te
-`zona32-dropcontact.py` dhe `zona32-itliste-final.py`, pastaj
-`./werkzeuge/zonen-komplett.sh <NR>`, `zona32-dropcontact.py --zone=<NR>
---nur-zeigen`, pa `--nur-zeigen`, `zona32-itliste-final.py --zone=<NR>`
-dhe `listen-pruefung.py`.
+rreshti te `pipeline/zonen.py` (një rreth, ose `kreise` me një rreth për
+qytet kur qytetet janë larg njëri-tjetrit; rrezja e mbulon kodin më të
+largët; `tests/test_zonen.py` e kontrollon; `maps_dazu` për vendet që një
+vrapim fqinj i ka paguar tashmë brenda zonës), rreshtat te
+`zona32-dropcontact.py` dhe `zona32-itliste-final.py` (edhe emri i
+burimit te `QUELLE_FIRMA`), pastaj `./werkzeuge/zonen-komplett.sh <NR>`
+(me `MAX_USD=` kur buxheti është i ngushtë), `zona32-dropcontact.py
+--zone=<NR> --nur-zeigen`, pa `--nur-zeigen`, `zona32-itliste-final.py
+--zone=<NR>` dhe `listen-pruefung.py`.
 
-Para zonës tjetër duhet fjala e Dafinës për:
-- **buxhetin dhe ritmin.** Një zonë qyteti kushton rreth 3,20 $ Apify,
-  0,60 $ AI dhe rreth 50 kredite Dropcontact. Apify ka rreth 2,48 $ deri
-  më 01.10, pastaj 19 $ në muaj (rreth 5 zona). Dropcontact rreth 340
-  kredite (rreth 6 zona).
-- **plotësinë në qytetet e mëdha.** Me kufirin 110 për fjalë, Maps-i te
-  Düsseldorf u ndal te 9 nga 10 fjalë. Kölni, Frankfurti, Dortmundi,
-  Esseni e Duisburgu janë po aq të dendur ose më shumë. Më plotë do të
-  thotë kufi më i lartë ose qyteti i ndarë në copa, pra më shumë para.
+Kosto e matur për zonë qyteti: Apify 1,90–3,20 $, AI rreth 0,50 $,
+Dropcontact rreth 1 kredit për person të pyetur (zona 40: 61 për 73,
+zona 41: deri 33 për 33). Buxheti: Apify 19 $ në muaj (rreth 6 zona),
+Dropcontact rreth 300 kredite (rreth 5–6 zona) — 500-at mujore s'kanë
+ardhur këtë muaj.
+
+E hapur, për Dafinën: **plotësia në qytetet e mëdha.** Me kufirin 110
+për fjalë, Maps-i te Düsseldorf u ndal te 9 nga 10 fjalë (te zona 41,
+me rrathë për qytet, vetëm te 3). Kölni, Frankfurti, Dortmundi, Esseni e
+Duisburgu janë po aq të dendur ose më shumë. Më plotë do të thotë kufi
+më i lartë ose qyteti i ndarë në copa, pra më shumë para.
 
 Shënime për zonat që vijnë:
-- Zonat 41 dhe 42: pjesë e Neuss-it dhe e Solingen-it janë tashmë të
-  paguara te dataset-i i zonës 40 (`apify-ds-5gLzrkb4NPjyijWbG.json`); një
-  mënyrë për t'i ripërdorur do të kursente para.
+- Zona 42: pjesë e Solingen-it janë tashmë të paguara te dataset-i i
+  zonës 40 (`apify-ds-5gLzrkb4NPjyijWbG.json`) — t'i jepen si `maps_dazu`.
+- Rrathët s'duhet të hyjnë në qytetin e dendur fqinj: rrethi i Neuss-it
+  (5,5 km) preku Düsseldorf-Bilk/Oberkassel dhe solli rreth 120 vende
+  jashtë zonës. Te qytetet ngjitur (Dortmund–Bochum, Essen–Gelsenkirchen,
+  Duisburg–Krefeld) qendra zhvendoset larg fqinjit ose rrezja ngushtohet.
 - Frankfurt-West (65929–65936) fillon me 65 dhe Mainz-Kostheim (55246,
   Wiesbaden) me 55: kur të vijnë zonat 55, 60 e 65 vendoset ku hyjnë.
   `tests/test_zonen.py` sot kërkon që kodet e zonës të fillojnë me numrin
@@ -1031,7 +1086,9 @@ Shënime për zonat që vijnë:
 - Për sy të Dafinës te lista 40: JS Dental GmbH dhe IT Service Dental
   (IT për ordinanca dentare), kzm GmbH Software | Systeme ("Software" në
   emër), Computacenter dhe SPIRIT/21 (firma shumë të mëdha, jo IT e
-  vogël).
+  vogël). Te lista 41: PC-Tronic Computer Handels GmbH dhe Habel
+  Bürotechnik Handels GmbH (tregti), Kommunikationssysteme Scholz dhe
+  SCALTEL (telefoni/telekomunikim).
 
 ### Detyrë e veçantë: tri gjëra PARA Fazës 5 (hapur 08.09.2026)
 

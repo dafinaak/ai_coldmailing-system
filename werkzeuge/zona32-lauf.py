@@ -45,6 +45,11 @@ from pipeline.website import fetch_text  # noqa: E402
 
 DATASET = PROJEKT / ("laeufe/leadquellen/"
                      "apify-ds-yP1tVCwUcW3bNsSQw.json")
+# One or more Apify raw datasets (--dataset=a.json,b.json). The zone's own
+# run comes first; after it the places a neighbour's paid run already found
+# inside the zone ("maps_dazu" in pipeline/zonen.py). A place in both counts
+# once - the first one read wins.
+DATASETS = [DATASET]
 PLZ_LISTE = PROJEKT / "laeufe/leadquellen/plz-liste-oliver-zona32.txt"
 LAUF = PROJEKT / "laeufe/leadquellen/zona32-herford-2026-08-21"
 
@@ -183,9 +188,16 @@ def firmen_laden(quelle_datei=None):
 
     kodet = {r.strip() for r in PLZ_LISTE.read_text(encoding="utf-8").splitlines()
              if r.strip().isdigit() and len(r.strip()) == 5}
-    daten = json.loads(DATASET.read_text(encoding="utf-8"))
+    daten = []
+    for pfad in DATASETS:
+        # Which paid run a company came from - until 29.09.2026 this said
+        # "yP1tVCwUcW3bNsSQw, 21.08.2026" for every zone, whatever the run.
+        herkunft = (f"apify-dataset {pfad.stem.replace('apify-ds-', '')} "
+                    f"(google-maps)")
+        daten.extend((e, herkunft)
+                     for e in json.loads(pfad.read_text(encoding="utf-8")))
     firmen, gesehen = [], set()
-    for e in daten:
+    for e, herkunft in daten:
         kode = plz_von(e)
         if kode not in kodet:
             continue
@@ -210,11 +222,11 @@ def firmen_laden(quelle_datei=None):
             "ausserhalb_region": False,
             "quellen": ["maps"],
             "quelle": "maps",
-            "herkunft_detail": ("apify-dataset yP1tVCwUcW3bNsSQw "
-                                "(google-maps, 21.08.2026)"),
+            "herkunft_detail": herkunft,
         })
     schreiben("00-firmen-roh.json", firmen)
-    log(f"1/6 firmat e papra: {len(firmen)} brenda {len(kodet)} kodeve")
+    log(f"1/6 firmat e papra: {len(firmen)} brenda {len(kodet)} kodeve "
+        f"(nga {len(DATASETS)} dataset)")
     return firmen
 
 
@@ -449,8 +461,10 @@ def main():
         elif arg.startswith("--dataset="):
             # Ein anderer Apify-Rohdatensatz (Apify-Format, nicht unseres).
             # Zone 34 kam aus einem eigenen Lauf, nicht aus dem vom 21.08.
-            globals()["DATASET"] = (
-                PROJEKT / "laeufe/leadquellen" / arg.split("=", 1)[1])
+            # Several are comma-separated - see DATASETS above.
+            globals()["DATASETS"] = [
+                PROJEKT / "laeufe/leadquellen" / name.strip()
+                for name in arg.split("=", 1)[1].split(",") if name.strip()]
     LAUF.mkdir(parents=True, exist_ok=True)
     log("=" * 62)
     log("ZONA 32 (Herford) - Hapi 1: profil + automatizim + impressum")

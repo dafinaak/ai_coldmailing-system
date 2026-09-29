@@ -9,6 +9,10 @@ duhet nje vrapim i vetin.
 Perdorimi:
     python werkzeuge/zonen-maps.py --zone=35
     python werkzeuge/zonen-maps.py --zone=35 --kufi=70   # buxhet i ngushte
+    python werkzeuge/zonen-maps.py --zone=41 --max-usd=2.40
+        # A money cap for the whole run (Apify "maxTotalChargeUsd"). When the
+        # run reaches it, it stops early - the zone may then be incomplete,
+        # so the tool exits with an error and the chain does not go on.
 
 Leje: Dafina, 28.08.2026 ("po beje c" per zonen 34).
 
@@ -66,10 +70,12 @@ def log(*teile):
     print(f"[{datetime.now():%H:%M:%S}]", *teile, flush=True)
 
 
-def eingabe(zone):
+def eingabe(nummer):
     return {
         "searchStringsArray": SUCHBEGRIFFE,
-        "customGeolocation": zonen.kreis_polygon(*zone["mitte"], zone["radius"]),
+        # One polygon for a zone of one circle (32-40, unchanged), a
+        # MultiPolygon for a zone of several towns (pipeline/zonen.py).
+        "customGeolocation": zonen.suchgebiet(nummer),
         "maxCrawledPlacesPerSearch": KUFI_PER_KERKIM,
         "language": "de",
         "searchMatching": "all",
@@ -89,7 +95,7 @@ def eingabe(zone):
     }
 
 
-def lauf_starten(token, zone):
+def lauf_starten(token, nummer, zone, max_usd=None):
     lauf_ordner = PROJEKT / "laeufe/leadquellen" / zone["lauf"]
     lauf_ordner.mkdir(parents=True, exist_ok=True)
     id_datei = lauf_ordner / "apify-run-id.json"
@@ -102,9 +108,11 @@ def lauf_starten(token, zone):
     log(f"po niset Apify: {len(SUCHBEGRIFFE)} fjale x {KUFI_PER_KERKIM} "
         f"vende = max {len(SUCHBEGRIFFE) * KUFI_PER_KERKIM} "
         f"(~{len(SUCHBEGRIFFE) * KUFI_PER_KERKIM * PREIS_PRO_ORT:.2f} USD)")
-    antwort = requests.post(
-        f"https://api.apify.com/v2/acts/{ACTOR}/runs?token={token}",
-        json=eingabe(zone), timeout=60)
+    url = f"https://api.apify.com/v2/acts/{ACTOR}/runs?token={token}"
+    if max_usd:
+        url += f"&maxTotalChargeUsd={max_usd}"
+        log(f"    kufiri i parave per kete vrapim: {max_usd} USD")
+    antwort = requests.post(url, json=eingabe(nummer), timeout=60)
     antwort.raise_for_status()
     daten = antwort.json()["data"]
     id_datei.write_text(json.dumps({
@@ -159,11 +167,14 @@ def holen(token, dataset_id):
 def main():
     global KUFI_PER_KERKIM
     nummer = None
+    max_usd = None
     for arg in sys.argv[1:]:
         if arg.startswith("--zone="):
             nummer = arg.split("=", 1)[1]
         elif arg.startswith("--kufi="):
             KUFI_PER_KERKIM = int(arg.split("=", 1)[1])
+        elif arg.startswith("--max-usd="):
+            max_usd = float(arg.split("=", 1)[1])
     if nummer not in ZONEN:
         sys.exit(f"Duhet --zone= nga: {', '.join(ZONEN)}")
     zone = ZONEN[nummer]
@@ -173,7 +184,7 @@ def main():
     log(f"ZONA {nummer} - Hapi 0: gjetja e firmave me Google Maps")
     log("=" * 62)
 
-    run_id = lauf_starten(token, zone)
+    run_id = lauf_starten(token, nummer, zone, max_usd)
     lauf = warten(token, run_id)
     log(f"statusi: {lauf['status']} - {lauf.get('statusMessage')}")
 
@@ -196,6 +207,21 @@ def main():
     log(f"Kosto e vertete:    {lauf.get('usageTotalUsd')} USD")
     log(f"Dataset:            {ziel.name}")
     log("=" * 62)
+
+    # A run that reached its money cap stopped early: some search words were
+    # not finished, and a list built on it would look complete while it is
+    # not. The places stay saved (paid), but the chain stops here.
+    # The saved run id is renamed, so the next start does not pick the cut
+    # run up again as if it were complete, but asks Apify for a full one.
+    kosto = float(lauf.get("usageTotalUsd") or 0)
+    if max_usd and kosto >= max_usd * 0.97:
+        ordner = PROJEKT / "laeufe/leadquellen" / zone["lauf"]
+        (ordner / "apify-run-id.json").rename(ordner / "apify-run-id-e-paplote.json")
+        log(f"KUJDES: vrapimi arriti kufirin e parave ({kosto:.2f} nga "
+            f"{max_usd} USD) - zona mund te jete e paplote. Zinxhiri ndalet.")
+        log(f"    Vendet e paguara mbeten te {ziel.name}; nisja e radhes "
+            f"ben nje vrapim te plote.")
+        sys.exit(2)
 
 
 if __name__ == "__main__":

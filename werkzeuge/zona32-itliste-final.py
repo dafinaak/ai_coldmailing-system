@@ -57,6 +57,9 @@ ZONEN = {
     "40": {"lauf": "zona40-dropcontact-2026-09-29",
            "quellen": ["zona40-duesseldorf-2026-09-29",
                        "zona40-overpass-2026-09-29"]},
+    "41": {"lauf": "zona41-dropcontact-2026-09-29",
+           "quellen": ["zona41-moenchengladbach-2026-09-29",
+                       "zona41-overpass-2026-09-29"]},
 }
 
 # Nga cili mjet erdhi vertet secili vrapim. Kjo shkruhet ne kolonen
@@ -81,6 +84,10 @@ QUELLE_FIRMA = {
     "zona39-overpass-2026-09-03": "Overpass/OSM (03.09.2026)",
     "zona40-duesseldorf-2026-09-29": "Google Maps (Apify, 29.09.2026)",
     "zona40-overpass-2026-09-29": "Overpass/OSM (29.09.2026)",
+    # Zone 41 reads its own Maps run and, through "maps_dazu", the places
+    # the zone 40 run found in Neuss, Kaarst and Dormagen - same day.
+    "zona41-moenchengladbach-2026-09-29": "Google Maps (Apify, 29.09.2026)",
+    "zona41-overpass-2026-09-29": "Overpass/OSM (29.09.2026)",
 }
 ZONE = "32"
 for _a in sys.argv[1:]:

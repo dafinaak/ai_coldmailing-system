@@ -100,6 +100,22 @@ ZONEN = {
     "40": {"mitte": (51.23, 6.81), "radius": 19, "stadt": "Düsseldorf",
            "plz": "plz-liste-oliver-zona40.txt",
            "lauf": "zona40-duesseldorf-2026-09-29"},
+    # Zone 41 is four towns, and one circle around all of them (21 km)
+    # would reach into central Duesseldorf - its places would use up the
+    # 110 per search word before Moenchengladbach is done. So one circle per
+    # town, each covering its farthest code (MG 6.2 km, Neuss 4.6 km,
+    # Dormagen 2.6 km; Kaarst has one code, its circle covers the town).
+    # "maps_dazu": the Maps run of zone 40 (29.09.2026) already paid for
+    # 99 places in Neuss, Kaarst and Dormagen - they are read as well.
+    "41": {"kreise": [
+               {"ort": "Mönchengladbach", "mitte": (51.18, 6.43), "radius": 8},
+               {"ort": "Neuss", "mitte": (51.19, 6.70), "radius": 5.5},
+               {"ort": "Kaarst", "mitte": (51.23, 6.62), "radius": 4},
+               {"ort": "Dormagen", "mitte": (51.11, 6.81), "radius": 5}],
+           "stadt": "Mönchengladbach",
+           "plz": "plz-liste-oliver-zona41.txt",
+           "lauf": "zona41-moenchengladbach-2026-09-29",
+           "maps_dazu": ["apify-ds-5gLzrkb4NPjyijWbG.json"]},
 }
 
 
@@ -111,6 +127,26 @@ def zone(nummer: str) -> dict:
             f"Zone {nummer!r} steht nicht in der Tabelle. Bekannt sind: "
             f"{', '.join(sorted(ZONEN))}")
     return ZONEN[nummer]
+
+
+def kreise(nummer: str) -> list:
+    """[(mitte, radius_km), ...] - one circle for zones 32-40, one per town
+    for a zone of several towns ("kreise")."""
+    eintrag = zone(nummer)
+    if "kreise" in eintrag:
+        return [(k["mitte"], k["radius"]) for k in eintrag["kreise"]]
+    return [(eintrag["mitte"], eintrag["radius"])]
+
+
+def suchgebiet(nummer: str) -> dict:
+    """The search area as Apify takes it: the same polygon as always for a
+    single circle, a MultiPolygon for several (supported by the actor, see
+    its README "Custom search area", checked 29.09.2026)."""
+    polygone = [kreis_polygon(*mitte, radius) for mitte, radius in kreise(nummer)]
+    if len(polygone) == 1:
+        return polygone[0]
+    return {"type": "MultiPolygon",
+            "coordinates": [p["coordinates"] for p in polygone]}
 
 
 def plz_datei(nummer: str) -> Path:

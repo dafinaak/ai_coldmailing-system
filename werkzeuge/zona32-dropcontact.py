@@ -74,6 +74,9 @@ ZONEN = {
     "40": {"laeufe": ["zona40-duesseldorf-2026-09-29",
                       "zona40-overpass-2026-09-29"],
            "lauf": "zona40-dropcontact-2026-09-29"},
+    "41": {"laeufe": ["zona41-moenchengladbach-2026-09-29",
+                      "zona41-overpass-2026-09-29"],
+           "lauf": "zona41-dropcontact-2026-09-29"},
 }
 ZONE = "32"
 # --nur-zeigen: tregon ke do ta riperdorte, ke do ta kapercente dhe ke

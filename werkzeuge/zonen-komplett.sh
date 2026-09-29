@@ -36,11 +36,21 @@ L=laeufe/leadquellen
 SOT=$(date +%Y-%m-%d)
 
 echo "########## ZONA $ZONA - 1/5 Google Maps ##########"
-$PY werkzeuge/zonen-maps.py --zone="$ZONA" --kufi=110
+# MAX_USD (optional): a money cap for the Maps run, e.g.
+#   MAX_USD=2.40 ./werkzeuge/zonen-komplett.sh 41
+# If the run reaches it, zonen-maps.py stops the chain - see there.
+$PY werkzeuge/zonen-maps.py --zone="$ZONA" --kufi=110 ${MAX_USD:+--max-usd=$MAX_USD}
 
 # Emri i dataset-it del nga run-id-ja e ruajtur, jo nga hamendja.
 LAUF_MAPS=$($PY -c "import sys;sys.path.insert(0,'.');from pipeline import zonen;print(zonen.zone('$ZONA')['lauf'])")
 DSID=$($PY -c "import json;print(json.load(open('$L/$LAUF_MAPS/apify-run-id.json'))['dataset_id'])")
+# Places a neighbour's paid Maps run already found inside this zone
+# ("maps_dazu" in pipeline/zonen.py) are read after the zone's own run.
+DATASETS="apify-ds-$DSID.json"
+DAZU=$($PY -c "import sys;sys.path.insert(0,'.');from pipeline import zonen;print(','.join(zonen.zone('$ZONA').get('maps_dazu', [])))")
+if [ -n "$DAZU" ]; then
+  DATASETS="$DATASETS,$DAZU"
+fi
 
 echo "########## ZONA $ZONA - 2/5 Overpass/OSM (falas) ##########"
 # Kontrollohet CDO dosje Overpass e zones, jo vetem ajo e sotme. Me
@@ -60,7 +70,7 @@ PLZ=$($PY -c "import sys;sys.path.insert(0,'.');from pipeline import zonen;print
 
 echo "--- Maps ---"
 $PY werkzeuge/zona32-lauf.py --lauf="$LAUF_MAPS" --plz="$PLZ" \
-    --dataset="apify-ds-$DSID.json"
+    --dataset="$DATASETS"
 
 if [ -n "$OVP" ] && [ -f "$OVP/firmen.json" ]; then
   echo "--- $(basename "$OVP") ---"

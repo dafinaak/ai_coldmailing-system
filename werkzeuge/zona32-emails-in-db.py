@@ -2,6 +2,12 @@
 """I shkruan email-et e Dropcontact-it prapa te dosjet e vrapimit, qe te
 hyjne edhe ne bazen master - jo vetem ne Excel.
 
+NUK NEVOJITET ME (nga 23.09.2026): ndertimi i bazes i lexon vete
+rezultatet e zonave (pipeline/master_db.py, _zonen_dropcontact_leads).
+Kjo vegle u perdor vetem per zonat 32-34, dhe pikerisht prandaj 154
+adresa te paguara nuk ishin fare ne baze. Mbetet ketu si gjurme e asaj
+pune; mos e nis pa nevoje - nje rindertim i thjeshte ben te njejten gje.
+
 Pa kete hap, rezultati i paguar rri vetem ne nje dosje Excel dhe baza
 nuk e di. Prandaj: cdo person qe mori adrese merr edhe
 status "mail_geprueft" dhe burimin "dropcontact".

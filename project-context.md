@@ -22,6 +22,46 @@ vërtetë.
 
 ## Gjendja tash
 
+- **29.09.2026 — Zona 40 (Düsseldorf) e gatshme si provë, lista e kodeve
+  40–69 e ndrequr.** Jira AP-246 kaloi në "In Progress" (me koment).
+  - **Lista e kodeve:** nga 2.096 kode, 1.619 nuk ekzistojnë (ishin radhë
+    numrash të mbushura), dhe mungonin 50 kode të vërteta të po atyre
+    qyteteve. Lista e ndrequr: `daten/plz-liste-oliver-40-69-corrected.csv`
+    (527 kode, 35 qytetet e njëjta), origjinali i paprekur. Vegla:
+    `werkzeuge/plz-list-correction.py` (burimet: kufijtë e kodeve te OSM,
+    ruajtur te `daten/osm-postal-codes-40-69.json`, plus GeoNames). Shënimi
+    për Oliverin: `docs/postal-code-list-40-69-correction.md`. 6 firma që
+    i kishim tashmë në bazë rrinë mbi kode që mungonin.
+  - **Zona 40:** 51 kode (Düsseldorf, Ratingen, Mettmann, Hilden,
+    Langenfeld, Monheim, Meerbusch), qendra (51.23, 6.81), rrezja 19 km. Maps 1.056 vende për **3,17 $**, prej tyre 581 firma në zonë;
+    OSM 35 falas. Gjithsej 612 firma (569 të reja). Profili IT + kontrolli
+    i automatizimit → 85 të pranueshme, 74 me vendimmarrës me emër. AI
+    0,61 $. Dropcontact: 53 nga 73 (73%) + 1 falas nga zona 38.
+  - **Lista:** `IT-Liste-Emails-Zona40-FERTIG-20260929-1101.xlsx`, **52
+    kontakte**, formati i njëjtë (24 kolona si te 32–39). U hoqën 1 person
+    i dyfishtë (Fusion IT) dhe 1 që është te zona 38 (Malte Ehlers,
+    ITANIX). Kontrolli `listen-pruefung.py`: vetëm 7 email me domain
+    tjetër të së njëjtës firmë (p.sh. iacd.de/iacd.net), asnjë faqe e
+    vdekur, asnjë dublikatë. Raporti: `Listen-Pruefbericht-20260929-1103.xlsx`.
+  - **Mësimi kryesor:** në Düsseldorf 9 nga 10 fjalë kërkimi e prekën
+    kufirin prej 110 — Maps dha vetëm një pjesë të firmave të qytetit.
+    44% e vendeve ranë jashtë zonës, kryesisht Neuss (zona 41) dhe
+    Solingen (zona 42); janë të paguara te
+    `laeufe/leadquellen/apify-ds-5gLzrkb4NPjyijWbG.json` dhe mund të
+    ripërdoren kur të vijnë ato zona.
+  - Veglat e zonave morën zonën 40 (`pipeline/zonen.py`,
+    `zona32-dropcontact.py`, `zona32-itliste-final.py`);
+    `listen-pruefung.py` tash i sheh edhe listat 40+ (më parë vetëm
+    `Zona3*`, pra do t'i kapërcente heshtazi).
+  - Kopje e `stamm.db` para vrapimit:
+    `daten/stamm-kopje-2026-09-29-para-zones-40.db`.
+  - Baza pas rindërtimit: 10.752 firma, 1.032 vendimmarrës.
+  - 1.492 teste jeshile, 90 të kaluara (Postgres, Docker-i i fikur).
+  - Buxhetet pas zonës 40: Apify rreth 2,48 $ deri më 01.10 (pastaj 19 $
+    në muaj). Dropcontact dha 319 kredite në dorëzim; me kthimin e 20
+    personave pa email duhet të mbeten rreth 340. Që nga 03.09 (391) s'ka
+    pasur rinovim: para batch-it ishin 392, pra të 500-at mujore nuk kanë
+    ardhur ende këtë muaj.
 - **23.09.2026 — AP-210 (kontrolli i bazës) dhe AP-223 (fushat e
   DataWarehouse-it) të mbyllura.** Asnjë ndryshim strukture, vetëm lexim.
   - Kontrolli i plotë: `docs/kontroll-baza-vendimmarresit-2026-09-23.md`
@@ -39,6 +79,47 @@ vërtetë.
     Entscheider-Bereich 81%. Mbetet vetëm gjysma e fushës "për cilin
     produkt", që kërkon listë produktesh — kemi një ofertë.
   - 1.572 teste jeshile (vrapim i plotë 23.09, me Postgres-in e ndezur).
+- **23.09.2026 — 154 email-et që mungonin hynë në bazë.** Ndërtimi i
+  `master.db` i lexon tash vetë rezultatet e Dropcontact-it të zonave
+  (`_zonen_dropcontact_leads`), pra nuk varet më nga vegla me dorë
+  `werkzeuge/zona32-emails-in-db.py` (ajo u përdor vetëm për zonat 32–34,
+  dhe pikërisht prandaj mungonin adresat e zonave 35–39).
+  - Pas rindërtimit: email personale **331 → 485 (+154)**, telefona të
+    personit 699 → 737 (+38), LinkedIn 2 → 146 (+144) — të gjitha të
+    paguara qëmoti te i njëjti rresht i Dropcontact-it.
+  - Asgjë nuk u mbishkrua: 0 email të humbur, 0 të ndryshuar, 0 persona
+    të shtuar a të hequr. Ajo që vjen me adresën mbush vetëm fusha bosh.
+  - Kampanjefähig: 291 → 443. Të 42 firmat që kanë adresë po mbeten
+    jashtë i ndalin rregullat e automatizimit, siç duhet.
+  - 3 teste të reja (`tests/test_master_db_zone_emails.py`), 1.575 teste
+    jeshile gjithsej. Jira: shënuar te AP-221 si hap i kryer.
+- **23.09.2026 — AP-221, hapi i dytë: personat nuk mbishkruhen më.** Lista
+  e vendimmarrësve e një vrapimi të ri nuk e zëvendëson të tërën e vjetrën;
+  të dyja bashkohen (i njëjti emër = i njëjti person, mbushen vetëm fushat
+  bosh). E njëjta vlen për lead-et e një vrapimi.
+  - Pas rindërtimit: 935 persona (ishin 933) dhe 487 email (ishin 485) —
+    dy njerëz me adresë të paguar që rregulli i vjetër i hidhte. Asnjë
+    person dhe asnjë email i humbur.
+  - 3 teste të reja (`tests/test_master_db_keeps_people.py`), 1.578 teste
+    jeshile.
+- **23.09.2026 — AP-221 e mbyllur: profili IT vendos edhe te baza.**
+  `master.db` ka tash kolonën `it_profil` (yes/no/not_checked) me arsyen,
+  dhe kampanjefähig është vetëm kush ka "yes" (vendim i Dafinës, opsioni
+  A). Shih AGENTS.md.
+  - **Kampanjefähig: 443 → 275.** Dolën jashtë 2.063 firma me gjykim
+    "jo" dhe 2.780 pa gjykim (më parë dilnin si gati 110 me "jo" dhe 56
+    pa gjykim). Profili te baza: 1.046 "po", 4.344 "jo", 4.793 pa gjykim.
+  - Gjykimi i fundit fiton: 64 firma kishin gjykime të kundërta nëpër
+    vrapime (rregulli i vjetër kundrejt atij të 31.08) — 50 dalin "jo",
+    14 "po".
+  - Personat dhe email-et nuk u prekën: 935 persona, 487 email.
+  - Eksporti Excel ka kolonën e re "IT-Profil". Pamja e Oliverit me 46
+    kolona mbeti e paprekur; Postgres-i nuk e ka ende këtë fushë (vjen
+    me sync-un e Fazës 5).
+  - 4 teste të reja (`tests/test_master_db_it_profile.py`), 1.582 teste
+    jeshile.
+  - Mbetet e hapur vetëm gjykimi i 4.793 firmave pa gjykim — bëhet kur
+    një mbledhje përdoret vërtet, sepse kushton kohë dhe AI.
 - **10.09.2026 — Jira AP-216 (waterfall-i i pasurimit) e mbyllur.** Plani dhe provat:
   `docs/plan-ap216-waterfall-2026-09-10.md`. Asnjë commit, 0 kredite të
   harxhuara gjatë punës.
@@ -779,6 +860,12 @@ vërtetë.
 
 ## Vendimet
 
+- **29.09.2026 — Zonat 40–69 (Dafina).** (1) Lista e kodeve ndreqet: mbahen
+  vetëm kodet që ekzistojnë, shtohen ato të vërteta që mungonin, origjinali
+  mbetet i paprekur, Oliverit i shkon shënimi se çka ndryshoi. Rregulli
+  është te `AGENTS.md`. (2) Së pari vetëm zona 40 si provë, me të njëjtën
+  rrugë si 32–39 (kufiri 110 për fjalë); për 19 zonat e tjera vendoset me
+  numrat e saj.
 - **08.09.2026 — Faza 2: identiteti i firmës.** Çdo firmë ka `firma_uid`, një
   numër që nuk lëviz kurrë, i ruajtur te `daten/stamm.db` (bazë e përhershme, si
   `historie.db`). Një `kennung` = një `firma_uid`; asgjë nuk bashkohet vetvetiu
@@ -905,23 +992,46 @@ vërtetë.
 
 ## Hapat e ardhshëm
 
-### Zonat e reja 40–69 (Jira AP-246, "To Do", shtuar 23.09.2026)
+### Zonat e reja 40–69 (Jira AP-246, "In Progress" që nga 29.09.2026)
 
-Dafina dha listën e re të kodeve postare: **2.096 kode, 20 rajone, 35
-qytete, pesë landë** — Düsseldorf, Köln, Dortmund, Essen, Duisburg,
-Frankfurt, Mannheim, Heidelberg e të tjera. Lista rri te
-`daten/plz-liste-oliver-40-69.csv` (jo te `laeufe/`, se ajo dosje nuk
-shkon në git dhe një listë u fshi një herë pa u vënë re).
+Zona 40 është gati (shih "Gjendja tash", 29.09). Mbeten 19 zona: 41, 42,
+44, 45, 47, 48, 50, 51, 52, 53, 55, 60, 63, 64, 65, 66, 67, 68, 69. Kodet
+vijnë nga `daten/plz-liste-oliver-40-69-corrected.csv`; origjinali
+`daten/plz-liste-oliver-40-69.csv` nuk përdoret më për zonat.
 
-Puna është e njëjta si te zonat 32–39: mbledhje me Maps e OSM, filtri i
-profilit IT, kontrolli i automatizimit, impressum-i për vendimmarrësin,
-Dropcontact për email-in personal, dhe një Excel për çdo zonë.
+Si shtohet një zonë (si te zona 40): skedari i kodeve
+`laeufe/leadquellen/plz-liste-oliver-zona<NR>.txt` nga lista e ndrequr,
+rreshti te `pipeline/zonen.py` (qendra, rrezja që e mbulon kodin më të
+largët, testet e `tests/test_zonen.py` e kontrollojnë), rreshtat te
+`zona32-dropcontact.py` dhe `zona32-itliste-final.py`, pastaj
+`./werkzeuge/zonen-komplett.sh <NR>`, `zona32-dropcontact.py --zone=<NR>
+--nur-zeigen`, pa `--nur-zeigen`, `zona32-itliste-final.py --zone=<NR>`
+dhe `listen-pruefung.py`.
 
-Para nisjes duhen dy vendime të Dafinës: sa zona bëhen njëherësh dhe me
-çfarë radhe, dhe buxheti. Zona është shumë më e dendur se e kaluara
-(2.096 kode kundrejt 521; vetëm Kölni ka 366), Maps paguhet për çdo
-rezultat (matur: 6,17 $ për 2.058 rezultate), dhe Dropcontact-i kishte
-rreth 390 kredite më 03.09 — do të duhen më shumë.
+Para zonës tjetër duhet fjala e Dafinës për:
+- **buxhetin dhe ritmin.** Një zonë qyteti kushton rreth 3,20 $ Apify,
+  0,60 $ AI dhe rreth 50 kredite Dropcontact. Apify ka rreth 2,48 $ deri
+  më 01.10, pastaj 19 $ në muaj (rreth 5 zona). Dropcontact rreth 340
+  kredite (rreth 6 zona).
+- **plotësinë në qytetet e mëdha.** Me kufirin 110 për fjalë, Maps-i te
+  Düsseldorf u ndal te 9 nga 10 fjalë. Kölni, Frankfurti, Dortmundi,
+  Esseni e Duisburgu janë po aq të dendur ose më shumë. Më plotë do të
+  thotë kufi më i lartë ose qyteti i ndarë në copa, pra më shumë para.
+
+Shënime për zonat që vijnë:
+- Zonat 41 dhe 42: pjesë e Neuss-it dhe e Solingen-it janë tashmë të
+  paguara te dataset-i i zonës 40 (`apify-ds-5gLzrkb4NPjyijWbG.json`); një
+  mënyrë për t'i ripërdorur do të kursente para.
+- Frankfurt-West (65929–65936) fillon me 65 dhe Mainz-Kostheim (55246,
+  Wiesbaden) me 55: kur të vijnë zonat 55, 60 e 65 vendoset ku hyjnë.
+  `tests/test_zonen.py` sot kërkon që kodet e zonës të fillojnë me numrin
+  e saj.
+- Zona 67: Ludwigshafen dhe Kaiserslautern janë rreth 55 km larg —
+  duhen dy rrathë, ndryshe paguhet krejt toka mes tyre.
+- Për sy të Dafinës te lista 40: JS Dental GmbH dhe IT Service Dental
+  (IT për ordinanca dentare), kzm GmbH Software | Systeme ("Software" në
+  emër), Computacenter dhe SPIRIT/21 (firma shumë të mëdha, jo IT e
+  vogël).
 
 ### Detyrë e veçantë: tri gjëra PARA Fazës 5 (hapur 08.09.2026)
 

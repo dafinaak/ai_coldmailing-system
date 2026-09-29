@@ -71,6 +71,15 @@ netgo tax, BLUVIT, kisocon). Katër prej tyre kishin hyrë nga hapi
 zhvilluesit e softuerit nëse ofrojnë edhe përkrahje — pikërisht ata që
 nuk i duam. Të gjashtat janë në `sperrliste-global.yaml`.
 
+**Plotësim (23.09.2026): gjykimi i profilit rri edhe te baza dhe vendos.**
+`master.db` ka kolonën `it_profil` (yes/no/not_checked) me arsyen, dhe
+kampanjefähig është vetëm kush ka "yes" — njësoj si te kontrolli i
+automatizimit, kush nuk është gjykuar qartë nuk hyn. Gjykimi i fundit
+fiton, që një rigjykim sipas rregullit të ri ta zëvendësojë të vjetrin.
+Pse: deri më 23.09 gjykimi rrinte vetëm te dosjet e vrapimeve dhe te
+listat e zonave; baza i mbante 110 firma si gati për fushatë, edhe pse
+rregulli ynë i refuzonte, dhe 56 të tjera pa gjykim fare.
+
 **Saktësim (Dafina, 03.09.2026): faqja vendos, jo kategoria e hartës.**
 Kategoria e Google Maps "Softwareentwickler/-hersteller" nuk e nxjerr
 një firmë jashtë vetvetiu — Google u jep firmave 4–5 kategori dhe firma
@@ -127,6 +136,41 @@ disa me kod postar nga Wuppertal, Mainz e Frankfurti. Tre prej tyre
 Maps i njeh në një zonë tjetër, dhe tash dalin aty. Çmimi që pranohet:
 humbin edhe disa firma që ndoshta janë brenda zonës, po pa kod postar
 nuk e dimë.
+
+**Plotësim (Dafina, 29.09.2026): për zonat 40–69 vlen lista e ndrequr.**
+Lista që erdhi më 23.09 (`daten/plz-liste-oliver-40-69.csv`) kishte 2.096
+kode, po 1.619 prej tyre nuk ekzistojnë fare, dhe mungonin 50 kode të
+vërteta të po atyre qyteteve (Wuppertal-Vohwinkel, Köln-Porz,
+Frankfurt-Höchst ...). Me rregullin e mësipërm firmat atje do të mbeteshin
+jashtë pa u vënë re. Prandaj zonat 40–69 marrin kodet nga
+`daten/plz-liste-oliver-40-69-corrected.csv` (527 kode, të njëjtat 35
+qytete). Origjinali mbetet i paprekur. Ndreqja bëhet me
+`werkzeuge/plz-list-correction.py`, dhe shënimi për Oliverin është te
+`docs/postal-code-list-40-69-correction.md`.
+
+## Te Jira shkruhet me llogarinë e Dafinës (nga 23.09.2026)
+
+Çelësi i Dafinës rri në dy vende: te `~/.jira-pp-cli.env` (e lexon çdo
+terminal i makinës, nga 23.09.2026) dhe te `.env` i projektit
+(`JIRA_EMAIL`, `JIRA_API_TOKEN`).
+
+**Para çdo shkrimi te Jira, kontrollo me cilën llogari je:**
+
+```
+jira-pp-cli myself          # duhet të thotë Dafina Keqmezi
+```
+
+Nëse thotë tjetër emër, seanca e ka trashëguar mjedisin e vjetër. Atëherë
+merre çelësin nga `.env` i projektit:
+
+```
+( set -a; . ./.env; set +a; jira-pp-cli issue get AP-221 --agent )
+```
+
+Pse u shkrua: deri më 23.09.2026 makina kishte çelësin e Leonardit, dhe
+çdo ndryshim te Jira dilte në emër të tij pa e vënë re askush — kështu
+dolën ndryshimet e 10.09 dhe të 23.09. Jira nuk e lejon ndërrimin e
+autorit më vonë, prandaj kontrolli bëhet para shkrimit, jo pas.
 
 ## Askush nuk paguhet dy herë te Dropcontact-i (nga 10.09.2026)
 

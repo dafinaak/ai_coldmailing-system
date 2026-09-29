@@ -108,6 +108,10 @@ me burimin për çdo fushë.
 1. **154 email të paguara nuk janë në bazë** (zonat 35–39 e disa të
    tjera). Kjo nuk është punë strukture, është një hap që mungon: baza
    duhet t'i lexojë vetë rezultatet e Dropcontact-it të zonave.
+   **U rregullua po më 23.09.2026:** ndërtimi i bazës i lexon vetë
+   (`_zonen_dropcontact_leads`). Pas rindërtimit: email 331 → 485,
+   telefona 699 → 737, LinkedIn 2 → 146; asnjë email i humbur dhe asnjë
+   i mbishkruar.
 2. **Lista e vendimmarrësve zëvendësohet nga vrapimi i ri.** Kur një
    firmë del në dy vrapime, lista e re e zëvendëson të vjetrën të tërë
    ([master_db.py:143](../pipeline/master_db.py#L143)). Një email ose

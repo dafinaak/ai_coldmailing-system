@@ -54,6 +54,9 @@ ZONEN = {
     "39": {"lauf": "zona39-dropcontact-2026-09-03",
            "quellen": ["zona39-magdeburg-2026-09-01",
                        "zona39-overpass-2026-09-03"]},
+    "40": {"lauf": "zona40-dropcontact-2026-09-29",
+           "quellen": ["zona40-duesseldorf-2026-09-29",
+                       "zona40-overpass-2026-09-29"]},
 }
 
 # Nga cili mjet erdhi vertet secili vrapim. Kjo shkruhet ne kolonen
@@ -76,6 +79,8 @@ QUELLE_FIRMA = {
     "zona38-overpass-2026-09-03": "Overpass/OSM (03.09.2026)",
     "zona39-magdeburg-2026-09-01": "Google Maps (Apify, 02.09.2026)",
     "zona39-overpass-2026-09-03": "Overpass/OSM (03.09.2026)",
+    "zona40-duesseldorf-2026-09-29": "Google Maps (Apify, 29.09.2026)",
+    "zona40-overpass-2026-09-29": "Overpass/OSM (29.09.2026)",
 }
 ZONE = "32"
 for _a in sys.argv[1:]:

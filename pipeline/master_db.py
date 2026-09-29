@@ -62,6 +62,11 @@ CREATE TABLE companies (
     ceo_owner TEXT,
     offers_automation_services TEXT DEFAULT 'not_checked',
     automation_check_reason TEXT, automation_checked_at TEXT,
+    -- Das IT-Profil-Urteil (Regel vom 31.08.2026, AGENTS.md): yes/no/
+    -- not_checked. Es stand bisher nur in den Lauf-Dateien, weshalb die
+    -- Datenbank Firmen als kampagnenfaehig fuehrte, die unsere eigene
+    -- Regel ablehnt (23.09.2026: 110 Stueck).
+    it_profil TEXT DEFAULT 'not_checked', it_profil_grund TEXT,
     campaign_eligible INTEGER, ineligibility_reason TEXT,
     completeness INTEGER,
     created_at TEXT, updated_at TEXT, last_enriched_at TEXT
@@ -125,6 +130,43 @@ def _json_liste(pfad: Path) -> list:
     return daten if isinstance(daten, list) else []
 
 
+def _eintraege_zusammenfuehren(alt, neu, schluessel) -> list:
+    """Two lists into one: same key means the same entry, empty fields
+    are filled, filled ones stay. Order: what was there first stays first.
+    """
+    zusammen: dict = {}
+    for eintrag in list(alt or []) + list(neu or []):
+        kennzeichen = schluessel(eintrag)
+        if not kennzeichen:
+            continue
+        if kennzeichen not in zusammen:
+            zusammen[kennzeichen] = dict(eintrag)
+            continue
+        for feld, wert in eintrag.items():
+            if not zusammen[kennzeichen].get(feld) and wert:
+                zusammen[kennzeichen][feld] = wert
+    return list(zusammen.values())
+
+
+def _personen_zusammenfuehren(alt, neu) -> list:
+    """Entscheider zweier Laeufe - niemand faellt raus (Jira AP-221)."""
+    return _eintraege_zusammenfuehren(
+        alt, neu, lambda p: str(p.get("name") or "").strip().casefold())
+
+
+def _leads_zusammenfuehren(alt, neu) -> list:
+    """Lead-Listen zweier Laeufe. Schluessel ist die Adresse; ein Lead
+    ohne Adresse wird ueber den Namen gehalten, damit er nicht still
+    verschwindet."""
+    def schluessel(lead):
+        adresse = str(lead.get("email") or "").strip().casefold()
+        if adresse:
+            return adresse
+        name = f"{lead.get('first_name', '')} {lead.get('last_name', '')}"
+        return f"name:{name.strip().casefold()}" if name.strip() else ""
+    return _eintraege_zusammenfuehren(alt, neu, schluessel)
+
+
 def _firma_uebernehmen(bekannt: dict, neu: dict) -> None:
     """Leere Felder auffuellen - nie ueberschreiben (Olivers Regel)."""
     for feld in ("name", "website", "domain", "address", "plz", "ort",
@@ -137,15 +179,74 @@ def _firma_uebernehmen(bekannt: dict, neu: dict) -> None:
     for kat in neu.get("categories") or []:
         if kat not in bekannt.setdefault("categories", []):
             bekannt["categories"].append(kat)
-    # Lauf-Felder (Entscheider, Automatisierung, Ausgang): der NEUERE
-    # Lauf gewinnt - er ist der aktuellere Wissensstand. Nur GEFUELLTE
-    # Werte gewinnen; ein Lauf ohne Befund loescht keinen alten.
-    for feld in ("entscheider", "entscheider_primaer",
-                 "offers_automation_services", "automation_check_reason",
+    # Menschen und ihre Adressen werden ZUSAMMENGEFUEHRT, nicht ersetzt
+    # (Olivers Regel, Jira AP-221): findet ein neuerer Lauf jemanden nicht
+    # mehr, verschwindet er sonst samt bezahlter Adresse aus der Datenbank.
+    for feld, zusammen in (("entscheider", _personen_zusammenfuehren),
+                           ("leads", _leads_zusammenfuehren)):
+        gemischt = zusammen(bekannt.get(feld), neu.get(feld))
+        if gemischt:
+            bekannt[feld] = gemischt
+    # Der primaere Entscheider ist eine abgeleitete Angabe: nur setzen,
+    # wenn noch keine da ist - sonst wuerde die neuere Meinung die
+    # aeltere ueberschreiben.
+    if not bekannt.get("entscheider_primaer") and neu.get("entscheider_primaer"):
+        bekannt["entscheider_primaer"] = neu["entscheider_primaer"]
+    # Das IT-Profil-Urteil: der NEUERE Lauf gewinnt, eine Neubewertung
+    # nach der Regel vom 31.08.2026 ist der aktuellere Stand. Ausdruecklich
+    # auf "kein Urteil" geprueft, denn das wichtige Urteil ist "nein" -
+    # und False sieht in Python aus wie ein leeres Feld.
+    if neu.get("profil_passt") is not None:
+        bekannt["profil_passt"] = neu["profil_passt"]
+        bekannt["profil_typ"] = neu.get("profil_typ", "")
+        bekannt["profil_grund"] = neu.get("profil_grund", "")
+    # Urteile (Automatisierung, Ausgang): hier gewinnt der NEUERE Lauf -
+    # er ist der aktuellere Wissensstand. Nur GEFUELLTE Werte gewinnen;
+    # ein Lauf ohne Befund loescht keinen alten.
+    for feld in ("offers_automation_services", "automation_check_reason",
                  "automation_checked_at", "campaign_ineligibility_reason",
-                 "ausgang", "leads"):
+                 "ausgang"):
         if neu.get(feld):
             bekannt[feld] = neu[feld]
+
+
+def _zonen_dropcontact_leads(daten_dir: Path) -> dict:
+    """The addresses a zone run paid for, read from its own result file.
+
+    Dropcontact answers a zone into
+    laeufe/leadquellen/<zone>-dropcontact-*/ergebnisse.json. Until
+    23.09.2026 the database saw those answers only when somebody ran the
+    write-back tool by hand, and that had only been done for zones 32 to
+    34: 154 paid addresses were missing, 137 of them from zones 35 to 39.
+    Reading the files here makes the step impossible to forget - the
+    rebuild takes everything the files hold (Weg A).
+
+    Returns {kennung: [lead, ...]} in the shape _entscheider_zeilen()
+    already knows, plus the fields Dropcontact sent with the address
+    (the person's number, the LinkedIn profile) - they were paid for in
+    the same row.
+    """
+    wurzel = daten_dir / "laeufe" / "leadquellen"
+    leads: dict = {}
+    pfade = sorted(wurzel.glob("*-dropcontact-*/ergebnisse.json")) \
+        if wurzel.exists() else []
+    for pfad in pfade:
+        for firma in _json_liste(pfad):
+            kennung = _kennung(firma)
+            felder = firma.get("dropcontact") or {}
+            for lead in firma.get("leads") or []:
+                if not (kennung and lead.get("email")):
+                    continue
+                leads.setdefault(kennung, []).append({
+                    "first_name": lead.get("first_name", ""),
+                    "last_name": lead.get("last_name", ""),
+                    "email": lead.get("email", ""),
+                    "title": lead.get("title") or firma.get("rolle", ""),
+                    "source": lead.get("source") or "dropcontact",
+                    "phone": felder.get("phone", ""),
+                    "linkedin": felder.get("linkedin", ""),
+                })
+    return leads
 
 
 def _leads_je_firma(lauf_pfad: Path) -> dict:
@@ -260,10 +361,20 @@ def _entscheider_zeilen(firma: dict, leads: list) -> list:
             continue      # info@ ist keine Person - steht als email_allgemein
         if name.lower() in gesehen:
             for zeile in zeilen:
-                if zeile["name"].lower() == name.lower() and not zeile["email"]:
-                    zeile["email"] = lead.get("email", "")
+                if zeile["name"].lower() != name.lower():
+                    continue
+                if not zeile["email"] and lead.get("email"):
+                    zeile["email"] = lead["email"]
                     zeile["email_art"] = "persoenlich"
                     zeile["status"] = zeile["status"] or "mail_geprueft"
+                # Was Dropcontact mit der Adresse mitgeschickt hat, fuellt
+                # nur LEERE Felder: eine vorhandene Nummer aus dem
+                # Impressum bleibt stehen (Olivers Regel, nichts wird
+                # ueberschrieben).
+                if not zeile.get("telefon") and lead.get("phone"):
+                    zeile["telefon"] = lead["phone"]
+                if not zeile.get("linkedin") and lead.get("linkedin"):
+                    zeile["linkedin"] = lead["linkedin"]
             continue
         gesehen.add(name.lower())
         zeilen.append({"name": name, "vorname": lead.get("first_name", ""),
@@ -272,10 +383,27 @@ def _entscheider_zeilen(firma: dict, leads: list) -> list:
                        "email": lead.get("email", ""),
                        "email_art": "persoenlich",
                        "telefon": lead.get("phone", ""),
-                       "linkedin": None, "quelle": lead.get("source", ""),
+                       "linkedin": lead.get("linkedin") or None,
+                       "quelle": lead.get("source", ""),
                        "status": "mail_geprueft"})
     zeilen.sort(key=lambda z: rank_role(z.get("rolle")))
     return zeilen
+
+
+def _it_profil(firma: dict) -> tuple:
+    """(yes/no/not_checked, Grund) - das IT-Profil-Urteil einer Firma.
+
+    Geurteilt wird in den Laeufen anhand der Firmen-Webseite (Regel vom
+    31.08.2026, AGENTS.md: eigene Software, Branchenprodukt, Partner
+    fremder Produkte und Sicherheits-Haeuser gehoeren nicht dazu). Wer
+    kein Urteil hat, bleibt "not_checked" - genau wie bei der
+    Automatisierungs-Pruefung wird nichts geraten.
+    """
+    passt = firma.get("profil_passt")
+    if passt is None:
+        return "not_checked", ""
+    grund = firma.get("profil_grund") or firma.get("profil_typ") or ""
+    return ("yes" if passt else "no"), grund
 
 
 def _eligibility(firma: dict, personen: list) -> tuple:
@@ -287,6 +415,13 @@ def _eligibility(firma: dict, personen: list) -> tuple:
         return 0, "automation_uncertain"
     if automation == "not_checked":
         return 0, "automation_not_checked"
+    # Das IT-Profil zaehlt hier genauso streng (Jira AP-221, 23.09.2026):
+    # die Zonen-Listen filtern es laengst, die Datenbank tat es nicht.
+    profil, _ = _it_profil(firma)
+    if profil == "no":
+        return 0, "it_profile_no"
+    if profil == "not_checked":
+        return 0, "it_profile_not_checked"
     if not personen:
         return 0, "no_decision_maker"
     if not any(p.get("email") and p.get("status") == "mail_geprueft"
@@ -371,8 +506,14 @@ def bauen(daten_dir=".") -> dict:
     jetzt = datetime.now().isoformat(timespec="seconds")
     anzahl_personen = 0
 
+    # Die bezahlten Adressen der Zonen-Laeufe kommen aus ihren eigenen
+    # Ergebnisdateien (siehe _zonen_dropcontact_leads) - kein Werkzeug von
+    # Hand mehr dazwischen.
+    zonen_leads = _zonen_dropcontact_leads(daten_dir)
+
     for kennung, firma in firmen.items():
-        personen = _entscheider_zeilen(firma, firma.get("leads") or [])
+        personen = _entscheider_zeilen(
+            firma, (firma.get("leads") or []) + zonen_leads.get(kennung, []))
         eligible, grund = _eligibility(firma, personen)
         ceo_owner = _ceo_owner(firma, personen)
         allgemein = firma.get("vorhandene_email", "")
@@ -386,9 +527,10 @@ def bauen(daten_dir=".") -> dict:
                sektor, keywords, beschreibung, mitarbeiter, ceo_owner,
                offers_automation_services,
                automation_check_reason, automation_checked_at,
+               it_profil, it_profil_grund,
                campaign_eligible, ineligibility_reason, completeness,
                created_at, updated_at, last_enriched_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (uids[kennung],
              kennung, firma.get("name", ""), firma.get("domain", ""),
              firma.get("website", ""), _strasse(firma.get("address")),
@@ -403,6 +545,7 @@ def bauen(daten_dir=".") -> dict:
              firma.get("offers_automation_services") or "not_checked",
              firma.get("automation_check_reason", ""),
              firma.get("automation_checked_at", ""),
+             *_it_profil(firma),
              eligible, grund, _completeness(firma, personen),
              jetzt, jetzt, firma.get("automation_checked_at") or ""))
         company_id = cursor.lastrowid
@@ -481,7 +624,7 @@ KOPF_HISTORIE = [
     "Opt-Out (Datum, Weg)",
 ]
 
-KOPF_SYSTEM = ["Automatisierungs-Anbieter", "Kampagnenfähig",
+KOPF_SYSTEM = ["Automatisierungs-Anbieter", "IT-Profil", "Kampagnenfähig",
                "Ausschlussgrund", "Vollständigkeit %",
                "Zuletzt angereichert"]
 
@@ -571,6 +714,7 @@ def export_excel(daten_dir=".", ziel=None):
         zeile += [str(zusatz) if zusatz > 0 else ""]
         zeile += _historie_spalten(verlauf.get(firma["kennung"]))
         zeile += [firma["offers_automation_services"],
+                  firma["it_profil"],
                   "ja" if firma["campaign_eligible"] else "nein",
                   firma["ineligibility_reason"],
                   firma["completeness"], firma["last_enriched_at"]]

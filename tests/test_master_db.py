@@ -54,6 +54,9 @@ def daten(tmp_path):
         {"name": "A GmbH", "domain": "a.de", "website": "https://a.de",
          "ausgang": "mit_entscheider", "offers_automation_services": "no",
          "automation_checked_at": "2026-08-19T12:00:00",
+         # Seit 23.09.2026 (AP-221) entscheidet auch das IT-Profil ueber
+         # die Kampagnen-Faehigkeit - ohne Urteil kommt niemand durch.
+         "profil_passt": True, "profil_typ": "IT-Dienstleister",
          "entscheider": [
              {"vorname": "Otto", "nachname": "Alt", "name": "Otto Alt",
               "rolle": "Inhaber", "linkedin": None, "quelle": "impressum",
@@ -143,6 +146,12 @@ def test_kampagnenfaehigkeit_ist_streng(daten):
     assert faehig["robo.de"] == (0, "automation_provider")
     # Ohne Automatisierungs-Pruefung keine Kampagne (Punkt 16, streng).
     assert faehig["b.de"] == (0, "automation_not_checked")
+    # Das IT-Profil-Urteil steht seit 23.09.2026 in der Datenbank und
+    # zaehlt genauso streng (eigene Faelle: test_master_db_it_profile.py).
+    profile = {z["domain"]: z["it_profil"]
+               for z in db.execute("SELECT * FROM companies")}
+    assert profile["a.de"] == "yes"
+    assert profile["b.de"] == "not_checked"
 
 
 def test_neubau_ist_wiederholbar(daten):

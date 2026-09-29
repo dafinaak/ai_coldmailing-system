@@ -92,6 +92,14 @@ ZONEN = {
     "39": {"mitte": (52.17, 11.50), "radius": 35, "stadt": "Magdeburg",
            "plz": "plz-liste-oliver-zona39.txt",
            "lauf": "zona39-magdeburg-2026-09-01"},
+    # Zones 40-69 are cities, not whole postal regions, and their codes come
+    # from the corrected list (daten/plz-liste-oliver-40-69-corrected.csv,
+    # 29.09.2026). Zone 40 is Duesseldorf with Ratingen, Mettmann, Hilden,
+    # Langenfeld, Monheim and Meerbusch; Langenfeld (40764) in the south is
+    # the farthest, 16.6 km away.
+    "40": {"mitte": (51.23, 6.81), "radius": 19, "stadt": "Düsseldorf",
+           "plz": "plz-liste-oliver-zona40.txt",
+           "lauf": "zona40-duesseldorf-2026-09-29"},
 }
 
 

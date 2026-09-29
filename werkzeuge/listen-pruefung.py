@@ -86,7 +86,9 @@ def faqja_hapet(url):
 
 def listat_e_fundit():
     fs = {}
-    for f in glob.glob(str(PROJEKT / "IT-Liste-Emails-Zona3*-FERTIG-*.xlsx")):
+    # Every two-digit zone, not only 3x: with "Zona3*" the lists of zones
+    # 40-69 were skipped without a word (found 29.09.2026 at zone 40).
+    for f in glob.glob(str(PROJEKT / "IT-Liste-Emails-Zona[0-9][0-9]-FERTIG-*.xlsx")):
         z = os.path.basename(f).split("-")[3][-2:]
         if z not in fs or os.path.getmtime(f) > os.path.getmtime(fs[z]):
             fs[z] = f

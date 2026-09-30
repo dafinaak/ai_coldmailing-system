@@ -16,6 +16,19 @@ Cka ben:
 SIGURI: request_id shkruhet ne disk SA MENJEHERE te jepet batch-i. Nese
 skripti bie, kreditet nuk humbin - merret perseri me te njejtin id.
 
+Paying only for what we can use (Dafina, 29.09.2026): Dropcontact refunds
+a person without an address, but charges a catch-all address like a found
+one - and our rule throws it away. So:
+  - every batch this run already paid for is read first, for free - a
+    restart never pays for anyone twice;
+  - one person on two websites of the same company goes into round 1
+    once; the other website is asked in round 2 (request-id-2.json) only
+    when the first gave no usable address and is not a catch-all domain;
+  - nobody is asked on a domain the register knows as catch-all;
+  - what we paid for but cannot send to is kept in paid-not-sendable.json
+    (the final list shows it on a sheet of its own; the register learns
+    the catch-all domains from it).
+
 ASNJE email nuk dergohet askujt. Instantly nuk preket fare.
 """
 import json
@@ -34,8 +47,12 @@ import os  # noqa: E402
 from pipeline import zonen  # noqa: E402
 from pipeline.anrede_spalte import aus_lauf  # noqa: E402
 from pipeline.config import lade_globale_sperrlisten_eintraege  # noqa: E402
-from pipeline.dropcontact_register import load_register  # noqa: E402
-from pipeline.sources.dropcontact import DropcontactSource  # noqa: E402
+from pipeline.dropcontact_register import load_register, person_key  # noqa: E402
+from pipeline.dropcontact_rounds import (  # noqa: E402
+    domain_of, is_catch_all, paid_unusable, split_rounds, usable)
+from pipeline.sources.dropcontact import (  # noqa: E402
+    DropcontactSource, _beste_email, _namens_hinweis, _pruefe_zuordnung,
+    _zusatzfelder)
 
 # Zone per --zone umschaltbar, damit derselbe Ablauf fuer 32, 33 ...
 # gilt statt fest auf eine Zone verdrahtet zu sein.
@@ -71,17 +88,40 @@ ZONEN = {
     "39": {"laeufe": ["zona39-magdeburg-2026-09-01",
                       "zona39-overpass-2026-09-03"],
            "lauf": "zona39-dropcontact-2026-09-04"},
+    # The "nachtrag" folder holds the companies that had never been judged
+    # against the IT profile rule (29.09.2026). A few of them passed, so the
+    # zone is asked again - into a NEW folder, never over the old one: the
+    # run excludes its own folder from the register, so writing over it
+    # would pay a second time for everyone already found.
     "40": {"laeufe": ["zona40-duesseldorf-2026-09-29",
-                      "zona40-overpass-2026-09-29"],
-           "lauf": "zona40-dropcontact-2026-09-29"},
+                      "zona40-overpass-2026-09-29",
+                      "zonat40-45-nachtrag-2026-09-29"],
+           "lauf": "zona40-dropcontact-nachtrag-2026-09-29"},
     "41": {"laeufe": ["zona41-moenchengladbach-2026-09-29",
                       "zona41-overpass-2026-09-29"],
            "lauf": "zona41-dropcontact-2026-09-29"},
+    "42": {"laeufe": ["zona42-wuppertal-2026-09-29",
+                      "zona42-overpass-2026-09-29"],
+           "lauf": "zona42-dropcontact-2026-09-29"},
+    "44": {"laeufe": ["zona44-dortmund-2026-09-29",
+                      "zona44-overpass-2026-09-29",
+                      "zonat40-45-nachtrag-2026-09-29"],
+           "lauf": "zona44-dropcontact-nachtrag-2026-09-29"},
+    "45": {"laeufe": ["zona45-essen-2026-09-29",
+                      "zona45-overpass-2026-09-29",
+                      "zonat40-45-nachtrag-2026-09-29"],
+           "lauf": "zona45-dropcontact-nachtrag-2026-09-29"},
+    "47": {"laeufe": ["zona47-duisburg-2026-09-29",
+                      "zona47-overpass-2026-09-29"],
+           "lauf": "zona47-dropcontact-2026-09-29"},
 }
 ZONE = "32"
 # --nur-zeigen: tregon ke do ta riperdorte, ke do ta kapercente dhe ke
 # do ta pyeste - pa dorezuar asgje te Dropcontact-i dhe pa shkruar asgje.
 NUR_ZEIGEN = "--nur-zeigen" in sys.argv[1:]
+# --nur-bezahlte: rebuild from the batches this run already paid for, and
+# stop instead of handing in a new one - a rebuild that can never cost.
+NUR_BEZAHLTE = "--nur-bezahlte" in sys.argv[1:]
 for _a in sys.argv[1:]:
     if _a.startswith("--zone="):
         ZONE = _a.split("=", 1)[1]
@@ -173,9 +213,14 @@ def register_pruefen(kontakte):
                  "website": k["firma"].get("website", "")} for k in kontakte]
     beantwortet, offen = register.split(anfragen)
     eigene_zone = f"zona{ZONE}-dropcontact-"
-    wiederverwendet, schon_hier, ohne_ergebnis = [], 0, 0
+    wiederverwendet, schon_hier, ohne_ergebnis, catch_all = [], 0, 0, []
     for nr, mail in sorted(beantwortet.items()):
-        if mail is None:
+        a = anfragen[nr]
+        if mail is None and register.lookup(a["first_name"], a["last_name"],
+                                            a["website"]) is None:
+            # Never asked - skipped because the domain is catch-all.
+            catch_all.append(kontakte[nr])
+        elif mail is None:
             ohne_ergebnis += 1
         elif mail["reused_from"].startswith(eigene_zone):
             schon_hier += 1
@@ -184,7 +229,11 @@ def register_pruefen(kontakte):
     log(f"3/6 regjistri: {schon_hier} tashme te kjo zone, "
         f"{len(wiederverwendet)} merren falas nga nje vrapim tjeter, "
         f"{ohne_ergebnis} te pyetur pa rezultat (nuk pyeten prape), "
+        f"{len(catch_all)} te nje domain catch-all (nuk pyeten), "
         f"{len(offen)} per t'u pyetur")
+    for k in catch_all:
+        log(f"    catch-all, s'pyetet: {k['person']['vorname']} "
+            f"{k['person']['nachname']} - {k['firma'].get('name')}")
     return [kontakte[nr] for nr in offen], wiederverwendet
 
 
@@ -340,6 +389,159 @@ def dropcontact_laufen(kontakte, dc):
     return dc.batch_abholen(request_id, gesendet, len(anfragen))
 
 
+def _anfrage(kontakt):
+    return {"first_name": kontakt["person"]["vorname"],
+            "last_name": kontakt["person"]["nachname"],
+            "website": kontakt["firma"].get("website", ""),
+            "company": kontakt["firma"].get("name", "")}
+
+
+def _batch_dateien():
+    """request-id.json, request-id-2.json ... of this run, oldest first."""
+    def nummer(pfad):
+        rest = pfad.stem.replace("request-id", "").lstrip("-")
+        return int(rest) if rest.isdigit() else 1
+    return sorted(LAUF.glob("request-id*.json"), key=nummer)
+
+
+def bezahlte_zeilen(dc):
+    """{person_key: (what we sent, row, time)} for every batch this run
+    already paid for - fetched again for free. Each row is matched to the
+    name WE sent, in the order Dropcontact answers (checked row by row), so
+    a changed list today cannot hand a row to the wrong person."""
+    bezahlt = {}
+    for datei in _batch_dateien():
+        gespeichert = json.loads(datei.read_text(encoding="utf-8"))
+        gesendet = gespeichert.get("gesendet")
+        if gesendet is None:
+            raise RuntimeError(f"{datei.name} s'ka listen e te derguarve")
+        zeilen = dc.zeilen_holen(gespeichert["request_id"])
+        if len(zeilen) != len(gesendet):
+            raise RuntimeError(
+                f"{datei.name}: {len(zeilen)} rreshta per {len(gesendet)} "
+                f"te derguar - lidhja e pasigurt, ndalim.")
+        for anfrage, zeile in zip(gesendet, zeilen):
+            _pruefe_zuordnung(anfrage, zeile, gespeichert["request_id"])
+            bezahlt[person_key(anfrage.get("first_name"), anfrage.get("last_name"),
+                               anfrage.get("website"))] = (
+                anfrage, zeile, gespeichert.get("zeit"))
+    return bezahlt
+
+
+def batch_neu(dc, anfragen):
+    """A new batch: paid the moment Dropcontact accepts it, so its file is
+    written before anything is fetched. Returns the row per request."""
+    if NUR_BEZAHLTE:
+        raise SystemExit(
+            f"--nur-bezahlte: {len(anfragen)} persona do te duhej te pyeteshin "
+            f"ne nje batch te ri - ndalim, asgje s'u pagua.")
+    nummer = len(_batch_dateien()) + 1
+    datei = LAUF / ("request-id.json" if nummer == 1 else f"request-id-{nummer}.json")
+    request_id, gesendet = dc.batch_abgeben(anfragen)
+    if request_id is None:
+        return [None] * len(anfragen)
+    zeit = datetime.now().isoformat(timespec="seconds")
+    datei.write_text(json.dumps({
+        "request_id": request_id,
+        "gesendet_nr": [nr for nr, _ in gesendet],
+        "gesendet": [{"first_name": a.get("first_name", ""),
+                      "last_name": a.get("last_name", ""),
+                      "website": a.get("website", "")} for _, a in gesendet],
+        "zeit": zeit,
+        "credits_left": dc.credits_left,
+    }, ensure_ascii=False, indent=1), encoding="utf-8")
+    log(f"    request_id u ruajt: {request_id} ({datei.name}, "
+        f"{len(gesendet)} persona)")
+    log("    po pritet rezultati (batch i madh do disa minuta) ...")
+    dc.batch_abholen(request_id, gesendet, len(anfragen))   # checks every row
+    zeilen = [None] * len(anfragen)
+    for (nr, _), zeile in zip(gesendet, dc.letzte_zeilen):
+        zeilen[nr] = (zeile, zeit)
+    return zeilen
+
+
+def runden_laufen(kontakte, dc):
+    """Round 1: every person once. Round 2: the other website of a person,
+    only if round 1 found no usable address there and the domain is not
+    catch-all. Returns (mails per contact, paid but not sendable)."""
+    LAUF.mkdir(parents=True, exist_ok=True)
+    anfragen = [_anfrage(k) for k in kontakte]
+    schluessel = [person_key(a["first_name"], a["last_name"], a["website"])
+                  for a in anfragen]
+    bezahlt = bezahlte_zeilen(dc)
+    zeilen = [None] * len(kontakte)       # (row, time) per contact
+
+    def fragen(nummern, runde):
+        neu = []
+        for nr in nummern:
+            if schluessel[nr] in bezahlt:
+                _, zeile, zeit = bezahlt[schluessel[nr]]
+                zeilen[nr] = (zeile, zeit)            # paid before, free now
+            else:
+                neu.append(nr)
+        if neu:
+            log(f"4/6 raundi {runde}: po dorezohet batch-i te Dropcontact: "
+                f"{len(neu)} persona ...")
+            for nr, ergebnis in zip(neu, batch_neu(dc, [anfragen[n] for n in neu])):
+                zeilen[nr] = ergebnis
+        elif nummern:
+            log(f"4/6 raundi {runde}: te gjithe jane te paguar tashme - "
+                f"merren serish falas")
+
+    erste, spaeter = split_rounds(anfragen)
+    fragen(erste, 1)
+
+    catch_all = set()
+    for zeile_zeit in zeilen:
+        if zeile_zeit:
+            for eintrag in zeile_zeit[0].get("email") or []:
+                if is_catch_all(eintrag.get("qualification")):
+                    catch_all.add(domain_of(eintrag.get("email")))
+    zweite, gespart = [], 0
+    for nr, partner in sorted(spaeter.items()):
+        if zeilen[partner] and usable(zeilen[partner][0]):
+            gespart += 1                 # found on the other website already
+        elif domain_of(anfragen[nr]["website"]) in catch_all:
+            gespart += 1
+        else:
+            zweite.append(nr)
+    if spaeter:
+        log(f"    i njejti person te dy faqe: {len(spaeter)}; {gespart} s'pyeten "
+            f"(u gjet te faqja e pare ose domain catch-all), "
+            f"{len(zweite)} ne raundin 2")
+    fragen(zweite, 2)
+
+    mails = []
+    for anfrage, zeile_zeit in zip(anfragen, zeilen):
+        zeile = zeile_zeit[0] if zeile_zeit else None
+        mail = _beste_email((zeile or {}).get("email", []))
+        if mail:
+            mail = {**mail, "felder": _zusatzfelder(zeile)}
+            hinweis = _namens_hinweis(anfrage, zeile)
+            if hinweis:
+                mail = {**mail, "hinweis": hinweis}
+        mails.append(mail)
+
+    # Everything this run paid for and cannot send to - also for people
+    # who are no longer on today's list, since they were paid all the same.
+    nach_schluessel = {s: k for s, k in zip(schluessel, kontakte)}
+    alle = dict(bezahlt)
+    for anfrage, s, zeile_zeit in zip(anfragen, schluessel, zeilen):
+        if zeile_zeit and s not in alle:
+            alle[s] = (anfrage, zeile_zeit[0], zeile_zeit[1])
+    unbrauchbar = []
+    for s, (anfrage, zeile, zeit) in alle.items():
+        for eintrag in paid_unusable([anfrage], [zeile]):
+            firma = (nach_schluessel.get(s) or {}).get("firma") or {}
+            person = (nach_schluessel.get(s) or {}).get("person") or {}
+            unbrauchbar.append({**eintrag, "firma": firma.get("name", ""),
+                                "plz": firma.get("plz", ""),
+                                "ort": firma.get("ort", ""),
+                                "rolle": person.get("rolle", ""),
+                                "zeit": zeit})
+    return mails, unbrauchbar
+
+
 def ergebnisse_bauen(kontakte, mails):
     """Formati qe pret anrede_spalte.aus_lauf(): firma me 'leads'."""
     firmen = []
@@ -403,20 +605,47 @@ def main():
             log(f"    falas nga {mail['reused_from']} ({mail['reused_date']}): "
                 f"{k['person']['vorname']} {k['person']['nachname']} - "
                 f"{k['firma'].get('name')}")
-        for k in kontakte:
-            log(f"    do te pyetej: {k['person']['vorname']} "
-                f"{k['person']['nachname']} - {k['firma'].get('name')}")
+        anfragen = [_anfrage(k) for k in kontakte]
+        # Who this run already paid for: read from its request files only,
+        # no call to Dropcontact.
+        bezahlt = set()
+        for datei in _batch_dateien():
+            for a in json.loads(datei.read_text(encoding="utf-8")).get("gesendet") or []:
+                bezahlt.add(person_key(a.get("first_name"), a.get("last_name"),
+                                       a.get("website")))
+        erste, spaeter = split_rounds(anfragen)
+        for nr in erste:
+            k, a = kontakte[nr], anfragen[nr]
+            schon = person_key(a["first_name"], a["last_name"], a["website"]) in bezahlt
+            log(f"    {'paguar tashme, merret falas' if schon else 'do te pyetej'}: "
+                f"{k['person']['vorname']} {k['person']['nachname']} - "
+                f"{k['firma'].get('name')}")
+        for nr, partner in sorted(spaeter.items()):
+            k = kontakte[nr]
+            log(f"    raundi 2, vetem nese faqja tjeter s'jep email: "
+                f"{k['person']['vorname']} {k['person']['nachname']} - "
+                f"{k['firma'].get('name')} ({k['firma'].get('website')})")
         log("--nur-zeigen: asgje nuk u dorezua, asgje nuk u shkrua.")
         return
 
-    mails = []
+    mails, unbrauchbar = [], []
     if kontakte:
         dc = DropcontactSource(os.environ["DROPCONTACT_API_KEY"])
-        mails = dropcontact_laufen(kontakte, dc)
+        if _batch_dateien() and "gesendet" not in json.loads(
+                _batch_dateien()[0].read_text(encoding="utf-8")):
+            # A run from before 03.09.2026: its request file lacks the
+            # names, so it keeps the old single-batch way.
+            mails = dropcontact_laufen(kontakte, dc)
+        else:
+            mails, unbrauchbar = runden_laufen(kontakte, dc)
     gefunden = sum(1 for m in mails if m)
     log(f"5/6 email personale te verifikuara: {gefunden} nga {len(kontakte)} "
         f"({100*gefunden/max(1,len(kontakte)):.0f}%), falas nga regjistri: "
         f"{len(wiederverwendet)}")
+    if unbrauchbar:
+        log(f"    te paguara po jo per dergim: {len(unbrauchbar)} "
+            f"({sum(1 for u in unbrauchbar if is_catch_all(u['qualification']))}"
+            f" catch-all) - ruhen te paid-not-sendable.json")
 
     firmen = (ergebnisse_bauen(kontakte, mails)
               + wiederverwendet_bauen(wiederverwendet))
@@ -424,6 +653,8 @@ def main():
     ergebnis_datei = LAUF / "ergebnisse.json"
     ergebnis_datei.write_text(
         json.dumps(firmen, ensure_ascii=False, indent=1), encoding="utf-8")
+    (LAUF / "paid-not-sendable.json").write_text(
+        json.dumps(unbrauchbar, ensure_ascii=False, indent=1), encoding="utf-8")
 
     stempel = datetime.now().strftime("%Y%m%d-%H%M")
     ziel = PROJEKT / f"IT-Liste-Emails-Zona{ZONE}-{stempel}.xlsx"

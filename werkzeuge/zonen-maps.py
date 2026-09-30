@@ -108,12 +108,17 @@ def lauf_starten(token, nummer, zone, max_usd=None):
     log(f"po niset Apify: {len(SUCHBEGRIFFE)} fjale x {KUFI_PER_KERKIM} "
         f"vende = max {len(SUCHBEGRIFFE) * KUFI_PER_KERKIM} "
         f"(~{len(SUCHBEGRIFFE) * KUFI_PER_KERKIM * PREIS_PRO_ORT:.2f} USD)")
-    url = f"https://api.apify.com/v2/acts/{ACTOR}/runs?token={token}"
+    url = f"https://api.apify.com/v2/acts/{ACTOR}/runs"
     if max_usd:
-        url += f"&maxTotalChargeUsd={max_usd}"
+        url += f"?maxTotalChargeUsd={max_usd}"
         log(f"    kufiri i parave per kete vrapim: {max_usd} USD")
-    antwort = requests.post(url, json=eingabe(nummer), timeout=60)
-    antwort.raise_for_status()
+    antwort = requests.post(url, json=eingabe(nummer), headers=kopf(token),
+                            timeout=60)
+    if not antwort.ok:
+        # Apify says why in the body (a limit, a disabled feature ...).
+        # The status line alone told nothing on 29.09.2026 (zone 44: 403).
+        sys.exit(f"Apify e refuzoi nisjen: HTTP {antwort.status_code} - "
+                 f"{antwort.text[:500]}")
     daten = antwort.json()["data"]
     id_datei.write_text(json.dumps({
         "run_id": daten["id"],
@@ -124,7 +129,13 @@ def lauf_starten(token, nummer, zone, max_usd=None):
     return daten["id"]
 
 
-def mit_wiederholung(was, url, timeout, versuche=5):
+def kopf(token):
+    """The token goes in a header, not in the URL: an error message prints
+    the URL, and on 29.09.2026 one printed the whole key into the log."""
+    return {"Authorization": f"Bearer {token}"}
+
+
+def mit_wiederholung(was, url, timeout, token, versuche=5):
     """Nje kerkese qe nuk e humb nje vrapim TE PAGUAR per shkak te rrjetit.
 
     Me 02.09.2026 vrapimi i zones 35 perfundoi mire te Apify, por skripti
@@ -133,7 +144,7 @@ def mit_wiederholung(was, url, timeout, versuche=5):
     qe rritet. Vetem nese s'ia del as pas `versuche` heresh, ndalet."""
     for numer in range(1, versuche + 1):
         try:
-            antwort = requests.get(url, timeout=timeout)
+            antwort = requests.get(url, headers=kopf(token), timeout=timeout)
             antwort.raise_for_status()
             return antwort.json()
         except (requests.Timeout, requests.ConnectionError) as gabim:
@@ -148,9 +159,8 @@ def mit_wiederholung(was, url, timeout, versuche=5):
 def warten(token, run_id):
     while True:
         daten = mit_wiederholung(
-            "statusi",
-            f"https://api.apify.com/v2/actor-runs/{run_id}?token={token}",
-            timeout=60)["data"]
+            "statusi", f"https://api.apify.com/v2/actor-runs/{run_id}",
+            timeout=60, token=token)["data"]
         if daten["status"] not in ("READY", "RUNNING"):
             return daten
         log(f"    ende duke vrapuar ... ({daten['status']})")
@@ -161,7 +171,7 @@ def holen(token, dataset_id):
     return mit_wiederholung(
         "dataset",
         f"https://api.apify.com/v2/datasets/{dataset_id}/items"
-        f"?token={token}&clean=true&format=json", timeout=300)
+        f"?clean=true&format=json", timeout=300, token=token)
 
 
 def main():

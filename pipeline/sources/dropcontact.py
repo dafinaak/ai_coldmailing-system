@@ -208,6 +208,10 @@ class DropcontactSource:
         # Last balance Dropcontact reported - a run writes it next to its
         # request_id, so its cost can be told later (Jira AP-216).
         self.credits_left = None
+        # The raw rows of the last batch fetched. The zone tool keeps what
+        # it paid for but cannot send to - a catch-all address is charged
+        # like a found one (Dafina, 29.09.2026) - without a second request.
+        self.letzte_zeilen: list = []
 
     def _guthaben(self, daten: dict) -> None:
         _guthaben_merken(daten)
@@ -384,6 +388,7 @@ class DropcontactSource:
                     f"{getattr(antwort, 'text', '')}")
             daten = antwort.json() or {}
             if daten.get("success") and daten.get("data") is not None:
+                self.letzte_zeilen = daten["data"]
                 return daten["data"]
             if abfrage < self.batch_max_abfragen:
                 time.sleep(self.batch_wartezeit)

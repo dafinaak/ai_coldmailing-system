@@ -109,12 +109,75 @@ ZONEN = {
     # 99 places in Neuss, Kaarst and Dormagen - they are read as well.
     "41": {"kreise": [
                {"ort": "Mönchengladbach", "mitte": (51.18, 6.43), "radius": 8},
-               {"ort": "Neuss", "mitte": (51.19, 6.70), "radius": 5.5},
+               # 7 km, not 5.5: the coordinate table put 41470 (Uedesheim,
+               # Grimlinghausen) on the town centre, so it looked covered.
+               # Its real centre is 5.7 km out - corrected on 29.09.2026.
+               {"ort": "Neuss", "mitte": (51.19, 6.70), "radius": 7},
                {"ort": "Kaarst", "mitte": (51.23, 6.62), "radius": 4},
                {"ort": "Dormagen", "mitte": (51.11, 6.81), "radius": 5}],
            "stadt": "Mönchengladbach",
            "plz": "plz-liste-oliver-zona41.txt",
            "lauf": "zona41-moenchengladbach-2026-09-29",
+           "maps_dazu": ["apify-ds-5gLzrkb4NPjyijWbG.json"]},
+    # Zone 42 is the three towns of the Bergisches Land, one circle each
+    # around its own codes (Wuppertal 8.3 km, Solingen 4.2 km, Remscheid
+    # 4.0 km). The zone 40 run already paid for 108 places in Solingen and
+    # west Wuppertal - read as well.
+    "42": {"kreise": [
+               {"ort": "Wuppertal", "mitte": (51.26, 7.16), "radius": 10},
+               {"ort": "Solingen", "mitte": (51.17, 7.06), "radius": 6},
+               {"ort": "Remscheid", "mitte": (51.19, 7.21), "radius": 6}],
+           "stadt": "Wuppertal",
+           "plz": "plz-liste-oliver-zona42.txt",
+           "lauf": "zona42-wuppertal-2026-09-29",
+           "maps_dazu": ["apify-ds-5gLzrkb4NPjyijWbG.json"]},
+    # Zone 43 does not exist: no German postal code starts with 43.
+    # Zone 44 is Dortmund and Bochum, 18 km apart - one circle each around
+    # its own codes (Dortmund 9.3 km, Bochum 6.8 km). No earlier run
+    # reached them, so there is nothing to reuse.
+    "44": {"kreise": [
+               {"ort": "Dortmund", "mitte": (51.51, 7.47), "radius": 11},
+               {"ort": "Bochum", "mitte": (51.47, 7.22), "radius": 8.5}],
+           "stadt": "Dortmund",
+           "plz": "plz-liste-oliver-zona44.txt",
+           "lauf": "zona44-dortmund-2026-09-29"},
+    # Zone 45 is Essen and Gelsenkirchen, only 10 km apart - one circle
+    # each (Essen covers its codes at 8.3 km, Gelsenkirchen at 7.9). The
+    # two circles overlap, and that is still the cheaper shape: a single
+    # circle around both would need 17 km and would pay for 816 km2 of
+    # map instead of 598, most of it outside the zone (Bochum, Oberhausen,
+    # Gladbeck). Places two paid runs already found here - 30 from zone 40
+    # and 10 from zone 44 - are read from their datasets, not bought again.
+    "45": {"kreise": [
+               # 11.5 km, not 10: the coordinate table put 45219 (Kettwig)
+               # on the town centre, so it looked covered. Its real centre
+               # is 10.4 km south - corrected on 29.09.2026.
+               {"ort": "Essen", "mitte": (51.45, 7.02), "radius": 11.5},
+               {"ort": "Gelsenkirchen", "mitte": (51.54, 7.08), "radius": 9.5}],
+           "stadt": "Essen",
+           "plz": "plz-liste-oliver-zona45.txt",
+           "lauf": "zona45-essen-2026-09-29",
+           "maps_dazu": ["apify-ds-5gLzrkb4NPjyijWbG.json",
+                         "apify-ds-S6QcmCYDi5zf0N1dq.json"]},
+    # Zone 46 does not exist in Oliver's list - it jumps from 45 to 47, the
+    # same way it skips 43. Do not add one without asking him first.
+    # Zone 47 is Duisburg and Krefeld, 18 km apart, so one circle each.
+    # Duisburg gets a third, small one: its postal codes reach up to
+    # Walsum (47178), whose centre sits 12.1 km out - measured against the
+    # postal code areas in OpenStreetMap, not guessed. Widening the main
+    # circle to 14 km would cover it but would pay for 615 km2 of map
+    # instead of 380, nearly all of it Oberhausen, Moers and Dinslaken,
+    # outside the zone. A 4 km circle over Walsum costs 50 km2 instead.
+    # 56 places inside this zone were already paid for by zone 40's run and
+    # are read from its dataset instead of being bought again.
+    "47": {"kreise": [
+               {"ort": "Duisburg", "mitte": (51.44, 6.76), "radius": 11},
+               {"ort": "Duisburg-Walsum", "mitte": (51.5442, 6.7119),
+                "radius": 4},
+               {"ort": "Krefeld", "mitte": (51.335, 6.565), "radius": 8}],
+           "stadt": "Duisburg",
+           "plz": "plz-liste-oliver-zona47.txt",
+           "lauf": "zona47-duisburg-2026-09-29",
            "maps_dazu": ["apify-ds-5gLzrkb4NPjyijWbG.json"]},
 }
 

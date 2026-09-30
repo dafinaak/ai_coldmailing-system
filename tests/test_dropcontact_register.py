@@ -195,3 +195,92 @@ def test_split_says_whom_to_ask_and_what_is_already_answered(project):
     assert answered[0]["email"] == "anna@alt.de"
     assert answered[0]["reused_from"] == "zona33-dropcontact-2026-08-28"
     assert answered[1] is None
+
+
+# --- catch-all domains (Dafina, 29.09.2026) --------------------------------
+# Dropcontact charges a catch-all address as found, and our rule throws it
+# away: the domain takes every address, so none can be checked. It is a
+# property of the mail server - anyone else there would cost a credit for
+# the same unusable kind of answer.
+
+SEPT_30 = date(2026, 9, 30)
+
+
+def _catch_all_run(root, folder, website, email, zeit,
+                   qualification="catch-all@pro"):
+    run = _zone_run(root, folder, asked=[("Hamid", "Nazari", website)],
+                    zeit=zeit)
+    _write(run / "paid-not-sendable.json", [
+        {"first_name": "Hamid", "last_name": "Nazari", "website": website,
+         "email": email, "qualification": qualification, "zeit": zeit}])
+    return run
+
+
+def test_nobody_else_is_asked_on_a_catch_all_domain(tmp_path):
+    _catch_all_run(tmp_path, "zona40-dropcontact-2026-09-29",
+                   "https://www.mylsp.de/", "hamid.nazari@mylsp.de",
+                   "2026-09-29T10:58:17")
+    register = load_register(tmp_path)
+
+    answered, to_ask = register.split(
+        [{"first_name": "Lea", "last_name": "Neu",
+          "website": "http://mylsp.de/team"}], today=SEPT_30)
+
+    assert to_ask == []
+    assert answered == {0: None}
+    assert register.catch_all("mylsp.de", today=SEPT_30)["run"] == \
+        "zona40-dropcontact-2026-09-29"
+
+
+def test_the_domain_of_the_catch_all_address_counts_too(tmp_path):
+    # wedoit.gmbh as website, but the mail server is wedoit.io.
+    _catch_all_run(tmp_path, "zona40-dropcontact-2026-09-29",
+                   "https://www.wedoit.gmbh/", "markusj@wedoit.io",
+                   "2026-09-29T10:58:17")
+
+    answered, to_ask = load_register(tmp_path).split(
+        [{"first_name": "Lea", "last_name": "Neu", "website": "wedoit.io"}],
+        today=SEPT_30)
+
+    assert to_ask == []
+
+
+def test_a_catch_all_domain_is_asked_again_after_90_days(tmp_path):
+    # A company can change its mail server - the same 90 days as for any answer.
+    _catch_all_run(tmp_path, "zona40-dropcontact-2026-06-01",
+                   "mylsp.de", "hamid.nazari@mylsp.de", "2026-06-01T10:00:00")
+
+    _, to_ask = load_register(tmp_path).split(
+        [{"first_name": "Lea", "last_name": "Neu", "website": "mylsp.de"}],
+        today=SEPT_30)
+
+    assert to_ask == [0]
+
+
+def test_a_generic_address_does_not_close_the_domain(tmp_path):
+    # info@ says nothing about the server - the next person may well be found.
+    _catch_all_run(tmp_path, "zona40-dropcontact-2026-09-29",
+                   "firma.de", "info@firma.de", "2026-09-29T10:58:17",
+                   qualification="generic@pro")
+
+    _, to_ask = load_register(tmp_path).split(
+        [{"first_name": "Lea", "last_name": "Neu", "website": "firma.de"}],
+        today=SEPT_30)
+
+    assert to_ask == [0]
+
+
+def test_people_sent_in_a_second_round_are_known_as_asked(tmp_path):
+    run = _zone_run(tmp_path, "zona40-dropcontact-2026-09-29",
+                    asked=[("Anna", "Alt", "alt.de")],
+                    zeit="2026-09-29T10:58:17")
+    _write(run / "request-id-2.json", {
+        "request_id": "r2", "gesendet_nr": [0],
+        "gesendet": [{"first_name": "Bea", "last_name": "Zwei",
+                      "website": "zwei.de"}],
+        "zeit": "2026-09-29T11:05:00"})
+
+    answer = load_register(tmp_path).lookup("Bea", "Zwei", "zwei.de",
+                                            today=SEPT_30)
+
+    assert answer is not None and answer["email"] is None

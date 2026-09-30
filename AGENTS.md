@@ -196,6 +196,28 @@ vrapimet e veta. Riluajtja e historisë tregoi se regjistri do të kishte
 kursyer 31 pagesa (22 mes zonave + 9 të paguara tashmë te PLR 30-31 ose
 te fushatat).
 
+**Plotësim (Dafina, 29.09.2026): paguhet vetëm ajo që përdoret.**
+Dropcontact-i nuk merr kredit për personin pa email — e kthen vetë. Merr
+kredit për çdo adresë që kthen, edhe për adresën **catch-all** (domain që
+i pranon të gjitha adresat, pra s'kontrollohet), të cilën ne s'e
+dërgojmë. Rregullat:
+
+- **Domain catch-all → aty s'pyetet më askush**, për po ato 90 ditë. E
+  mban mend regjistri nga `paid-not-sendable.json` i vrapimeve.
+- **I njëjti person te dy faqe të së njëjtës firmë pyetet një herë.** Faqja
+  e dytë pyetet në raundin 2 vetëm kur e para s'dha email dhe s'është
+  catch-all. Emri i njëjtë te dy firma të ndryshme nuk mjafton: aty
+  pyeten të dy.
+- **Çka paguhet e s'dërgohet, ruhet.** Te lista përfundimtare del në
+  fletën "Bezahlt, nicht versandfähig", jo te fleta e dërgimit.
+
+Pyetja e parë te një domain i ri catch-all kushton gjithmonë 1 kredit:
+Dropcontact-i s'ka opsion për ta ndaluar. Rastin e parë e sheh vetëm pas
+përgjigjes.
+
+Pse u shkrua: te zona 40 (29.09.2026) u paguan 61 kredite për 53 email —
+8 adresa catch-all dhe një person që u pyet dy herë.
+
 ## Identiteti i firmës: pa bashkim automatik (nga 08.09.2026)
 
 Çdo firmë ka një numër që nuk ndërron kurrë — `firma_uid`. Ai rri te

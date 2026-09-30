@@ -54,12 +54,30 @@ ZONEN = {
     "39": {"lauf": "zona39-dropcontact-2026-09-03",
            "quellen": ["zona39-magdeburg-2026-09-01",
                        "zona39-overpass-2026-09-03"]},
+    # "zonat40-45-nachtrag-..." holds the companies that had never been
+    # judged against the IT profile rule (29.09.2026); the few that passed
+    # belong to zones 40, 44 and 45 and need their postal code from there.
     "40": {"lauf": "zona40-dropcontact-2026-09-29",
            "quellen": ["zona40-duesseldorf-2026-09-29",
-                       "zona40-overpass-2026-09-29"]},
+                       "zona40-overpass-2026-09-29",
+                       "zonat40-45-nachtrag-2026-09-29"]},
     "41": {"lauf": "zona41-dropcontact-2026-09-29",
            "quellen": ["zona41-moenchengladbach-2026-09-29",
                        "zona41-overpass-2026-09-29"]},
+    "42": {"lauf": "zona42-dropcontact-2026-09-29",
+           "quellen": ["zona42-wuppertal-2026-09-29",
+                       "zona42-overpass-2026-09-29"]},
+    "44": {"lauf": "zona44-dropcontact-2026-09-29",
+           "quellen": ["zona44-dortmund-2026-09-29",
+                       "zona44-overpass-2026-09-29",
+                       "zonat40-45-nachtrag-2026-09-29"]},
+    "45": {"lauf": "zona45-dropcontact-2026-09-29",
+           "quellen": ["zona45-essen-2026-09-29",
+                       "zona45-overpass-2026-09-29",
+                       "zonat40-45-nachtrag-2026-09-29"]},
+    "47": {"lauf": "zona47-dropcontact-2026-09-29",
+           "quellen": ["zona47-duisburg-2026-09-29",
+                       "zona47-overpass-2026-09-29"]},
 }
 
 # Nga cili mjet erdhi vertet secili vrapim. Kjo shkruhet ne kolonen
@@ -88,6 +106,20 @@ QUELLE_FIRMA = {
     # the zone 40 run found in Neuss, Kaarst and Dormagen - same day.
     "zona41-moenchengladbach-2026-09-29": "Google Maps (Apify, 29.09.2026)",
     "zona41-overpass-2026-09-29": "Overpass/OSM (29.09.2026)",
+    # Zone 42 reads its own run and the zone 40 run's places in Solingen
+    # and west Wuppertal - same day.
+    "zona42-wuppertal-2026-09-29": "Google Maps (Apify, 29.09.2026)",
+    "zona42-overpass-2026-09-29": "Overpass/OSM (29.09.2026)",
+    "zona44-dortmund-2026-09-29": "Google Maps (Apify, 29.09.2026)",
+    "zona44-overpass-2026-09-29": "Overpass/OSM (29.09.2026)",
+    "zona45-essen-2026-09-29": "Google Maps (Apify, 29.09.2026)",
+    "zona45-overpass-2026-09-29": "Overpass/OSM (29.09.2026)",
+    "zona47-duisburg-2026-09-29": "Google Maps (Apify, 29.09.2026)",
+    "zona47-overpass-2026-09-29": "Overpass/OSM (29.09.2026)",
+    # These companies were collected earlier by Gelbe Seiten and only
+    # judged against the IT profile rule on 29.09.2026.
+    "zonat40-45-nachtrag-2026-09-29": "Gelbe Seiten (mbledhje e vjeter, "
+                                      "gjykuar 29.09.2026)",
 }
 ZONE = "32"
 for _a in sys.argv[1:]:
@@ -174,6 +206,45 @@ def telefone_waehlen(impressum, firma):
     return "", (impressum if imp_ok else "")
 
 
+def person_schluessel(firma):
+    """Emri i personit, i njejte sido qe te jete shkruar."""
+    lead = (firma.get("leads") or [None])[0] or {}
+    return (f"{lead.get('first_name','')} "
+            f"{lead.get('last_name','')}").strip().casefold()
+
+
+def ohne_doppelte_personen(daten):
+    """Nje person, nje rresht. Kthen (te mbajturit, te hequrit).
+
+    I njejti njeri te dy firma motra do te merrte DY email nga e njejta
+    fushate - pikerisht gabimi qe u ndal me 17.08.2026. Mbahet rreshti me
+    pozite te shkruar, perndryshe i pari i lexuar.
+
+    Zgjedhja mbahet me identitet, jo me vlere. Me 29.09.2026 zonat 44 e 45
+    u pyeten nje here te dyte ne nje dosje te vet, dhe te njejtit rreshta
+    dolen ne te dyja dosjet; nje filter `f in beste.values()` i krahason
+    me `==`, keshtu qe te dy rreshtat e njejte e kalonin porten.
+    """
+    beste, doppelte = {}, []
+    for firma in daten:
+        if not (firma.get("leads") or [None])[0]:
+            continue
+        schluessel = person_schluessel(firma)
+        if not schluessel:
+            continue
+        hat_position = bool(rolle_saeubern(firma.get("rolle"))[0])
+        vorher = beste.get(schluessel)
+        if vorher is None:
+            beste[schluessel] = firma
+        elif hat_position and not bool(rolle_saeubern(vorher.get("rolle"))[0]):
+            doppelte.append(vorher)
+            beste[schluessel] = firma
+        else:
+            doppelte.append(firma)
+    behalten = {id(f) for f in beste.values()}
+    return [f for f in daten if id(f) in behalten], doppelte
+
+
 def firmen_index():
     """Kodi postar, qyteti, pozita DHE telefonat vijne nga vrapimet e
     mbledhjes.
@@ -249,37 +320,12 @@ def bauen():
     blatt.title = "Versandfertig"
     blatt.append(KOPF)
 
-    # I njejti njeri te dy firma motra do te merrte DY email nga e njejta
-    # fushate - pikerisht gabimi qe u ndal me 17.08.2026. Nje person, nje
-    # rresht: mbahet ai me pozite te shkruar, perndryshe i pari.
-    def person_schluessel(firma):
-        lead = (firma.get("leads") or [None])[0] or {}
-        return (f"{lead.get('first_name','')} "
-                f"{lead.get('last_name','')}").strip().casefold()
-
-    beste = {}
-    doppelte = []
-    for firma in daten:
-        if not (firma.get("leads") or [None])[0]:
-            continue
-        schluessel = person_schluessel(firma)
-        if not schluessel:
-            continue
-        hat_position = bool(rolle_saeubern(firma.get("rolle"))[0])
-        vorher = beste.get(schluessel)
-        if vorher is None:
-            beste[schluessel] = firma
-        elif hat_position and not bool(rolle_saeubern(vorher.get("rolle"))[0]):
-            doppelte.append((schluessel, vorher))
-            beste[schluessel] = firma
-        else:
-            doppelte.append((schluessel, firma))
+    daten, doppelte = ohne_doppelte_personen(daten)
     if doppelte:
         print(f"Persona te dyfishte te hequr: {len(doppelte)}")
-        for schluessel, firma in doppelte:
+        for firma in doppelte:
             print(f"    hequr: {firma.get('name')} "
                   f"({(firma.get('leads') or [{}])[0].get('email')})")
-    daten = [f for f in daten if f in beste.values()]
 
     # Porta e fundit para se lista te shkoje kund. Bllokimi vlen edhe per
     # rezultate te vjetra: batch-et e zonave 32/33/34 rrodhen me 21 e 28
@@ -473,16 +519,68 @@ def bauen():
     for spalte, breite in zip("ABC", [36, 26, 90]):
         kb.column_dimensions[spalte].width = breite
 
+    # What Dropcontact charged for but we cannot send to (Dafina,
+    # 29.09.2026). A catch-all address cannot be checked, so it stays off
+    # the sheet above - but it was paid for, so it is kept here, apart.
+    # Someone who has a checked address above (found on another website of
+    # the same company) is not repeated, and the blocklist applies here too.
+    auf_liste = {str(blatt.cell(r, 3).value or "").strip().casefold()
+                 for r in range(2, blatt.max_row + 1)}
+    nicht_versand = []
+    for pfad in sorted((PROJEKT / "laeufe/leadquellen").glob(
+            f"zona{ZONE}-dropcontact-*/paid-not-sendable.json")):
+        for eintrag in json.loads(pfad.read_text(encoding="utf-8")):
+            person = (f"{eintrag.get('first_name', '')} "
+                      f"{eintrag.get('last_name', '')}").strip()
+            if person.casefold() in auf_liste or ist_gesperrt(
+                    eintrag.get("website"), domains):
+                continue
+            nicht_versand.append((person, eintrag))
+    nb = wb.create_sheet("Bezahlt, nicht versandfähig")
+    nb.append(["Nr", "Firma", "Person", "Position", "E-Mail", "Art", "Hinweis",
+               "Webseite", "PLZ", "Ort"])
+    for nr, (person, eintrag) in enumerate(nicht_versand, 1):
+        art, warum = NICHT_VERSAND.get(
+            str(eintrag.get("qualification") or "").split("@")[0],
+            (eintrag.get("qualification", ""), "Nicht für den Versand."))
+        if str(eintrag.get("qualification") or "").endswith("@perso"):
+            art, warum = NICHT_VERSAND["perso"]
+        nb.append([nr, eintrag.get("firma", ""), person,
+                   rolle_saeubern(eintrag.get("rolle"))[0],
+                   eintrag.get("email", ""), art, warum,
+                   eintrag.get("website", ""), eintrag.get("plz", ""),
+                   eintrag.get("ort", "")])
+    for zelle in nb[1]:
+        zelle.font = Font(bold=True, color="FFFFFFFF", size=10)
+        zelle.fill = PatternFill("solid", fgColor=KOPF_FUELL)
+    for spalte, breite in enumerate([5, 36, 24, 26, 36, 22, 70, 34, 8, 18], 1):
+        nb.column_dimensions[get_column_letter(spalte)].width = breite
+
     stempel = datetime.now().strftime("%Y%m%d-%H%M")
     ziel = PROJEKT / f"IT-Liste-Emails-Zona{ZONE}-FERTIG-{stempel}.xlsx"
     wb.save(ziel)
-    return ziel, nummer, ohne_position, len(kontrolle)
+    return ziel, nummer, ohne_position, len(kontrolle), len(nicht_versand)
+
+
+# Sheet "Bezahlt, nicht versandfähig": what each kind of address means,
+# by the part before "@" in Dropcontact's qualification.
+NICHT_VERSAND = {
+    "catch-all": ("Catch-all – nicht prüfbar",
+                  "Die Domain nimmt jede Adresse an. Ob sie diese Person "
+                  "erreicht, lässt sich nicht prüfen – nicht für den Versand."),
+    "generic": ("Allgemeine Adresse",
+                "Keine persönliche Adresse (info@ o. ä.) – nicht für den Versand."),
+    "perso": ("Private Adresse",
+              "Private Adresse (gmail o. ä.) – nicht für den Versand."),
+}
+NICHT_VERSAND["catch_all"] = NICHT_VERSAND["catch-all"]
 
 
 if __name__ == "__main__":
-    ziel, rreshta, pa_pozite, kontrolle = bauen()
+    ziel, rreshta, pa_pozite, kontrolle, nicht_versand = bauen()
     print(f"DOSJA:            {ziel}")
     print(f"Rreshta:          {rreshta}")
     print(f"Me pozite:        {rreshta - pa_pozite}")
     print(f"Pa pozite:        {pa_pozite}")
     print(f"Zur Kontrolle:    {kontrolle}")
+    print(f"Paguar, jo per dergim: {nicht_versand}")

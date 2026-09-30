@@ -25,6 +25,12 @@ asked again, so the address is checked once more before anyone writes to
 it - the project's rule for every address. When a person was asked more
 than once, the latest answer wins: an address Dropcontact no longer
 confirms is not reused.
+
+Catch-all domains (Dafina, 29.09.2026): a domain that takes every address
+lets Dropcontact answer only with an address nobody can check - it charges
+a credit for it, and our rule throws it away. So once a run paid for such
+an answer (paid-not-sendable.json), nobody else on that domain is asked -
+for the same 90 days, since a company can change its mail server.
 """
 from __future__ import annotations
 
@@ -32,6 +38,8 @@ import json
 import re
 from datetime import date, datetime
 from pathlib import Path
+
+from pipeline.dropcontact_rounds import domain_of, is_catch_all
 
 MAX_AGE_DAYS = 90
 
@@ -102,6 +110,23 @@ def _newer(entry: dict, current: dict) -> bool:
 class Register:
     def __init__(self):
         self._answers: dict = {}
+        self._catch_all: dict = {}      # domain -> {"run", "date"}
+
+    def add_catch_all(self, domain: str, when, run: str) -> None:
+        if not domain or when is None:
+            return
+        current = self._catch_all.get(domain)
+        if current is None or when.isoformat() > current["date"]:
+            self._catch_all[domain] = {"run": run, "date": when.isoformat()}
+
+    def catch_all(self, website, today=None):
+        """The run that found this domain catch-all, or None: not known as
+        catch-all, or the finding is older than the 90 days."""
+        entry = self._catch_all.get(domain_of(website))
+        if entry is None:
+            return None
+        age = ((today or date.today()) - date.fromisoformat(entry["date"])).days
+        return None if age > MAX_AGE_DAYS else dict(entry)
 
     def add(self, key: tuple, when, email, run: str,
             qualification=None, felder=None) -> None:
@@ -134,7 +159,9 @@ class Register:
         """
         entry = self.lookup(first_name, last_name, website, today=today)
         if entry is None:
-            return False, None
+            # Nobody asked about this person - but on a catch-all domain
+            # the answer is known in advance, and it would cost a credit.
+            return (self.catch_all(website, today=today) is not None), None
         if not entry["email"]:
             return True, None
         return True, {"email": entry["email"],
@@ -171,11 +198,22 @@ def load_register(project_dir, exclude=()) -> Register:
             continue
         request = _read_json(folder / "request-id.json") or {}
         when = _date_of(request.get("zeit")) or _date_in_name(folder.name)
-        for asked in request.get("gesendet") or []:
-            register.add(person_key(asked.get("first_name"),
-                                    asked.get("last_name"),
-                                    asked.get("website")),
-                         when, None, folder.name)
+        # request-id.json is the first round; a second round (the other
+        # website of a person asked in the first) is request-id-2.json.
+        for request_file in sorted(folder.glob("request-id*.json")):
+            batch = _read_json(request_file) or {}
+            batch_when = _date_of(batch.get("zeit")) or when
+            for asked in batch.get("gesendet") or []:
+                register.add(person_key(asked.get("first_name"),
+                                        asked.get("last_name"),
+                                        asked.get("website")),
+                             batch_when, None, folder.name)
+        for paid in _read_json(folder / "paid-not-sendable.json") or []:
+            if is_catch_all(paid.get("qualification")):
+                paid_when = _date_of(paid.get("zeit")) or when
+                for domain in {domain_of(paid.get("website")),
+                               domain_of(paid.get("email"))}:
+                    register.add_catch_all(domain, paid_when, folder.name)
         for company in _read_json(folder / "ergebnisse.json") or []:
             # An address this run took over from the register keeps the
             # day and the run of its real check - otherwise every reuse

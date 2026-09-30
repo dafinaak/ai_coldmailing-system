@@ -22,6 +22,227 @@ vërtetë.
 
 ## Gjendja tash
 
+- **30.09.2026 — Zona 47 (Duisburg, Krefeld) e gatshme: 38 kontakte.**
+  Lista: `IT-Liste-Emails-Zona47-FERTIG-20260930-0946.xlsx`; Excel-i i
+  përbashkët: `IT-Liste-Emails-Zonat-40-49-20260930-0946.xlsx`
+  (**217 kontakte**).
+  - **Apify:** Dafina tha "ngrije sot në 29 $": kufiri 19 → 29 $, vrapimi,
+    pastaj prapë 19 $ (i verifikuar). Maps kushtoi **2,25 $**; shtatori
+    mbylli me **27,68 $**. Nisja u prit 2,5 minuta pas ngritjes, prandaj
+    kësaj radhe s'pati 403.
+  - 39 kode (Duisburg 28, Krefeld 11). **Tre rrathë:** Duisburg 11 km,
+    Duisburg-Walsum 4 km, Krefeld 8 km. Rrethi i vogël mbi Walsum u shtua
+    sepse 47178 bie 12,1 km nga qendra — një rreth i vetëm 14 km do të
+    paguante 816 km² hartë në vend të 631. `maps_dazu`: 56 vende tashmë
+    të paguara nga zona 40.
+  - Maps solli 428 firma, OSM 9. Gjithsej **433 firma** (409 të reja),
+    60 brenda profilit, 53 me person me emër, **0 të lëna jashtë për
+    mungesë kodi postar**. AI 0,42 $ + 0,01 $ (OSM).
+  - Dropcontact: 49 të pyetur, **38 email (78%)** plus 2 falas nga
+    regjistri; 4 adresa catch-all të paguara që nuk dërgohen. Kreditet
+    187 → **138**.
+  - Lista: 38 kontakte, 27 me pozitë. Dy vetë dolën se ishin tashmë në një
+    zonë më të vogël (Janhsen, Bagala).
+  - Kontrolli: 5 gjetje, të gjitha të shpjeguara. Tri janë e njëjta firmë
+    me `.com` dhe `.de` (pace-IT, BOVIIT, ITDISTA). INCAS: email-i te
+    `incas.com`, faqja `it-systemhaus.de` — impressum-i e tregon Roland
+    Janke si përfaqësues, pra e njëjta firmë. COMASSIST: Florian Bems
+    është drejtues i COMASSIST (HRB Krefeld 12606) po email-in e ka te
+    `acs-systemhaus.de`; impressum-i i ACS (HRB Dresden 27843) i ka **të
+    njëjtët dy drejtues**, pra firma motër dhe adresa është vërtet e tij.
+    Del vetëm një herë te baza. `Listen-Pruefbericht-20260930-0948.xlsx`.
+  - Baza: **13.377 firma, 1.322 vendimmarrës, 491 kampagnenfähig.**
+  - Testet: 1.518 kaluan, 90 u kapërcyen, asnjë nuk ra.
+- **29.09.2026 — Tabela e koordinatave i vinte disa kode te qendra e
+  qytetit; dy zona kishin mbetur me nje cep te pakerkuar.**
+  `pipeline/daten/plz_koordinaten.csv` ka 10.813 kode, po **725 prej tyre
+  (6%) ndajne nje pike me nje kod tjeter** — aty tabela vendos qendren e
+  qytetit ne vend te qendres se kodit. Testi i rrathëve e beson ate
+  tabele, prandaj nje kod i larget dukej "brenda" edhe kur s'ishte.
+  - Doli te zona 47: 47178 (Walsum) rrinte te tabela 1,0 km nga qendra e
+    Duisburgut, kurse ne te vertete eshte **12,1 km** larg. Kontrolli u
+    be me kufijte e kodeve postare te OSM.
+  - U maten te 24 kodet e tilla te zonave tashme te kryera: **22 ishin
+    brenda gjithsesi**, dy jo — **41470** (Neuss-Uedesheim) 0,7 km jashte
+    dhe **45219** (Essen-Kettwig) 0,4 km jashte. Pra nje cep i vogel i
+    ketyre dy kodeve nuk u kerkua fare; firmat atje mund te mungojne te
+    listat e zonave 41 dhe 45.
+  - U ndreqen gjashte koordinata me vlerat e OSM-se (47138, 47178, 47179,
+    47199, 41470, 45219) dhe u zgjeruan dy rrathe: Neuss 5,5 → 7 km,
+    Essen 10 → 11,5 km. Kjo e ben konfigurimin te sakte per nje vrapim te
+    ardhshem; listat e sotme nuk ndryshojne vetvetiu.
+  - **Pyetje e hapur per Dafinen:** a duam nje vrapim te vogel Maps vetem
+    per ata dy cepa (rreth 0,3–0,5 $), apo i lem ashtu.
+- **29.09.2026 — Lista bashkonte dy rreshta te njejte per te njejtin njeri.**
+  Kur nje zone ka dy dosje Dropcontact-i, rreshtat e njejte dilnin dy here:
+  filtri i fundit i krahasonte me `==` (`f in beste.values()`), jo me
+  identitet, keshtu qe te dy kopjet e njejta e kalonin porten. Do te thoshte
+  dy email te njejtit njeri nga e njejta fushate — pikerisht gabimi i ndaluar
+  me 17.08.2026. U nxor ne funksionin `ohne_doppelte_personen()` dhe u ndreq;
+  e ruan `tests/test_itliste_doppelte_personen.py` (5 teste, te provuara edhe
+  me gabimin e vjeter te futur prapa qellimisht).
+- **29.09.2026 — U gjykuan firmat e mbetura pa gjykim te zonat 40–45.**
+  Dafina tha "po beje". Ishin **66** firma që s'kishin kaluar kurrë nëpër
+  rregullin e profilit IT. Të 66-at vijnë nga **Gelbe Seiten**, nga dy
+  mbledhje të vjetra (`sammlung-verifikation-2026-08-19` dhe `plr-30-31`),
+  pra para se Gelbe Seiten të dilte nga zinxhiri më 04.09 — nuk është
+  rrjedhje e re.
+  - 11 prej tyre s'kanë fare faqe interneti, prandaj nuk gjykohen dot
+    (faqja vendos) dhe mbeten `not_checked`.
+  - 55 u gjykuan: **5 brenda profilit, 50 jashtë.** Kosto **0,03 $**
+    (59 thirrje KI). Vrapimi: `laeufe/leadquellen/zonat40-45-nachtrag-2026-09-29`.
+  - Nga të 5-at: `in-data` mbetet jashtë se kontrolli i automatizimit e
+    la të pasigurt, `Computer Service Studio` s'ka njeri me emër. Mbeten
+    **3 firma me 4 njerëz** pa email: Ingo Marcel Hoenen (COMPUTATRUM,
+    40668 Meerbusch), Florian Müller (44267 Dortmund), Bernd Gierden dhe
+    Jens Müller (BITNET EDV, 45279 Essen). Asnjëri nuk është pyetur kurrë
+    te Dropcontact-i dhe asnjë domain nuk është catch-all — pra 4 kredite
+    nëse pyeten. **Pritet fjala e Dafinës.**
+  - Baza pas gjykimit: pa gjykim 66 → **11**, vendimmarrës 1.255 → 1.259,
+    kampagnenfähig mbetet 449 (email të rinj s'ka ende).
+  - Edhe një herë e njëjta gjë që doli më 04.09: nga 55 firma Gelbe
+    Seiten, 5 kalojnë profilin dhe zero sjellin kontakt pa pagesë të re.
+- **29.09.2026 — Zona 45 (Essen, Gelsenkirchen) e gatshme: 36 kontakte.**
+  Lista: `IT-Liste-Emails-Zona45-FERTIG-20260929-1516.xlsx`; Excel-i i
+  përbashkët: `IT-Liste-Emails-Zonat-40-49-20260929-1517.xlsx` (177 kontakte).
+  - **Apify:** Dafina tha "po, sot": kufiri 19 → 27 $, vrapimi, pastaj
+    prapë 19 $ (i verifikuar). Nisja e parë u refuzua sërish me 403,
+    sepse kufiri i ri nuk kishte hyrë ende në fuqi; pas dy minutash e
+    gjysmë u nis. Shtatori mbyllet me **25,42 $**, pra 6,42 $ mbi 19 $.
+  - 45 kode (Essen 32, Gelsenkirchen 13). Dy rrathë: Essen 10 km,
+    Gelsenkirchen 9,5. Një rreth i vetëm do të kërkonte 17 km dhe do të
+    paguante 816 km² hartë në vend të 598, pjesën më të madhe jashtë
+    zonës. `maps_dazu`: 40 vende tashmë të paguara (30 nga zona 40, 10
+    nga zona 44).
+  - Maps: 799 vende për **2,40 $**, 564 brenda zonës (71%). OSM 22.
+    Gjithsej 599 firma (551 të reja), 72 të pranueshme, 54 me
+    vendimmarrës. AI 0,58 $ (1.036 thirrje).
+  - Dropcontact: 49 të pyetur, **35 email (71%)** plus 5 falas nga
+    regjistri; 6 adresa catch-all të paguara që nuk dërgohen (fleta
+    "Bezahlt, nicht versandfähig"). Kreditet 220 → 189 te leximi i
+    fundit; batch-i i vogël i raundit 2 numërohet te pyetja e radhës.
+  - Lista: 36 kontakte, 19 me pozitë. Katër persona dolën se janë tashmë
+    në zona më të vogla (Kovtun, Block, Faktorov, Homann).
+  - Kontrolli: 3 gjetje, të gjitha email me një domain të dytë të së
+    njëjtës firmë (boesner.eu/.biz, systemhausruhr.de/shr.nrw,
+    b-technics.com/.de) — asgjë për të ndrequr.
+    `Listen-Pruefbericht-20260929-1519.xlsx`.
+  - Baza: 12.968 firma, 1.255 vendimmarrës, **449** kampanjefähig.
+  - **Rendi i hapave — rindërtimi i bazës bëhet i fundit.** Më 29.09 e
+    rindërtova bazën 15:12, kurse Dropcontact-i i zonës 45 shkroi 15:16.
+    Prandaj baza tregoi vetëm 1 email për zonën 45 (dhe 414 kampanjefähig)
+    derisa u rindërtua prapë: tash 36 dhe 449. Lista ishte e saktë gjithë
+    kohën. `zonen-komplett.sh` mbaron te raporti i burimeve; Dropcontact-i,
+    lista dhe `python -m pipeline master-db` bëhen pas tij, me atë radhë.
+- **29.09.2026 — Zona 44 (Dortmund, Bochum) e gatshme: 28 kontakte.**
+  Zona 43 nuk ekziston: asnjë kod postar gjerman s'fillon me 43 (as
+  regjistri, as lista e Oliverit). Lista:
+  `IT-Liste-Emails-Zona44-FERTIG-20260929-1430.xlsx`; Excel-i i përbashkët:
+  `IT-Liste-Emails-Zonat-40-49-20260929-1431.xlsx` (141 kontakte).
+  - **Apify:** Dafina tha "po, sot": kufiri 19 → 24 $, kërkimi, pastaj
+    prapë 19 $ (i verifikuar). Nisja e parë u refuzua me 403, pa asnjë
+    vrapim e pa pagesë. Me gjasë kufiri i ri s'kishte hyrë ende në fuqi,
+    sepse kishte kaluar vetëm një minutë; pas dy minutash u nis.
+    Shtatori mbyllet me **23,02 $**, pra 4,02 $ mbi 19 $ (zonat 42 e 44).
+  - **Siguria:** gabimi 403 e shkroi çelësin e Apify-t në log, sepse
+    `zonen-maps.py` e dërgonte në URL. Tash çelësi shkon në header, dhe
+    refuzimi shkruan arsyen e Apify-t. Log-u u mbishkrua. Çelësi u shfaq
+    edhe në bisedë — Dafina vendos a ndërrohet. E hapur: e njëjta gjë
+    (çelësi në URL) te `pipeline/sources/apify_maps.py` dhe
+    `pipeline/sources/gelbe_seiten.py`.
+  - 49 kode (katër kode të veçanta brenda qyteteve mbetën). Rrathët:
+    Dortmund 11 km, Bochum 8,5. Maps: 865 vende për **2,60 $**, 685 brenda
+    zonës (79%); 5 nga 10 fjalë e prekën kufirin 110. OSM 53. Gjithsej 706
+    firma (651 të reja), 48 të pranueshme, 45 me vendimmarrës. AI 0,70 $.
+  - Dropcontact: 28 email nga 42 (67%) + 2 falas (zonat 33, 35); kreditet
+    262 → **231** = 28 email + 3 catch-all. Peter Hansemann drejton dy
+    firma (ICN, adcon) me dy adresa — u pyetën të dyja sipas rregullit
+    (emrat e firmave s'kanë gjë të përbashkët), te lista mbeti një.
+  - Lista: 28 kontakte; Dexter McGinnis (Concat) doli se është te zona
+    33. Kontrolli: 3 email me domain tjetër të së njëjtës firmë, asgjë
+    tjetër. **13 nga 28 rreshta s'e kanë qytetin** (Maps-i s'e dha).
+  - Baza: 12.417 firma, 1.199 vendimmarrës, 387 kampanjefähig.
+- **29.09.2026 — Zona 42 (Wuppertal, Solingen, Remscheid) e gatshme: 41
+  kontakte.** Lista: `IT-Liste-Emails-Zona42-FERTIG-20260929-1402.xlsx`;
+  Excel-i i përbashkët tash: `IT-Liste-Emails-Zonat-40-49-20260929-1403.xlsx`
+  (113 kontakte: 52 + 20 + 41).
+  - **Buxheti i Apify-t:** kishin mbetur 0,62 $ deri më 01.10. Dafina
+    zgjodhi "sot, me kufi më të lartë": kufiri mujor u ngrit përmes API-së
+    nga 19 $ në 23 $, dhe pas kërkimit u kthye në 19 $ (i verifikuar).
+    Harxhimi i shtatorit: 20,43 $, pra 1,43 $ mbi 19 $. Tetori nis më 02.10
+    me 19 $.
+  - 37 kode. 42895 u la jashtë: kodi i vetë bankës Volksbank
+    Remscheid-Solingen, që regjistri e vendos 78 km larg. Tre rrathë:
+    Wuppertal 10 km, Solingen 6, Remscheid 6. `maps_dazu`: vendet e
+    zonës 40 (108 në këtë zonë, 14 prej tyre s'i gjeti kërkimi i ri).
+  - Maps: 682 vende për **2,05 $**, 576 brenda zonës (84%); vetëm 3 nga
+    10 fjalë e prekën kufirin 110. OSM 21 firma. Gjithsej 589 firma (567
+    të reja), 72 të pranueshme, 60 me vendimmarrës. AI 0,58 $.
+  - Dropcontact: 40 email nga 58 (69%) + 2 falas. Kreditet 311 → **262**
+    = 40 email + 9 catch-all (domain-e të reja, tash të mbajtura mend).
+  - Lista: 41 kontakte; Björn Stange (Medialine) doli se është te zona
+    40. **13 nga 41** janë mbi kode që mungonin te lista origjinale
+    (Cronenberg, Ronsdorf, Langerfeld, Solingen-Ohligs/Wald).
+  - Kontrolli: 7 email me domain tjetër të së njëjtës firmë, Schorn IT
+    u përgjigj me HTTP 500. Asnjë dublikatë.
+    `Listen-Pruefbericht-20260929-1402.xlsx`.
+  - Për sy: Datenzeit GmbH (Datenschutz — siguria si thelb?), SIDL
+    (IT + Solar).
+  - Baza: 11.766 firma, 1.151 vendimmarrës, 347 kampanjefähig.
+- **29.09.2026 — Një Excel për çdo dhjetëshe zonash, në një fletë.**
+  Dafina: "me i bo ne nje list te vetme ... prej 40 deri 49 ne nje excel
+  pastaj per 50 deri 59 tjetrin"; pasi pa një fletë për zonë: "boni kejt te
+  nje sheet mos i ndaj hiq". `werkzeuge/zonen-sammelliste.py` (logjika te
+  `pipeline/zone_lists.py`) merr listën përfundimtare më të re të secilës
+  zonë dhe shkruan `IT-Liste-Emails-Zonat-40-49-<koha>.xlsx`: një fletë
+  "Versandfertig", zonat njëra pas tjetrës, kolonat saktësisht si te listat
+  e zonave, në fund kolona "Zona", "Nr" numëron pa ndërprerje.
+  - Vetëm kontaktet që dërgohen. Adresat catch-all ("Bezahlt, nicht
+    versandfähig") dhe "Zur Kontrolle" mbeten te listat e zonave, që një
+    adresë e padërgueshme të mos rrijë mes atyre që dërgohen; shënimet e
+    kontrollit janë gjithsesi te kolona "Hinweis".
+  - Ndalet nëse i njëjti person del te dy zona, ose nëse një listë zone ka
+    kolona të tjera. Listat e zonave nuk preken.
+  - Sot: `IT-Liste-Emails-Zonat-40-49-20260929-1323.xlsx`, 72 kontakte
+    (zona 40: 52, zona 41: 20), të gjitha me email të ndryshëm, rreshtat
+    saktësisht ata të listave të zonave. 50–59 dhe 60–69 dalin kur të ketë
+    lista.
+  - Lëshohet prapë pas çdo zone të re (`zonen-sammelliste.py 40`); del
+    skedar i ri me vulën e kohës.
+  - 5 teste të reja (`tests/test_zone_lists.py`).
+- **29.09.2026 — Dropcontact-i paguhet vetëm për atë që përdoret.**
+  Dafina: "mos te paguj dropcontact per rreshtat pa email". Doli se
+  personi pa email s'kushton gjë (kredita kthehet vetë — e thotë edhe
+  dokumentacioni i tyre, "Pay on Success"). Kushtonin dy gjëra: adresat
+  **catch-all**, që Dropcontact-i i llogarit si të gjetura e ne s'i
+  dërgojmë (8 te zona 40), dhe i njëjti person i pyetur dy herë, sepse
+  firma ka dy faqe në hartë (2 te zona 40). Dafina zgjodhi "kursimet pa
+  rrezik"; rregulli është te `AGENTS.md`.
+  - `pipeline/dropcontact_rounds.py` (i ri): `split_rounds` (një person,
+    dy faqe të së njëjtës firmë → raundi 1 një herë, raundi 2 vetëm nëse
+    s'u gjet), `paid_unusable` (adresat e paguara që s'dërgohen).
+  - Regjistri mban mend domain-et catch-all (nga `paid-not-sendable.json`)
+    dhe lexon edhe `request-id-2.json`. Kush pyet regjistrin — zonat,
+    `lauf`, `schnelllauf`, `grosslauf` — s'paguan më te ato domain-e.
+  - `zona32-dropcontact.py`: lexon së pari falas çdo batch që vrapimi e ka
+    paguar, pastaj raundet; `--nur-bezahlte` rindërton pa mundësi pagese;
+    `--nur-zeigen` tregon kush është paguar tashmë.
+  - Lista përfundimtare ka fletën e tretë "Bezahlt, nicht versandfähig".
+  - Prova: zonat 40 e 41 u rindërtuan me `--nur-bezahlte`, dhe kreditet
+    mbetën 311 para dhe pas. Fleta "Versandfertig" doli e njëjtë rresht
+    për rresht (52 dhe 20). Te zona 40 fleta e re ka 7 adresa catch-all
+    (e teta është Markus Janhsen, që ka email të kontrolluar nga faqja
+    tjetër). Listat e reja: `IT-Liste-Emails-Zona40-FERTIG-20260929-1308.xlsx`
+    dhe `IT-Liste-Emails-Zona41-FERTIG-20260929-1308.xlsx`.
+  - Kreditet sot: **311** (lexuar falas nga Dropcontact-i). Leximi falas
+    i gjendjes: GET i një batch-i të vjetër, ose POST me `{"data": [{}]}`
+    sipas dokumentacionit.
+  - 1.508 teste jeshile (13 të reja: `tests/test_dropcontact_rounds.py`,
+    5 te `test_dropcontact_register.py`, 1 te `test_dropcontact_batch.py`),
+    90 të kaluara.
+  - E hapur: `pipeline/schnelllauf.py` pyet në raundin 2 personin e dytë
+    të së njëjtës firme edhe kur i pari doli catch-all. Brenda një vrapimi
+    regjistri s'e di ende — ndreqet kur ai motor përdoret prapë.
 - **29.09.2026 — Zona 41 (Mönchengladbach, Neuss, Kaarst, Dormagen) e
   gatshme: 20 kontakte.** Lista:
   `IT-Liste-Emails-Zona41-FERTIG-20260929-1135.xlsx` (24 kolonat e njëjta).
@@ -1038,13 +1259,20 @@ vërtetë.
 
 ### Zonat e reja 40–69 (Jira AP-246, "In Progress" që nga 29.09.2026)
 
-Zonat 40 dhe 41 janë gati (shih "Gjendja tash", 29.09). Dafina tha më
-29.09: "vazhdo me tjera kode me radhë" — pra zonat me radhë, njësoj si
-40. Mbeten 18: 42, 44, 45, 47, 48, 50, 51, 52, 53, 55, 60, 63, 64, 65,
-66, 67, 68, 69. **E radhës: zona 42** (Wuppertal, Solingen, Remscheid),
-më së shpejti më 02.10 — Apify ka vetëm 0,62 $ deri më 01.10. Kodet
-vijnë nga `daten/plz-liste-oliver-40-69-corrected.csv`; origjinali
-`daten/plz-liste-oliver-40-69.csv` nuk përdoret më për zonat.
+Zonat 40, 41, 42, 44, 45 dhe 47 janë gati (shih "Gjendja tash"). **Zonat
+43, 46 dhe 49 nuk ekzistojnë te lista e Oliverit** — ajo kërcen 45 → 47;
+mos shto ndonjë pa e pyetur atë. Dafina tha më 29.09: "vazhdo me tjera
+kode me radhë" — pra zonat me radhë, njësoj si 40. Mbeten 14: 48, 50, 51,
+52, 53, 55, 60, 63, 64, 65, 66, 67, 68, 69. **E radhës: zona 48**
+(Münster, 13 kode). Kur ngrihet kufiri i Apify-t, pritet 2–3 minuta para
+nisjes (29.09, dy herë: nisja një minutë pas ngritjes u refuzua me 403).
+**Vendim i Dafinës (29.09.2026): kufiri i Apify-t ngrihet vetëm për një
+vrapim, me fjalën e saj, dhe kthehet menjëherë në 19 $** — jo një tavan
+i përhershëm më i lartë. Pra pyetje çdo herë, para çdo zone.
+Kodet vijnë nga `daten/plz-liste-oliver-40-69-corrected.csv`;
+origjinali `daten/plz-liste-oliver-40-69.csv` nuk përdoret më për zonat.
+Pas çdo zone: `zonen-sammelliste.py 40` (ose 50, 60) për Excel-in e
+përbashkët.
 
 Si shtohet një zonë (si te zonat 40 e 41): skedari i kodeve
 `laeufe/leadquellen/plz-liste-oliver-zona<NR>.txt` nga lista e ndrequr,
@@ -1056,13 +1284,17 @@ vrapim fqinj i ka paguar tashmë brenda zonës), rreshtat te
 burimit te `QUELLE_FIRMA`), pastaj `./werkzeuge/zonen-komplett.sh <NR>`
 (me `MAX_USD=` kur buxheti është i ngushtë), `zona32-dropcontact.py
 --zone=<NR> --nur-zeigen`, pa `--nur-zeigen`, `zona32-itliste-final.py
---zone=<NR>` dhe `listen-pruefung.py`.
+--zone=<NR>`, `listen-pruefung.py`, dhe në fund `zonen-sammelliste.py
+<40|50|60>` për Excel-in e përbashkët të dhjetëshes.
 
 Kosto e matur për zonë qyteti: Apify 1,90–3,20 $, AI rreth 0,50 $,
-Dropcontact rreth 1 kredit për person të pyetur (zona 40: 61 për 73,
-zona 41: deri 33 për 33). Buxheti: Apify 19 $ në muaj (rreth 6 zona),
-Dropcontact rreth 300 kredite (rreth 5–6 zona) — 500-at mujore s'kanë
-ardhur këtë muaj.
+Dropcontact 1 kredit për çdo adresë të kthyer (zona 40: 61 për 53 email
++ 8 catch-all; zona 41: 20 për 20; zona 42: 49 për 40 + 9 catch-all;
+zona 44: 31 për 28 + 3 catch-all). Personi pa email s'kushton gjë.
+Buxheti: Apify 19 $ në muaj (rreth 6 zona; nëse ngrihet kufiri, bëhet me
+API `PUT /v2/users/me/limits` dhe kthehet pas vrapimit), Dropcontact
+**231 kredite** më 29.09 (rreth 5 zona) — 500-at mujore s'kanë ardhur
+këtë muaj.
 
 E hapur, për Dafinën: **plotësia në qytetet e mëdha.** Me kufirin 110
 për fjalë, Maps-i te Düsseldorf u ndal te 9 nga 10 fjalë (te zona 41,
@@ -1071,8 +1303,9 @@ Duisburgu janë po aq të dendur ose më shumë. Më plotë do të thotë kufi
 më i lartë ose qyteti i ndarë në copa, pra më shumë para.
 
 Shënime për zonat që vijnë:
-- Zona 42: pjesë e Solingen-it janë tashmë të paguara te dataset-i i
-  zonës 40 (`apify-ds-5gLzrkb4NPjyijWbG.json`) — t'i jepen si `maps_dazu`.
+- Zonat 45 dhe 47: dataset-i i zonës 40 (`apify-ds-5gLzrkb4NPjyijWbG.json`)
+  ka tashmë 30 vende në kodet e zonës 45 (Essen-Kettwig/Werden) dhe 56 në
+  ato të zonës 47 (Duisburg-Süd) — t'i jepen si `maps_dazu`.
 - Rrathët s'duhet të hyjnë në qytetin e dendur fqinj: rrethi i Neuss-it
   (5,5 km) preku Düsseldorf-Bilk/Oberkassel dhe solli rreth 120 vende
   jashtë zonës. Te qytetet ngjitur (Dortmund–Bochum, Essen–Gelsenkirchen,

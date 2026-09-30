@@ -37,6 +37,25 @@ ANFRAGEN = [
 ]
 
 
+def test_the_raw_rows_of_the_last_batch_stay_readable():
+    """The zone tool needs every row it paid for - also a catch-all address
+    the address check throws away - without asking Dropcontact twice."""
+    session = FakeSession([
+        abgegeben(),
+        fertig_mit(zeile("Anna", "Muster",
+                         email("anna.muster@a.de", "catch-all@pro")))])
+    quelle = DropcontactSource("key", session=session, wartezeit=0,
+                               batch_wartezeit=0)
+
+    request_id, gesendet = quelle.batch_abgeben(ANFRAGEN[:1])
+    treffer = quelle.batch_abholen(request_id, gesendet, 1)
+
+    assert treffer == [None]            # not usable for sending
+    assert quelle.letzte_zeilen[0]["email"][0]["qualification"] == \
+        "catch-all@pro"
+    assert len(session.gets) == 1       # read from the fetch we did anyway
+
+
 def test_eine_anfrage_fuer_die_ganze_liste():
     # Der Sinn des Batches: EIN POST statt drei.
     session = FakeSession([

@@ -114,6 +114,19 @@ ZONEN = {
     "47": {"laeufe": ["zona47-duisburg-2026-09-29",
                       "zona47-overpass-2026-09-29"],
            "lauf": "zona47-dropcontact-2026-09-29"},
+    "48": {"laeufe": ["zona48-muenster-2026-09-30",
+                      "zona48-overpass-2026-09-30"],
+           "lauf": "zona48-dropcontact-2026-09-30"},
+    "49": {"laeufe": ["zona49-osnabrueck-2026-09-30",
+                      "zona49-overpass-2026-09-30"],
+           "lauf": "zona49-dropcontact-2026-09-30"},
+    # The two corners that were never searched (see pipeline/zonen.py).
+    # Their results go into a folder named after the real zone, so the
+    # final list of zone 41 resp. 45 picks them up on its own.
+    "414": {"laeufe": ["zona41-uedesheim-2026-09-30"],
+            "lauf": "zona41-dropcontact-cep-2026-09-30"},
+    "452": {"laeufe": ["zona45-kettwig-2026-09-30"],
+            "lauf": "zona45-dropcontact-cep-2026-09-30"},
 }
 ZONE = "32"
 # --nur-zeigen: tregon ke do ta riperdorte, ke do ta kapercente dhe ke

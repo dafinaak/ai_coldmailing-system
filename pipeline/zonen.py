@@ -179,6 +179,46 @@ ZONEN = {
            "plz": "plz-liste-oliver-zona47.txt",
            "lauf": "zona47-duisburg-2026-09-29",
            "maps_dazu": ["apify-ds-5gLzrkb4NPjyijWbG.json"]},
+    # Zone 48 is Munster alone, 13 codes that all sit inside 7 km of their
+    # middle - one circle is enough, and no earlier run reaches up here,
+    # so there is nothing to reuse.
+    "48": {"kreise": [
+               {"ort": "Münster", "mitte": (51.954, 7.629), "radius": 8}],
+           "stadt": "Münster",
+           "plz": "plz-liste-oliver-zona48.txt",
+           "lauf": "zona48-muenster-2026-09-30"},
+    # Zone 49 is NOT in Oliver's list - neither the original nor the
+    # corrected one holds a single 49xxx code. Dafina asked for it on
+    # 30.09.2026 and chose "Osnabrueck plus the bigger towns": the whole
+    # zone is 119 codes of villages across Emsland and Osnabruecker Land,
+    # so only the five towns are searched, one circle each.
+    "49": {"kreise": [
+               {"ort": "Osnabrück", "mitte": (52.2799, 8.0472), "radius": 8},
+               {"ort": "Melle", "mitte": (52.1992, 8.3463), "radius": 3},
+               {"ort": "Ibbenbüren", "mitte": (52.2634, 7.7234), "radius": 3},
+               {"ort": "Cloppenburg", "mitte": (52.825, 8.0827), "radius": 4.7},
+               {"ort": "Lingen", "mitte": (52.5176, 7.3195), "radius": 3}],
+           "stadt": "Osnabrück",
+           "plz": "plz-liste-oliver-zona49.txt",
+           "lauf": "zona49-osnabrueck-2026-09-30"},
+    # Two corners that were never searched, because the coordinate table
+    # had put their code on the town centre (see 29.09.2026). The circles
+    # of zones 41 and 45 are widened now, but their paid runs were already
+    # over - so each corner gets one small circle of its own instead of
+    # paying for the whole zone a second time. The key is the finer postal
+    # region ("414", "452"), which is what the code itself starts with.
+    "414": {"kreise": [
+                {"ort": "Neuss-Uedesheim", "mitte": (51.1356, 6.7390),
+                 "radius": 2}],
+            "stadt": "Neuss",
+            "plz": "plz-liste-oliver-zona414.txt",
+            "lauf": "zona41-uedesheim-2026-09-30"},
+    "452": {"kreise": [
+                {"ort": "Essen-Kettwig", "mitte": (51.3684, 6.9457),
+                 "radius": 2.5}],
+            "stadt": "Essen",
+            "plz": "plz-liste-oliver-zona452.txt",
+            "lauf": "zona45-kettwig-2026-09-30"},
 }
 
 

@@ -22,6 +22,53 @@ vërtetë.
 
 ## Gjendja tash
 
+- **30.09.2026 — Zona 49 (Osnabrück e qytezat) e gatshme: 17 kontakte.**
+  **Kjo zonë nuk është te lista e Oliverit** — as origjinali i 23.09 as
+  lista e ndrequr nuk kanë asnjë kod 49xxx. U bë me kërkesën e Dafinës.
+  - Zona 49 e plotë ka 119 kode nëpër Emsland e Osnabrücker Land,
+    kryesisht fshatra. Dafina zgjodhi "Osnabrück + qytezat e mëdha": 22
+    kode, pesë rrathë — Osnabrück 8 km, Melle 3, Ibbenbüren 3,
+    Cloppenburg 4,7, Lingen 3. Gjithsej 354 km².
+  - Jashtë mbeti **49195 (Bad Laer)**: tabela e kodeve e quan
+    "Osnabrück", po bie 20,5 km nga qendra — fshat i rrethit, jo i
+    qytetit. **Nordhorn-i nuk hyn fare te zona 49** (është 485xx).
+  - Maps **1,37 $** (kufi i fortë 3 $ për vrapimin), AI 0,43 $. 412 firma
+    (380 të reja), 34 brenda profilit, 28 me person, 0 të lëna jashtë për
+    mungesë kodi postar.
+  - Dropcontact: 25 të pyetur, **17 email (68%)** plus 2 falas, 0
+    catch-all. Kreditet 121 → **96**.
+  - Lista: 17 kontakte, 10 me pozitë (2 dolën se ishin tashmë në një zonë
+    më të vogël). Kontrolli: **zero gjetje**.
+  - Excel-i i përbashkët 40–49: **258 kontakte**
+    (`IT-Liste-Emails-Zonat-40-49-20260930-1333.xlsx`).
+  - Baza: **14.212 firma, 1.397 vendimmarrës, 531 kampagnenfähig.**
+  - **Apify:** kufiri 19 → 33 $ me fjalën e Dafinës, dhe u kthye në 19 $
+    sapo mbaroi Maps-i. Cikli mbylli me **30,68 $** = 19 $ abonimi +
+    11,68 $ shtesë. Deri më 2 tetor nuk shpenzohet më asgjë.
+- **30.09.2026 — Zona 48 (Münster) e gatshme: 23 kontakte, plus dy cepat
+  e mbetur.**
+  - **Zona 48:** 13 kode, një rreth 8 km. Maps **1,46 $**, AI 0,48 $.
+    482 firma (437 të reja), 38 brenda profilit, 33 me person, 0 të lëna
+    jashtë për mungesë kodi postar. Dropcontact: 28 të pyetur, **22 email
+    (79%)** plus 4 falas, 1 catch-all. Lista: 23 kontakte (3 dolën se
+    ishin tashmë në një zonë më të vogël).
+  - **Dy cepat** (vendim i Dafinës, 30.09): u bënë si dy mini-zona me
+    kodin e vet — `414` (Neuss-Uedesheim) dhe `452` (Essen-Kettwig) —
+    që të paguhej vetëm cepi, jo tërë zona prapë. Maps 0,17 $ bashkë
+    (Uedesheim 9 vende, Kettwig 46), AI 0,05 $.
+    - Uedesheim: 1 firmë brenda profilit, 1 person i pyetur, **1 email**
+      → zona 41 shkoi 20 → **21**.
+    - Kettwig: 5 firma brenda profilit, po të 4 personat i kishim tashmë
+      te regjistri — **zero kredite, zero kontakte të reja**. Zona 45
+      mbeti 36.
+    - Rezultatet shkojnë vetvetiu te listat e zonave 41 e 45, sepse
+      dosjet e Dropcontact-it quhen `zona41-dropcontact-cep-...` dhe
+      `zona45-dropcontact-cep-...`.
+  - Excel-i i përbashkët 40–49: **241 kontakte**
+    (`IT-Liste-Emails-Zonat-40-49-20260930-1151.xlsx`).
+  - **Apify:** kufiri 19 → 30 $ me fjalën e Dafinës; gjatë vrapimit doli
+    se kishin mbetur vetëm 0,9 $, prandaj ajo e ngriti në 32 $ që vrapimi
+    të mos pritej në mes. Pas punës u kthye në **19 $**. Cikli: 29,31 $.
 - **30.09.2026 — Zona 47 (Duisburg, Krefeld) e gatshme: 38 kontakte.**
   Lista: `IT-Liste-Emails-Zona47-FERTIG-20260930-0946.xlsx`; Excel-i i
   përbashkët: `IT-Liste-Emails-Zonat-40-49-20260930-0946.xlsx`
@@ -1259,13 +1306,25 @@ vërtetë.
 
 ### Zonat e reja 40–69 (Jira AP-246, "In Progress" që nga 29.09.2026)
 
-Zonat 40, 41, 42, 44, 45 dhe 47 janë gati (shih "Gjendja tash"). **Zonat
-43, 46 dhe 49 nuk ekzistojnë te lista e Oliverit** — ajo kërcen 45 → 47;
-mos shto ndonjë pa e pyetur atë. Dafina tha më 29.09: "vazhdo me tjera
-kode me radhë" — pra zonat me radhë, njësoj si 40. Mbeten 14: 48, 50, 51,
-52, 53, 55, 60, 63, 64, 65, 66, 67, 68, 69. **E radhës: zona 48**
-(Münster, 13 kode). Kur ngrihet kufiri i Apify-t, pritet 2–3 minuta para
+Zonat 40, 41, 42, 44, 45, 47, 48 dhe 49 janë gati (shih "Gjendja tash").
+**Zonat 43 dhe 46 nuk ekzistojnë te lista e Oliverit** — ajo kërcen
+45 → 47; mos shto ndonjë pa e pyetur atë. **Zona 49 as ajo nuk është te
+lista**, po u bë me kërkesën e Dafinës më 30.09, vetëm pesë qytetet.
+Dafina tha më 29.09: "vazhdo me tjera kode me radhë" — pra zonat me
+radhë, njësoj si 40. Mbeten 12: 50, 51, 52, 53, 55, 60, 63, 64, 65, 66,
+67, 68, 69. **E radhës: zona 50** (Köln, 48 kode) — **jo para 2 tetorit**,
+se cikli i Apify-t është te 30,68 $ dhe kufiri u kthye në 19 $. Kur ngrihet kufiri i Apify-t, pritet 2–3 minuta para
 nisjes (29.09, dy herë: nisja një minutë pas ngritjes u refuzua me 403).
+
+**Si paguhet Apify (kontrolluar te llogaria më 30.09.2026).** Plani është
+**STARTER: 19 $ në muaj**, dhe brenda tij hyjnë 19 $ përdorim. Është
+abonim — paguhet çdo cikël edhe po të mos përdoret. Çdo dollar **mbi**
+19 $ faturohet **shtesë**. Pra kur ngremë kufirin, nuk po zhbllokojmë
+kredite të paguara: po pranojmë para shtesë.
+
+**Cikli nuk është muaji i kalendarit.** Te kjo llogari shkon **2 shtator
+→ 1 tetor 23:59**, pra numëruesi fillon nga zero më **2 tetor**, jo më 1.
+(Më herët këtu shkruhej "1 tetor" — gabim i imi, i ndrequr më 30.09.)
 **Vendim i Dafinës (29.09.2026): kufiri i Apify-t ngrihet vetëm për një
 vrapim, me fjalën e saj, dhe kthehet menjëherë në 19 $** — jo një tavan
 i përhershëm më i lartë. Pra pyetje çdo herë, para çdo zone.

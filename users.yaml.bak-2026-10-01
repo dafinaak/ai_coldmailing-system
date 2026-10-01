@@ -1,0 +1,7 @@
+# Nutzerliste fuers Team-Interface. Nicht ins Repo committen.
+# Neuen Hash erzeugen: siehe users.yaml.example
+#
+# Emri shkruhet saktesisht si ketu (shkronja te vogla).
+
+- name: keti
+  passwort_hash: "$2b$12$kPbtYVRdVldVdEZJ1WlMrO8adTkghW9fWBdD0LSu.dCdrvw.1nvny"

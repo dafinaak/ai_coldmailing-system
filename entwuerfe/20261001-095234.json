@@ -1,0 +1,107 @@
+{
+ "kennung": "20261001-095234",
+ "angelegt": "2026-10-01T09:52:34",
+ "schritt": 4,
+ "hoechster_schritt": 4,
+ "daten": {
+  "name": "Lena Hartmann",
+  "sprache": "de",
+  "anzahl_leads": 50,
+  "beschreibung": "",
+  "verkaeufer_url": "https://polepositionautomation.de",
+  "absender_email": "oliver.redschlag@poleposition-automation.net",
+  "referenz_1": "",
+  "referenz_2": "",
+  "anweisungen": "",
+  "usp": [
+   {
+    "titel": "Maßgeschneiderte Automations-Infrastruktur",
+    "erklaerung": "Die Firma entwickelt individuelle Automationslösungen passend zum Kundenbedarf."
+   },
+   {
+    "titel": "Integration bestehender IT-Systeme",
+    "erklaerung": "Vorhandene Systeme wie CRM oder ERP werden integriert, nicht ersetzt."
+   },
+   {
+    "titel": "Automation-as-a-Service (AaaS)",
+    "erklaerung": "Automationslösungen werden als Service angeboten für einfache Nutzung."
+   },
+   {
+    "titel": "Sichere Datenhaltung in Deutschland",
+    "erklaerung": "Daten werden DSGVO-konform und auf deutschen Servern gespeichert."
+   },
+   {
+    "titel": "Breites Leistungsportfolio im Bereich Automatisierung",
+    "erklaerung": "Angebot umfasst Software-Entwicklung, API, Datenanalyse und KI-Implementierung."
+   }
+  ],
+  "icp": {
+   "firmografisch": "aus der Webseite nicht erkennbar",
+   "technografisch": "aus der Webseite nicht erkennbar",
+   "verhalten": "aus der Webseite nicht erkennbar",
+   "entscheider": "aus der Webseite nicht erkennbar"
+  },
+  "ort": "",
+  "radius_km": 50,
+  "dienste": [
+   "Computerservice"
+  ],
+  "ohne_ort_mitnehmen": true,
+  "firmen_quelle": "bestand",
+  "abgewaehlt": [],
+  "firmen_domains": [
+   "bundesweit.digital",
+   "hanovatech.de",
+   "schaper-software.de",
+   "luis.uni-hannover.de",
+   "quant-x-sec.com",
+   "torutec.com",
+   "bfwkom.de",
+   "viorado.de",
+   "bitkollegen.de",
+   "incremental.plus",
+   "atelios.de",
+   "supplyo.de",
+   "cse-it.net",
+   "schauerte-edv-service.business.site",
+   "mollat.de",
+   "ferchau.com",
+   "followerhit.de",
+   "mystical-host.de",
+   "pcservicehannoverdavenstedtmickusschrörder.de",
+   "tutanota.com",
+   "office-solution.de",
+   "innomaticservices.de",
+   "drhellberg.de",
+   "ithilfe-ro.de",
+   "kommunity.net",
+   "synedat.com",
+   "basement.de",
+   "tk-technologies.de",
+   "ext-it.tech",
+   "i-mbu.com",
+   "bsse.eu",
+   "tasteone.eu",
+   "4dview.de",
+   "sorglos-marketing.de",
+   "mbublitz.de",
+   "it-mod.de",
+   "fujitsu.com",
+   "codecivil.de",
+   "hannomax.de",
+   "airitsystems.de",
+   "blankk.it",
+   "itbn-gmbh.de",
+   "burner-it.de",
+   "fourinone-consulting.de",
+   "pryga.de",
+   "wv-s.com",
+   "sits-schramme.de",
+   "buhl.de",
+   "eng-data.de",
+   "addison.de"
+  ],
+  "kunde_datei": "kunden/lena-hartmann-20261001-095234.yaml"
+ },
+ "geaendert": "2026-10-01T09:53:53"
+}

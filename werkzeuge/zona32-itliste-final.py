@@ -63,7 +63,8 @@ ZONEN = {
                        "zonat40-45-nachtrag-2026-09-29"]},
     "41": {"lauf": "zona41-dropcontact-2026-09-29",
            "quellen": ["zona41-moenchengladbach-2026-09-29",
-                       "zona41-overpass-2026-09-29"]},
+                       "zona41-overpass-2026-09-29",
+                       "zona41-uedesheim-2026-09-30"]},
     "42": {"lauf": "zona42-dropcontact-2026-09-29",
            "quellen": ["zona42-wuppertal-2026-09-29",
                        "zona42-overpass-2026-09-29"]},
@@ -74,10 +75,17 @@ ZONEN = {
     "45": {"lauf": "zona45-dropcontact-2026-09-29",
            "quellen": ["zona45-essen-2026-09-29",
                        "zona45-overpass-2026-09-29",
-                       "zonat40-45-nachtrag-2026-09-29"]},
+                       "zonat40-45-nachtrag-2026-09-29",
+                       "zona45-kettwig-2026-09-30"]},
     "47": {"lauf": "zona47-dropcontact-2026-09-29",
            "quellen": ["zona47-duisburg-2026-09-29",
                        "zona47-overpass-2026-09-29"]},
+    "48": {"lauf": "zona48-dropcontact-2026-09-30",
+           "quellen": ["zona48-muenster-2026-09-30",
+                       "zona48-overpass-2026-09-30"]},
+    "49": {"lauf": "zona49-dropcontact-2026-09-30",
+           "quellen": ["zona49-osnabrueck-2026-09-30",
+                       "zona49-overpass-2026-09-30"]},
 }
 
 # Nga cili mjet erdhi vertet secili vrapim. Kjo shkruhet ne kolonen
@@ -116,6 +124,12 @@ QUELLE_FIRMA = {
     "zona45-overpass-2026-09-29": "Overpass/OSM (29.09.2026)",
     "zona47-duisburg-2026-09-29": "Google Maps (Apify, 29.09.2026)",
     "zona47-overpass-2026-09-29": "Overpass/OSM (29.09.2026)",
+    "zona48-muenster-2026-09-30": "Google Maps (Apify, 30.09.2026)",
+    "zona48-overpass-2026-09-30": "Overpass/OSM (30.09.2026)",
+    "zona49-osnabrueck-2026-09-30": "Google Maps (Apify, 30.09.2026)",
+    "zona49-overpass-2026-09-30": "Overpass/OSM (30.09.2026)",
+    "zona41-uedesheim-2026-09-30": "Google Maps (Apify, 30.09.2026)",
+    "zona45-kettwig-2026-09-30": "Google Maps (Apify, 30.09.2026)",
     # These companies were collected earlier by Gelbe Seiten and only
     # judged against the IT profile rule on 29.09.2026.
     "zonat40-45-nachtrag-2026-09-29": "Gelbe Seiten (mbledhje e vjeter, "

@@ -84,14 +84,49 @@ def faqja_hapet(url):
     return "NUK HAPET", gabim if "gabim" in dir() else "pa pergjigje"
 
 
+def plz_passt_zu_zone(plz: str, zona: str) -> bool:
+    """A i takon ky kod postar zones se listes nga erdhi?
+
+    Zona eshte ose nje numer ("40"), ose nje dhjeteshe ("40-49") kur
+    lista eshte e perbashket. Me 07.10.2026, pa kete, dhjeteshja
+    krahasohej si tekst dhe CDO rresht dilte "jashte zones" - 761 gjetje
+    te rreme qe i mbulonin 72 te verteta.
+    """
+    if "-" in zona:
+        nga, deri = zona.split("-", 1)
+        return nga <= plz[:2] <= deri
+    return plz.startswith(zona)
+
+
 def listat_e_fundit():
+    """{zona: skedari} - listat qe duhen kontrolluar, me te rejat.
+
+    Dy formate, sepse te dyja perdoren:
+
+    1. Listat per zone (`...ZonaNN-FERTIG-...`). Cdo zone dyshifrore, jo
+       vetem 3x: me "Zona3*" listat e zonave 40-69 kapercehesin pa fjale
+       (gjetur 29.09.2026 te zona 40).
+    2. Listat e dhjetesheve (`...Zonat-40-49-...`), nje per dekade. Nga
+       07.10.2026 mbahen vetem keto, dhe pa to kontrolli nuk gjente asgje
+       fare per te kontrolluar.
+
+    Kur jane te dyja, zene vend listat per zone - perndryshe i njejti
+    rresht do te kontrollohej dy here dhe do te dilte si dublikate.
+    """
     fs = {}
-    # Every two-digit zone, not only 3x: with "Zona3*" the lists of zones
-    # 40-69 were skipped without a word (found 29.09.2026 at zone 40).
     for f in glob.glob(str(PROJEKT / "IT-Liste-Emails-Zona[0-9][0-9]-FERTIG-*.xlsx")):
         z = os.path.basename(f).split("-")[3][-2:]
         if z not in fs or os.path.getmtime(f) > os.path.getmtime(fs[z]):
             fs[z] = f
+    if fs:
+        return dict(sorted(fs.items()))
+
+    for f in glob.glob(str(PROJEKT / "IT-Liste-Emails-Zonat-[0-9][0-9]-[0-9][0-9]-*.xlsx")):
+        # IT-Liste-Emails-Zonat-40-49-<data>-<ora>.xlsx -> "40-49"
+        teile = os.path.basename(f).split("-")
+        dekade = f"{teile[4]}-{teile[5]}"
+        if dekade not in fs or os.path.getmtime(f) > os.path.getmtime(fs[dekade]):
+            fs[dekade] = f
     return dict(sorted(fs.items()))
 
 
@@ -102,7 +137,17 @@ def main():
     faqet = {}           # domain -> url (per kontrollin e gjalle)
     rreshta = 0
 
-    for z, f in listat_e_fundit().items():
+    listat = listat_e_fundit()
+    if not listat:
+        # Nje kontroll qe nuk gjen asgje nuk guxon te thote "ne rregull":
+        # me 07.10.2026 pikerisht kjo ndodhi pasi listat per zone u
+        # fshine, dhe raporti doli "0 gjetje ne 0 rreshta".
+        raise SystemExit(
+            "NDALIM: asnje liste per kontroll. Pritet ose "
+            "'IT-Liste-Emails-ZonaNN-FERTIG-*.xlsx' ose "
+            "'IT-Liste-Emails-Zonat-NN-NN-*.xlsx' te dosja e projektit.")
+
+    for z, f in listat.items():
         ws = openpyxl.load_workbook(f).active
         for r in range(2, ws.max_row + 1):
             rreshta += 1
@@ -156,7 +201,7 @@ def main():
 
             if not (plz.isdigit() and len(plz) == 5):
                 g("PLZ", "jo 5 shifra", plz)
-            elif not plz.startswith(z):
+            elif not plz_passt_zu_zone(plz, z):
                 g("PLZ", f"jashte zones {z}", plz)
 
             kyc = (person.casefold(), domain(web))

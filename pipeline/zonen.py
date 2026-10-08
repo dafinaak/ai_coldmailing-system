@@ -187,6 +187,125 @@ ZONEN = {
            "stadt": "Münster",
            "plz": "plz-liste-oliver-zona48.txt",
            "lauf": "zona48-muenster-2026-09-30"},
+    # Zones 50, 51 and 52 - the list continues in order from 07.10.2026.
+    # Three is what the 96 remaining Dropcontact credits stretch to.
+    #
+    # Cologne gets two circles for the same reason Duisburg did: three
+    # codes (50765, 50767, 50769 - Chorweiler and around) sit up to 12 km
+    # north of the rest. One circle would have to be 14.3 km and would pay
+    # for 642 km2 of map; a 11 km circle plus a small one over the north
+    # covers the same codes with 412 km2.
+    #
+    # 50919, 50960 and 50962 stay in the code list but steer no circle:
+    # they are Sonder-PLZ (PO box / large customer), so they have no area
+    # on the map at all - the same case as 47118 in Duisburg.
+    "50": {"kreise": [
+               {"ort": "Köln", "mitte": (50.9346, 6.9283), "radius": 11},
+               {"ort": "Köln-Chorweiler", "mitte": (51.023, 6.8764),
+                "radius": 3.5}],
+           "stadt": "Köln",
+           "plz": "plz-liste-oliver-zona50.txt",
+           "lauf": "zona50-koeln-2026-10-07"},
+    # Zone 50's paid run already found 161 places inside zone 51 - the two
+    # halves of Cologne overlap - so its dataset is read here instead of
+    # being bought a second time.
+    "51": {"kreise": [
+               {"ort": "Köln-Ost", "mitte": (50.9268, 7.0447), "radius": 10},
+               {"ort": "Leverkusen", "mitte": (51.0493, 7.0142),
+                "radius": 5.5}],
+           "stadt": "Köln",
+           "plz": "plz-liste-oliver-zona51.txt",
+           "lauf": "zona51-koeln-ost-2026-10-07",
+           # Zweiter Eintrag: der erste Versuch am 07.10.2026 lief in die
+           # Geldbremse (2,50 USD) und gilt damit als unvollstaendig - die
+           # 834 schon bezahlten Orte werden trotzdem mitgelesen, damit
+           # der volle Lauf sie nicht umsonst gemacht hat.
+           "maps_dazu": ["apify-ds-j9JNWNkUuoRczYnwK.json",
+                         "apify-ds-Hy9lX3YjkSRYtBJc4.json"]},
+    "52": {"kreise": [
+               {"ort": "Aachen", "mitte": (50.7677, 6.1029), "radius": 8}],
+           "stadt": "Aachen",
+           "plz": "plz-liste-oliver-zona52.txt",
+           "lauf": "zona52-aachen-2026-10-07"},
+    "53": {"kreise": [
+               {"ort": "Bonn", "mitte": (50.7225, 7.1158), "radius": 9.5}],
+           "stadt": "Bonn",
+           "plz": "plz-liste-oliver-zona53.txt",
+           "lauf": "zona53-bonn-2026-10-07"},
+    # One circle covers Mainz and the single Wiesbaden code with it - the
+    # two centres are 4.5 km apart, so a second circle would only pay for
+    # the same ground twice. 55118 and 55127 sat on the town centre in the
+    # coordinate table; measured against OSM on 07.10.2026 and corrected,
+    # 55127 really lies 4.7 km out. Both stay inside this circle.
+    "55": {"kreise": [
+               {"ort": "Mainz", "mitte": (49.9949, 8.2566), "radius": 7.2}],
+           "stadt": "Mainz",
+           "plz": "plz-liste-oliver-zona55.txt",
+           "lauf": "zona55-mainz-2026-10-07"},
+    # --- Dekade 60-69, alle acht Zonen am 07.10.2026 ---
+    #
+    # Zwei davon werden bewusst in zwei Kreise geteilt, weil ihre Staedte
+    # weit auseinander liegen und ein einzelner Kreis fast nur leeres Feld
+    # dazwischen bezahlen wuerde:
+    #   Zone 65  ein Kreis 1.521 km2  ->  zwei Kreise 325 km2
+    #   Zone 67  ein Kreis 4.072 km2  ->  zwei Kreise 187 km2
+    #
+    # Und zwei Radien sind groesser, als die Koordinatentabelle nahegelegt
+    # haette: in Zone 66 sassen acht Codes und in Zone 68 vier Codes auf
+    # dem Stadtmittelpunkt. Gegen OSM gemessen liegen sie bis 9,0 bzw.
+    # 9,5 km draussen - mit den alten Werten waeren fuenf Codes gar nicht
+    # abgesucht worden (derselbe Fehler wie 41470 und 45219 am 29.09.).
+    "60": {"kreise": [
+               {"ort": "Frankfurt am Main", "mitte": (50.1174, 8.6607),
+                "radius": 13.7}],
+           "stadt": "Frankfurt am Main",
+           "plz": "plz-liste-oliver-zona60.txt",
+           "lauf": "zona60-frankfurt-2026-10-07"},
+    "63": {"kreise": [
+               {"ort": "Offenbach am Main", "mitte": (50.104, 8.765),
+                "radius": 3.9}],
+           "stadt": "Offenbach am Main",
+           "plz": "plz-liste-oliver-zona63.txt",
+           "lauf": "zona63-offenbach-2026-10-07"},
+    "64": {"kreise": [
+               {"ort": "Darmstadt", "mitte": (49.8718, 8.6533),
+                "radius": 7.2}],
+           "stadt": "Darmstadt",
+           "plz": "plz-liste-oliver-zona64.txt",
+           "lauf": "zona64-darmstadt-2026-10-07"},
+    "65": {"kreise": [
+               {"ort": "Wiesbaden", "mitte": (50.0778, 8.2453),
+                "radius": 8.8},
+               {"ort": "Frankfurt-West", "mitte": (50.1034, 8.5569),
+                "radius": 5.1}],
+           "stadt": "Wiesbaden",
+           "plz": "plz-liste-oliver-zona65.txt",
+           "lauf": "zona65-wiesbaden-2026-10-07"},
+    "66": {"kreise": [
+               {"ort": "Saarbrücken", "mitte": (49.2342, 6.9951),
+                "radius": 10.8}],
+           "stadt": "Saarbrücken",
+           "plz": "plz-liste-oliver-zona66.txt",
+           "lauf": "zona66-saarbruecken-2026-10-07"},
+    "67": {"kreise": [
+               {"ort": "Ludwigshafen am Rhein", "mitte": (49.4866, 8.4181),
+                "radius": 5.4},
+               {"ort": "Kaiserslautern", "mitte": (49.4375, 7.7565),
+                "radius": 5.5}],
+           "stadt": "Ludwigshafen am Rhein",
+           "plz": "plz-liste-oliver-zona67.txt",
+           "lauf": "zona67-ludwigshafen-2026-10-07"},
+    "68": {"kreise": [
+               {"ort": "Mannheim", "mitte": (49.492, 8.4991), "radius": 9.7}],
+           "stadt": "Mannheim",
+           "plz": "plz-liste-oliver-zona68.txt",
+           "lauf": "zona68-mannheim-2026-10-07"},
+    "69": {"kreise": [
+               {"ort": "Heidelberg", "mitte": (49.4074, 8.6913),
+                "radius": 4.6}],
+           "stadt": "Heidelberg",
+           "plz": "plz-liste-oliver-zona69.txt",
+           "lauf": "zona69-heidelberg-2026-10-07"},
     # Zone 49 is NOT in Oliver's list - neither the original nor the
     # corrected one holds a single 49xxx code. Dafina asked for it on
     # 30.09.2026 and chose "Osnabrueck plus the bigger towns": the whole

@@ -22,6 +22,134 @@ vërtetë.
 
 ## Gjendja tash
 
+- **07.10.2026 — TË 20 ZONAT E POROSITURA JANË KRYER. 753 kontakte në
+  katër dosje, një për çdo dhjetëshe.**
+
+| dosja | zonat | kontakte |
+|---|---|---|
+| `IT-Liste-Emails-Zonat-30-39-20261007-1108.xlsx` | 32–39 | 248 |
+| `IT-Liste-Emails-Zonat-40-49-20260930-1511.xlsx` | 40–49 | 257 |
+| `IT-Liste-Emails-Zonat-50-59-20261007-1053.xlsx` | 50–55 | 113 |
+| `IT-Liste-Emails-Zonat-60-69-20261007-1456.xlsx` | 60–69 | 135 |
+
+  Dafina kërkoi **vetëm një dosje për dhjetëshe**; listat zonë-për-zonë
+  u fshinë (81 skedarë, shumica në git, pra të rikthyeshme).
+  **Kujdes: kjo fshirje prishi dy porta sigurie** — shih dy shënimet e
+  mëposhtme. Të dyja u ndreqën, po mësimi mbetet: këto dy vegla lexonin
+  listat zonë-për-zonë, dhe pa to **kalonin në heshtje**.
+  - **Dhjetëshja 60–69, tetë zona, 135 kontakte.** Frankfurt 39→35,
+    Mannheim 30→29, Saarbrücken 18, Wiesbaden 22→21, Darmstadt 14,
+    Ludwigshafen/Kaiserslautern 8→7, Heidelberg 7→6, Offenbach 5.
+    Apify 12,9 $, AI 2,6 $. Cikli mbylli me **25,84 $** (19 abonimi +
+    6,84 shtesë, me fjalën e Dafinës; kufiri u kthye në 19 $).
+  - **Zona 65 dhe 67 morën nga dy rrathë**, se qytetet e tyre janë larg:
+    65 → 1.521 km² me një rreth kundrejt **325** me dy; 67 → **4.072**
+    kundrejt **187** (qytetet 48 km larg). Pa këtë do të ishin paguar
+    gati 5.000 km² hartë boshe.
+  - **Tabela e koordinatave ishte seriozisht e gabuar te Saarbrücken e
+    Mannheim.** Tetë kode të 66-ës dhe katër të 68-ës rrinin te një pikë
+    e vetme, 0,5 dhe 1,9 km nga qendra; me OSM dolën deri **9,0** dhe
+    **9,5 km**. Me rrezet e vjetra **pesë kode nuk do të kërkoheshin
+    fare**. U ndreqën 12 koordinata dhe u shtuan 2 që mungonin (60312,
+    60315); rrezet u bënë 10,8 dhe 9,7 km.
+  - **Offenbach-u u shpëtua nga një 502 i Apify-t.** Vegla jonë u rrëzua
+    ndërsa pyeste për gjendjen e vrapimit; vrapimi vetë vazhdoi dhe
+    mbaroi me 301 vende (0,90 $). U mor dataset-i i tij në vend që të
+    rinisej — pa pagesë të dytë. **E metë e mbetur:** funksioni
+    `mit_wiederholung()` te `werkzeuge/zonen-maps.py` nuk e riprovon
+    502-shin, edhe pse quhet "me riprovë". Duhet ndrequr.
+  - **OSM dështoi në heshtje dy herë** (zonat 51 e 63, gabim 504): ktheu
+    0 firma dhe zinxhiri vazhdoi pa u ankuar. Riprovat dhanë 18 dhe 1
+    firmë. Rregulli: kur raporti thotë `overpass found 0`, kontrollo
+    regjistrin për 504 dhe provoje prapë — është falas.
+- **07.10.2026 — Fshirja e listave zonë-për-zonë i la dy porta të verbra.**
+  - **Kontrolli i listave** (`werkzeuge/listen-pruefung.py`) lexonte
+    vetëm `...ZonaNN-FERTIG-*.xlsx`. Pas fshirjes raportoi "0 gjetje në
+    0 rreshta" — porta e cilësisë tha "në rregull" pa kontrolluar asgjë.
+    Tash lexon edhe dosjet e dhjetësheve, dhe **një vrapim pa asnjë
+    listë është gabim, jo gjelbërim i heshtur**.
+    E ruan `tests/test_listen_pruefung_quellen.py` (6 teste).
+  - **Rregulli "një njeri, një email" mes zonave** te
+    `werkzeuge/zona32-itliste-final.py` lexonte po ato skedarë. Pa ta,
+    dhjetëshja 60–69 doli me **nëntë njerëz që rrinin tashmë** te 30–39
+    ose 40–49 (IT-HAUS, Ratiodata, Concat, Medialine, H&G, C.B.C.,
+    Compose IT, KPC, implement-IT). Ata do të kishin marrë të njëjtën
+    ofertë dy herë — gabimi i 17.08.2026. U nxor te
+    `kontakte_kleinerer_zonen()`, që lexon të dyja format; te dosja e
+    dhjetëshes vendos **kodi postar i rreshtit**, jo emri i skedarit,
+    që një zonë të mos i fshijë rreshtat e vet.
+    E ruan `tests/test_itliste_zonen_dublikate.py` (4 teste).
+- **07.10.2026 — DHJETËSHJA 50–59 E PLOTË: 113 kontakte në një dosje të
+  vetme.** `IT-Liste-Emails-Zonat-50-59-20261007-1053.xlsx`.
+  Lista e Oliverit ka vetëm pesë zona në këtë dhjetëshe — 50, 51, 52, 53
+  dhe 55. **54, 56, 57, 58, 59 nuk janë fare në porosi** (zero kode te të
+  dyja listat). Po t'i donim ndonjëherë: 54 = Trier (115 kode), 56 =
+  Koblenz e Neuwied (172), 57 = Siegen e Olpe (66), 58 = Hagen, Witten,
+  Lüdenscheid, Iserlohn (69), 59 = Hamm, Arnsberg, Lippstadt (85) —
+  gjithsej 507 kode, rajone me shumë fshatra, pra si zona 49.
+  - **Zona 53 (Bonn), 20 kode → 18 kontakte.** Një rreth 9,5 km.
+    Maps 1,81 $, AI 0,44 $. 458 firma (422 të reja), 32 brenda profilit,
+    28 me person; OSM dha 32 firma. Dropcontact: 24 të pyetur,
+    **18 email (75%)** plus 3 falas, 2 catch-all. Tre dolën në zona më
+    të vogla.
+  - **Zona 55 (Mainz, Wiesbaden), 13 kode → 24 kontakte.** Një rreth i
+    vetëm 7,2 km mbulon të dyja qytetet — qendrat janë vetëm 4,5 km larg,
+    pra një rreth i dytë do të paguante të njëjtin truall dy herë.
+    Maps 1,34 $, AI 0,33 $. 329 firma (301 të reja), 43 brenda profilit,
+    35 me person; OSM dha 20. Dropcontact: 32 të pyetur,
+    **24 email (75%)** plus 2 falas, 3 catch-all.
+  - **Ndreqje te tabela e koordinatave:** 55118 dhe 55127 rrinin te e
+    njëjta pikë (qendra e Mainz-it) dhe **nuk ishin Sonder-PLZ** — pra
+    kode të vërteta me koordinatë të ngjeshur. U maten me OSM: 55127
+    është vërtet **4,7 km** nga qendra, jo 1,2. Brenda rrethit bien
+    gjithsesi, po koordinatat u ndreqën që kontrollet të mos gënjejnë.
+  - Baza: **16.362 firma, 1.616 vendimmarrës, 642 kampagnenfähig.**
+  - Kontrolli: 8 gjetje te zonat 53 e 55, **të gjitha të provuara si të
+    padëmshme**. Gjashtë janë e njëjta firmë me dy domain. SysTrust:
+    email-i te `amcm.de`, dhe ajo faqe e përmend vetë "systrust" — firma
+    të lidhura, si COMASSIST/ACS. CebiCon: faqja s'u hap për ne, po
+    domain-i ka server web dhe **server poste te Hornetsecurity**, pra
+    firma është gjallë. `Listen-Pruefbericht-20261007-1055.xlsx`.
+  - Testet: **1.461 kaluan, asnjë nuk ra.**
+  - **Apify: 12,77 nga 19 $** — krejt brenda abonimit. Kreditet: 371.
+- **07.10.2026 — Zonat 50, 51 dhe 52 (pjesa e parë e asaj dite).**
+  - **Zona 50 (Köln), 48 kode → 41 kontakte.** Dy rrathë: qyteti 11 km dhe
+    Chorweiler 3,5 km — tri kode bien deri 12 km në veri, dhe një rreth i
+    vetëm 14,3 km do të paguante 642 km² hartë në vend të 412. Tri kode
+    (50919, 50960, 50962) janë **Sonder-PLZ**: s'kanë zonë në hartë, pra
+    nuk e drejtojnë rrethin, po mbeten në listë. Maps 2,75 $, AI 0,68 $.
+    669 firma (616 të reja), 73 brenda profilit, 59 me person.
+    Dropcontact: 56 të pyetur, **41 email (73%)** plus 3 falas, 4 catch-all.
+    Tre persona dolën tashmë në zona më të vogla.
+  - **Zona 51 (Köln-Lindja, Leverkusen), 23 kode → 16 kontakte.** Dy
+    rrathë: 10 km dhe 5,5 km. Maps 2,73 $ (shih më poshtë), AI 0,43 $.
+    441 firma, 40 brenda profilit, 31 me person. Dropcontact: 26 të
+    pyetur, **16 email (62%)** plus 4 falas, 2 catch-all; një person u
+    kapërcye se domain-i i tij dihej catch-all. Katër dolën në zona më
+    të vogla.
+  - **Zona 52 (Aachen), 10 kode → 14 kontakte.** Një rreth 8 km.
+    Maps 1,63 $, AI 0,45 $. 441 firma (413 të reja), 22 brenda profilit,
+    19 me person. Dropcontact: 19 të pyetur, **14 email (74%)**.
+  - Baza: **15.639 firma, 1.532 vendimmarrës, 601 kampagnenfähig.**
+  - Kontrolli i listave: **zona 50 zero gjetje**; 51 dhe 52 nga një, të
+    dyja të provuara si të padëmshme (softservice.de hapet normalisht —
+    ishte ndalesë e çastit; sobex.de dhe sobex-network.de japin faqen e
+    njëjtë). `Listen-Pruefbericht-20261007-1013.xlsx`.
+  - **Apify: 9,62 nga 19 $**, pra brenda abonimit, **pa asnjë dollar
+    shtesë**. Cikli i ri (2 tetor – 1 nëntor) filloi nga zero.
+- **07.10.2026 — Dy mësime nga zonat 50–52, që vlejnë për çdo zonë tjetër.**
+  - **Kufiri i parave për vrapim e shënon zonën si të paplotë.** Zona 51
+    ra në kufirin 2,50 $ që i vura; vegla e riemërtoi `apify-run-id.json`
+    në `apify-run-id-e-paplote.json` dhe zinxhiri u ndal. U rivrapua e
+    plotë me 4 $, dhe **834 vendet e paguara të provës së parë u lidhën
+    si `maps_dazu`** që të mos shkonin dëm. Mësimi: mos vër kufi aq të
+    ngushtë sa të pritet vrapimi — buxheti i Apify-t paguhet gjithsesi
+    me abonim, pra kursimi aty nuk kursen para, veç lë punë përgjysmë.
+  - **Një burim falas mund të dështojë në heshtje.** OSM-ja e zonës 51
+    ktheu **0 firma** sepse serveri dha gabim 504. Zinxhiri vazhdoi pa
+    u ankuar. Riprova e thjeshtë dha **18 firma**, prej tyre 3 brenda
+    profilit. Nga tash: kur raporti i burimeve tregon `overpass found 0`,
+    kontrollo regjistrin për 504/timeout dhe provoje prapë — është falas.
 - **30.09.2026 — Zona 49 (Osnabrück e qytezat) e gatshme: 17 kontakte.**
   **Kjo zonë nuk është te lista e Oliverit** — as origjinali i 23.09 as
   lista e ndrequr nuk kanë asnjë kod 49xxx. U bë me kërkesën e Dafinës.
@@ -1311,10 +1439,30 @@ Zonat 40, 41, 42, 44, 45, 47, 48 dhe 49 janë gati (shih "Gjendja tash").
 45 → 47; mos shto ndonjë pa e pyetur atë. **Zona 49 as ajo nuk është te
 lista**, po u bë me kërkesën e Dafinës më 30.09, vetëm pesë qytetet.
 Dafina tha më 29.09: "vazhdo me tjera kode me radhë" — pra zonat me
-radhë, njësoj si 40. Mbeten 12: 50, 51, 52, 53, 55, 60, 63, 64, 65, 66,
-67, 68, 69. **E radhës: zona 50** (Köln, 48 kode) — **jo para 2 tetorit**,
-se cikli i Apify-t është te 30,68 $ dhe kufiri u kthye në 19 $. Kur ngrihet kufiri i Apify-t, pritet 2–3 minuta para
-nisjes (29.09, dy herë: nisja një minutë pas ngritjes u refuzua me 403).
+radhë, njësoj si 40. **TË 20 ZONAT E POROSITURA JANË KRYER më 07.10.2026.**
+Nuk mbetet asnjë zonë nga lista e Oliverit.
+
+Rezultati: **753 kontakte në katër dosje**, një për çdo dhjetëshe (shih
+"Gjendja tash", 07.10). Dafina kërkoi që të mbahet vetëm një dosje për
+dhjetëshe; listat zonë-për-zonë fshihen pas çdo rindërtimi.
+
+**Çka mund të bëhet më tej, nëse kërkohet:**
+- **Zonat jashtë porosisë.** Lista e Oliverit ka 20 zona; mungojnë 43,
+  46, 49, 54, 56, 57, 58, 59, 61, 62. Zona 49 u bë me kërkesë të
+  Dafinës më 30.09. Të tjerat do të ishin: 54 Trier, 56 Koblenz e
+  Neuwied, 57 Siegen e Olpe, 58 Hagen e Iserlohn, 59 Hamm e Arnsberg —
+  gjithsej 507 kode, rajone me shumë fshatra. **Nuk nisen pa fjalën e
+  Dafinës dhe pa e ditur Oliveri.**
+- **E metë e mbetur:** `mit_wiederholung()` te `werkzeuge/zonen-maps.py`
+  nuk e riprovon një 502 të Apify-t, edhe pse quhet "me riprovë". Më
+  07.10 e rrëzoi zinxhirin te zona 63. Duhet ndrequr me test.
+
+**Buxheti (gjendja më 07.10.2026, mbrëmje).** Apify mbylli ciklin me
+**25,84 nga kufiri 28 $**; kufiri u kthye në **19 $**. Cikli i ri nis më
+2 nëntor. Dropcontact ka rreth **225 kredite**.
+
+Kur ngrihet kufiri i Apify-t, pritet 2–3 minuta para nisjes (29.09, dy
+herë: nisja një minutë pas ngritjes u refuzua me 403).
 
 **Si paguhet Apify (kontrolluar te llogaria më 30.09.2026).** Plani është
 **STARTER: 19 $ në muaj**, dhe brenda tij hyjnë 19 $ përdorim. Është

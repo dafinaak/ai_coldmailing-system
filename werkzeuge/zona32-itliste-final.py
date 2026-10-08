@@ -86,6 +86,45 @@ ZONEN = {
     "49": {"lauf": "zona49-dropcontact-2026-09-30",
            "quellen": ["zona49-osnabrueck-2026-09-30",
                        "zona49-overpass-2026-09-30"]},
+    "50": {"lauf": "zona50-dropcontact-2026-10-07",
+           "quellen": ["zona50-koeln-2026-10-07",
+                       "zona50-overpass-2026-10-07"]},
+    "51": {"lauf": "zona51-dropcontact-2026-10-07",
+           "quellen": ["zona51-koeln-ost-2026-10-07",
+                       "zona51-overpass-2026-10-07"]},
+    "52": {"lauf": "zona52-dropcontact-2026-10-07",
+           "quellen": ["zona52-aachen-2026-10-07",
+                       "zona52-overpass-2026-10-07"]},
+    "53": {"lauf": "zona53-dropcontact-2026-10-07",
+           "quellen": ["zona53-bonn-2026-10-07",
+                       "zona53-overpass-2026-10-07"]},
+    "55": {"lauf": "zona55-dropcontact-2026-10-07",
+           "quellen": ["zona55-mainz-2026-10-07",
+                       "zona55-overpass-2026-10-07"]},
+    "60": {"lauf": "zona60-dropcontact-2026-10-07",
+           "quellen": ["zona60-frankfurt-2026-10-07",
+                       "zona60-overpass-2026-10-07"]},
+    "63": {"lauf": "zona63-dropcontact-2026-10-07",
+           "quellen": ["zona63-offenbach-2026-10-07",
+                       "zona63-overpass-2026-10-07"]},
+    "64": {"lauf": "zona64-dropcontact-2026-10-07",
+           "quellen": ["zona64-darmstadt-2026-10-07",
+                       "zona64-overpass-2026-10-07"]},
+    "65": {"lauf": "zona65-dropcontact-2026-10-07",
+           "quellen": ["zona65-wiesbaden-2026-10-07",
+                       "zona65-overpass-2026-10-07"]},
+    "66": {"lauf": "zona66-dropcontact-2026-10-07",
+           "quellen": ["zona66-saarbruecken-2026-10-07",
+                       "zona66-overpass-2026-10-07"]},
+    "67": {"lauf": "zona67-dropcontact-2026-10-07",
+           "quellen": ["zona67-ludwigshafen-2026-10-07",
+                       "zona67-overpass-2026-10-07"]},
+    "68": {"lauf": "zona68-dropcontact-2026-10-07",
+           "quellen": ["zona68-mannheim-2026-10-07",
+                       "zona68-overpass-2026-10-07"]},
+    "69": {"lauf": "zona69-dropcontact-2026-10-07",
+           "quellen": ["zona69-heidelberg-2026-10-07",
+                       "zona69-overpass-2026-10-07"]},
 }
 
 # Nga cili mjet erdhi vertet secili vrapim. Kjo shkruhet ne kolonen
@@ -128,6 +167,32 @@ QUELLE_FIRMA = {
     "zona48-overpass-2026-09-30": "Overpass/OSM (30.09.2026)",
     "zona49-osnabrueck-2026-09-30": "Google Maps (Apify, 30.09.2026)",
     "zona49-overpass-2026-09-30": "Overpass/OSM (30.09.2026)",
+    "zona50-koeln-2026-10-07": "Google Maps (Apify, 07.10.2026)",
+    "zona50-overpass-2026-10-07": "Overpass/OSM (07.10.2026)",
+    "zona51-koeln-ost-2026-10-07": "Google Maps (Apify, 07.10.2026)",
+    "zona51-overpass-2026-10-07": "Overpass/OSM (07.10.2026)",
+    "zona52-aachen-2026-10-07": "Google Maps (Apify, 07.10.2026)",
+    "zona52-overpass-2026-10-07": "Overpass/OSM (07.10.2026)",
+    "zona53-bonn-2026-10-07": "Google Maps (Apify, 07.10.2026)",
+    "zona53-overpass-2026-10-07": "Overpass/OSM (07.10.2026)",
+    "zona55-mainz-2026-10-07": "Google Maps (Apify, 07.10.2026)",
+    "zona60-frankfurt-2026-10-07": "Google Maps (Apify, 07.10.2026)",
+    "zona60-overpass-2026-10-07": "Overpass/OSM (07.10.2026)",
+    "zona63-offenbach-2026-10-07": "Google Maps (Apify, 07.10.2026)",
+    "zona63-overpass-2026-10-07": "Overpass/OSM (07.10.2026)",
+    "zona64-darmstadt-2026-10-07": "Google Maps (Apify, 07.10.2026)",
+    "zona64-overpass-2026-10-07": "Overpass/OSM (07.10.2026)",
+    "zona65-wiesbaden-2026-10-07": "Google Maps (Apify, 07.10.2026)",
+    "zona65-overpass-2026-10-07": "Overpass/OSM (07.10.2026)",
+    "zona66-saarbruecken-2026-10-07": "Google Maps (Apify, 07.10.2026)",
+    "zona66-overpass-2026-10-07": "Overpass/OSM (07.10.2026)",
+    "zona67-ludwigshafen-2026-10-07": "Google Maps (Apify, 07.10.2026)",
+    "zona67-overpass-2026-10-07": "Overpass/OSM (07.10.2026)",
+    "zona68-mannheim-2026-10-07": "Google Maps (Apify, 07.10.2026)",
+    "zona68-overpass-2026-10-07": "Overpass/OSM (07.10.2026)",
+    "zona69-heidelberg-2026-10-07": "Google Maps (Apify, 07.10.2026)",
+    "zona69-overpass-2026-10-07": "Overpass/OSM (07.10.2026)",
+    "zona55-overpass-2026-10-07": "Overpass/OSM (07.10.2026)",
     "zona41-uedesheim-2026-09-30": "Google Maps (Apify, 30.09.2026)",
     "zona45-kettwig-2026-09-30": "Google Maps (Apify, 30.09.2026)",
     # These companies were collected earlier by Gelbe Seiten and only
@@ -218,6 +283,67 @@ def telefone_waehlen(impressum, firma):
     if firma:
         return "", firma
     return "", (impressum if imp_ok else "")
+
+
+def kontakte_kleinerer_zonen(zone: str) -> set:
+    """{("email", ...), ("person", ...)} nga zonat me numer me te vogel.
+
+    Nje firme me dy zyra bie ne dy lista, dhe personi i saj do te merrte
+    dy email nga e njejta fushate - gabimi i 17.08.2026, tash mes zonave.
+    Rregulli: zona me numrin me te vogel e mban.
+
+    Lexohen DY formate, sepse te dyja perdoren:
+      - listat per zone (`...ZonaNN-FERTIG-...`);
+      - listat e dhjetesheve (`...Zonat-30-39-...`), qe nga 07.10.2026
+        jane te vetmet qe mbahen.
+
+    Pa te dytat kjo porte mbeti bosh pikerisht me 07.10.2026, pasi listat
+    per zone u fshine: dekada 60-69 doli me shtate njerez qe rrinin
+    tashme te 30-39 ose 40-49, dhe asgje nuk u ankua.
+    """
+    import openpyxl
+
+    gjetur = set()
+
+    def lexo(pfad, vetem_me_te_vogla=False):
+        ws = openpyxl.load_workbook(pfad).active
+        for r in range(2, ws.max_row + 1):
+            if vetem_me_te_vogla:
+                # Dhjeteshja permban edhe zonen tone: vendos kodi postar i
+                # rreshtit, jo emri i skedarit, qe zona te mos i fshije
+                # rreshtat e vet.
+                plz = str(ws.cell(r, 11).value or "").strip()
+                if not (len(plz) >= 2 and plz[:2] < zone):
+                    continue
+            email = str(ws.cell(r, 5).value or "").strip().casefold()
+            person = str(ws.cell(r, 3).value or "").strip().casefold()
+            if email:
+                gjetur.add(("email", email))
+            if person:
+                gjetur.add(("person", person))
+
+    for z_tjeter in sorted(ZONEN):
+        if z_tjeter >= zone:
+            break
+        fs = sorted(glob.glob(str(PROJEKT / f"IT-Liste-Emails-Zona{z_tjeter}-FERTIG-*.xlsx")),
+                    key=os.path.getmtime)
+        if fs:
+            lexo(fs[-1])
+
+    # Dhjeteshet, nje e fundit per dekade. Edhe dekada jone lexohet, po
+    # rresht per rresht sipas kodit postar - shih `lexo`.
+    per_dekade = {}
+    for f in glob.glob(str(PROJEKT / "IT-Liste-Emails-Zonat-[0-9][0-9]-[0-9][0-9]-*.xlsx")):
+        teile = os.path.basename(f).split("-")
+        nga = teile[4]
+        if nga > zone:
+            continue
+        if nga not in per_dekade or os.path.getmtime(f) > os.path.getmtime(per_dekade[nga]):
+            per_dekade[nga] = f
+    for f in per_dekade.values():
+        lexo(f, vetem_me_te_vogla=True)
+
+    return gjetur
 
 
 def person_schluessel(firma):
@@ -392,27 +518,11 @@ def bauen():
                 print(f"    jashte zones: {f.get('name')} ({f.get('website')})")
     daten = frei
 
-    # Porta e trete: i njejti njeri ne DY zona. Nje firme me dy zyra bie
-    # ne dy lista, dhe personi i saj do te merrte dy email nga e njejta
-    # fushate - gabimi i 17.08.2026, tash mes zonave. Rregulli: zona me
-    # numrin me te vogel e mban; kjo liste kontrollon listat e fundit te
-    # zonave me numer me te vogel. Kontrolli i 03.09.2026 gjeti 22 te tille.
-    tjeter = set()
-    for z_tjeter in sorted(ZONEN):
-        if z_tjeter >= ZONE:
-            break
-        fs = sorted(glob.glob(str(PROJEKT / f"IT-Liste-Emails-Zona{z_tjeter}-FERTIG-*.xlsx")),
-                    key=os.path.getmtime)
-        if not fs:
-            continue
-        ws_t = openpyxl.load_workbook(fs[-1]).active
-        for r in range(2, ws_t.max_row + 1):
-            email = str(ws_t.cell(r, 5).value or "").strip().casefold()
-            person = str(ws_t.cell(r, 3).value or "").strip().casefold()
-            if email:
-                tjeter.add(("email", email))
-            if person:
-                tjeter.add(("person", person))
+    # Porta e trete: i njejti njeri ne DY zona - shih
+    # kontakte_kleinerer_zonen(). Kontrolli i 03.09.2026 gjeti 22 te
+    # tille; me 07.10.2026 kjo porte mbeti bosh per dekaden 60-69 sepse
+    # lexonte vetem listat per zone, dhe ato ishin fshire.
+    tjeter = kontakte_kleinerer_zonen(ZONE)
     if tjeter:
         para = len(daten)
         mbetur = []

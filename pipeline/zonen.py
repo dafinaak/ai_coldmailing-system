@@ -306,6 +306,73 @@ ZONEN = {
            "stadt": "Heidelberg",
            "plz": "plz-liste-oliver-zona69.txt",
            "lauf": "zona69-heidelberg-2026-10-07"},
+    # --- Rajoni 70-79, dhjete zona qytetesh (08.10.2026) ---
+    #
+    # NUK eshte porosi e Oliverit (lista e tij mbaron te 69); e kerkoi
+    # Dafina. Marrim vetem qytete me >= 4 kode dhe vetem kodet brenda
+    # 10 km nga qendra - me larg eshte qytet tjeter qe tabela e quan me
+    # emrin e qytetit te madh. 42 kode u maten me OSM para se te caktohej
+    # ndonje rreth; 15 koordinata ishin te ngjeshura te qendra e qytetit
+    # dhe u ndreqen, 25 dolen kuti postare pa zone, dhe 2 (76110, 79093)
+    # perputheshin me kode te huaja (Franca, Meksika) - te lena jashte.
+    "70": {"kreise": [
+               {"ort": "Stuttgart", "mitte": (48.7774, 9.178), "radius": 9.3},
+               {"ort": "Esslingen", "mitte": (48.6944, 9.1777), "radius": 6.5}],
+           "stadt": "Stuttgart",
+           "plz": "plz-liste-70-79-zona70.txt",
+           "lauf": "zona70-stuttgart-2026-10-08"},
+    "71": {"kreise": [
+               {"ort": "Ludwigsburg", "mitte": (48.8924, 9.1898), "radius": 3.6},
+               {"ort": "Böblingen", "mitte": (48.6821, 8.9842), "radius": 8.0},
+               {"ort": "Sindelfingen", "mitte": (48.7172, 9.0077), "radius": 3.9}],
+           "stadt": "Ludwigsburg",
+           "plz": "plz-liste-70-79-zona71.txt",
+           "lauf": "zona71-ludwigsburg-2026-10-08"},
+    "72": {"kreise": [
+               {"ort": "Tübingen", "mitte": (48.5241, 9.0581), "radius": 11.8},
+               {"ort": "Reutlingen", "mitte": (48.4942, 9.2125), "radius": 4.5}],
+           "stadt": "Tübingen",
+           "plz": "plz-liste-70-79-zona72.txt",
+           "lauf": "zona72-tuebingen-2026-10-08"},
+    "73": {"kreise": [
+               {"ort": "Göppingen", "mitte": (48.7, 9.6667), "radius": 5.9},
+               {"ort": "Aalen", "mitte": (48.8409, 10.0931), "radius": 9.2},
+               {"ort": "Esslingen am Neckar", "mitte": (48.7394, 9.3061), "radius": 4.4}],
+           "stadt": "Göppingen",
+           "plz": "plz-liste-70-79-zona73.txt",
+           "lauf": "zona73-goeppingen-2026-10-08"},
+    "74": {"kreise": [
+               {"ort": "Heilbronn", "mitte": (49.1624, 9.2175), "radius": 6.3}],
+           "stadt": "Heilbronn",
+           "plz": "plz-liste-70-79-zona74.txt",
+           "lauf": "zona74-heilbronn-2026-10-08"},
+    "75": {"kreise": [
+               {"ort": "Pforzheim", "mitte": (48.8919, 8.6831), "radius": 4.7}],
+           "stadt": "Pforzheim",
+           "plz": "plz-liste-70-79-zona75.txt",
+           "lauf": "zona75-pforzheim-2026-10-08"},
+    "76": {"kreise": [
+               {"ort": "Karlsruhe", "mitte": (49.0078, 8.4043), "radius": 9.7},
+               {"ort": "Baden-Baden", "mitte": (48.7781, 8.1937), "radius": 9.5}],
+           "stadt": "Karlsruhe",
+           "plz": "plz-liste-70-79-zona76.txt",
+           "lauf": "zona76-karlsruhe-2026-10-08"},
+    "77": {"kreise": [
+               {"ort": "Offenburg", "mitte": (48.4639, 7.9438), "radius": 11.1}],
+           "stadt": "Offenburg",
+           "plz": "plz-liste-70-79-zona77.txt",
+           "lauf": "zona77-offenburg-2026-10-08"},
+    "78": {"kreise": [
+               {"ort": "Konstanz", "mitte": (47.6723, 9.181), "radius": 3},
+               {"ort": "Villingen-Schwenningen", "mitte": (48.0622, 8.4406), "radius": 7.3}],
+           "stadt": "Konstanz",
+           "plz": "plz-liste-70-79-zona78.txt",
+           "lauf": "zona78-konstanz-2026-10-08"},
+    "79": {"kreise": [
+               {"ort": "Freiburg im Breisgau", "mitte": (47.999, 7.8327), "radius": 10.1}],
+           "stadt": "Freiburg im Breisgau",
+           "plz": "plz-liste-70-79-zona79.txt",
+           "lauf": "zona79-freiburg-2026-10-08"},
     # Zone 49 is NOT in Oliver's list - neither the original nor the
     # corrected one holds a single 49xxx code. Dafina asked for it on
     # 30.09.2026 and chose "Osnabrueck plus the bigger towns": the whole

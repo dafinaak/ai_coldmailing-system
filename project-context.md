@@ -22,6 +22,40 @@ vërtetë.
 
 ## Gjendja tash
 
+- **08.10.2026 — RAJONI 70-79 (Baden-Württemberg): 145 kontakte, 10 zona.**
+  `IT-Liste-Emails-Zonat-70-79-20261008-1128.xlsx`. **Gjithsej tash 898
+  kontakte në pesë dosje** (30-39: 248, 40-49: 257, 50-59: 113, 60-69: 135,
+  70-79: 145), **898 email të ndryshëm — asnjë dublikatë**.
+  - **NUK është porosi e Oliverit.** Lista e tij mbaron te 69. Këtë e
+    kërkoi Dafina më 08.10. Kodet dolën nga `daten/plz-liste-70-79.csv`,
+    nxjerrë nga tabela gjermane e kodeve — pra çdo kod ekziston vërtet.
+  - **Rregull i ri për qytetet:** rrethi mbulon vetëm kodet brenda **10 km**
+    nga qendra. Tabela i quan "Karlsruhe" edhe qyteza si Bruchsal-i, 17,9 km
+    larg; pa këtë rregull rrethi do të ishte 20 km dhe do të paguante
+    1.266 km² në vend të 295. Kodet e lëna jashtë janë shënuar te çdo listë.
+  - **42 kode u matën me OSM para se të caktohej ndonjë rreth.** 15 koordinata
+    ishin të ngjeshura te qendra e qytetit dhe u ndreqën; 25 dolën kuti
+    postare pa zonë; dhe **2 përputheshin me kode të huaja** — 76110 ra
+    584 km larg (Francë), 79093 plot 9.380 km (Meksikë). Ato dy i lashë
+    jashtë; pa kontroll do të kishin prishur rrathët e Karlsruhe-s e
+    Freiburg-ut.
+  - **Kodet e kutive postare u lanë jashtë listave** (ndryshe nga 40-69, ku
+    i kishte porositur Oliveri). Arsyeja: s'kanë zonë në hartë, pra Maps
+    s'i kthen dot, dhe koordinatat e tyre janë të pasakta — testi e kapi
+    te 71029 (zyrë tatimore) që binte 13,4 km jashtë rrethit.
+  - **Rendimenti është më i ulët se te 40-69.** Karlsruhe: 620 firma → 38
+    brenda profilit (6%), kurse Këlni jepte 11%. Heilbronn: 235 firma → 8
+    me person → **5 kontakte**. Duket se rajoni ka shumë firma softueri e
+    inxhinierie (Bosch, SAP e rrethina), të cilat rregulli ynë i nxjerr
+    jashtë — ne duam mirëmbajtës IT, jo prodhues.
+  - Kontakte për zonë: Karlsruhe 22, Freiburg 19, Stuttgart 18, Offenburg
+    18, Göppingen/Aalen 17, Ludwigsburg/Böblingen 17, Tübingen 12,
+    Konstanz 11, Pforzheim 6, Heilbronn 5.
+  - Baza: **21.852 firma, 2.094 vendimmarrës, 917 kampagnenfähig.**
+  - **Apify: cikli mbylli me 39,60 $** (kufiri u ngrit 19 → 44 $ me fjalën
+    e Dafinës, pastaj u kthye në 19 $). Rajoni kushtoi ~13,8 $, pra rreth
+    20,6 $ shtesë mbi abonimin për tërë ciklin. Kreditet: **58** — mezi
+    mjaftuan; 80-86 nuk niset dot pa rimbushje.
 - **07.10.2026 — TË 20 ZONAT E POROSITURA JANË KRYER. 753 kontakte në
   katër dosje, një për çdo dhjetëshe.**
 

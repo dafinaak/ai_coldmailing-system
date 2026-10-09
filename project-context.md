@@ -22,6 +22,36 @@ vërtetë.
 
 ## Gjendja tash
 
+- **09.10.2026 — RAJONI 80-86 (Bavaria): 76 kontakte, 4 zona.**
+  `IT-Liste-Emails-Zonat-80-89-20261009-0941.xlsx`. **Gjithsej tash 974
+  kontakte në gjashtë dosje**, 974 email të ndryshëm, zero dublikata.
+  - **I tërë rajoni ka vetëm katër qytete me >= 4 kode:** München (82),
+    Augsburg (15), Ingolstadt (5), Rosenheim (4). Dhjetëshet **82 dhe 84
+    s'kanë asnjë** - fshatra. Prandaj dolën 4 zona, jo 10.
+  - **Mynihu është zona "8", jo "80".** Kodet e tij shtrihen nëpër 80xxx,
+    81xxx dhe 85xxx; emri i zonës duhet të jetë fillimi i çdo kodi.
+    Dha **55 kontakte nga 78 të pyetur (71%)** - zona më e pasur e tërë
+    projektit, me 84 vendimmarrës.
+  - Augsburg 15, Rosenheim 6, Ingolstadt **0** (2 persona, asnjë email).
+  - Baza: **22.810 firma, 2.244 vendimmarrës, 994 kampagnenfähig.**
+  - **Apify: cikli mbylli me 47,92 $** (kufiri 19 → 46 → 48 me fjalën e
+    Dafinës, pastaj prapë 19 $). Kreditet: **1.402** - blerja e 1.500-ve
+    kishte hyrë; leximi i 08.10 ishte thjesht para saj.
+- **09.10.2026 — Tri gabime të miat në një ditë, të tria rreth kufijve.**
+  - **Kufijtë e ngushtë e prenë Augsburg-un dy herë** (1,20 dhe 1,50 $).
+    Një vrapim i prerë shënohet i paplotë dhe duhet bërë prapë, pra
+    paguhet dy herë. Herën e tretë nuk pagova: dy dataset-et e paguara
+    kishin **419 vende në 14 nga 15 kodet**, mbulim i mirë, dhe zinxhirin
+    e vazhdova mbi to. Kushtoi 2,7 $ kot. **Mësimi, i shkruar edhe te
+    komentet e `pipeline/zonen.py`: kufiri i ngushtë nuk kursen asgjë.**
+  - **Mbledhësi i dhjetëshes e humbi Mynihun në heshtje.** `newest_per_zone()`
+    kërkonte emra zonash dyshifrorë, dhe `80 <= int("8") <= 89` është
+    false - pra dosja 80-89 doli me **21 kontakte në vend të 76**, pa u
+    ankuar. U ndreq: një emër zone është prefiks kodesh, dhe njëshifrori
+    mbulon tërë dhjetëshen. E ruan
+    `tests/test_zone_lists.py::test_einstellige_zone_gehoert_in_ihre_dekade`.
+  - Të dyja janë e njëjta rrënjë: **diçka dështon pa u ankuar.** Është e
+    treta javë radhazi (OSM-ja me 504, kontrolli me 0 rreshta, tash ky).
 - **08.10.2026 — RAJONI 70-79 (Baden-Württemberg): 145 kontakte, 10 zona.**
   `IT-Liste-Emails-Zonat-70-79-20261008-1128.xlsx`. **Gjithsej tash 898
   kontakte në pesë dosje** (30-39: 248, 40-49: 257, 50-59: 113, 60-69: 135,

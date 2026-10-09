@@ -31,7 +31,21 @@ import openpyxl
 from openpyxl.utils import get_column_letter
 
 CONTACTS = "Versandfertig"
-ZONE_LIST = re.compile(r"^IT-Liste-Emails-Zona(\d{2})-FERTIG-(\d{8}-\d{4})\.xlsx$")
+ZONE_LIST = re.compile(r"^IT-Liste-Emails-Zona(\d{1,2})-FERTIG-(\d{8}-\d{4})\.xlsx$")
+
+
+def _in_dekade(zone: str, start: int) -> bool:
+    """Gehoert diese Zone in die Dekade, die bei `start` beginnt?
+
+    Ein Zonenname ist ein Postleitzahl-Anfang. Zweistellig ("83") heisst
+    genau diese Zone; einstellig ("8") heisst die ganze Dekade - Muenchen
+    bekam am 08.10.2026 den Namen "8", weil seine Codes ueber 80xxx,
+    81xxx und 85xxx laufen. Ohne diesen Fall fehlte es stillschweigend in
+    der Sammelliste 80-89, und zwar die groesste Zone des Projekts.
+    """
+    if len(zone) == 1:
+        return str(start).startswith(zone)
+    return start <= int(zone) <= start + 9
 
 
 def newest_per_zone(folder, start: int) -> dict:
@@ -40,7 +54,7 @@ def newest_per_zone(folder, start: int) -> dict:
     newest = {}
     for path in Path(folder).glob("IT-Liste-Emails-Zona*-FERTIG-*.xlsx"):
         match = ZONE_LIST.match(path.name)
-        if not match or not start <= int(match.group(1)) <= start + 9:
+        if not match or not _in_dekade(match.group(1), start):
             continue
         zone, stamp = match.groups()
         if zone not in newest or stamp > newest[zone][0]:

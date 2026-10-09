@@ -373,6 +373,49 @@ ZONEN = {
            "stadt": "Freiburg im Breisgau",
            "plz": "plz-liste-70-79-zona79.txt",
            "lauf": "zona79-freiburg-2026-10-08"},
+    # --- Rajoni 80-86, kater zona qytetesh (08.10.2026) ---
+    #
+    # NUK eshte porosi e Oliverit; e kerkoi Dafina. I tere rajoni ka
+    # vetem kater qytete me >= 4 kode: Mynihu, Augsburgu, Rosenheim-i
+    # dhe Ingolstadt-i. Dhjeteshet 82 e 84 s'kane asnje - fshatra.
+    #
+    # Mynihu eshte zona "8", jo "80": kodet e tij shtrihen neper 80xxx,
+    # 81xxx dhe 85xxx, dhe emri i zones duhet te jete fillimi i cdo kodi.
+    #
+    # 13 kode u maten me OSM; 11 koordinata ishin te ngjeshura te qendra
+    # (81249 dilte 1,5 km po eshte 13,3 km larg - do te kishte mbetur
+    # jashte rrethit), 1 s'kishte zone, dhe 85770 perputhej me nje kod
+    # 959 km larg - te dy te lene jashte.
+    "8": {"kreise": [
+               {"ort": "München", "mitte": (48.1372, 11.5755), "radius": 15.5}],
+           "stadt": "München",
+           "plz": "plz-liste-80-86-zona8.txt",
+           "lauf": "zona8-muenchen-2026-10-08"},
+    "86": {"kreise": [
+               {"ort": "Augsburg", "mitte": (48.3705, 10.8978), "radius": 8.1}],
+           "stadt": "Augsburg",
+           "plz": "plz-liste-80-86-zona86.txt",
+           "lauf": "zona86-augsburg-2026-10-08",
+           # Prova e pare me 08.10.2026 ra ne kufirin e parave qe
+           # i vumë vete, pra u shenua e paplote. Vendet e paguara
+           # atehere lexohen ketu, qe rivrapimi i plote te mos i
+           # bleje dy here.
+           "maps_dazu": ["apify-ds-1slGjQLL8lFHlmZEU.json"]},
+    "83": {"kreise": [
+               {"ort": "Rosenheim", "mitte": (47.8561, 12.1289), "radius": 5.3}],
+           "stadt": "Rosenheim",
+           "plz": "plz-liste-80-86-zona83.txt",
+           "lauf": "zona83-rosenheim-2026-10-08",
+           # Prova e pare me 08.10.2026 ra ne kufirin e parave qe
+           # i vumë vete, pra u shenua e paplote. Vendet e paguara
+           # atehere lexohen ketu, qe rivrapimi i plote te mos i
+           # bleje dy here.
+           "maps_dazu": ["apify-ds-QtClghytiSbUtTDk6.json"]},
+    "85": {"kreise": [
+               {"ort": "Ingolstadt", "mitte": (48.7665, 11.4258), "radius": 6.5}],
+           "stadt": "Ingolstadt",
+           "plz": "plz-liste-80-86-zona85.txt",
+           "lauf": "zona85-ingolstadt-2026-10-08"},
     # Zone 49 is NOT in Oliver's list - neither the original nor the
     # corrected one holds a single 49xxx code. Dafina asked for it on
     # 30.09.2026 and chose "Osnabrueck plus the bigger towns": the whole

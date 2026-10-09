@@ -104,3 +104,22 @@ def test_one_person_on_two_zone_lists_stops_the_merge(tmp_path):
 
     with pytest.raises(ValueError, match="anna@a.de"):
         merge_zone_lists({"40": a, "41": b}, tmp_path / "out.xlsx")
+
+
+def test_einstellige_zone_gehoert_in_ihre_dekade(tmp_path):
+    """Eine Zone darf auch einstellig heissen - und zaehlt dann ganz.
+
+    München bekam am 08.10.2026 den Namen "8", weil seine Codes ueber
+    80xxx, 81xxx und 85xxx laufen und der Zonenname der Anfang jedes
+    Codes sein muss. Die Dekaden-Sammelliste suchte aber nur zweistellige
+    Namen: 80 <= int("8") <= 89 ist falsch, also fehlte Muenchen - die
+    groesste Zone des ganzen Projekts - stillschweigend in der Liste
+    80-89 (21 statt 76 Kontakte).
+    """
+    for name in ("IT-Liste-Emails-Zona8-FERTIG-20261009-0926.xlsx",
+                 "IT-Liste-Emails-Zona83-FERTIG-20261009-0936.xlsx"):
+        _zone_list(tmp_path / name, [])
+    gefunden = newest_per_zone(tmp_path, 80)
+    assert sorted(gefunden) == ["8", "83"], gefunden
+    # und sie gehoert NICHT in eine fremde Dekade
+    assert "8" not in newest_per_zone(tmp_path, 40)

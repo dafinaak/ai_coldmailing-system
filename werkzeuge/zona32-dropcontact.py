@@ -189,6 +189,18 @@ ZONEN = {
     "79": {"laeufe": ["zona79-freiburg-2026-10-08",
                       "zona79-overpass-2026-10-08"],
            "lauf": "zona79-dropcontact-2026-10-08"},
+    "8": {"laeufe": ["zona8-muenchen-2026-10-08",
+                      "zona8-overpass-2026-10-08"],
+           "lauf": "zona8-dropcontact-2026-10-08"},
+    "83": {"laeufe": ["zona83-rosenheim-2026-10-08",
+                      "zona83-overpass-2026-10-08"],
+           "lauf": "zona83-dropcontact-2026-10-08"},
+    "85": {"laeufe": ["zona85-ingolstadt-2026-10-08",
+                      "zona85-overpass-2026-10-08"],
+           "lauf": "zona85-dropcontact-2026-10-08"},
+    "86": {"laeufe": ["zona86-augsburg-2026-10-08",
+                      "zona86-overpass-2026-10-08"],
+           "lauf": "zona86-dropcontact-2026-10-08"},
     # The two corners that were never searched (see pipeline/zonen.py).
     # Their results go into a folder named after the real zone, so the
     # final list of zone 41 resp. 45 picks them up on its own.

@@ -154,6 +154,48 @@ def _read_json(path: Path):
         return None
 
 
+def fehlende_quellen(leadquellen_dir, ordner_namen) -> list:
+    """Welche dieser Sammel-Ordner fehlen oder haben keine firmen.json?
+
+    Die Zonen-Werkzeuge haben ihre Quell-Ordner fest eingetragen. Faellt
+    einer weg - umbenannt, geloescht, unter neuem Datum neu angelegt -,
+    dann baut das Werkzeug die Liste ohne diese Quelle und sagt nichts.
+    Am 09.10.2026 ist das drei Zonen auf einmal passiert: die
+    OSM-Reparatur legte die Ordner der Zonen 72 und 85 unter dem neuen
+    Datum an, Zone 86 zeigte auf einen Ordner ohne firmen.json. Zone 72
+    verlor dadurch 16 Firmen, Zone 86 ganze 46, und beide Listen sahen
+    fertig aus.
+    """
+    basis = Path(leadquellen_dir)
+    fehlt = []
+    for name in ordner_namen:
+        if _read_json(basis / name / "firmen.json") is None:
+            fehlt.append(name)
+    return fehlt
+
+
+def wiederverwendbar(ordner) -> bool:
+    """Darf dieser fertige Sammel-Ordner als "schon gemacht" gelten?
+
+    Nein, wenn eine Quelle einen Fehler gemeldet hat. Overpass antwortet
+    unter Last mit 500 oder 504 und liefert dabei NULL Firmen, ohne die
+    Kette zu stoppen - der Fehler landet nur in `quellen_fehler`. Der
+    Ordner bleibt mit leerer firmen.json liegen, der naechste Lauf
+    ueberspringt ihn, und die Zone hat fuer immer eine Quelle statt
+    zwei. Nichts beschwert sich.
+
+    Am 09.10.2026 ist das bei den ersten drei mittelgrossen Staedten
+    passiert, bei allen drei beim ersten Versuch; die Zonen 72 und 85
+    sind am 08.10.2026 so halb in die Sammellisten 70-79 und 80-89
+    gekommen und fielen einen Tag lang niemandem auf.
+    """
+    ordner = Path(ordner)
+    bericht = _read_json(ordner / "sammelbericht.json")
+    if _read_json(ordner / "firmen.json") is None or bericht is None:
+        return False
+    return not (bericht.get("quellen_fehler") or {})
+
+
 def zone_enrichment_report(zone, leadquellen_dir=PLZ_ORDNER,
                            daten_dir=None) -> dict:
     """From the companies of one zone down to the e-mails, with the cost.

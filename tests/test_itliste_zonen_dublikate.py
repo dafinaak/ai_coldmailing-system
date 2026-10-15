@@ -91,3 +91,49 @@ def test_in_der_eigenen_dekade_zaehlt_die_zeile_ihre_eigene_plz(tmp_path):
 def test_erste_zone_hat_nichts_zu_vergleichen(tmp_path):
     modul = _werkzeug(tmp_path)
     assert modul.kontakte_kleinerer_zonen("32") == set()
+
+
+def test_dekade_vergleicht_die_zone_der_zeile_nicht_zwei_stellen(tmp_path):
+    """In der Sammelliste entscheidet die Zone der Zeile, nicht ihre
+    ersten zwei Stellen.
+
+    Seit dem 09.10.2026 liegen mehrere Staedte in derselben Dekade und
+    heissen darum drei Stellen lang: Hagen "58", Luedenscheid "585",
+    Iserlohn "586", Arnsberg "59", Hamm "590". Zwei Stellen koennen die
+    nicht auseinanderhalten: fuer Hamm ("590") ergibt Arnsberg (59755)
+    "597" < "590" = falsch, also galt die kleinere Zone als groesser.
+
+    Folge: eine Person, die in Arnsberg und in Hamm sitzt, bleibt auf
+    beiden Listen - und bekaeme dieselbe Kampagne zweimal, genau der
+    Fehler vom 17.08.2026.
+    """
+    pfad = tmp_path / "IT-Liste-Emails-Zonat-50-59-20261010-0900.xlsx"
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.append(["Nr", "Firma", "Person", "Position", "E-Mail", "Anrede",
+               "Hinweis", "Telefon (Person)", "Telefon (Firma)", "Webseite",
+               "PLZ", "Ort"])
+    for nr, (email, plz, ort) in enumerate([
+            ("hagen@f.de", "58089", "Hagen"),
+            ("luedenscheid@f.de", "58507", "Lüdenscheid"),
+            ("iserlohn@f.de", "58636", "Iserlohn"),
+            ("arnsberg@f.de", "59755", "Arnsberg"),
+            ("hamm@f.de", "59063", "Hamm")], 1):
+        ws.append([nr, "F GmbH", f"P {nr}", "", email, "", "", "", "",
+                   "https://f.de", plz, ort])
+    wb.save(pfad)
+
+    modul = _werkzeug(tmp_path)
+    modul.ZONEN = {"58": {}, "585": {}, "586": {}, "59": {}, "590": {}}
+
+    schon = modul.kontakte_kleinerer_zonen("590")
+    assert ("email", "arnsberg@f.de") in schon     # zona 59 < 590
+    assert ("email", "hagen@f.de") in schon        # zona 58 < 590
+    assert ("email", "iserlohn@f.de") in schon     # zona 586 < 590
+    assert ("email", "hamm@f.de") not in schon     # zona 590 = vetja
+
+    # dhe anasjelltas: per Arnsbergun, Hamm-i eshte zone me e madhe
+    schon = modul.kontakte_kleinerer_zonen("59")
+    assert ("email", "hamm@f.de") not in schon
+    assert ("email", "arnsberg@f.de") not in schon
+    assert ("email", "hagen@f.de") in schon

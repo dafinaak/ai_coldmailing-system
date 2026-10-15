@@ -32,7 +32,8 @@ lade_dotenv(PROJEKT / ".env")
 
 from pipeline import zonen  # noqa: E402
 from pipeline.firmen_sammeln import sammeln_bis_ziel  # noqa: E402
-from pipeline.sources.overpass import OverpassQuelle  # noqa: E402
+from pipeline.sources.overpass import OverpassQuelle
+from pipeline.zone_sources import wiederverwendbar  # noqa: E402
 
 DIENSTE = ["IT-Dienstleister", "Computer Services", "IT-Service"]
 
@@ -86,6 +87,18 @@ def main():
     log(f"Gabime burimi: {bericht.get('quellen_fehler')}")
     log(f"U ruajt te: {ziel}")
     log("=" * 62)
+
+    # Overpass kthen 500/504 me ZERO firma pa u ankuar: deri me 09.10.2026
+    # dalja ishte 0, zinxhiri vazhdonte, dhe zona mbetej me nje burim ne
+    # vend te dyve. Zonat 72 dhe 85 hyne ashtu te listat 70-79 e 80-89 me
+    # 08.10 dhe nuk i vuri re asnje. Rimarrja nuk kushton: vrapimi i
+    # paguar i Maps-it ruhet dhe merret serish.
+    if not wiederverwendbar(ziel):
+        sys.exit(
+            f"NDALIM: Overpass deshtoi te zona {nummer} "
+            f"({bericht.get('quellen_fehler')}). Mbledhja eshte gjysmake, "
+            f"pra nuk vazhdohet. Provo prape - vrapimi i paguar i Maps-it "
+            f"ruhet, rimarrja eshte falas.")
 
 
 if __name__ == "__main__":

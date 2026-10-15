@@ -194,3 +194,73 @@ def test_runs_before_the_balance_was_kept_say_so(enrichment, tmp_path):
 
     assert report["credits"] is None
     assert report["credit_runs_unknown"] == 1
+
+
+def test_ein_ordner_mit_quellen_fehler_darf_nicht_wiederverwendet_werden(
+        tmp_path):
+    """Ein Overpass-Ordner, dessen Quelle einen Fehler gemeldet hat, ist
+    keine fertige Sammlung - er darf nicht als "schon gemacht" gelten.
+
+    Overpass antwortet unter Last mit 500 oder 504 und liefert dabei NULL
+    Firmen, ohne die Kette zu stoppen: der Fehler landet nur in
+    `quellen_fehler`. Der Ordner bleibt mit leerer firmen.json liegen, und
+    beim naechsten Lauf wird er uebersprungen - die Zone hat dann fuer
+    immer nur eine Quelle statt zwei, und nichts beschwert sich.
+
+    So ist es am 09.10.2026 bei den ersten drei Staedten passiert (alle
+    drei beim ersten Versuch), und so sind die Zonen 72 und 85 am
+    08.10.2026 halb in die Sammellisten 70-79 und 80-89 gekommen.
+    """
+    from pipeline.zone_sources import wiederverwendbar
+
+    gut = tmp_path / "zona58-overpass-2026-10-09"
+    gut.mkdir()
+    (gut / "firmen.json").write_text("[{}]", encoding="utf-8")
+    (gut / "sammelbericht.json").write_text('{"quellen_fehler": {}}',
+                                            encoding="utf-8")
+    assert wiederverwendbar(gut) is True
+
+    kaputt = tmp_path / "zona590-overpass-2026-10-09"
+    kaputt.mkdir()
+    (kaputt / "firmen.json").write_text("[]", encoding="utf-8")
+    (kaputt / "sammelbericht.json").write_text(
+        '{"quellen_fehler": {"PLZ-Region 59: overpass": "500"}}',
+        encoding="utf-8")
+    assert wiederverwendbar(kaputt) is False
+
+    # ohne Bericht oder ohne Firmen-Datei ist nichts fertig
+    halb = tmp_path / "zona417-overpass-2026-10-09"
+    halb.mkdir()
+    (halb / "firmen.json").write_text("[]", encoding="utf-8")
+    assert wiederverwendbar(halb) is False
+    assert wiederverwendbar(tmp_path / "gibt-es-nicht") is False
+
+
+def test_eine_fehlende_quelle_wird_gemeldet(tmp_path):
+    """Ein Quell-Ordner, der fehlt oder keine firmen.json hat, muss
+    auffallen - er darf nicht still weggelassen werden.
+
+    Die Werkzeuge haben die Ordnernamen fest eingetragen. Am 09.10.2026
+    hat die OSM-Reparatur die Ordner der Zonen 72 und 85 unter dem neuen
+    Datum angelegt und die alten geloescht; Zone 86 zeigte auf einen
+    Ordner ohne firmen.json. Alle drei Listen entstanden darum ohne ihre
+    OSM-Quelle, und nichts hat sich beschwert: Zone 72 verlor 16 Firmen,
+    Zone 86 ganze 46.
+    """
+    from pipeline.zone_sources import fehlende_quellen
+
+    (tmp_path / "zona72-tuebingen-2026-10-08").mkdir()
+    (tmp_path / "zona72-tuebingen-2026-10-08" / "firmen.json").write_text(
+        "[]", encoding="utf-8")
+    leer = tmp_path / "zona86-overpass-2026-10-08"
+    leer.mkdir()          # Ordner da, aber ohne firmen.json
+
+    fehlt = fehlende_quellen(tmp_path, [
+        "zona72-tuebingen-2026-10-08",      # in Ordnung
+        "zona86-overpass-2026-10-08",       # ohne firmen.json
+        "zona72-overpass-2026-10-08",       # gar nicht da
+    ])
+
+    assert fehlt == ["zona86-overpass-2026-10-08",
+                     "zona72-overpass-2026-10-08"]
+    assert fehlende_quellen(tmp_path, ["zona72-tuebingen-2026-10-08"]) == []

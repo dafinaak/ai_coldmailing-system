@@ -229,3 +229,35 @@ def test_leere_liste_kostet_keine_anfrage():
 
     assert quelle.email_bauen_viele([]) == []
     assert session.posts == []
+
+
+def test_ein_502_beim_abholen_wird_wiederholt():
+    """Ein 502 ist die Gateway von Dropcontact, nicht der Batch.
+
+    Der Batch ist zu diesem Zeitpunkt abgegeben und BEZAHLT. Bis zum
+    09.10.2026 flog jeder 5xx sofort als RuntimeError nach oben: die
+    Zonen 590 (Hamm) und 634 (Hanau) verloren so ihr bezahltes Ergebnis,
+    obwohl `request_id` gespeichert war. Netzfehler wurden laengst
+    wiederholt - ein 502 ist dasselbe Problem mit anderer Verpackung.
+    """
+    session = FakeSession([
+        FakeResponse(502, {}, text="Bad Gateway"),
+        fertig_mit(zeile("Anna", "Muster", {"email": "anna@a.de",
+                                            "qualification": "nominative@pro"})),
+    ])
+    quelle = DropcontactSource("k", session=session, batch_wartezeit=0)
+
+    zeilen = quelle.zeilen_holen("abc123")
+
+    assert len(zeilen) == 1
+    assert len(session.gets) == 2, "der zweite Versuch fehlt"
+
+
+def test_ein_404_beim_abholen_stoppt_sofort():
+    """Eine echte Absage wird nicht 60-mal wiederholt - sie wird gemeldet."""
+    session = FakeSession([FakeResponse(404, {}, text="not found")])
+    quelle = DropcontactSource("k", session=session, batch_wartezeit=0)
+
+    with pytest.raises(RuntimeError, match="404"):
+        quelle.zeilen_holen("abc123")
+    assert len(session.gets) == 1

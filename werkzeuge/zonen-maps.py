@@ -112,14 +112,38 @@ def lauf_starten(token, nummer, zone, max_usd=None):
     if max_usd:
         url += f"?maxTotalChargeUsd={max_usd}"
         log(f"    kufiri i parave per kete vrapim: {max_usd} USD")
-    antwort = requests.post(url, json=eingabe(nummer), headers=kopf(token),
-                            timeout=60)
-    if not antwort.ok:
-        # Apify says why in the body (a limit, a disabled feature ...).
-        # The status line alone told nothing on 29.09.2026 (zone 44: 403).
-        sys.exit(f"Apify e refuzoi nisjen: HTTP {antwort.status_code} - "
-                 f"{antwort.text[:500]}")
-    daten = antwort.json()["data"]
+    daten = None
+    for numer in range(1, VERSUCHE_START + 1):
+        try:
+            antwort = requests.post(url, json=eingabe(nummer),
+                                    headers=kopf(token), timeout=60)
+        except (requests.Timeout, requests.ConnectionError) as gabim:
+            stoerung = type(gabim).__name__
+        else:
+            if antwort.ok:
+                daten = antwort.json()["data"]
+                break
+            if antwort.status_code not in STOERUNGEN:
+                # Apify says why in the body (a limit, a disabled feature
+                # ...). The status line alone told nothing on 29.09.2026
+                # (zone 44: 403). Eine Absage wird NICHT wiederholt.
+                sys.exit(f"Apify e refuzoi nisjen: HTTP "
+                         f"{antwort.status_code} - {antwort.text[:500]}")
+            stoerung = f"HTTP {antwort.status_code}"
+        # Stoerung, keine Absage: der Lauf kann trotzdem entstanden sein.
+        schon = laufender_lauf(token)
+        if schon:
+            log(f"    {stoerung} te nisja, po vrapimi u krijua: "
+                f"{schon['id']} - po merret ai")
+            daten = schon
+            break
+        if numer == VERSUCHE_START:
+            sys.exit(f"Apify nuk e nisi vrapimin pas {numer} provash: "
+                     f"{stoerung}")
+        pritje = 10 * numer
+        log(f"    {stoerung} te nisja - prove {numer}/{VERSUCHE_START}, "
+            f"po pres {pritje}s")
+        time.sleep(pritje)
     id_datei.write_text(json.dumps({
         "run_id": daten["id"],
         "dataset_id": daten["defaultDatasetId"],
@@ -127,6 +151,32 @@ def lauf_starten(token, nummer, zone, max_usd=None):
     }, ensure_ascii=False, indent=1), encoding="utf-8")
     log(f"    run_id u ruajt: {daten['id']}")
     return daten["id"]
+
+
+STOERUNGEN = (500, 502, 503, 504)
+VERSUCHE_START = 4
+
+
+def laufender_lauf(token):
+    """Nje vrapim i gjalle i ketij aktori, nese ka.
+
+    Vrapimet e ketij projekti nisen nje nga nje, prandaj nje vrapim qe
+    tash eshte READY ose RUNNING eshte ai qe POST-i i yne e krijoi - edhe
+    kur pergjigjja humbi rrugen. Pa kete pyetje, rimarrja do te nisej
+    vrapim te dyte dhe i njejti qytet do te paguhej dy here.
+    """
+    try:
+        antwort = requests.get(
+            f"https://api.apify.com/v2/acts/{ACTOR}/runs?limit=5&desc=1",
+            headers=kopf(token), timeout=60)
+    except Exception:
+        return None
+    if not antwort.ok:
+        return None
+    for lauf in antwort.json().get("data", {}).get("items", []):
+        if lauf.get("status") in ("READY", "RUNNING"):
+            return lauf
+    return None
 
 
 def kopf(token):

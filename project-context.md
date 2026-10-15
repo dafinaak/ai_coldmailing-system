@@ -22,6 +22,108 @@ vërtetë.
 
 ## Gjendja tash
 
+- **09.10.2026 — QYTETET E MESME: 25 zona të bëra, 1.109 kontakte gjithsej.**
+  Dafina: "vazhdo me qytetet e mesme njehere lej fshatrat", pastaj "Të 25
+  qytetet tash". Gjashtë lista, një për dhjeteshe, me vulën `20261009-1401`:
+  40-49 **280** (ishin 257), 50-59 **174** (113), 60-69 **166** (135), 70-79
+  **145** (145), 80-89 **96** (76), 30-39 248 e paprekur. **1.109 kontakte,
+  1.109 email të ndryshme, zero dublikata.** Baza: 25.123 firma, 2.477
+  vendimmarrës, 1.126 gati për fushatë.
+  - **Kostoja: 18,99 $ Apify dhe 132 kredite Dropcontact** (1.249 mbeten).
+    Kufiri i Apify-t u kthye te 19 $ pas punës, si e ka rregulli. Parashikimi
+    i parë 57 $ ishte i mbivlerësuar: çmimi varet nga numri i vendeve që
+    kthen Maps-i, jo nga sipërfaqja — rreth 0,9 $ për qytet.
+  - Nga 4.684 kodet e pakërkuara të 40000-89999, vendet me >= 4 kode ishin
+    69. Prej tyre **27 grupe kutish postare** (HUK-Coburg, BARMER, zyra
+    tatimore) dhe **14 brenda rrathëve të vrapuar** — mbeten 25 qytete, 116
+    kode. Fshatrat mbeten jashtë me fjalën e Dafinës.
+  - **Rrathët u matën me zonat postare të OSM-së, jo me tabelën e
+    koordinatave:** 37 kode ulen në një pikë të vetme (7 të Limburgut, 6 të
+    Taunussteinit). Limburgu dilte 3 km, është 8,5 km.
+
+### Gjashtë dështime në heshtje, të gjitha të ndrequra me test (09.10.2026)
+
+Të gjitha kishin të njëjtën formë: hapi dështonte, puna vazhdonte, dhe
+rezultati dukej i plotë. Kjo ishte dita e gjashtë e kësaj forme në tri javë.
+
+1. **Emrat e zonave dy-tri shifrorë** (`pipeline/zone_lists.py`): regex-i
+   pranonte 1-2 shifra dhe dhjeteshja krahasohej me `int(zona)`, pra 23 nga
+   25 zonat e re do të binin jashtë listës së bashkuar — si Mynihu më 08.10.
+2. **Emri i zonës nga dy shkronjat e fundit** (`werkzeuge/listen-pruefung.py`):
+   "Zona585" lexohej "85", "Zona8" lexohej "a8".
+3. **Porta e dublikatave krahasonte dy shifra** (`zona32-itliste-final.py`):
+   për Hamm ("590") edhe rreshtat e vet dilnin zonë më e vogël, pra
+   kontaktet e Hamm-it fshiheshin nga lista e Hamm-it; dhe Arnsbergu (597xx)
+   nuk numërohej më i vogël, pra një person në dy qytete merrte dy email.
+   Tash zona e rreshtit nxirret me emrin më të gjatë që i rri në fillim.
+4. **Overpass 500/504 me zero firma** (`werkzeuge/zonen-overpass.py`,
+   `zonen-komplett.sh`, `pipeline/zone_sources.wiederverwendbar`): dosja e
+   prishur kapërcehej si "u be tashme". Zonat 72 dhe 85 hynë gjysmake te
+   listat 70-79 e 80-89 më 08.10. Tash vegla del me gabim dhe zinxhiri e
+   rimbledh. Te rimarrja zona 72 dha 16 firma të re.
+5. **Apify 502 te nisja** (`werkzeuge/zonen-maps.py`): nuk rimerrej fare.
+   Tash rimerret deri kater herë, dhe **para çdo rimarrjeje pyetet a u krijua
+   vrapimi** — se përndryshe një POST i përsëritur nis vrapim të dytë dhe i
+   njëjti qytet paguhet dy herë.
+6. **Dropcontact 5xx te marrja e batch-it** (`pipeline/sources/dropcontact.py`):
+   batch-i është paguar në atë moment, dhe një 502 e hidhte rezultatin.
+   Zonat 590 e 634 e humbën kështu. Tash 5xx e 429 rimerren. Dorëzimi
+   mbetet qëllimisht pa rimarrje: një POST i përsëritur mund të krijonte
+   batch të dytë dhe ta paguante dy herë, dhe Dropcontact-i nuk ka rrugë
+   për t'i gjetur kërkesat e pakryera.
+
+**Plus dy porta të re nga gabimet e kësaj dite:**
+
+- **Argumenti i zonës pa `--zone=`** (`tests/test_zone_argument.py`): të dy
+  veglat e lexojnë zonën vetëm nga `--zone=NN` dhe rrinin te "32". Vegla e
+  hapave ia dha numrin si argument i zhveshur, pra 25 vrapime u bënë për
+  Herfordin dhe **21 kredite shkuan dëm**. Tash argumenti i zhveshur ndalet.
+  Lista e zonës 32 u rindërtua e plotë (48), pra zero kontakte të humbura.
+- **Dosja e burimit që mungon** (`pipeline/zone_sources.fehlende_quellen`):
+  emrat e dosjeve rrijnë të shkruar te veglat; ndreqja e OSM-së i krijoi nën
+  datën e re dhe zonat 72, 83, 85, 86 tregonin dosje të vdekura. Të katër
+  listat u ndërtuan pa OSM-në, pa u ankuar asgjë (zona 86 humbi 46 firma).
+  Tash mungesa ndal veglën.
+
+- **09.10.2026 — QYTETET E MESME: 25 zona të përgatitura, hala të papaguara.**
+  Dafina: "vazhdo me qytetet e mesme njehere lej fshatrat". Nga 4.684 kodet e
+  pakërkuara të 40000-89999 u shikuan vendet me >= 4 kode: 69 sosh. Prej tyre
+  **27 ishin grupe kutish postare** (HUK-Coburg, BARMER, zyra tatimore,
+  gjykata) dhe **14 rrijnë brenda rrathëve që i kemi vrapuar** (Oberhausen,
+  Mülheim, Herne, Witten, Bottrop, Moers ...). Mbeten **25 qytete të vërteta,
+  116 kode**.
+  - Konfigurimi është i shkruar te `pipeline/zonen.py`,
+    `werkzeuge/zona32-dropcontact.py` dhe `werkzeuge/zona32-itliste-final.py`,
+    me 25 lista kodesh te `laeufe/leadquellen/plz-liste-qytete-mesme-zona*.txt`.
+    **Asnjë vrapim nuk është nisur** — pritet fjala e Dafinës për paranë.
+  - **Rrathët u matën me zonat postare të OSM-së, jo me tabelën e
+    koordinatave.** 37 nga kodet ulen në një pikë të vetme (shtatë kode të
+    Limburgut në të njëjtën pikë, gjashtë të Taunussteinit). Me tabelën
+    Limburgu dilte rreth 3 km; me OSM-in është 8,5 km. Pra parashikimi i parë
+    3.079 km² (~15 $) ishte i rrejshëm; i vërteti është **9.597 km²**.
+  - **Çmimi nxjerrur nga historia tonë, jo me hamendje:** cikli 2 okt – 9 okt
+    shpenzoi 47,92 $ për 8.005 km² kërkuar → **5,99 $ për 1.000 km²**. Pra
+    25 qytetet ~**57 $**; 15 më të mëdhenjtë ~38 $; 10 më të mëdhenjtë ~26 $.
+  - Ndarja në rrathë të vegjël **e bën më keq** këtu (11.349 km² kundrejt
+    9.597) — kodet vetë janë zona të mëdha fshatare, pra rrathët e vegjël
+    mbivendosen. Një rreth për qytet.
+  - **Tri porta u ndreqën para vrapimit**, se emrat e rinj të zonave kanë dy-tri
+    shifra (Hagen "58", Lüdenscheid "585", Iserlohn "586", Arnsberg "59",
+    Hamm "590"):
+    1. `pipeline/zone_lists.py` — regex-i pranonte 1-2 shifra dhe dhjeteshja
+       krahasohej me `int(zona)`; lista e një zone tri-shifrore binte jashtë
+       listës së bashkuar, njësoj si Mynihu më 08.10.
+    2. `werkzeuge/listen-pruefung.py` — emri i zonës nxirrej me dy shkronjat
+       e fundit: "Zona585" lexohej "85" dhe çdo kod i saj dilte "jashtë zonës";
+       "Zona8" lexohej "a8".
+    3. `werkzeuge/zona32-itliste-final.py` — porta e dublikatave krahasonte
+       vetëm dy shifrat e para të kodit. Për Hamm ("590") edhe rreshtat e vet
+       ("59" < "590") dilnin zonë më e vogël, pra kontaktet e Hamm-it do të
+       fshiheshin nga lista e Hamm-it; dhe Arnsbergu (597xx) nuk numërohej si
+       zonë më e vogël, pra një person në dy qytetet do t'i merrte dy email.
+  - Kontrolluar: **zero** nga 116 kodet rri tashmë në një zonë të vjetër (pa
+    pagesë të dyfishtë), dhe të 116 bien plotësisht brenda rrethit të vet.
+
 - **09.10.2026 — RAJONI 80-86 (Bavaria): 76 kontakte, 4 zona.**
   `IT-Liste-Emails-Zonat-80-89-20261009-0941.xlsx`. **Gjithsej tash 974
   kontakte në gjashtë dosje**, 974 email të ndryshëm, zero dublikata.

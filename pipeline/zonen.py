@@ -448,6 +448,454 @@ ZONEN = {
             "stadt": "Essen",
             "plz": "plz-liste-oliver-zona452.txt",
             "lauf": "zona45-kettwig-2026-09-30"},
+    # Qytetet e mesme, 09.10.2026 ("vazhdo me qytetet e mesme njehere lej
+    # fshatrat"). Nga 4.684 kodet e pakerkuara te 40000-89999 mbeten ato
+    # vende me >= 4 kode: 69 sosh. Prej tyre 27 ishin grupe kutish
+    # postare (HUK-Coburg, BARMER, zyra tatimore) dhe 14 rrijne brenda
+    # rratheve te vrapuar - pra 25 qytete te vertete, 116 kode.
+    #
+    # Rrathet u maten me zonat postare te OSM-se, NUK me tabelen e
+    # koordinatave: 37 nga kodet ulen te nje pike e vetme (shtate kode
+    # te Limburgut te njejta, gjashte te Taunussteinit). Me tabelen
+    # Limburgu dilte 3 km; me OSM-in eshte 8,5 km - pra rrethi i vjeter
+    # do te kishte lene gjysmen e qytetit pa kerkuar. E gjithe fushata
+    # dilte 3.079 km2 (~15 $) me tabelen, dhe 9.597 km2 (~57 $) me OSM.
+    #
+    # Emrat kane dy-tri shifra, sepse emri i zones duhet te jete fillimi
+    # i cdo kodi te vet dhe disa qytete rrijne ne te njejten dhjeteshe:
+    # Hagen "58", Luedenscheid "585", Iserlohn "586", Arnsberg "59",
+    # Hamm "590", Koblenz "560", Neuwied "565".
+    "417": {"kreise": [
+                {"ort": "Viersen", "mitte": (51.2694, 6.361),
+                 "radius": 10.2}],
+            "stadt": "Viersen",
+            "plz": "plz-liste-qytete-mesme-zona417.txt",
+            "lauf": "zona417-viersen-2026-10-09"},
+    "425": {"kreise": [
+                {"ort": "Velbert", "mitte": (51.3371, 7.0842),
+                 "radius": 8.9}],
+            "stadt": "Velbert",
+            "plz": "plz-liste-qytete-mesme-zona425.txt",
+            "lauf": "zona425-velbert-2026-10-09"},
+    "445": {"kreise": [
+                {"ort": "Castrop-Rauxel", "mitte": (51.5732, 7.3072),
+                 "radius": 8.5}],
+            "stadt": "Castrop-Rauxel",
+            "plz": "plz-liste-qytete-mesme-zona445.txt",
+            "lauf": "zona445-castrop-rauxel-2026-10-09"},
+    "456": {"kreise": [
+                {"ort": "Recklinghausen", "mitte": (51.6021, 7.2155),
+                 "radius": 9.0}],
+            "stadt": "Recklinghausen",
+            "plz": "plz-liste-qytete-mesme-zona456.txt",
+            "lauf": "zona456-recklinghausen-2026-10-09"},
+    "464": {"kreise": [
+                {"ort": "Wesel", "mitte": (51.67, 6.587),
+                 "radius": 12.0}],
+            "stadt": "Wesel",
+            "plz": "plz-liste-qytete-mesme-zona464.txt",
+            "lauf": "zona464-wesel-2026-10-09"},
+    "476": {"kreise": [
+                {"ort": "Kevelaer", "mitte": (51.59, 6.2675),
+                 "radius": 11.8}],
+            "stadt": "Kevelaer",
+            "plz": "plz-liste-qytete-mesme-zona476.txt",
+            "lauf": "zona476-kevelaer-2026-10-09"},
+    "523": {"kreise": [
+                {"ort": "Düren", "mitte": (50.7993, 6.462),
+                 "radius": 9.6}],
+            "stadt": "Düren",
+            "plz": "plz-liste-qytete-mesme-zona523.txt",
+            "lauf": "zona523-duren-2026-10-09"},
+    "542": {"kreise": [
+                {"ort": "Trier", "mitte": (49.7779, 6.6495),
+                 "radius": 12.8}],
+            "stadt": "Trier",
+            "plz": "plz-liste-qytete-mesme-zona542.txt",
+            "lauf": "zona542-trier-2026-10-09"},
+    "560": {"kreise": [
+                {"ort": "Koblenz", "mitte": (50.3463, 7.5873),
+                 "radius": 10.0}],
+            "stadt": "Koblenz",
+            "plz": "plz-liste-qytete-mesme-zona560.txt",
+            "lauf": "zona560-koblenz-2026-10-09"},
+    "565": {"kreise": [
+                {"ort": "Neuwied", "mitte": (50.4603, 7.4819),
+                 "radius": 10.1}],
+            "stadt": "Neuwied",
+            "plz": "plz-liste-qytete-mesme-zona565.txt",
+            "lauf": "zona565-neuwied-2026-10-09"},
+    "570": {"kreise": [
+                {"ort": "Siegen", "mitte": (50.8814, 8.0248),
+                 "radius": 12.1}],
+            "stadt": "Siegen",
+            "plz": "plz-liste-qytete-mesme-zona570.txt",
+            "lauf": "zona570-siegen-2026-10-09"},
+    "58": {"kreise": [
+                {"ort": "Hagen", "mitte": (51.3417, 7.4874),
+                 "radius": 12.2}],
+            "stadt": "Hagen",
+            "plz": "plz-liste-qytete-mesme-zona58.txt",
+            "lauf": "zona58-hagen-2026-10-09"},
+    "585": {"kreise": [
+                {"ort": "Lüdenscheid", "mitte": (51.2129, 7.6361),
+                 "radius": 10.1}],
+            "stadt": "Lüdenscheid",
+            "plz": "plz-liste-qytete-mesme-zona585.txt",
+            "lauf": "zona585-ludenscheid-2026-10-09"},
+    "586": {"kreise": [
+                {"ort": "Iserlohn", "mitte": (51.3877, 7.6646),
+                 "radius": 12.3}],
+            "stadt": "Iserlohn",
+            "plz": "plz-liste-qytete-mesme-zona586.txt",
+            "lauf": "zona586-iserlohn-2026-10-09"},
+    "59": {"kreise": [
+                {"ort": "Arnsberg", "mitte": (51.423, 8.0371),
+                 "radius": 16.0}],
+            "stadt": "Arnsberg",
+            "plz": "plz-liste-qytete-mesme-zona59.txt",
+            "lauf": "zona59-arnsberg-2026-10-09"},
+    "590": {"kreise": [
+                {"ort": "Hamm", "mitte": (51.6612, 7.8361),
+                 "radius": 14.5}],
+            "stadt": "Hamm",
+            "plz": "plz-liste-qytete-mesme-zona590.txt",
+            "lauf": "zona590-hamm-2026-10-09"},
+    "634": {"kreise": [
+                {"ort": "Hanau", "mitte": (50.1354, 8.9454),
+                 "radius": 10.3}],
+            "stadt": "Hanau",
+            "plz": "plz-liste-qytete-mesme-zona634.txt",
+            "lauf": "zona634-hanau-2026-10-09"},
+    "637": {"kreise": [
+                {"ort": "Aschaffenburg", "mitte": (49.9707, 9.1591),
+                 "radius": 9.1}],
+            "stadt": "Aschaffenburg",
+            "plz": "plz-liste-qytete-mesme-zona637.txt",
+            "lauf": "zona637-aschaffenburg-2026-10-09"},
+    "645": {"kreise": [
+                {"ort": "Groß-Gerau", "mitte": (49.9145, 8.4777),
+                 "radius": 8.9}],
+            "stadt": "Groß-Gerau",
+            "plz": "plz-liste-qytete-mesme-zona645.txt",
+            "lauf": "zona645-gro-gerau-2026-10-09"},
+    "652": {"kreise": [
+                {"ort": "Taunusstein", "mitte": (50.1575, 8.1706),
+                 "radius": 10.0}],
+            "stadt": "Taunusstein",
+            "plz": "plz-liste-qytete-mesme-zona652.txt",
+            "lauf": "zona652-taunusstein-2026-10-09"},
+    "653": {"kreise": [
+                {"ort": "Eltville am Rhein", "mitte": (50.05, 8.0806),
+                 "radius": 8.6}],
+            "stadt": "Eltville am Rhein",
+            "plz": "plz-liste-qytete-mesme-zona653.txt",
+            "lauf": "zona653-eltville-am-rhein-2026-10-09"},
+    "655": {"kreise": [
+                {"ort": "Limburg an der Lahn", "mitte": (50.4014, 8.0704),
+                 "radius": 8.5}],
+            "stadt": "Limburg an der Lahn",
+            "plz": "plz-liste-qytete-mesme-zona655.txt",
+            "lauf": "zona655-limburg-an-der-lahn-2026-10-09"},
+    "675": {"kreise": [
+                {"ort": "Worms", "mitte": (49.6613, 8.3422),
+                 "radius": 12.7}],
+            "stadt": "Worms",
+            "plz": "plz-liste-qytete-mesme-zona675.txt",
+            "lauf": "zona675-worms-2026-10-09"},
+    "882": {"kreise": [
+                {"ort": "Ravensburg", "mitte": (47.7584, 9.5734),
+                 "radius": 10.6}],
+            "stadt": "Ravensburg",
+            "plz": "plz-liste-qytete-mesme-zona882.txt",
+            "lauf": "zona882-ravensburg-2026-10-09"},
+    "890": {"kreise": [
+                {"ort": "Ulm", "mitte": (48.3876, 9.9427),
+                 "radius": 13.2}],
+            "stadt": "Ulm",
+            "plz": "plz-liste-qytete-mesme-zona890.txt",
+            "lauf": "zona890-ulm-2026-10-09"},
+    # Qytetet e mesme, raundi 2 (09.10.2026). Pyetja e Dafines: "a i ke kry
+    # te gjitha zonat ne qytete te mesme" - jo. Prerja e raundit 1 ("4 kode
+    # ose me shume") nuk ishte mase e madhesise: jashte mbeten Lünen
+    # (86.000), Rheine (76.000), Troisdorf (75.000), Landshut (73.000),
+    # Kempten (69.000), kurse brenda hyri Eltville me 17.000. Dhe tri
+    # qytete te listes se raundit 1 - Marl, Schwäbisch Hall, Bergheim -
+    # rreshqiten jashte pa u vene re, se filtri kerkonte 4 kode brenda 10
+    # km nga qendra dhe kodet e tyre shtrihen me larg.
+    #
+    # Ketu hyjne 43 qytete, 106 kode: te gjitha vendet me >= 3 kode jashte
+    # rratheve tane, plus 13 qytete te vertete me 2 kode (Landshut,
+    # Böblingen, Rastatt, Euskirchen ...). Fshatrat - 2.690 vende me nje
+    # kod te vetem - mbeten jashte me fjalen e Dafines.
+    #
+    # Emrat kane deri 4 shifra: dy qytete ndajne shpesh te njejtin fillim
+    # tri-shifror (Bergheim 50126 dhe Kerpen 50169 ndajne "501",
+    # Castrop-Rauxel dhe Lünen ndajne "445"). Emrin e gjate e marrin
+    # qytetet qe e kane, qe emrat e shkurter te mbeten te lire.
+    #
+    # Nente qytete nuk kishin asnje kod me zone postare te OSM-se
+    # (Marl, Bocholt, Böblingen, Biberach ...); rrethi i tyre u mat me
+    # tabelen e koordinatave dhe u mbajt te paku 6 km, se atje pikat
+    # mund te jene te ngjeshura te qendra e qytetit.
+    "4151": {"kreise": [
+                 {"ort": "Grevenbroich", "mitte": (51.0861, 6.6171),
+                  "radius": 11.6}],
+             "stadt": "Grevenbroich",
+             "plz": "plz-liste-qytete-mesme2-zona4151.txt",
+             "lauf": "zona4151-grevenbroich-2026-10-09"},
+    "4453": {"kreise": [
+                 {"ort": "Lünen", "mitte": (51.6153, 7.5051),
+                  "radius": 8.4}],
+             "stadt": "Lünen",
+             "plz": "plz-liste-qytete-mesme2-zona4453.txt",
+             "lauf": "zona4453-lunen-2026-10-09"},
+    "4552": {"kreise": [
+                 {"ort": "Hattingen", "mitte": (51.3676, 7.1826),
+                  "radius": 9.4}],
+             "stadt": "Hattingen",
+             "plz": "plz-liste-qytete-mesme2-zona4552.txt",
+             "lauf": "zona4552-hattingen-2026-10-09"},
+    "457": {"kreise": [
+                 {"ort": "Marl", "mitte": (51.6614, 7.1094),
+                  "radius": 6.0}],
+             "stadt": "Marl",
+             "plz": "plz-liste-qytete-mesme2-zona457.txt",
+             "lauf": "zona457-marl-2026-10-09"},
+    "4628": {"kreise": [
+                 {"ort": "Dorsten", "mitte": (51.7119, 6.991),
+                  "radius": 13.6}],
+             "stadt": "Dorsten",
+             "plz": "plz-liste-qytete-mesme2-zona4628.txt",
+             "lauf": "zona4628-dorsten-2026-10-09"},
+    "4639": {"kreise": [
+                 {"ort": "Bocholt", "mitte": (51.8331, 6.6139),
+                  "radius": 6.0}],
+             "stadt": "Bocholt",
+             "plz": "plz-liste-qytete-mesme2-zona4639.txt",
+             "lauf": "zona4639-bocholt-2026-10-09"},
+    "484": {"kreise": [
+                 {"ort": "Rheine", "mitte": (52.2668, 7.4758),
+                  "radius": 12.7}],
+             "stadt": "Rheine",
+             "plz": "plz-liste-qytete-mesme2-zona484.txt",
+             "lauf": "zona484-rheine-2026-10-09"},
+    "485": {"kreise": [
+                 {"ort": "Nordhorn", "mitte": (52.4436, 7.1011),
+                  "radius": 13.2}],
+             "stadt": "Nordhorn",
+             "plz": "plz-liste-qytete-mesme2-zona485.txt",
+             "lauf": "zona485-nordhorn-2026-10-09"},
+    "4856": {"kreise": [
+                 {"ort": "Steinfurt", "mitte": (52.1378, 7.3583),
+                  "radius": 10.5}],
+             "stadt": "Steinfurt",
+             "plz": "plz-liste-qytete-mesme2-zona4856.txt",
+             "lauf": "zona4856-steinfurt-2026-10-09"},
+    "501": {"kreise": [
+                 {"ort": "Kerpen", "mitte": (50.8737, 6.6774),
+                  "radius": 12.1}],
+             "stadt": "Kerpen",
+             "plz": "plz-liste-qytete-mesme2-zona501.txt",
+             "lauf": "zona501-kerpen-2026-10-09"},
+    "5012": {"kreise": [
+                 {"ort": "Bergheim", "mitte": (50.9689, 6.6653),
+                  "radius": 10.6}],
+             "stadt": "Bergheim",
+             "plz": "plz-liste-qytete-mesme2-zona5012.txt",
+             "lauf": "zona5012-bergheim-2026-10-09"},
+    "5164": {"kreise": [
+                 {"ort": "Gummersbach", "mitte": (51.0297, 7.5744),
+                  "radius": 13.2}],
+             "stadt": "Gummersbach",
+             "plz": "plz-liste-qytete-mesme2-zona5164.txt",
+             "lauf": "zona5164-gummersbach-2026-10-09"},
+    "5222": {"kreise": [
+                 {"ort": "Stolberg (Rheinland)", "mitte": (50.7451, 6.2701),
+                  "radius": 10.8}],
+             "stadt": "Stolberg (Rheinland)",
+             "plz": "plz-liste-qytete-mesme2-zona5222.txt",
+             "lauf": "zona5222-stolberg-rheinland-2026-10-09"},
+    "5252": {"kreise": [
+                 {"ort": "Heinsberg", "mitte": (51.0593, 6.091),
+                  "radius": 12.6}],
+             "stadt": "Heinsberg",
+             "plz": "plz-liste-qytete-mesme2-zona5252.txt",
+             "lauf": "zona5252-heinsberg-2026-10-09"},
+    "538": {"kreise": [
+                 {"ort": "Euskirchen", "mitte": (50.6318, 6.8227),
+                  "radius": 12.7}],
+             "stadt": "Euskirchen",
+             "plz": "plz-liste-qytete-mesme2-zona538.txt",
+             "lauf": "zona538-euskirchen-2026-10-09"},
+    "5384": {"kreise": [
+                 {"ort": "Troisdorf", "mitte": (50.818, 7.146),
+                  "radius": 9.1}],
+             "stadt": "Troisdorf",
+             "plz": "plz-liste-qytete-mesme2-zona5384.txt",
+             "lauf": "zona5384-troisdorf-2026-10-09"},
+    "5554": {"kreise": [
+                 {"ort": "Bad Kreuznach", "mitte": (49.8426, 7.8513),
+                  "radius": 6.0}],
+             "stadt": "Bad Kreuznach",
+             "plz": "plz-liste-qytete-mesme2-zona5554.txt",
+             "lauf": "zona5554-bad-kreuznach-2026-10-09"},
+    "574": {"kreise": [
+                 {"ort": "Olpe", "mitte": (51.0791, 7.876),
+                  "radius": 6.8}],
+             "stadt": "Olpe",
+             "plz": "plz-liste-qytete-mesme2-zona574.txt",
+             "lauf": "zona574-olpe-2026-10-09"},
+    "5942": {"kreise": [
+                 {"ort": "Unna", "mitte": (51.5345, 7.7358),
+                  "radius": 10.2}],
+             "stadt": "Unna",
+             "plz": "plz-liste-qytete-mesme2-zona5942.txt",
+             "lauf": "zona5942-unna-2026-10-09"},
+    "665": {"kreise": [
+                 {"ort": "Neunkirchen/Saar", "mitte": (49.3465, 7.1874),
+                  "radius": 10.3}],
+             "stadt": "Neunkirchen/Saar",
+             "plz": "plz-liste-qytete-mesme2-zona665.txt",
+             "lauf": "zona665-neunkirchen-saar-2026-10-09"},
+    "6695": {"kreise": [
+                 {"ort": "Pirmasens", "mitte": (49.2037, 7.5958),
+                  "radius": 10.5}],
+             "stadt": "Pirmasens",
+             "plz": "plz-liste-qytete-mesme2-zona6695.txt",
+             "lauf": "zona6695-pirmasens-2026-10-09"},
+    "6743": {"kreise": [
+                 {"ort": "Neustadt an der Weinstraße", "mitte": (49.3516, 8.1427),
+                  "radius": 6.0}],
+             "stadt": "Neustadt an der Weinstraße",
+             "plz": "plz-liste-qytete-mesme2-zona6743.txt",
+             "lauf": "zona6743-neustadt-an-der-weinstrae-2026-10-09"},
+    "711": {"kreise": [
+                 {"ort": "Böblingen", "mitte": (48.5244, 8.8431),
+                  "radius": 6.0}],
+             "stadt": "Böblingen",
+             "plz": "plz-liste-qytete-mesme2-zona711.txt",
+             "lauf": "zona711-boblingen-2026-10-09"},
+    "7133": {"kreise": [
+                 {"ort": "Waiblingen", "mitte": (48.8598, 9.3217),
+                  "radius": 7.4}],
+             "stadt": "Waiblingen",
+             "plz": "plz-liste-qytete-mesme2-zona7133.txt",
+             "lauf": "zona7133-waiblingen-2026-10-09"},
+    "724": {"kreise": [
+                 {"ort": "Albstadt", "mitte": (48.2323, 9.0215),
+                  "radius": 6.0}],
+             "stadt": "Albstadt",
+             "plz": "plz-liste-qytete-mesme2-zona724.txt",
+             "lauf": "zona724-albstadt-2026-10-09"},
+    "7248": {"kreise": [
+                 {"ort": "Sigmaringen", "mitte": (48.0049, 9.2422),
+                  "radius": 10.6}],
+             "stadt": "Sigmaringen",
+             "plz": "plz-liste-qytete-mesme2-zona7248.txt",
+             "lauf": "zona7248-sigmaringen-2026-10-09"},
+    "7352": {"kreise": [
+                 {"ort": "Schwäbisch Gmünd", "mitte": (48.7973, 9.8286),
+                  "radius": 14.1}],
+             "stadt": "Schwäbisch Gmünd",
+             "plz": "plz-liste-qytete-mesme2-zona7352.txt",
+             "lauf": "zona7352-schwabisch-gmund-2026-10-09"},
+    "7452": {"kreise": [
+                 {"ort": "Schwäbisch Hall", "mitte": (49.1065, 9.7328),
+                  "radius": 14.0}],
+             "stadt": "Schwäbisch Hall",
+             "plz": "plz-liste-qytete-mesme2-zona7452.txt",
+             "lauf": "zona7452-schwabisch-hall-2026-10-09"},
+    "7643": {"kreise": [
+                 {"ort": "Rastatt", "mitte": (48.867, 8.1902),
+                  "radius": 9.2}],
+             "stadt": "Rastatt",
+             "plz": "plz-liste-qytete-mesme2-zona7643.txt",
+             "lauf": "zona7643-rastatt-2026-10-09"},
+    "7672": {"kreise": [
+                 {"ort": "Germersheim", "mitte": (49.2163, 8.3734),
+                  "radius": 5.9}],
+             "stadt": "Germersheim",
+             "plz": "plz-liste-qytete-mesme2-zona7672.txt",
+             "lauf": "zona7672-germersheim-2026-10-09"},
+    "7931": {"kreise": [
+                 {"ort": "Emmendingen", "mitte": (48.1248, 7.8624),
+                  "radius": 6.6}],
+             "stadt": "Emmendingen",
+             "plz": "plz-liste-qytete-mesme2-zona7931.txt",
+             "lauf": "zona7931-emmendingen-2026-10-09"},
+    "795": {"kreise": [
+                 {"ort": "Lörrach", "mitte": (47.6346, 7.6812),
+                  "radius": 6.9}],
+             "stadt": "Lörrach",
+             "plz": "plz-liste-qytete-mesme2-zona795.txt",
+             "lauf": "zona795-lorrach-2026-10-09"},
+    "8225": {"kreise": [
+                 {"ort": "Fürstenfeldbruck", "mitte": (48.1794, 11.2309),
+                  "radius": 6.6}],
+             "stadt": "Fürstenfeldbruck",
+             "plz": "plz-liste-qytete-mesme2-zona8225.txt",
+             "lauf": "zona8225-furstenfeldbruck-2026-10-09"},
+    "823": {"kreise": [
+                 {"ort": "Starnberg", "mitte": (48.0041, 11.3286),
+                  "radius": 10.0}],
+             "stadt": "Starnberg",
+             "plz": "plz-liste-qytete-mesme2-zona823.txt",
+             "lauf": "zona823-starnberg-2026-10-09"},
+    "840": {"kreise": [
+                 {"ort": "Landshut", "mitte": (48.5329, 12.1023),
+                  "radius": 7.9}],
+             "stadt": "Landshut",
+             "plz": "plz-liste-qytete-mesme2-zona840.txt",
+             "lauf": "zona840-landshut-2026-10-09"},
+    "8527": {"kreise": [
+                 {"ort": "Pfaffenhofen an der Ilm", "mitte": (48.5435, 11.4869),
+                  "radius": 10.7}],
+             "stadt": "Pfaffenhofen an der Ilm",
+             "plz": "plz-liste-qytete-mesme2-zona8527.txt",
+             "lauf": "zona8527-pfaffenhofen-an-der-ilm-2026-10-09"},
+    "8535": {"kreise": [
+                 {"ort": "Freising", "mitte": (48.3898, 11.7381),
+                  "radius": 11.1}],
+             "stadt": "Freising",
+             "plz": "plz-liste-qytete-mesme2-zona8535.txt",
+             "lauf": "zona8535-freising-2026-10-09"},
+    "8689": {"kreise": [
+                 {"ort": "Landsberg am Lech", "mitte": (48.0337, 10.8656),
+                  "radius": 7.7}],
+             "stadt": "Landsberg am Lech",
+             "plz": "plz-liste-qytete-mesme2-zona8689.txt",
+             "lauf": "zona8689-landsberg-am-lech-2026-10-09"},
+    "8743": {"kreise": [
+                 {"ort": "Kempten", "mitte": (47.7363, 10.3054),
+                  "radius": 8.2}],
+             "stadt": "Kempten",
+             "plz": "plz-liste-qytete-mesme2-zona8743.txt",
+             "lauf": "zona8743-kempten-2026-10-09"},
+    "88": {"kreise": [
+                 {"ort": "Biberach", "mitte": (48.1287, 9.641),
+                  "radius": 13.4}],
+             "stadt": "Biberach",
+             "plz": "plz-liste-qytete-mesme2-zona88.txt",
+             "lauf": "zona88-biberach-2026-10-09"},
+    "8804": {"kreise": [
+                 {"ort": "Friedrichshafen", "mitte": (47.6878, 9.4711),
+                  "radius": 10.0}],
+             "stadt": "Friedrichshafen",
+             "plz": "plz-liste-qytete-mesme2-zona8804.txt",
+             "lauf": "zona8804-friedrichshafen-2026-10-09"},
+    "8931": {"kreise": [
+                 {"ort": "Günzburg", "mitte": (48.469, 10.2812),
+                  "radius": 8.1}],
+             "stadt": "Günzburg",
+             "plz": "plz-liste-qytete-mesme2-zona8931.txt",
+             "lauf": "zona8931-gunzburg-2026-10-09"},
+    "895": {"kreise": [
+                 {"ort": "Heidenheim an der Brenz", "mitte": (48.7135, 10.1908),
+                  "radius": 11.5}],
+             "stadt": "Heidenheim an der Brenz",
+             "plz": "plz-liste-qytete-mesme2-zona895.txt",
+             "lauf": "zona895-heidenheim-an-der-brenz-2026-10-09"},
 }
 
 

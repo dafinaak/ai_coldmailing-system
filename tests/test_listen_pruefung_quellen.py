@@ -105,3 +105,36 @@ def test_gar_keine_liste_ist_ein_fehler(tmp_path):
     with pytest.raises(SystemExit) as fehler:
         modul.main()
     assert "asnje liste" in str(fehler.value).lower()
+
+
+def test_ein_und_dreistellige_zonen_behalten_ihren_namen(tmp_path):
+    """Eine Liste "Zona8" oder "Zona585" muss als Zone "8" bzw. "585"
+    gefunden werden.
+
+    Der Suchmuster liess nur zwei Stellen zu, und der Name wurde aus den
+    letzten zwei Zeichen gelesen: "Zona585" waere als Zone "85" gezaehlt
+    und jede ihrer Postleitzahlen als "ausserhalb der Zone" gemeldet,
+    "Zona8" (Muenchen) als "a8". Einstellige Namen gibt es seit dem
+    08.10.2026, dreistellige seit dem 30.09.2026 - und die mittelgrossen
+    Staedte vom 09.10.2026 bringen 23 weitere.
+    """
+    werkzeug = _werkzeug(tmp_path)
+    for name in ("IT-Liste-Emails-Zona8-FERTIG-20261010-0900.xlsx",
+                 "IT-Liste-Emails-Zona58-FERTIG-20261010-0901.xlsx",
+                 "IT-Liste-Emails-Zona585-FERTIG-20261010-0902.xlsx"):
+        _liste(tmp_path / name)
+
+    assert sorted(werkzeug.listat_e_fundit()) == ["58", "585", "8"]
+
+
+def test_vierstellige_zonen_behalten_ihren_namen(tmp_path):
+    """Auch vier Stellen muessen als Zonenname durchkommen - sonst wird
+    "Zona5012" nicht gefunden und ihre Zeilen nie geprueft. Die zweite
+    Runde der mittelgrossen Staedte (09.10.2026) braucht fuenf solche
+    Namen, weil zwei Staedte sonst denselben Anfang haetten."""
+    werkzeug = _werkzeug(tmp_path)
+    for name in ("IT-Liste-Emails-Zona5012-FERTIG-20261010-0900.xlsx",
+                 "IT-Liste-Emails-Zona4453-FERTIG-20261010-0901.xlsx"):
+        _liste(tmp_path / name)
+
+    assert sorted(werkzeug.listat_e_fundit()) == ["4453", "5012"]

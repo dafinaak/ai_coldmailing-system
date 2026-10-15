@@ -58,7 +58,15 @@ echo "########## ZONA $ZONA - 2/5 Overpass/OSM (falas) ##########"
 # dyte me te njejtat firma: baza i merrte te dyja dhe ato te padala
 # neper filtrin e profilit dilnin ne Excel si "not_checked".
 OVP=$(ls -d "$L/zona$ZONA-overpass-"* 2>/dev/null | head -1 || true)
-if [ -n "$OVP" ] && [ -f "$OVP/firmen.json" ]; then
+# Nje dosje me firmen.json nuk do te thote mbledhje e kryer: Overpass
+# kthen 500/504 me ZERO firma dhe e shkruan gabimin vetem te
+# `quellen_fehler`. Deri me 09.10.2026 ajo dosje kapercehej si "u be
+# tashme", dhe zona mbetej pergjithmone me nje burim ne vend te dyve -
+# keshtu hyne zonat 72 dhe 85 gjysmake te listat 70-79 e 80-89.
+if [ -n "$OVP" ] && $PY -c "
+import sys; sys.path.insert(0, '.')
+from pipeline.zone_sources import wiederverwendbar
+sys.exit(0 if wiederverwendbar('$OVP') else 1)"; then
   echo "u be tashme ($(basename "$OVP")) - po kapercehet"
 else
   $PY werkzeuge/zonen-overpass.py --zone="$ZONA"

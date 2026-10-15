@@ -382,6 +382,20 @@ class DropcontactSource:
                     raise
                 time.sleep(self.batch_wartezeit)
                 continue
+            if antwort.status_code >= 500 or antwort.status_code == 429:
+                # Die Gateway von Dropcontact, nicht der Batch: der Batch
+                # ist abgegeben und BEZAHLT. Bis zum 09.10.2026 flog ein
+                # 502 sofort nach oben, und die Zonen 590 (Hamm) und 634
+                # (Hanau) verloren ihr bezahltes Ergebnis - obwohl die
+                # request_id gespeichert war. Netzfehler wurden laengst
+                # wiederholt; das hier ist dasselbe mit anderem Umschlag.
+                if abfrage == self.batch_max_abfragen:
+                    raise RuntimeError(
+                        f"Dropcontact antwortet mit {antwort.status_code} "
+                        f"auf {url} auch nach {abfrage} Versuchen: "
+                        f"{getattr(antwort, 'text', '')}")
+                time.sleep(self.batch_wartezeit)
+                continue
             if antwort.status_code >= 400:
                 raise RuntimeError(
                     f"Dropcontact antwortet mit {antwort.status_code} auf {url}: "

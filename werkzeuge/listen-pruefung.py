@@ -114,8 +114,14 @@ def listat_e_fundit():
     rresht do te kontrollohej dy here dhe do te dilte si dublikate.
     """
     fs = {}
-    for f in glob.glob(str(PROJEKT / "IT-Liste-Emails-Zona[0-9][0-9]-FERTIG-*.xlsx")):
-        z = os.path.basename(f).split("-")[3][-2:]
+    for f in glob.glob(str(PROJEKT / "IT-Liste-Emails-Zona[0-9]*-FERTIG-*.xlsx")):
+        # Emri i zones ka 1-3 shifra: "8" (Mynihu), "58", "585". Dy
+        # shkronjat e fundit do te bejne "a8" dhe "85" - zona e gabuar,
+        # dhe cdo kod i saj do te dilte "jashte zones".
+        m = re.match(r"IT-Liste-Emails-Zona(\d{1,4})-FERTIG-", os.path.basename(f))
+        if not m:
+            continue
+        z = m.group(1)
         if z not in fs or os.path.getmtime(f) > os.path.getmtime(fs[z]):
             fs[z] = f
     if fs:

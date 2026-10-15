@@ -123,3 +123,49 @@ def test_einstellige_zone_gehoert_in_ihre_dekade(tmp_path):
     assert sorted(gefunden) == ["8", "83"], gefunden
     # und sie gehoert NICHT in eine fremde Dekade
     assert "8" not in newest_per_zone(tmp_path, 40)
+
+
+def test_dreistellige_zone_gehoert_in_ihre_dekade(tmp_path):
+    """Eine Zone darf auch dreistellig heissen - und zaehlt dann zur
+    Dekade ihrer ersten zwei Stellen.
+
+    Dreistellige Namen gibt es seit dem 30.09.2026 ("414" Neuss-Uedesheim,
+    "452" Essen-Kettwig), und die mittelgrossen Staedte vom 09.10.2026
+    brauchen 23 davon: der Zonenname muss der Anfang jedes seiner Codes
+    sein, und zwei Staedte in derselben Dekade teilen sich sonst einen
+    Namen (Koblenz 560, Neuwied 565).
+
+    Die Dekaden-Sammelliste sah sie nicht: der Dateiname-Vergleich liess
+    nur ein bis zwei Stellen zu, und 50 <= int("585") <= 59 ist falsch.
+    Beides zusammen heisst, die Liste einer solchen Zone faellt aus der
+    Sammelliste - still, wie es Muenchen als Zone "8" passiert war.
+    """
+    for name in ("IT-Liste-Emails-Zona585-FERTIG-20261010-0900.xlsx",
+                 "IT-Liste-Emails-Zona58-FERTIG-20261010-0901.xlsx",
+                 "IT-Liste-Emails-Zona417-FERTIG-20261010-0902.xlsx"):
+        _zone_list(tmp_path / name, [])
+
+    assert sorted(newest_per_zone(tmp_path, 50)) == ["58", "585"]
+    assert sorted(newest_per_zone(tmp_path, 40)) == ["417"]
+    # und keine dreistellige Zone rutscht in eine fremde Dekade
+    assert newest_per_zone(tmp_path, 60) == {}
+
+
+def test_vierstellige_zone_gehoert_in_ihre_dekade(tmp_path):
+    """Vier Stellen braucht es, wenn zwei Staedte denselben dreistelligen
+    Anfang haben.
+
+    Am 09.10.2026 traf das fuenf Paare der zweiten Runde: Bergheim
+    (50126 ...) und Kerpen (50169 ...) teilen "501", Castrop-Rauxel und
+    Luenen teilen "445", Nordhorn und Steinfurt teilen "485". Der
+    Zonenname muss der Anfang jedes seiner Codes sein, also bleibt nur
+    die vierte Stelle.
+    """
+    for name in ("IT-Liste-Emails-Zona5012-FERTIG-20261010-0900.xlsx",
+                 "IT-Liste-Emails-Zona5016-FERTIG-20261010-0901.xlsx",
+                 "IT-Liste-Emails-Zona4453-FERTIG-20261010-0902.xlsx"):
+        _zone_list(tmp_path / name, [])
+
+    assert sorted(newest_per_zone(tmp_path, 50)) == ["5012", "5016"]
+    assert sorted(newest_per_zone(tmp_path, 40)) == ["4453"]
+    assert newest_per_zone(tmp_path, 60) == {}

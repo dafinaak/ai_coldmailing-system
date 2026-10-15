@@ -31,7 +31,7 @@ import openpyxl
 from openpyxl.utils import get_column_letter
 
 CONTACTS = "Versandfertig"
-ZONE_LIST = re.compile(r"^IT-Liste-Emails-Zona(\d{1,2})-FERTIG-(\d{8}-\d{4})\.xlsx$")
+ZONE_LIST = re.compile(r"^IT-Liste-Emails-Zona(\d{1,4})-FERTIG-(\d{8}-\d{4})\.xlsx$")
 
 
 def _in_dekade(zone: str, start: int) -> bool:
@@ -42,10 +42,15 @@ def _in_dekade(zone: str, start: int) -> bool:
     bekam am 08.10.2026 den Namen "8", weil seine Codes ueber 80xxx,
     81xxx und 85xxx laufen. Ohne diesen Fall fehlte es stillschweigend in
     der Sammelliste 80-89, und zwar die groesste Zone des Projekts.
+
+    Dreistellig ("585" Luedenscheid) zaehlt zur Dekade seiner ersten zwei
+    Stellen. Solche Namen braucht jede Dekade, in der zwei Staedte
+    denselben zweistelligen Anfang haetten - 23 der mittelgrossen
+    Staedte vom 09.10.2026 heissen so.
     """
     if len(zone) == 1:
         return str(start).startswith(zone)
-    return start <= int(zone) <= start + 9
+    return start <= int(zone[:2]) <= start + 9
 
 
 def newest_per_zone(folder, start: int) -> dict:

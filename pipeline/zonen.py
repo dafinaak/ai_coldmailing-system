@@ -899,46 +899,81 @@ ZONEN = {
 }
 
 
-def zone(nummer: str) -> dict:
+# Prozessberater, 15.10.2026 (Dafina: "ky eshte jo IT, AMA TNJEJTIN SEN").
+# Dieselbe Geografie wie die IT-Zonen des Postleitzahl-Raums 30-39: die
+# Kreise und die Postleitzahl-Liste werden WIEDERVERWENDET, nicht kopiert.
+# Zwei Kopien wuerden mit der Zeit auseinanderlaufen, und dann sucht eine
+# Zielgruppe ein anderes Gebiet ab als die andere. Eigen ist nur der
+# Lauf-Ordner: sonst schreiben beide in denselben und die Firmen der
+# einen landen in der Liste der anderen.
+#
+# 30 und 31 fehlen hier noch: sie sind nie als Zone gebaut worden (der
+# Raum 30-31 wurde im Sommer mit dem alten Ablauf gesammelt, Ordner
+# "plr-30-31"), haben also keine Postleitzahl-Liste in diesem Format.
+ZONEN_PROZESS = {
+    nr: {**ZONEN[nr], "lauf": f"zona{nr}-prozess-2026-10-15"}
+    for nr in ("32", "33", "34", "35", "36", "37", "38", "39")
+}
+
+ZONEN_JE_ZIELGRUPPE = {"it": ZONEN, "prozess": ZONEN_PROZESS}
+
+
+def zonen_tabelle(zielgruppe: str = "it") -> dict:
+    """Die Zonen-Tabelle einer Zielgruppe - unbekannt ist ein Fehler.
+
+    Keine stille Rueckkehr zur IT: wer sich vertippt, wuerde sonst die
+    falsche Branche sammeln und dafuer zahlen.
+    """
+    try:
+        return ZONEN_JE_ZIELGRUPPE[zielgruppe]
+    except KeyError:
+        raise KeyError(
+            f"Unbekannte Zielgruppe {zielgruppe!r} - bekannt: "
+            f"{', '.join(sorted(ZONEN_JE_ZIELGRUPPE))}") from None
+
+
+def zone(nummer: str, zielgruppe: str = "it") -> dict:
     """Die Zone zu "34", "35" ... - unbekannt ist ein Fehler, keine Stille."""
     nummer = str(nummer).strip()
-    if nummer not in ZONEN:
+    tabelle = zonen_tabelle(zielgruppe)
+    if nummer not in tabelle:
         raise KeyError(
-            f"Zone {nummer!r} steht nicht in der Tabelle. Bekannt sind: "
-            f"{', '.join(sorted(ZONEN))}")
-    return ZONEN[nummer]
+            f"Zone {nummer!r} steht nicht in der Tabelle der Zielgruppe "
+            f"{zielgruppe!r}. Bekannt sind: {', '.join(sorted(tabelle))}")
+    return tabelle[nummer]
 
 
-def kreise(nummer: str) -> list:
+def kreise(nummer: str, zielgruppe: str = "it") -> list:
     """[(mitte, radius_km), ...] - one circle for zones 32-40, one per town
     for a zone of several towns ("kreise")."""
-    eintrag = zone(nummer)
+    eintrag = zone(nummer, zielgruppe)
     if "kreise" in eintrag:
         return [(k["mitte"], k["radius"]) for k in eintrag["kreise"]]
     return [(eintrag["mitte"], eintrag["radius"])]
 
 
-def suchgebiet(nummer: str) -> dict:
+def suchgebiet(nummer: str, zielgruppe: str = "it") -> dict:
     """The search area as Apify takes it: the same polygon as always for a
     single circle, a MultiPolygon for several (supported by the actor, see
     its README "Custom search area", checked 29.09.2026)."""
-    polygone = [kreis_polygon(*mitte, radius) for mitte, radius in kreise(nummer)]
+    polygone = [kreis_polygon(*mitte, radius)
+                for mitte, radius in kreise(nummer, zielgruppe)]
     if len(polygone) == 1:
         return polygone[0]
     return {"type": "MultiPolygon",
             "coordinates": [p["coordinates"] for p in polygone]}
 
 
-def plz_datei(nummer: str) -> Path:
-    return PLZ_ORDNER / zone(nummer)["plz"]
+def plz_datei(nummer: str, zielgruppe: str = "it") -> Path:
+    return PLZ_ORDNER / zone(nummer, zielgruppe)["plz"]
 
 
-def plz_kodes(nummer: str) -> list:
+def plz_kodes(nummer: str, zielgruppe: str = "it") -> list:
     """Die bestellten Postleitzahlen der Zone. Leerzeilen und Kommentare
     fallen raus; alles andere muss eine fuenfstellige Zahl sein - eine
     schiefe Zeile ist ein Fehler und kein stilles Ueberspringen, sonst
     faellt eine bestellte Postleitzahl unbemerkt weg."""
-    datei = plz_datei(nummer)
+    datei = plz_datei(nummer, zielgruppe)
     if not datei.exists():
         raise FileNotFoundError(f"PLZ-Liste fehlt: {datei}")
     kodes = []

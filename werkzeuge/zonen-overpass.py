@@ -34,6 +34,7 @@ from pipeline import zonen  # noqa: E402
 from pipeline.firmen_sammeln import sammeln_bis_ziel  # noqa: E402
 from pipeline.sources.overpass import OverpassQuelle
 from pipeline.zone_sources import wiederverwendbar  # noqa: E402
+from pipeline.zielgruppen import zielgruppe  # noqa: E402
 
 DIENSTE = ["IT-Dienstleister", "Computer Services", "IT-Service"]
 
@@ -47,22 +48,29 @@ def log(*teile):
 
 
 def main():
-    nummer = None
+    nummer, zg_schluessel = None, "it"
     for arg in sys.argv[1:]:
         if arg.startswith("--zone="):
             nummer = arg.split("=", 1)[1]
+        elif arg.startswith("--zielgruppe="):
+            zg_schluessel = arg.split("=", 1)[1]
     if nummer is None:
         sys.exit(f"Duhet --zone= nga: {', '.join(sorted(zonen.ZONEN))}")
     try:
-        zone = zonen.zone(nummer)
+        zg = zielgruppe(zg_schluessel)
+        zone = zonen.zone(nummer, zg_schluessel)
     except KeyError as gabim:
         sys.exit(str(gabim))
 
-    kodet = zonen.plz_kodes(nummer)
-    ordner = f"zona{nummer}-overpass-{datetime.now():%Y-%m-%d}"
+    kodet = zonen.plz_kodes(nummer, zg_schluessel)
+    # Emri i dosjes mban grupin, se dy grupe kerkojne te njejtin rajon:
+    # pa te, i dyti do t'i shkruante mbi firmat e te parit.
+    pjesa = "" if zg_schluessel == "it" else f"-{zg_schluessel}"
+    ordner = f"zona{nummer}{pjesa}-overpass-{datetime.now():%Y-%m-%d}"
 
     log("=" * 62)
     log(f"ZONA {nummer} ({zone['stadt']}) - Overpass/OpenStreetMap")
+    log(f"Grupi i synimit: {zg.name} | shenjat: {zg.osm_merkmale}")
     log("=" * 62)
     log(f"Kode postare: {len(kodet)}")
     log("Burimi: VETEM Overpass/OSM. Maps dhe Gelbe Seiten te fikura.")
@@ -71,7 +79,7 @@ def main():
     firmen, bericht = sammeln_bis_ziel(
         "", 25.0, DIENSTE, ZIEL,
         maps=None, gelbe_seiten=None,
-        overpass=OverpassQuelle(),
+        overpass=OverpassQuelle(merkmale=zg.osm_merkmale),
         plz_liste=kodet, daten_dir=str(PROJEKT), log=log)
 
     ziel = PROJEKT / "laeufe/leadquellen" / ordner

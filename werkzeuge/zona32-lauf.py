@@ -36,6 +36,11 @@ from pipeline.env import lade_dotenv  # noqa: E402
 lade_dotenv(PROJEKT / ".env")
 
 from pipeline.branchen_filter import firma_bewerten  # noqa: E402
+from pipeline.zielgruppen import zielgruppe  # noqa: E402
+
+# Grupi i synimit vendos promptin e gjykimit. IT-ja mbetet
+# parazgjedhja, qe cdo thirrje e vjeter te punoje si me pare.
+ZIELGRUPPE = zielgruppe("it")
 from pipeline.automation_klassifikation import (  # noqa: E402
     urteile_je_firma, laden as pool_laden)
 from pipeline.decision_maker import sort_by_priority  # noqa: E402
@@ -275,7 +280,8 @@ def profil_pruefen(firmen, webtexte, ki):
             schluessel = firma["domain"] or firma["name"].lower()
             text = webtexte.get(firma["domain"], "")
             try:
-                urteil = firma_bewerten(firma, text, ki)
+                urteil = firma_bewerten(firma, text, ki,
+                                        system=ZIELGRUPPE.system_prompt)
             except Exception as fehler:      # noqa: BLE001
                 urteil = {"passt": False, "typ": "fehler",
                           "grund": f"Fehler: {fehler}", "quelle": "fehler"}
@@ -442,7 +448,7 @@ def firmen_json_bauen(firmen, profil, automation, impressum):
 # ------------------------------------------------------------------ main
 
 def main():
-    global LAUF
+    global LAUF, ZIELGRUPPE
     start = time.time()
     limit = None
     quelle_datei = None
@@ -458,6 +464,8 @@ def main():
             # fest auf Zone 32 verdrahtet.
             globals()["PLZ_LISTE"] = (
                 PROJEKT / "laeufe/leadquellen" / arg.split("=", 1)[1])
+        elif arg.startswith("--zielgruppe="):
+            ZIELGRUPPE = zielgruppe(arg.split("=", 1)[1])
         elif arg.startswith("--dataset="):
             # Ein anderer Apify-Rohdatensatz (Apify-Format, nicht unseres).
             # Zone 34 kam aus einem eigenen Lauf, nicht aus dem vom 21.08.
@@ -467,7 +475,8 @@ def main():
                 for name in arg.split("=", 1)[1].split(",") if name.strip()]
     LAUF.mkdir(parents=True, exist_ok=True)
     log("=" * 62)
-    log("ZONA 32 (Herford) - Hapi 1: profil + automatizim + impressum")
+    log(f"Hapi 1: profil + automatizim + impressum | grupi: "
+        f"{ZIELGRUPPE.name}")
     log("PA Dropcontact, PA Hunter, PA Apollo. Instantly i paprekur.")
     log("=" * 62)
 

@@ -80,12 +80,18 @@ def _adresse(tags: dict) -> str:
 
 class OverpassQuelle:
     def __init__(self, session=None, urls=OVERPASS_MIRRORS, runden=2,
+                 merkmale=STANDARD_MERKMALE,
                  wartezeit=30, schlaf=time.sleep):
         self.session = session or requests.Session()
         self.urls = tuple(urls)
         self.runden = runden
         self.wartezeit = wartezeit
         self.schlaf = schlaf
+        # Die Merkmale gehoeren an die Quelle, nicht an den Aufruf: der
+        # Sammler ruft `search` drei Schichten tiefer ohne sie auf. Ohne
+        # das suchte eine andere Zielgruppe mit `office=it` und sammelte
+        # die falsche Branche (15.10.2026).
+        self.merkmale = tuple(merkmale)
 
     def _abrufen(self, abfrage):
         """Versucht Haupt- und Ausweich-Server im Wechsel, mit Wartezeit
@@ -111,8 +117,9 @@ class OverpassQuelle:
                 f"{(getattr(letzte, 'text', '') or '')[:200]}")
         raise RuntimeError(f"Overpass nicht erreichbar: {letzter_abriss}")
 
-    def search(self, plz_praefixe, bbox, merkmale=STANDARD_MERKMALE) -> list:
-        abfrage = _abfrage_bauen(tuple(bbox), tuple(merkmale))
+    def search(self, plz_praefixe, bbox, merkmale=None) -> list:
+        abfrage = _abfrage_bauen(tuple(bbox),
+                                 tuple(merkmale or self.merkmale))
         antwort = self._abrufen(abfrage)
         elemente = (antwort.json() or {}).get("elements") or []
 

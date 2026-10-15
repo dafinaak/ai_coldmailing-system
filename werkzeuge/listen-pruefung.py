@@ -38,6 +38,17 @@ sys.path.insert(0, str(PROJEKT))
 import openpyxl  # noqa: E402
 import requests  # noqa: E402
 
+from pipeline.zielgruppen import zielgruppe  # noqa: E402
+from pipeline.zone_lists import dekaden_glob  # noqa: E402
+
+# Cilat lista kontrollohen. --zielgruppe=prozess merr listat e
+# konsulenteve te procesit; pa te mbetet IT-ja, pra cdo thirrje
+# e vjeter punon si me pare (nga 15.10.2026).
+ZIELGRUPPE = zielgruppe(next(
+    (a.split("=", 1)[1] for a in sys.argv[1:]
+     if a.startswith("--zielgruppe=")), "it"))
+PREFIX = ZIELGRUPPE.listen_prefix
+
 GJENERALE = re.compile(
     r"^(info|kontakt|office|mail|service|hallo|team|zentrale|anfrage|"
     r"vertrieb|support|buero|kontact|post|verwaltung)@", re.I)
@@ -114,11 +125,12 @@ def listat_e_fundit():
     rresht do te kontrollohej dy here dhe do te dilte si dublikate.
     """
     fs = {}
-    for f in glob.glob(str(PROJEKT / "IT-Liste-Emails-Zona[0-9]*-FERTIG-*.xlsx")):
+    for f in glob.glob(str(PROJEKT / f"{PREFIX}Zona[0-9]*-FERTIG-*.xlsx")):
         # Emri i zones ka 1-3 shifra: "8" (Mynihu), "58", "585". Dy
         # shkronjat e fundit do te bejne "a8" dhe "85" - zona e gabuar,
         # dhe cdo kod i saj do te dilte "jashte zones".
-        m = re.match(r"IT-Liste-Emails-Zona(\d{1,4})-FERTIG-", os.path.basename(f))
+        m = re.match(rf"{re.escape(PREFIX)}Zona(\d{{1,4}})-FERTIG-",
+                     os.path.basename(f))
         if not m:
             continue
         z = m.group(1)
@@ -127,7 +139,7 @@ def listat_e_fundit():
     if fs:
         return dict(sorted(fs.items()))
 
-    for f in glob.glob(str(PROJEKT / "IT-Liste-Emails-Zonat-[0-9][0-9]-[0-9][0-9]-*.xlsx")):
+    for f in glob.glob(str(PROJEKT / dekaden_glob(PREFIX))):
         # IT-Liste-Emails-Zonat-40-49-<data>-<ora>.xlsx -> "40-49"
         teile = os.path.basename(f).split("-")
         dekade = f"{teile[4]}-{teile[5]}"
@@ -150,8 +162,8 @@ def main():
         # fshine, dhe raporti doli "0 gjetje ne 0 rreshta".
         raise SystemExit(
             "NDALIM: asnje liste per kontroll. Pritet ose "
-            "'IT-Liste-Emails-ZonaNN-FERTIG-*.xlsx' ose "
-            "'IT-Liste-Emails-Zonat-NN-NN-*.xlsx' te dosja e projektit.")
+            f"'{PREFIX}ZonaNN-FERTIG-*.xlsx' ose "
+            f"'{PREFIX}Zonat-NN-NN-*.xlsx' te dosja e projektit.")
 
     for z, f in listat.items():
         ws = openpyxl.load_workbook(f).active

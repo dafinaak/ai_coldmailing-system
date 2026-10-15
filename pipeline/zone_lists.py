@@ -31,7 +31,31 @@ import openpyxl
 from openpyxl.utils import get_column_letter
 
 CONTACTS = "Versandfertig"
-ZONE_LIST = re.compile(r"^IT-Liste-Emails-Zona(\d{1,4})-FERTIG-(\d{8}-\d{4})\.xlsx$")
+# Der Name der Listen steht HIER und nur hier. Sieben Dateien hatten ihn
+# bisher einzeln eingetragen, und genau so sind am 09.10.2026 drei Tore
+# auseinandergelaufen (ein Muster liess vier Stellen zu, ein anderes
+# zwei). Seit dem 15.10.2026 gibt es zwei Zielgruppen im selben Gebiet,
+# also auch zwei Namen - umso mehr Grund fuer eine einzige Stelle.
+STANDARD_PREFIX = "IT-Liste-Emails-"
+
+
+def zone_list_muster(prefix: str = STANDARD_PREFIX):
+    """Das Muster fuer "<prefix>Zona<NR>-FERTIG-<zeit>.xlsx"."""
+    return re.compile(rf"^{re.escape(prefix)}Zona(\d{{1,4}})-FERTIG-"
+                      r"(\d{8}-\d{4})\.xlsx$")
+
+
+def zone_list_glob(prefix: str = STANDARD_PREFIX) -> str:
+    """Der Suchausdruck fuer die Listen einer Zielgruppe."""
+    return f"{prefix}Zona*-FERTIG-*.xlsx"
+
+
+def dekaden_glob(prefix: str = STANDARD_PREFIX) -> str:
+    """Der Suchausdruck fuer die Sammellisten einer Zielgruppe."""
+    return f"{prefix}Zonat-[0-9][0-9]-[0-9][0-9]-*.xlsx"
+
+
+ZONE_LIST = zone_list_muster()
 
 
 def _in_dekade(zone: str, start: int) -> bool:
@@ -53,12 +77,18 @@ def _in_dekade(zone: str, start: int) -> bool:
     return start <= int(zone[:2]) <= start + 9
 
 
-def newest_per_zone(folder, start: int) -> dict:
+def newest_per_zone(folder, start: int,
+                    prefix: str = STANDARD_PREFIX) -> dict:
     """{"40": path, "41": path ...}: the newest final list of each zone from
-    start to start + 9. Intermediate lists and merged files do not count."""
+    start to start + 9. Intermediate lists and merged files do not count.
+
+    `prefix` waehlt die Zielgruppe: die IT-Listen heissen
+    "IT-Liste-Emails-...", die der Prozessberater "Prozess-Liste-Emails-...".
+    """
+    muster = zone_list_muster(prefix)
     newest = {}
-    for path in Path(folder).glob("IT-Liste-Emails-Zona*-FERTIG-*.xlsx"):
-        match = ZONE_LIST.match(path.name)
+    for path in Path(folder).glob(zone_list_glob(prefix)):
+        match = muster.match(path.name)
         if not match or not _in_dekade(match.group(1), start):
             continue
         zone, stamp = match.groups()

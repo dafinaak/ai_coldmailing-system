@@ -30,6 +30,10 @@
 set -euo pipefail
 
 ZONA="${1:?Duhet numri i zones, p.sh.: ./werkzeuge/zonen-komplett.sh 36}"
+# Grupi i synimit (nga 15.10.2026). IT-ja mbetet parazgjedhja, pra cdo
+# thirrje e vjeter punon si me pare. Konsulentet e procesit:
+#   ZIELGRUPPE=prozess ./werkzeuge/zonen-komplett.sh 32
+ZIELGRUPPE="${ZIELGRUPPE:-it}"
 cd "$(dirname "$0")/.."
 PY=.venv/bin/python
 L=laeufe/leadquellen
@@ -39,15 +43,16 @@ echo "########## ZONA $ZONA - 1/5 Google Maps ##########"
 # MAX_USD (optional): a money cap for the Maps run, e.g.
 #   MAX_USD=2.40 ./werkzeuge/zonen-komplett.sh 41
 # If the run reaches it, zonen-maps.py stops the chain - see there.
-$PY werkzeuge/zonen-maps.py --zone="$ZONA" --kufi=110 ${MAX_USD:+--max-usd=$MAX_USD}
+$PY werkzeuge/zonen-maps.py --zone="$ZONA" --kufi=110 \
+    --zielgruppe="$ZIELGRUPPE" ${MAX_USD:+--max-usd=$MAX_USD}
 
 # Emri i dataset-it del nga run-id-ja e ruajtur, jo nga hamendja.
-LAUF_MAPS=$($PY -c "import sys;sys.path.insert(0,'.');from pipeline import zonen;print(zonen.zone('$ZONA')['lauf'])")
+LAUF_MAPS=$($PY -c "import sys;sys.path.insert(0,'.');from pipeline import zonen;print(zonen.zone('$ZONA','$ZIELGRUPPE')['lauf'])")
 DSID=$($PY -c "import json;print(json.load(open('$L/$LAUF_MAPS/apify-run-id.json'))['dataset_id'])")
 # Places a neighbour's paid Maps run already found inside this zone
 # ("maps_dazu" in pipeline/zonen.py) are read after the zone's own run.
 DATASETS="apify-ds-$DSID.json"
-DAZU=$($PY -c "import sys;sys.path.insert(0,'.');from pipeline import zonen;print(','.join(zonen.zone('$ZONA').get('maps_dazu', [])))")
+DAZU=$($PY -c "import sys;sys.path.insert(0,'.');from pipeline import zonen;print(','.join(zonen.zone('$ZONA','$ZIELGRUPPE').get('maps_dazu', [])))")
 if [ -n "$DAZU" ]; then
   DATASETS="$DATASETS,$DAZU"
 fi
@@ -57,7 +62,8 @@ echo "########## ZONA $ZONA - 2/5 Overpass/OSM (falas) ##########"
 # vetem daten e sotme, nje rinisje te nesermen krijonte nje dosje te
 # dyte me te njejtat firma: baza i merrte te dyja dhe ato te padala
 # neper filtrin e profilit dilnin ne Excel si "not_checked".
-OVP=$(ls -d "$L/zona$ZONA-overpass-"* 2>/dev/null | head -1 || true)
+if [ "$ZIELGRUPPE" = "it" ]; then OVP_PJESA=""; else OVP_PJESA="-$ZIELGRUPPE"; fi
+OVP=$(ls -d "$L/zona$ZONA$OVP_PJESA-overpass-"* 2>/dev/null | head -1 || true)
 # Nje dosje me firmen.json nuk do te thote mbledhje e kryer: Overpass
 # kthen 500/504 me ZERO firma dhe e shkruan gabimin vetem te
 # `quellen_fehler`. Deri me 09.10.2026 ajo dosje kapercehej si "u be
@@ -69,21 +75,22 @@ from pipeline.zone_sources import wiederverwendbar
 sys.exit(0 if wiederverwendbar('$OVP') else 1)"; then
   echo "u be tashme ($(basename "$OVP")) - po kapercehet"
 else
-  $PY werkzeuge/zonen-overpass.py --zone="$ZONA"
-  OVP="$L/zona$ZONA-overpass-$SOT"
+  $PY werkzeuge/zonen-overpass.py --zone="$ZONA" \
+      --zielgruppe="$ZIELGRUPPE"
+  OVP="$L/zona$ZONA$OVP_PJESA-overpass-$SOT"
 fi
 
-echo "########## ZONA $ZONA - 3/5 filtri i profilit IT ##########"
-PLZ=$($PY -c "import sys;sys.path.insert(0,'.');from pipeline import zonen;print(zonen.zone('$ZONA')['plz'])")
+echo "########## ZONA $ZONA - 3/5 filtri i profilit ($ZIELGRUPPE) ##########"
+PLZ=$($PY -c "import sys;sys.path.insert(0,'.');from pipeline import zonen;print(zonen.zone('$ZONA','$ZIELGRUPPE')['plz'])")
 
 echo "--- Maps ---"
 $PY werkzeuge/zona32-lauf.py --lauf="$LAUF_MAPS" --plz="$PLZ" \
-    --dataset="$DATASETS"
+    --zielgruppe="$ZIELGRUPPE" --dataset="$DATASETS"
 
 if [ -n "$OVP" ] && [ -f "$OVP/firmen.json" ]; then
   echo "--- $(basename "$OVP") ---"
   $PY werkzeuge/zona32-lauf.py --lauf="$(basename "$OVP")" --plz="$PLZ" \
-      --firmen="$OVP/firmen.json"
+      --zielgruppe="$ZIELGRUPPE" --firmen="$OVP/firmen.json"
 fi
 
 echo "########## ZONA $ZONA - 4/5 Excel ##########"

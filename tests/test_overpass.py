@@ -105,3 +105,41 @@ def test_dauerhafte_fehler_stoppen_laut():
         OverpassQuelle(session=session, schlaf=lambda s: None).search(
             plz_praefixe=("30",), bbox=BBOX_PLR_30_31)
     assert len(session.urls) == 4                 # 2 Server x 2 Runden
+
+
+def test_die_quelle_kann_eigene_merkmale_tragen():
+    """Eine Zielgruppe bringt ihre Karten-Merkmale mit (15.10.2026).
+
+    `search` nimmt sie zwar als Argument, aber der Sammler ruft es drei
+    Schichten tiefer ohne sie auf. Also tragen sie an der Quelle: sonst
+    sucht die Prozess-Zielgruppe mit `office=it` und sammelt IT-Firmen,
+    die der Profil-Filter danach alle wegwirft - die freie zweite Quelle
+    waere still wirkungslos.
+    """
+    from pipeline.sources.overpass import OverpassQuelle, STANDARD_MERKMALE
+
+    gestellt = []
+
+    class FakeAntwort:
+        status_code = 200
+
+        @staticmethod
+        def json():
+            return {"elements": []}
+
+    class FakeSession:
+        def post(self, url, data=None, headers=None, timeout=None):
+            gestellt.append(data["data"])
+            return FakeAntwort()
+
+    standard = OverpassQuelle(session=FakeSession())
+    standard.search(("30",), (51.0, 8.0, 52.0, 9.0))
+    assert '"office"="it"' in gestellt[-1]
+
+    eigen = OverpassQuelle(session=FakeSession(),
+                           merkmale=(("office", "consulting"),))
+    eigen.search(("30",), (51.0, 8.0, 52.0, 9.0))
+    assert '"office"="consulting"' in gestellt[-1]
+    assert '"office"="it"' not in gestellt[-1]
+    # und die Vorgabe bleibt, was sie war
+    assert tuple(STANDARD_MERKMALE) == (("office", "it"),)

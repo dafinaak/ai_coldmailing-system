@@ -25,16 +25,24 @@ import openpyxl
 PROJECT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT))
 
-from pipeline.zone_lists import merge_zone_lists, newest_per_zone  # noqa: E402
+from pipeline.zielgruppen import zielgruppe  # noqa: E402
+from pipeline.zone_lists import (  # noqa: E402
+    merge_zone_lists, newest_per_zone)
 
 # What each zone list holds - shown so the merged count can be checked.
 SHEETS = ("Versandfertig", "Zur Kontrolle", "Bezahlt, nicht versandfähig")
 
 
 def main():
-    starts = [int(a) for a in sys.argv[1:]] or [40, 50, 60]
+    # --zielgruppe=prozess merr listat e konsulenteve te procesit; pa te
+    # mbetet IT-ja, pra cdo thirrje e vjeter punon si me pare.
+    zg = zielgruppe(next((a.split("=", 1)[1] for a in sys.argv[1:]
+                          if a.startswith("--zielgruppe=")), "it"))
+    prefix = zg.listen_prefix
+    starts = [int(a) for a in sys.argv[1:] if not a.startswith("--")] or [40, 50, 60]
+    print(f"grupi i synimit: {zg.name} ({prefix}...)")
     for start in starts:
-        files = newest_per_zone(PROJECT, start)
+        files = newest_per_zone(PROJECT, start, prefix=prefix)
         print(f"=== Zonat {start}-{start + 9} ===")
         if not files:
             print("    ende asnje zone me liste perfundimtare - s'krijohet asgje")
@@ -45,7 +53,8 @@ def main():
                                for name in SHEETS if name in book.sheetnames)
             print(f"    zona {zone}: {path.name} ({counts})")
         stamp = datetime.now().strftime("%Y%m%d-%H%M")
-        target = PROJECT / f"IT-Liste-Emails-Zonat-{start}-{start + 9}-{stamp}.xlsx"
+        target = (PROJECT /
+                  f"{prefix}Zonat-{start}-{start + 9}-{stamp}.xlsx")
         try:
             merge_zone_lists(files, target)
         except ValueError as error:

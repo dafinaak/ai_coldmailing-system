@@ -49,6 +49,7 @@ from pipeline.anrede_spalte import aus_lauf  # noqa: E402
 from pipeline.config import lade_globale_sperrlisten_eintraege  # noqa: E402
 from pipeline.dropcontact_register import load_register, person_key  # noqa: E402
 from pipeline.zone_sources import fehlende_quellen  # noqa: E402
+from pipeline.zielgruppen import zielgruppe  # noqa: E402
 from pipeline.dropcontact_rounds import (  # noqa: E402
     domain_of, is_catch_all, paid_unusable, split_rounds, usable)
 from pipeline.sources.dropcontact import (  # noqa: E402
@@ -416,6 +417,40 @@ ZONEN = {
     "452": {"laeufe": ["zona45-kettwig-2026-09-30"],
             "lauf": "zona45-dropcontact-cep-2026-09-30"},
 }
+
+# Prozessberater, 15.10.2026 (Dafina: "ky eshte jo IT, AMA TNJEJTIN SEN").
+# E njejta gjeografi si zonat e IT-se te rajonit 30-39, po dosje te vetat:
+# pa ato, dy grupet do te shkruanin ne te njejten dosje dhe firmat e
+# njerit do te dilnin ne listen e tjetrit.
+ZONEN_PROZESS = {
+    "32": {"laeufe": ["zona32-prozess-2026-10-15",
+                      "zona32-prozess-overpass-2026-10-15"],
+           "lauf": "zona32-prozess-dropcontact-2026-10-15"},
+    "33": {"laeufe": ["zona33-prozess-2026-10-15",
+                      "zona33-prozess-overpass-2026-10-15"],
+           "lauf": "zona33-prozess-dropcontact-2026-10-15"},
+    "34": {"laeufe": ["zona34-prozess-2026-10-15",
+                      "zona34-prozess-overpass-2026-10-15"],
+           "lauf": "zona34-prozess-dropcontact-2026-10-15"},
+    "35": {"laeufe": ["zona35-prozess-2026-10-15",
+                      "zona35-prozess-overpass-2026-10-15"],
+           "lauf": "zona35-prozess-dropcontact-2026-10-15"},
+    "36": {"laeufe": ["zona36-prozess-2026-10-15",
+                      "zona36-prozess-overpass-2026-10-15"],
+           "lauf": "zona36-prozess-dropcontact-2026-10-15"},
+    "37": {"laeufe": ["zona37-prozess-2026-10-15",
+                      "zona37-prozess-overpass-2026-10-15"],
+           "lauf": "zona37-prozess-dropcontact-2026-10-15"},
+    "38": {"laeufe": ["zona38-prozess-2026-10-15",
+                      "zona38-prozess-overpass-2026-10-15"],
+           "lauf": "zona38-prozess-dropcontact-2026-10-15"},
+    "39": {"laeufe": ["zona39-prozess-2026-10-15",
+                      "zona39-prozess-overpass-2026-10-15"],
+           "lauf": "zona39-prozess-dropcontact-2026-10-15"},
+}
+
+ZONEN_JE_ZIELGRUPPE = {"it": ZONEN, "prozess": ZONEN_PROZESS}
+
 ZONE = "32"
 # --nur-zeigen: tregon ke do ta riperdorte, ke do ta kapercente dhe ke
 # do ta pyeste - pa dorezuar asgje te Dropcontact-i dhe pa shkruar asgje.
@@ -423,8 +458,13 @@ NUR_ZEIGEN = "--nur-zeigen" in sys.argv[1:]
 # --nur-bezahlte: rebuild from the batches this run already paid for, and
 # stop instead of handing in a new one - a rebuild that can never cost.
 NUR_BEZAHLTE = "--nur-bezahlte" in sys.argv[1:]
+# Grupi i synimit vendos tabelen e zonave dhe emrin e listave. IT-ja
+# mbetet parazgjedhja, qe cdo thirrje e vjeter te punoje si me pare.
+ZIELGRUPPE = zielgruppe("it")
 for _a in sys.argv[1:]:
-    if _a.startswith("--zone="):
+    if _a.startswith("--zielgruppe="):
+        ZIELGRUPPE = zielgruppe(_a.split("=", 1)[1])
+    elif _a.startswith("--zone="):
         ZONE = _a.split("=", 1)[1]
     elif _a.isdigit() and len(_a) <= 5:
         # Vetem shifra = dikush e shkroi zonen pa "--zone=". Pa kete
@@ -436,8 +476,10 @@ for _a in sys.argv[1:]:
         # sys.argv mban rruget e pytest-it: te gjitha do te ndalonin.
         sys.exit(f"Argument {_a!r} pa '--zone=': zonat shkruhen "
                  f"--zone={_a}, perndryshe vegla vrapon si zona {ZONE!r}.")
+ZONEN = ZONEN_JE_ZIELGRUPPE[ZIELGRUPPE.schluessel]
 if ZONE not in ZONEN:
-    sys.exit(f"Unbekannte Zone {ZONE!r} - bekannt: {', '.join(ZONEN)}")
+    sys.exit(f"Unbekannte Zone {ZONE!r} te grupi "
+             f"{ZIELGRUPPE.schluessel!r} - bekannt: {', '.join(ZONEN)}")
 LAEUFE = ZONEN[ZONE]["laeufe"]
 # Nje dosje burimi qe mungon nuk guxon te kapercehet ne heshtje - shih
 # pipeline/zone_sources.fehlende_quellen (09.10.2026).
@@ -975,7 +1017,8 @@ def main():
         json.dumps(unbrauchbar, ensure_ascii=False, indent=1), encoding="utf-8")
 
     stempel = datetime.now().strftime("%Y%m%d-%H%M")
-    ziel = PROJEKT / f"IT-Liste-Emails-Zona{ZONE}-{stempel}.xlsx"
+    ziel = (PROJEKT /
+            f"{ZIELGRUPPE.listen_prefix}Zona{ZONE}-{stempel}.xlsx")
     aus_lauf(ergebnis_datei, ziel)
     log("=" * 62)
     log(f"DOSJA: {ziel}")

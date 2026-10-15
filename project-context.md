@@ -22,6 +22,63 @@ vërtetë.
 
 ## Gjendja tash
 
+- **15.10.2026 — GRUP I DYTË SYNIMI: konsulentët e procesit, 39 kontakte.**
+  Dafina: "ky eshte jo IT, AMA TNJEJTIN SEN duhesh me bo me i scrap si ne
+  listat tjera". Lista e saj me 21 fjalë (Prozessberater, REFA ...) për
+  rajonin 30-39. Dalja: `Prozess-Liste-Emails-Zonat-30-39-20261015-1242.xlsx`,
+  **39 kontakte** nga të 8 zonat (32: 5, 33: 9, 34: 9, 35: 4, 36: 2, 37: 5,
+  38: 4, 39: 1). **Zero firma IT** te lista.
+  - Kostoja: **14,4 $ Apify** dhe **42 kredite Dropcontact** (1.207 mbeten).
+    Kufiri u kthye te 19 $. Çmimi doli 2,4 $ për zonë, jo 6,93 $ sa ishte
+    tavani teorik — konsulentët e procesit janë më të rrallë se firmat IT.
+  - **2.035 firma të mbledhura → 70 kaluan profilin → 47 mbetën pas
+    automatizimit → 39 me email.**
+  - Zonat 30 e 31 **nuk hynë**: nuk janë ndërtuar kurrë si zona, dhe tabela
+    e koordinatave i ka kodet e tyre të shpërndara deri 500 km (emra të
+    njëjtë qytetesh). Duan matje me OSM si zonat 70-79.
+
+### Si u ndërtua grupi i dytë (15.10.2026)
+
+Zinxhiri ishte i lidhur për një grup synimi të vetëm në tri vende. Tash
+grupi është ndryshues, dhe **IT-ja është parazgjedhja kudo** — çdo thirrje
+e vjetër punon saktësisht si më parë.
+
+- `pipeline/zielgruppen.py` (e re): fjalët e kërkimit, prompti i gjykimit,
+  shenjat e OSM-së (`office=it` kundrejt `office=consulting`), emri i
+  listave dhe pjesa e emrit të dosjes. IT-ja i **lexon** fjalët dhe
+  promptin aty ku ishin — një kopje e dytë do të ndahej me kohë.
+- `pipeline/zonen.py`: `ZONEN_PROZESS` ripërdor rrathët dhe listat e
+  kodeve të zonave 32-39, vetëm dosja e vrapimit është e vetja.
+- `pipeline/zone_lists.py`: emri i listave tash në **një vend të vetëm**
+  (`zone_list_muster`, `zone_list_glob`, `dekaden_glob`). Më parë ishte i
+  shkruar brenda shtatë dosjeve — pikërisht ashtu u ndanë tri portat më
+  09.10.
+- `pipeline/it_erkennung.py` (e re): njeh firmat IT që i shpëtojnë
+  gjykimit. "IT" vetëm me shkronja të mëdha, se si rrokje rri te
+  Qualität, Sicherheit, Mitarbeiter — fjalë të vetë profilit tonë.
+  Kategoria e Google-it nuk vendos vetë, sipas rregullit të 03.09.
+
+### Dy dështime të kapura brenda ditës
+
+1. **Listat dolën të zbrazëta, pa u ankuar asgjë.** Modeli i dosjes
+   `zona33-dropcontact-*` nuk mbante grupin, pra vegla lexoi dosjen e
+   IT-së nga shtatori, i hodhi firmat e saj si "jashtë zonës" dhe shkroi
+   tetë skedarë me zero rreshta — edhe pse Dropcontact-i kishte gjetur 39
+   email. Tash modeli e mban grupin (`Zielgruppe.lauf_glob`), dhe **një
+   listë e zbrazët është ndalje me zë**, jo skedar i heshtur.
+2. **Overpass-i dështoi te zonat 32 dhe 35** me 500; porta e 09.10 i
+   ndaloi të dyja në vend që të nxirrte zona gjysmake. U rimorën falas,
+   se vrapimi i paguar i Maps-it ruhet.
+
+### Vendime të Dafinës (15.10.2026)
+
+- Kontrolli i automatizimit **vlen edhe për konsulentët e procesit**:
+  kush ofron automatizim mbetet jashtë. Çmimi: te zona 33 hoqi 9 nga 22,
+  dhe prej tyre vetëm 2 ishin vërtet konkurrentë — 4 ishin konsulentë të
+  vërtetë të hedhur si "të pasigurt". Mbetet i hapur nëse "i pasigurt"
+  duhet të hyjë brenda e ta shikojë njeriu.
+- Firmat IT dalin jashtë te lista përfundimtare.
+
 - **09.10.2026 — QYTETET E MESME: 25 zona të bëra, 1.109 kontakte gjithsej.**
   Dafina: "vazhdo me qytetet e mesme njehere lej fshatrat", pastaj "Të 25
   qytetet tash". Gjashtë lista, një për dhjeteshe, me vulën `20261009-1401`:

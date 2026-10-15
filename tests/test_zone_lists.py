@@ -169,3 +169,31 @@ def test_vierstellige_zone_gehoert_in_ihre_dekade(tmp_path):
     assert sorted(newest_per_zone(tmp_path, 50)) == ["5012", "5016"]
     assert sorted(newest_per_zone(tmp_path, 40)) == ["4453"]
     assert newest_per_zone(tmp_path, 60) == {}
+
+
+def test_der_listen_name_kommt_aus_der_zielgruppe(tmp_path):
+    """Zwei Zielgruppen im selben Gebiet brauchen eigene Listen-Namen.
+
+    Dafina, 15.10.2026: dieselbe Kette auch fuer Prozessberater. Die
+    Zonen-Nummer allein reicht nicht - Zone 32 gibt es fuer beide, und
+    ohne eigenen Namen ueberschreibt die eine Liste die andere.
+
+    Der Name steht an EINER Stelle, hier. Sieben Dateien hatten ihn
+    bisher einzeln eingetragen; genau so sind am 09.10.2026 drei Tore
+    auseinandergelaufen.
+    """
+    from pipeline.zone_lists import newest_per_zone, zone_list_glob
+
+    _zone_list(tmp_path / "IT-Liste-Emails-Zona32-FERTIG-20261015-0900.xlsx", [])
+    _zone_list(tmp_path / "Prozess-Liste-Emails-Zona32-FERTIG-20261015-0901.xlsx",
+               [])
+
+    assert list(newest_per_zone(tmp_path, 30)) == ["32"]
+    assert list(newest_per_zone(tmp_path, 30,
+                                prefix="Prozess-Liste-Emails-")) == ["32"]
+    # und die beiden Dateien sind verschieden
+    it = newest_per_zone(tmp_path, 30)["32"]
+    pr = newest_per_zone(tmp_path, 30, prefix="Prozess-Liste-Emails-")["32"]
+    assert it != pr
+    assert "IT-Liste" in zone_list_glob("IT-Liste-Emails-")
+    assert "Prozess-Liste" in zone_list_glob("Prozess-Liste-Emails-")

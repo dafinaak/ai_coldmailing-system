@@ -24,6 +24,13 @@ from pipeline.anrede_spalte import baue_anrede  # noqa: E402
 from pipeline.config import lade_globale_sperrlisten_eintraege  # noqa: E402
 from pipeline.sperrliste_pruefung import (  # noqa: E402
     gesperrte_domains, ist_gesperrt)
+from pipeline.zielgruppen import zielgruppe  # noqa: E402
+from pipeline.zone_lists import dekaden_glob  # noqa: E402
+
+# Grupi i synimit vendos emrin e listave. IT-ja mbetet
+# parazgjedhja, qe cdo thirrje e vjeter te punoje si me pare
+# (nga 15.10.2026, kur hyne konsulentet e procesit).
+ZIELGRUPPE = zielgruppe("it")
 
 # "quellen" jane dosjet e mbledhjes nga vijne kodi postar, qyteti dhe
 # telefonat. DY burime per zone: Maps dhe Overpass. Gelbe Seiten u hoq me
@@ -615,9 +622,45 @@ QUELLE_FIRMA = {
     "zonat40-45-nachtrag-2026-09-29": "Gelbe Seiten (mbledhje e vjeter, "
                                       "gjykuar 29.09.2026)",
 }
+
+# Prozessberater, 15.10.2026 (Dafina: "ky eshte jo IT, AMA TNJEJTIN SEN").
+# E njejta gjeografi si zonat e IT-se te rajonit 30-39, po dosje te vetat:
+# pa ato, dy grupet do te shkruanin ne te njejten dosje dhe firmat e
+# njerit do te dilnin ne listen e tjetrit.
+ZONEN_PROZESS = {
+    "32": {"lauf": "zona32-prozess-dropcontact-2026-10-15",
+           "quellen": ["zona32-prozess-2026-10-15",
+                       "zona32-prozess-overpass-2026-10-15"]},
+    "33": {"lauf": "zona33-prozess-dropcontact-2026-10-15",
+           "quellen": ["zona33-prozess-2026-10-15",
+                       "zona33-prozess-overpass-2026-10-15"]},
+    "34": {"lauf": "zona34-prozess-dropcontact-2026-10-15",
+           "quellen": ["zona34-prozess-2026-10-15",
+                       "zona34-prozess-overpass-2026-10-15"]},
+    "35": {"lauf": "zona35-prozess-dropcontact-2026-10-15",
+           "quellen": ["zona35-prozess-2026-10-15",
+                       "zona35-prozess-overpass-2026-10-15"]},
+    "36": {"lauf": "zona36-prozess-dropcontact-2026-10-15",
+           "quellen": ["zona36-prozess-2026-10-15",
+                       "zona36-prozess-overpass-2026-10-15"]},
+    "37": {"lauf": "zona37-prozess-dropcontact-2026-10-15",
+           "quellen": ["zona37-prozess-2026-10-15",
+                       "zona37-prozess-overpass-2026-10-15"]},
+    "38": {"lauf": "zona38-prozess-dropcontact-2026-10-15",
+           "quellen": ["zona38-prozess-2026-10-15",
+                       "zona38-prozess-overpass-2026-10-15"]},
+    "39": {"lauf": "zona39-prozess-dropcontact-2026-10-15",
+           "quellen": ["zona39-prozess-2026-10-15",
+                       "zona39-prozess-overpass-2026-10-15"]},
+}
+
+ZONEN_JE_ZIELGRUPPE = {"it": ZONEN, "prozess": ZONEN_PROZESS}
+
 ZONE = "32"
 for _a in sys.argv[1:]:
-    if _a.startswith("--zone="):
+    if _a.startswith("--zielgruppe="):
+        ZIELGRUPPE = zielgruppe(_a.split("=", 1)[1])
+    elif _a.startswith("--zone="):
         ZONE = _a.split("=", 1)[1]
     elif _a.isdigit() and len(_a) <= 5:
         # Vetem shifra = dikush e shkroi zonen pa "--zone=". Pa kete
@@ -631,6 +674,9 @@ for _a in sys.argv[1:]:
                  f"--zone={_a}, perndryshe vegla vrapon si zona {ZONE!r}.")
 if ZONE not in ZONEN:
     sys.exit(f"Unbekannte Zone {ZONE!r}")
+ZONEN = ZONEN_JE_ZIELGRUPPE[ZIELGRUPPE.schluessel]
+if ZONE not in ZONEN:
+    sys.exit(f"Zona {ZONE!r} nuk rri te grupi {ZIELGRUPPE.schluessel!r}")
 _fehlt = fehlende_quellen(PROJEKT / "laeufe/leadquellen",
                           ZONEN[ZONE]["quellen"])
 if _fehlt:
@@ -772,7 +818,8 @@ def kontakte_kleinerer_zonen(zone: str) -> set:
     for z_tjeter in sorted(ZONEN):
         if z_tjeter >= zone:
             break
-        fs = sorted(glob.glob(str(PROJEKT / f"IT-Liste-Emails-Zona{z_tjeter}-FERTIG-*.xlsx")),
+        fs = sorted(glob.glob(str(
+            PROJEKT / f"{ZIELGRUPPE.listen_prefix}Zona{z_tjeter}-FERTIG-*.xlsx")),
                     key=os.path.getmtime)
         if fs:
             lexo(fs[-1])
@@ -780,7 +827,8 @@ def kontakte_kleinerer_zonen(zone: str) -> set:
     # Dhjeteshet, nje e fundit per dekade. Edhe dekada jone lexohet, po
     # rresht per rresht sipas kodit postar - shih `lexo`.
     per_dekade = {}
-    for f in glob.glob(str(PROJEKT / "IT-Liste-Emails-Zonat-[0-9][0-9]-[0-9][0-9]-*.xlsx")):
+    for f in glob.glob(str(PROJEKT / dekaden_glob(
+            ZIELGRUPPE.listen_prefix))):
         teile = os.path.basename(f).split("-")
         nga = teile[4]
         if nga > zone:
@@ -891,7 +939,7 @@ def bauen():
     # Lista i mbledh te gjitha - perndryshe gjysma e punes s'do te dukej.
     daten = []
     dosjet = sorted((PROJEKT / "laeufe/leadquellen").glob(
-        f"zona{ZONE}-dropcontact-*/ergebnisse.json"))
+        ZIELGRUPPE.lauf_glob(ZONE, "dropcontact") + "/ergebnisse.json"))
     for pfad in dosjet:
         daten.extend(json.loads(pfad.read_text(encoding="utf-8")))
     if not daten:
@@ -1099,7 +1147,8 @@ def bauen():
                  for r in range(2, blatt.max_row + 1)}
     nicht_versand = []
     for pfad in sorted((PROJEKT / "laeufe/leadquellen").glob(
-            f"zona{ZONE}-dropcontact-*/paid-not-sendable.json")):
+            ZIELGRUPPE.lauf_glob(ZONE, "dropcontact")
+            + "/paid-not-sendable.json")):
         for eintrag in json.loads(pfad.read_text(encoding="utf-8")):
             person = (f"{eintrag.get('first_name', '')} "
                       f"{eintrag.get('last_name', '')}").strip()
@@ -1128,7 +1177,8 @@ def bauen():
         nb.column_dimensions[get_column_letter(spalte)].width = breite
 
     stempel = datetime.now().strftime("%Y%m%d-%H%M")
-    ziel = PROJEKT / f"IT-Liste-Emails-Zona{ZONE}-FERTIG-{stempel}.xlsx"
+    ziel = (PROJEKT /
+            f"{ZIELGRUPPE.listen_prefix}Zona{ZONE}-FERTIG-{stempel}.xlsx")
     wb.save(ziel)
     return ziel, nummer, ohne_position, len(kontrolle), len(nicht_versand)
 
@@ -1155,3 +1205,14 @@ if __name__ == "__main__":
     print(f"Pa pozite:        {pa_pozite}")
     print(f"Zur Kontrolle:    {kontrolle}")
     print(f"Paguar, jo per dergim: {nicht_versand}")
+    # Nje liste e zbrazet nuk guxon te dale ne heshtje. Me 15.10.2026
+    # pikerisht kjo ndodhi: modeli i dosjes nuk mbante grupin, vegla
+    # lexoi dosjen e IT-se, i hodhi te gjitha firmat si "jashte zones"
+    # dhe shkroi tete skedare me zero rreshta - pa asnje ankese, edhe pse
+    # Dropcontact-i kishte gjetur 39 email.
+    if rreshta == 0 and kontrolle == 0 and nicht_versand == 0:
+        sys.exit(
+            f"NDALIM: zona {ZONE} ({ZIELGRUPPE.name}) nxori liste te "
+            f"zbrazet. Dropcontact-i dha rezultate, po asnje rresht nuk "
+            f"mbeti - shiko 'jashte zones' me lart: ka gjasa qe jane "
+            f"lexuar dosjet e nje grupi tjeter.")

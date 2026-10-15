@@ -42,6 +42,7 @@ import os  # noqa: E402
 import requests  # noqa: E402
 
 from pipeline import zonen  # noqa: E402
+from pipeline.zielgruppen import zielgruppe  # noqa: E402
 
 ACTOR = "compass~crawler-google-places"
 
@@ -54,6 +55,10 @@ ZONEN = zonen.ZONEN
 # Te njejtat fjale kerkimi si me 21.08.2026, qe cdo zone te mblidhet me te
 # njejtin kriter - perndryshe listat s'do te ishin te krahasueshme. Rrijne
 # te pipeline/zonen.py, sepse Gelbe Seiten-i i perdor po ato.
+# Fjalet e kerkimit vijne nga grupi i synimit (--zielgruppe),
+# jo nga nje liste e vetme: nga 15.10.2026 ka edhe
+# konsulentet e procesit, me 21 fjale te tyre.
+ZIELGRUPPE = "it"
 SUCHBEGRIFFE = zonen.SUCHBEGRIFFE
 
 # Sa vende lejohen per cdo fjale kerkimi. Ky numer eshte freni i kostos:
@@ -72,10 +77,10 @@ def log(*teile):
 
 def eingabe(nummer):
     return {
-        "searchStringsArray": SUCHBEGRIFFE,
+        "searchStringsArray": list(SUCHBEGRIFFE),
         # One polygon for a zone of one circle (32-40, unchanged), a
         # MultiPolygon for a zone of several towns (pipeline/zonen.py).
-        "customGeolocation": zonen.suchgebiet(nummer),
+        "customGeolocation": zonen.suchgebiet(nummer, ZIELGRUPPE),
         "maxCrawledPlacesPerSearch": KUFI_PER_KERKIM,
         "language": "de",
         "searchMatching": "all",
@@ -225,7 +230,7 @@ def holen(token, dataset_id):
 
 
 def main():
-    global KUFI_PER_KERKIM
+    global KUFI_PER_KERKIM, SUCHBEGRIFFE, ZIELGRUPPE
     nummer = None
     max_usd = None
     for arg in sys.argv[1:]:
@@ -235,9 +240,16 @@ def main():
             KUFI_PER_KERKIM = int(arg.split("=", 1)[1])
         elif arg.startswith("--max-usd="):
             max_usd = float(arg.split("=", 1)[1])
-    if nummer not in ZONEN:
-        sys.exit(f"Duhet --zone= nga: {', '.join(ZONEN)}")
-    zone = ZONEN[nummer]
+        elif arg.startswith("--zielgruppe="):
+            ZIELGRUPPE = arg.split("=", 1)[1]
+    zg = zielgruppe(ZIELGRUPPE)
+    SUCHBEGRIFFE = zg.suchbegriffe
+    tabelle = zonen.zonen_tabelle(ZIELGRUPPE)
+    if nummer not in tabelle:
+        sys.exit(f"Duhet --zone= nga: {', '.join(tabelle)} "
+                 f"(grupi {ZIELGRUPPE!r})")
+    zone = tabelle[nummer]
+    log(f"grupi i synimit: {zg.name} ({len(SUCHBEGRIFFE)} fjale)")
 
     token = os.environ["APIFY_API_KEY"]
     log("=" * 62)
